@@ -23,7 +23,7 @@ OrbitalViewSplat
   Optional Splat editor overlays for virtual speakers, source objects, and renderer kernels.
 
 OrbitalViewWavefield
-  Local Wavefield speaker-layout JSON adapter into OrbitalViewCore.
+  Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
 `OrbitalViewCore` and `OrbitalViewWavefield` are implemented. Renderer, SwiftUI, and downstream app source integration remain deferred.
@@ -35,6 +35,7 @@ Current package:
 ```text
 OrbitalViewCore tests and validates core scene contracts.
 OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
+OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
 ```
 
 Future runtime shape:

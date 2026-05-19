@@ -9,12 +9,12 @@ adapter foundation
 ## Current Milestone
 
 ```text
-Wavefield layout adapter implemented
+Wavefield layout and meter adapters implemented
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore` plus `OrbitalViewWavefield`, a local adapter that maps Wavefield speaker-layout JSON into core monitor scenes. Renderer and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore` plus `OrbitalViewWavefield`, a local adapter that maps Wavefield speaker-layout JSON and Wavefield-style meter channel frames into core monitor scene/meter contracts. Renderer and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -37,6 +37,7 @@ main tree
 - Implemented `Package.swift`, `Sources/OrbitalViewCore/`, and `Tests/OrbitalViewCoreTests/`.
 - Verified `OrbitalViewCore` with build and test commands using the full Xcode toolchain.
 - Implemented `Sources/OrbitalViewWavefield/` and `Tests/OrbitalViewWavefieldTests/` using a copied Fey 30 fixture.
+- Implemented Wavefield-style meter frame adaptation into `SpeakerMeterFrame`.
 
 ## In Progress
 
@@ -48,7 +49,7 @@ none
 
 - Decide and open the next bounded task.
 - Decide renderer backend in a later PRD or work package.
-- Add meter-frame adaptation only after deciding whether it belongs in a local JSON/DTO bridge or a downstream package adapter.
+- Decide whether to build a visual mockup or renderer backend decision next.
 
 ## Blocked
 
@@ -313,6 +314,88 @@ Next recommended task:
 
 ```text
 Choose renderer visual mockup, renderer backend decision, or Wavefield meter-frame adapter.
+```
+
+### Update: 2026-05-19 Wavefield Meter Frame Adapter
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `WavefieldMeterChannelFrame` DTO.
+- Added `WavefieldMeterFrameAdapter`.
+- Mapped Wavefield-style channel/rms/peak records into `SpeakerMeterFrame`.
+- Added duplicate-channel, invalid-channel, non-finite-level, and clip-threshold tests.
+
+Files changed:
+
+```text
+Sources/OrbitalViewWavefield/WavefieldMeterFrameAdapter.swift
+Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
+.tasks/003-wavefield-meter-frame-adapter.md
+work-packages/orbital-view-kit/slices/003-wavefield-meter-frame-adapter.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/test-strategy.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 17 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Wavefield-style meter frames map into OrbitalViewCore SpeakerMeterFrame without channel reorder.
+```
+
+Risks:
+
+- This is a local DTO adapter, not a direct import of Wavefield package types.
+- Full app-level VUMeterSnapshot adaptation remains out of scope.
+
+Next recommended task:
+
+```text
+Renderer visual mockup or renderer backend decision.
 ```
 
 ## Open Questions

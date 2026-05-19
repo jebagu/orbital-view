@@ -49,12 +49,12 @@ work-packages/orbital-view-kit/MV.md
 .tasks/001-orbital-view-core-foundation.md
 ```
 
-### Wavefield Layout JSON Adapter
+### Wavefield Adapters
 
 Purpose:
 
 ```text
-Convert Wavefield speaker-layout JSON into OrbitalViewCore scene contracts.
+Convert Wavefield speaker-layout JSON and Wavefield-style meter records into OrbitalViewCore contracts.
 ```
 
 Implementation locations:
@@ -64,7 +64,7 @@ Sources/OrbitalViewWavefield/
 Tests/OrbitalViewWavefieldTests/
 ```
 
-The current adapter reads speaker-layout JSON only. Meter adaptation and direct Wavefield package type integration are not implemented.
+The current adapter reads speaker-layout JSON and local channel/rms/peak meter DTOs. Direct Wavefield package type integration is not implemented.
 
 ### Future Renderer
 
@@ -90,8 +90,9 @@ shell reference validation -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.sw
 meter channel identity -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
+Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
 ```
 
 ## Last Updated
 
-2026-05-19 Wavefield layout JSON adapter
+2026-05-19 Wavefield meter-frame adapter

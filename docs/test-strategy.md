@@ -15,6 +15,7 @@ Once implementation starts, the test suite should prove:
 - imported shell geometry references are valid
 - downstream adapters do not reorder Wavefield/Fey speakers
 - local Wavefield JSON adapter rejects invalid layout shape explicitly
+- local Wavefield meter adapter rejects duplicate channels and invalid levels explicitly
 
 ## Unit Tests
 
@@ -38,6 +39,9 @@ Use when a downstream adapter is added:
 - assert labels remain stable
 - assert directions match the source layout
 - reject unsupported axes and invalid speaker counts
+- map channel/rms/peak records into `SpeakerMeterFrame`
+- preserve missing meter channels as absent values
+- derive clip from a configurable threshold
 
 ## Renderer Tests
 

@@ -160,7 +160,7 @@ Deferred until the actual downstream package layout is inspected during the firs
 
 ### Responsibility
 
-Convert Wavefield speaker-layout JSON into `OrbitalViewCore` monitor scenes.
+Convert Wavefield speaker-layout JSON and Wavefield-style meter channel records into `OrbitalViewCore` monitor scene and meter contracts.
 
 ### Non-Responsibilities
 
@@ -168,7 +168,7 @@ This module must not:
 
 - edit or depend on the Wavefield package
 - parse `.wfield` compositions
-- adapt live meter snapshots yet
+- adapt full app-level `VUMeterSnapshot` state
 - render UI or 3D graphics
 - modify audio, playback, MIDI, OSC, routing, or output behavior
 
@@ -177,6 +177,9 @@ This module must not:
 ```text
 WavefieldSpeakerLayoutSceneAdapter
 WavefieldSpeakerLayoutSceneAdapterError
+WavefieldMeterFrameAdapter
+WavefieldMeterFrameAdapterError
+WavefieldMeterChannelFrame
 ```
 
 ### Inputs
@@ -193,6 +196,8 @@ speakers[] channel, label, position
 ### Outputs
 
 `OrbitalViewSceneSpec` with 30 physical speakers, Wavefield coordinate system, and direction anchors preserving channel order and labels.
+
+`SpeakerMeterFrame` with levels keyed by physical channel, preserving missing channels as absent values.
 
 ### Dependencies
 
@@ -221,3 +226,7 @@ CoreMIDI
 - Labels remain `Fey 01...Fey 30`.
 - Direction coordinates match the fixture.
 - Unsupported axes, invalid speaker count, and invalid unit directions fail explicitly.
+- Meter channel records preserve channel identity.
+- Duplicate or invalid channels fail explicitly.
+- Non-finite RMS/peak values fail explicitly.
+- Clip flags derive from the configured peak threshold.

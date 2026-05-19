@@ -147,6 +147,44 @@ Protected path touch:
 no
 ```
 
+### Slice 003: Wavefield Meter Frame Adapter
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Map Wavefield-style channel/rms/peak meter records into OrbitalViewCore SpeakerMeterFrame.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 001
+```
+
+Review required:
+
+```text
+normal
+```
+
+Protected path touch:
+
+```text
+no
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -157,8 +195,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 002 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` exist with tests.
+Slice 003 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` scene/meter adapters exist with tests.
 
 ## Next Action
 
-Open a new bounded task for renderer visual mockup, renderer backend decision, or Wavefield meter-frame adaptation.
+Open a new bounded task for renderer visual mockup or renderer backend decision.
