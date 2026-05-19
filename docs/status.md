@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-renderer invariant tests
+Mockup grouped controls and fog parity
 ```
 
 ## Current Milestone
 
 ```text
-Static renderer draw-input invariants verified
+Browser mockup grouped controls and shell/speaker fog parity verified
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. The browser mockup now uses always-axonometric projection with no projection picker, groups controls under Camera, Color, Speaker Shape, and View Detail headings, themes the full surface from the Color palette, draws prism speakers as 8-vertex rectangular prisms, uses switch controls for speaker numbers and hidden lines, and applies fog depth fading consistently to hidden shell lines and hidden speaker faces. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -48,6 +48,13 @@ main tree
 - Implemented a minimal Metal draw pipeline and offscreen renderer smoke test.
 - Added renderer invariant tests for static draw-input stability across meter and camera updates.
 - Added a root `.command` launcher for the live browser mockup.
+- Accepted the pasted Fey 30 raw speaker coordinates as the canonical geometry source after verifying that the existing `unitSphereCartesian` fixture matches their radial normalization.
+- Updated the browser mockup with the DomeLab 3D Model control panel and behavior.
+- Swapped the mockup's vertical drag axis and added a front-hemisphere sphere-edge boundary.
+- Added full-surface mockup display palettes, a Speaker size slider, and 2:1:1 rectangular-prism speaker proportions.
+- Removed the mockup Projection picker, made projection always axonometric, and changed prism speakers to face-clipped 3D cuboids.
+- Added mockup Speaker numbers and Hidden Lines controls, moved the lower control order, strengthened max fog, and improved label color/spacing.
+- Grouped the mockup controls under Camera, Color, Speaker Shape, and View Detail headings, converted Speaker numbers to a switch, and aligned hidden speaker fog fading with hidden shell-line fading.
 
 ## In Progress
 
@@ -1059,6 +1066,552 @@ Next recommended task:
 
 ```text
 Pixel-probe renderer tests or renderer static buffer/cache plan.
+```
+
+### Update: 2026-05-19 Fey Sphere Coordinate Acceptance
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Accepted the pasted Fey 30 raw speaker coordinates as the current canonical Fey sphere geometry source.
+- Confirmed axes remain `x = right`, `y = up`, and `z = front`.
+- Confirmed the existing `Tests/OrbitalViewWavefieldTests/Fixtures/fey-30-layout.json` positions are the raw coordinates projected radially onto the unit sphere.
+- Preserved one-based speaker channel order `1...30` with no position-based reordering.
+
+Files changed:
+
+```text
+docs/status.md
+```
+
+Tests added or updated:
+
+```text
+none - existing adapter tests already cover Fey 30 loading, channel order, labels, fixture directions, and invalid non-unit directions
+```
+
+Commands run:
+
+```text
+node coordinate verification -> passed, 30 coordinates, max fixture delta 4.440892098500626e-16
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The existing Fey 30 fixture is accepted as the normalized unit-sphere form of the pasted canonical raw speaker coordinates.
+```
+
+Risks:
+
+- The source raw coordinates are recorded in conversation context, while the repository fixture stores normalized unit-sphere positions for loader validation.
+
+Next recommended task:
+
+```text
+Pixel-probe renderer tests or renderer static buffer/cache plan.
+```
+
+### Update: 2026-05-19 DomeLab Control Panel Mockup
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Replaced the browser mockup's top toolbar with a full-height left control rail modeled on DomeLab's 3D Model panel.
+- Added Plan, Elevation, Isometric, Reset, Spin, Export PNG, Projection, Display, Front hemisphere only, and Fog density controls.
+- Matched DomeLab-style drag and spin direction, reset-to-current-preset behavior, axonometric projection, front-hemisphere clipping, fog depth fading, display palettes, and canvas PNG export.
+- Kept the change limited to the disposable mockup and notes; no Swift, renderer, or package interface changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+headless Playwright layout render -> passed, rail height 900px at 1440x900 viewport, canvas 900x854
+headless Playwright control interaction/export check -> passed, no page errors, PNG filename orbital-view-isometric-axonometric.png
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed mockup layout overflow caught during headless render verification
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup now mirrors the requested DomeLab 3D Model control panel on the left side of the screen.
+```
+
+Risks:
+
+- The mockup still uses fake meter animation and canvas approximations; production SwiftUI/Metal control and renderer behavior remains deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI control-surface slice when production controls should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Drag Axis And Front-Half Boundary
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Swapped only the mockup's vertical pointer-drag pitch mapping; horizontal yaw behavior is unchanged.
+- Added a structure-style circular boundary around the visible sphere edge when `Front hemisphere only` is enabled.
+- Kept the boundary tied to the same viewport sphere radius and zoom scale used for projected structure geometry.
+- Kept the work limited to the disposable browser mockup and docs; no Swift renderer, SwiftUI wrapper, public API, or protected source path changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+Chrome visual review -> passed, front-half boundary visible in Green, Pink, and B&W styles; vertical drag moved the sphere and changed the camera label to adjusted
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The live browser mockup now has the requested vertical drag behavior and front-half sphere-edge boundary.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation; production SwiftUI/Metal drag and shell-boundary behavior remains deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI control-surface slice when production controls should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Palette And Speaker Size Controls
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Moved the mockup Display palette onto shared UI tokens so Green, Pink, and B&W theme the left rail, buttons, sliders, right inspector, status bar, meter bars, and viewport.
+- Added a `Speaker size` slider with a `1.35x` default and `0.75x...2.25x` range.
+- Applied speaker size to both sphere radius and prism geometry while leaving fake RMS/peak values responsible only for glow, color, and meter fill.
+- Changed prism geometry to a 2:1:1 visual cabinet proportion, with the long axis following the local tangential arc and the two short dimensions kept equal.
+- Kept the work limited to the disposable browser mockup and docs; no Swift renderer, SwiftUI wrapper, public API, or protected source path changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+node Playwright availability check -> unavailable in this checkout
+Chrome visual review -> passed; Green, Pink, and B&W themed the full UI; Prism showed 2:1:1 cabinets; Speaker size changed to 2.25x; Front hemisphere and existing display/shape controls worked
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed mockup Display palette not applying to the full UI surface
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup now applies Display color changes across the whole UI and supports larger 2:1:1 prism speaker cabinets.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation and canvas approximations; production SwiftUI/Metal controls and cabinet rendering remain deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI control-surface slice when production controls should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Axonometric Prism Clipping
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Removed the browser mockup's Projection picker and deleted the perspective projection state path.
+- Made viewport projection always axonometric/orthographic while preserving Plan, Elevation, and Isometric camera presets.
+- Replaced the prior prism approximation with an 8-vertex rectangular-prism cuboid using 2:1:1 length/width/height proportions.
+- Oriented each prism with its long axis along the local tangential sphere direction, its radial short axis outward, and its second short axis from the orthogonal cross product.
+- Clipped prism faces against the front-hemisphere plane so cabinets transition by visible faces instead of disappearing as whole center-point objects.
+- Kept the work limited to the disposable browser mockup and docs; no Swift renderer, SwiftUI wrapper, public API, or protected source path changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+node mockup structure assertions -> passed, Projection/perspective state absent and cuboid clipping code present
+Chrome visual review -> passed for no Projection picker, Green/Pink/B&W full-surface palettes, 3D cuboid prism rendering, and front-hemisphere clipping state; deeper gesture clicking was limited by Chrome tab-focus instability
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed mockup prism speakers reading as flat 2D shapes
+fixed front-hemisphere prism popping by clipping prism faces instead of filtering whole speakers by center depth
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup has no perspective option and renders prism speakers as true 3D cuboids with face-level front-hemisphere clipping.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation and canvas approximations; production SwiftUI/Metal cuboid clipping remains deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI/Metal renderer slice when production cuboid speaker rendering should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Labels Hidden Lines Fog Controls
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a `Speaker numbers` checkbox that hides or shows viewport labels without changing speaker selection or inspector behavior.
+- Replaced `Front hemisphere only` with a switch-style `Hidden Lines` control using positive semantics: on shows hidden/back-half lines, off hides them.
+- Reordered the lower control panel so `Speaker size` and `Fog density` sit together, followed by `Speaker numbers`, with `Hidden Lines` last.
+- Strengthened depth fog so `Fog density` at 100 hides back-half structure and speakers similarly to turning `Hidden Lines` off.
+- Made B&W speaker labels black and moved speaker-number text farther from spheres and prism cuboids.
+- Kept the work limited to the disposable browser mockup and docs; no Swift renderer, SwiftUI wrapper, public API, or protected source path changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+node mockup structure assertions -> passed, Projection/perspective and Front hemisphere state absent; Speaker numbers and Hidden Lines controls present
+Chrome visual review -> passed for Hidden Lines switch on/off, Speaker numbers on/off, B&W black labels, prism label spacing, prism mode, and Fog density 100 hidden-line suppression
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed B&W speaker labels being unreadable when labels were drawn in a light color
+fixed prism speaker labels overlapping cuboids by moving labels farther from speaker geometry
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup now has explicit speaker-label visibility, positive Hidden Lines behavior, and stronger max-fog hidden-line suppression.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation and canvas approximations; production SwiftUI/Metal hidden-line and fog behavior remains deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI/Metal renderer slice when production label and hidden-line controls should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Grouped Controls And Fog Parity
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a `Camera` heading above Plan, Elevation, Isometric, Reset, Spin, and Export PNG.
+- Renamed the `Display` heading to `Color`.
+- Added a `View Detail` heading for Speaker size, Fog density, Speaker numbers, and Hidden Lines.
+- Converted `Speaker numbers` from a checkbox to a switch matching `Hidden Lines`.
+- Increased control spacing in the left panel.
+- Removed the hidden-depth alpha floor from speaker spheres and prism faces so mid-range fog fades hidden speaker geometry like hidden shell lines.
+- Kept the work limited to the disposable browser mockup and docs; no Swift renderer, SwiftUI wrapper, public API, or protected source path changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+node mockup structure assertions -> passed, Camera/Color/View Detail headings and switch controls present
+Chrome visual review -> passed for grouped headings, Speaker numbers switch, Hidden Lines switch, prism mode, and fog 77 shell/speaker hidden-geometry fade parity
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed mid-range fog fading hidden shell lines more aggressively than hidden speaker geometry
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup now has grouped controls, switch-style speaker numbers, and matching fog fade behavior for hidden shell and speaker geometry.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation and canvas approximations; production SwiftUI/Metal hidden-line and fog behavior remains deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI/Metal renderer slice when production label and hidden-line controls should move beyond the mockup.
 ```
 
 ## Open Questions

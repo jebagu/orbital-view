@@ -81,7 +81,7 @@ mockups/orbital-view-viewport/index.html
 mockups/orbital-view-viewport/notes.md
 ```
 
-This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It is not production renderer source.
+This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It now mirrors DomeLab's 3D Model control panel on the left side of the viewport, grouped under Camera, Color, Speaker Shape, and View Detail headings. Color palettes theme the full mockup surface, projection is always axonometric, speaker numbers and hidden lines use switch controls, fog fades hidden shell lines and speaker faces consistently, and prism mode uses true 8-vertex rectangular-prism speaker cabinets with hidden-line face clipping. It is not production renderer source.
 
 ### OrbitalViewRender Seam
 
@@ -201,4 +201,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-19 Renderer invariant tests
+2026-05-19 Mockup grouped controls and fog parity

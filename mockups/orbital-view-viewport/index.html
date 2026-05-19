@@ -19,7 +19,90 @@
       --green: #7be48b;
       --amber: #f2bd5c;
       --hot: #ff6c5f;
-      --violet: #cba8ff;
+      --pink: #f75ba7;
+      --black: #111111;
+      --page-bg: #0b0c0d;
+      --rail-bg: #101211;
+      --toolbar-bg: rgba(5, 12, 15, 0.68);
+      --button-bg: #171a19;
+      --button-hover-bg: #1d2321;
+      --button-hover-border: #50615d;
+      --button-active-bg: #15302d;
+      --button-active-border: #39d0bd;
+      --button-active-text: #c9fff5;
+      --accent: #39d0bd;
+      --accent-strong: #7be48b;
+      --metric-bg: #111413;
+      --metric-border: #28302d;
+      --row-line: #242a28;
+      --bar-track: #28302d;
+      --status-bg: #101211;
+      --chip-bg: #151817;
+      --dot: #7be48b;
+      --dot-shadow: 0 0 10px rgba(123, 228, 139, 0.7);
+      --grid-line: #151817;
+      --main-bg: #0b0c0d;
+      --slider-value: #ffffff;
+    }
+
+    body[data-render-style="pink-lines"] {
+      --page-bg: #0d090c;
+      --rail-bg: #140c12;
+      --toolbar-bg: rgba(25, 10, 18, 0.78);
+      --panel: #171016;
+      --panel-2: #20131b;
+      --line: #432236;
+      --muted: #caa1b8;
+      --text: #fff3f9;
+      --button-bg: #23131d;
+      --button-hover-bg: #301828;
+      --button-hover-border: #915174;
+      --button-active-bg: #3a1230;
+      --button-active-border: #f75ba7;
+      --button-active-text: #ffe7f3;
+      --accent: #f75ba7;
+      --accent-strong: #ffb3d7;
+      --metric-bg: #1b1018;
+      --metric-border: #442337;
+      --row-line: #33202b;
+      --bar-track: #3a1d2d;
+      --status-bg: #140c12;
+      --chip-bg: #23131d;
+      --dot: #f75ba7;
+      --dot-shadow: 0 0 12px rgba(247, 91, 167, 0.72);
+      --grid-line: #20131b;
+      --main-bg: #0d090c;
+    }
+
+    body[data-render-style="plain-lines"] {
+      color-scheme: light;
+      --page-bg: #ffffff;
+      --rail-bg: #f3f3f3;
+      --toolbar-bg: rgba(255, 255, 255, 0.86);
+      --panel: #f7f7f7;
+      --panel-2: #ffffff;
+      --line: #b9b9b9;
+      --muted: #5d5d5d;
+      --text: #111111;
+      --button-bg: #ffffff;
+      --button-hover-bg: #eeeeee;
+      --button-hover-border: #333333;
+      --button-active-bg: #111111;
+      --button-active-border: #111111;
+      --button-active-text: #ffffff;
+      --accent: #111111;
+      --accent-strong: #111111;
+      --metric-bg: #ffffff;
+      --metric-border: #bbbbbb;
+      --row-line: #d8d8d8;
+      --bar-track: #dddddd;
+      --status-bg: #f3f3f3;
+      --chip-bg: #ffffff;
+      --dot: #111111;
+      --dot-shadow: 0 0 0 rgba(17, 17, 17, 0);
+      --grid-line: #e7ebea;
+      --main-bg: #ffffff;
+      --slider-value: #111111;
     }
 
     * {
@@ -29,32 +112,34 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background: #0b0c0d;
+      background: var(--page-bg);
       color: var(--text);
       overflow: hidden;
     }
 
     .app {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 300px;
-      grid-template-rows: 56px minmax(0, 1fr) 46px;
+      grid-template-columns: 240px minmax(0, 1fr) 300px;
+      grid-template-rows: minmax(0, 1fr) 46px;
+      height: 100vh;
       min-height: 100vh;
     }
 
-    header {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--line);
-      background: #101211;
+    .control-rail {
+      display: grid;
+      grid-row: 1 / -1;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 12px;
+      min-height: 0;
+      padding: 12px;
+      border-right: 1px solid var(--line);
+      background: var(--rail-bg);
     }
 
     .brand {
-      display: flex;
-      flex-direction: column;
-      min-width: 168px;
+      display: grid;
+      gap: 3px;
+      padding: 4px 2px;
       line-height: 1.1;
     }
 
@@ -67,23 +152,51 @@
     .brand span {
       color: var(--muted);
       font-size: 11px;
-      margin-top: 3px;
     }
 
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-      min-width: 0;
+    .viewport-toolbar {
+      align-content: start;
+      display: grid;
+      gap: 12px;
+      min-height: 0;
+      overflow: auto;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(14px);
+    }
+
+    .toolbar-actions,
+    .toolbar-section,
+    .toolbar-slider,
+    .control-group,
+    .segmented {
+      display: grid;
+      gap: 8px;
+    }
+
+    .toolbar-actions > span,
+    .toolbar-section > span,
+    .toolbar-slider > span,
+    .control-group > span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .control-group {
+      gap: 10px;
     }
 
     button {
       border: 1px solid var(--line);
-      background: #171a19;
+      background: var(--button-bg);
       color: var(--text);
-      min-height: 32px;
-      padding: 7px 10px;
+      min-height: 34px;
+      padding: 7px 9px;
       border-radius: 7px;
       font-size: 12px;
       font-weight: 650;
@@ -92,21 +205,112 @@
     }
 
     button:hover {
-      border-color: #50615d;
-      background: #1d2321;
+      border-color: var(--button-hover-border);
+      background: var(--button-hover-bg);
     }
 
-    button[aria-pressed="true"] {
-      border-color: color-mix(in srgb, var(--teal) 80%, white 0%);
-      background: #15302d;
-      color: #c9fff5;
+    button:disabled {
+      cursor: wait;
+      opacity: 0.62;
     }
 
-    .divider {
-      width: 1px;
-      height: 26px;
-      background: var(--line);
-      margin: 0 4px;
+    button[aria-pressed="true"],
+    .segmented button.active,
+    .tool-button.active {
+      border-color: var(--button-active-border);
+      background: var(--button-active-bg);
+      color: var(--button-active-text);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toggle-row input {
+      width: 24px;
+      min-width: 24px;
+      height: 24px;
+      min-height: 24px;
+      accent-color: var(--accent);
+    }
+
+    .switch-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .switch-row input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      min-width: 46px;
+      height: 25px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--button-bg);
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 17px;
+      height: 17px;
+      border-radius: 999px;
+      background: var(--muted);
+      transition: transform 120ms ease, background 120ms ease;
+    }
+
+    .switch-row input:checked + .switch-track {
+      border-color: var(--button-active-border);
+      background: var(--button-active-bg);
+    }
+
+    .switch-row input:checked + .switch-track::after {
+      transform: translateX(21px);
+      background: var(--accent-strong);
+    }
+
+    .switch-row input:focus-visible + .switch-track {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .toolbar-slider-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .toolbar-slider-row strong {
+      min-width: 28px;
+      color: var(--slider-value);
+      font-size: 12px;
+      text-align: right;
     }
 
     main {
@@ -114,9 +318,9 @@
       min-height: 0;
       overflow: hidden;
       background:
-        linear-gradient(#151817 1px, transparent 1px),
-        linear-gradient(90deg, #151817 1px, transparent 1px),
-        #0b0c0d;
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        var(--main-bg);
       background-size: 36px 36px;
     }
 
@@ -135,10 +339,10 @@
       display: grid;
       grid-template-rows: auto auto minmax(0, 1fr);
       gap: 12px;
+      min-height: 0;
       padding: 12px;
       border-left: 1px solid var(--line);
       background: var(--panel);
-      min-height: 0;
     }
 
     .panel {
@@ -164,10 +368,10 @@
 
     .metric {
       min-height: 58px;
-      border: 1px solid #28302d;
+      border: 1px solid var(--metric-border);
       border-radius: 7px;
       padding: 8px;
-      background: #111413;
+      background: var(--metric-bg);
     }
 
     .metric span {
@@ -194,7 +398,7 @@
       align-items: center;
       gap: 8px;
       min-height: 30px;
-      border-bottom: 1px solid #242a28;
+      border-bottom: 1px solid var(--row-line);
       font-size: 12px;
     }
 
@@ -205,7 +409,7 @@
     .bar {
       height: 6px;
       border-radius: 3px;
-      background: #28302d;
+      background: var(--bar-track);
       overflow: hidden;
     }
 
@@ -213,11 +417,10 @@
       display: block;
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, var(--green), var(--amber), var(--hot));
     }
 
     .status {
-      grid-column: 1 / -1;
+      grid-column: 2 / -1;
       display: grid;
       grid-template-columns: 1fr auto auto;
       gap: 16px;
@@ -225,7 +428,7 @@
       min-height: 46px;
       padding: 8px 14px;
       border-top: 1px solid var(--line);
-      background: #101211;
+      background: var(--status-bg);
       color: var(--muted);
       font-size: 12px;
     }
@@ -243,7 +446,7 @@
       border-radius: 7px;
       padding: 6px 8px;
       color: var(--text);
-      background: #151817;
+      background: var(--chip-bg);
       white-space: nowrap;
     }
 
@@ -251,8 +454,8 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 10px color-mix(in srgb, var(--green) 70%, transparent);
+      background: var(--dot);
+      box-shadow: var(--dot-shadow);
     }
 
     .empty {
@@ -267,13 +470,15 @@
       }
 
       .app {
+        height: auto;
         grid-template-columns: 1fr;
         grid-template-rows: auto 62vh auto auto;
       }
 
-      header {
-        align-items: flex-start;
-        flex-direction: column;
+      .control-rail {
+        grid-row: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
       }
 
       aside {
@@ -282,32 +487,77 @@
       }
 
       .status {
+        grid-column: 1 / -1;
         grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
-<body>
+<body data-render-style="color">
   <div class="app">
-    <header>
+    <nav class="control-rail" aria-label="3D model controls">
       <div class="brand">
         <strong>OrbitalViewKit</strong>
         <span>Fey 30 / Monitor</span>
       </div>
-      <div class="toolbar" aria-label="Viewport controls">
-        <button class="mode" data-view="iso" aria-pressed="true">Iso</button>
-        <button class="mode" data-view="plan" aria-pressed="false">Plan</button>
-        <button class="mode" data-view="front" aria-pressed="false">Front</button>
-        <button class="mode" data-view="side" aria-pressed="false">Side</button>
-        <button id="reset">Reset</button>
-        <span class="divider" aria-hidden="true"></span>
-        <button id="projection" aria-pressed="false">Ortho</button>
-        <button id="structure" aria-pressed="true">Structure</button>
-        <button id="speakers" aria-pressed="true">Speakers</button>
-        <button id="labels" aria-pressed="true">Labels</button>
-        <button id="cutaway" aria-pressed="false">Cutaway</button>
+      <div class="viewport-toolbar">
+        <div class="toolbar-actions">
+          <span>Camera</span>
+          <div class="segmented" aria-label="Camera">
+            <button class="tool-button view-mode" data-view="plan" aria-pressed="false">Plan</button>
+            <button class="tool-button view-mode" data-view="elevation" aria-pressed="false">Elevation</button>
+            <button class="tool-button view-mode active" data-view="isometric" aria-pressed="true">Isometric</button>
+          </div>
+          <div class="segmented" aria-label="Camera actions">
+            <button class="tool-button" id="reset">Reset</button>
+            <button class="tool-button" id="spin" aria-pressed="false">Spin</button>
+            <button class="tool-button" id="exportPng">Export PNG</button>
+          </div>
+        </div>
+        <div class="toolbar-section">
+          <span>Color</span>
+          <div class="segmented" aria-label="Color">
+            <button class="render-style active" data-render-style="color" aria-pressed="true">Green</button>
+            <button class="render-style" data-render-style="pink-lines" aria-pressed="false">Pink</button>
+            <button class="render-style" data-render-style="plain-lines" aria-pressed="false">B&amp;W</button>
+          </div>
+        </div>
+        <div class="toolbar-section">
+          <span>Speaker Shape</span>
+          <div class="segmented" aria-label="Speaker shape">
+            <button class="shape-mode active" data-shape="sphere" aria-pressed="true">Sphere</button>
+            <button class="shape-mode" data-shape="prism" aria-pressed="false">Prism</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <span>View Detail</span>
+          <label class="toolbar-slider">
+            <span>Speaker size</span>
+            <div class="toolbar-slider-row">
+              <input id="speakerSize" type="range" min="0.75" max="2.25" step="0.05" value="1.35">
+              <strong id="speakerSizeValue">1.35x</strong>
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Fog density</span>
+            <div class="toolbar-slider-row">
+              <input id="fogDensity" type="range" min="0" max="100" step="1" value="38">
+              <strong id="fogDensityValue">38</strong>
+            </div>
+          </label>
+          <label class="switch-row toolbar-switch">
+            <span>Speaker numbers</span>
+            <input id="speakerNumbers" type="checkbox" role="switch" checked aria-label="Speaker numbers">
+            <i class="switch-track" aria-hidden="true"></i>
+          </label>
+          <label class="switch-row toolbar-switch">
+            <span>Hidden Lines</span>
+            <input id="hiddenLines" type="checkbox" role="switch" checked aria-label="Hidden Lines">
+            <i class="switch-track" aria-hidden="true"></i>
+          </label>
+        </div>
       </div>
-    </header>
+    </nav>
 
     <main>
       <canvas id="viewport" aria-label="Orbital 3D Sonic Sphere viewport"></canvas>
@@ -337,7 +587,7 @@
     </aside>
 
     <footer class="status">
-      <span><strong id="cameraText">Iso</strong> / Center locked / Drag orbit / Wheel zoom</span>
+      <span><strong id="cameraText">Isometric</strong> / Center locked / DomeLab panel</span>
       <span class="chip"><i class="dot"></i><span id="sourceText">Fake meter stream</span></span>
       <span class="chip"><span id="zoomText">Zoom 1.00x</span></span>
     </footer>
@@ -346,7 +596,17 @@
   <script>
     const canvas = document.getElementById("viewport");
     const ctx = canvas.getContext("2d");
-    const viewButtons = [...document.querySelectorAll(".mode")];
+    const viewButtons = [...document.querySelectorAll(".view-mode")];
+    const renderStyleButtons = [...document.querySelectorAll(".render-style")];
+    const shapeButtons = [...document.querySelectorAll(".shape-mode")];
+    const spinButton = document.getElementById("spin");
+    const exportButton = document.getElementById("exportPng");
+    const speakerSizeInput = document.getElementById("speakerSize");
+    const speakerSizeValue = document.getElementById("speakerSizeValue");
+    const fogDensityInput = document.getElementById("fogDensity");
+    const fogDensityValue = document.getElementById("fogDensityValue");
+    const speakerNumbersCheckbox = document.getElementById("speakerNumbers");
+    const hiddenLinesSwitch = document.getElementById("hiddenLines");
     const list = document.getElementById("speakerList");
     const activeCount = document.getElementById("activeCount");
     const peakText = document.getElementById("peakText");
@@ -355,20 +615,60 @@
     const selectionTitle = document.getElementById("selectionTitle");
     const selectionBody = document.getElementById("selectionBody");
 
+    const palettes = {
+      color: {
+        background: "#0b0c0d",
+        structure: "rgba(57, 208, 189, 0.22)",
+        structureSecondary: "rgba(98, 124, 117, 0.24)",
+        equator: "rgba(203, 168, 255, 0.2)",
+        label: "rgba(230, 238, 235, 0.76)",
+        selectedLabel: "#ffffff",
+        fog: "rgba(11, 12, 13, 0.42)",
+        backgroundGlow: "rgba(57, 208, 189, 0.08)",
+        bar: "linear-gradient(90deg, #7be48b, #f2bd5c, #ff6c5f)"
+      },
+      "pink-lines": {
+        background: "#0b0c0d",
+        structure: "rgba(247, 91, 167, 0.34)",
+        structureSecondary: "rgba(247, 91, 167, 0.22)",
+        equator: "rgba(247, 91, 167, 0.28)",
+        label: "rgba(255, 223, 240, 0.78)",
+        selectedLabel: "#ffffff",
+        fog: "rgba(11, 12, 13, 0.48)",
+        backgroundGlow: "rgba(247, 91, 167, 0.1)",
+        bar: "linear-gradient(90deg, #f75ba7, #ffb3d7)"
+      },
+      "plain-lines": {
+        background: "#ffffff",
+        structure: "rgba(17, 17, 17, 0.5)",
+        structureSecondary: "rgba(17, 17, 17, 0.28)",
+        equator: "rgba(17, 17, 17, 0.42)",
+        label: "rgba(17, 17, 17, 0.76)",
+        selectedLabel: "#111111",
+        fog: "rgba(255, 255, 255, 0.5)",
+        backgroundGlow: "rgba(17, 17, 17, 0.035)",
+        bar: "linear-gradient(90deg, #111111, #777777)"
+      }
+    };
+
     const state = {
       yaw: Math.PI * 0.25,
       pitch: Math.PI * 0.22,
       zoom: 1,
-      projection: "perspective",
-      structure: true,
-      speakers: true,
-      labels: true,
-      cutaway: false,
+      cameraView: "isometric",
+      renderStyle: "color",
+      speakerShape: "sphere",
+      speakerSize: 1.35,
+      spin: false,
+      showSpeakerNumbers: true,
+      showHiddenLines: true,
+      fogDensity: 38,
       selected: null,
       dragging: false,
       lastX: 0,
       lastY: 0,
-      time: 0
+      time: 0,
+      lastFrame: 0
     };
 
     const rawSpeakers = [
@@ -405,8 +705,12 @@
     ];
 
     const speakers = rawSpeakers.map(([channel, label, x, y, z]) => ({
-      channel, label, x, y, z, rms: 0, peak: 0, sx: 0, sy: 0, depth: 0
+      channel, label, x, y, z, rms: 0, peak: 0, sx: 0, sy: 0, depth: 0, scale: 1
     }));
+
+    function palette() {
+      return palettes[state.renderStyle];
+    }
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
@@ -429,15 +733,17 @@
       return { x: x1, y: y1, z: z2 };
     }
 
+    function sphereScreenRadius(width, height) {
+      return Math.min(width, height) * 0.34 * state.zoom;
+    }
+
     function project(point, width, height) {
-      const radius = Math.min(width, height) * 0.34 * state.zoom;
-      const camera = 3.2;
-      const perspective = state.projection === "perspective" ? camera / (camera + point.z) : 1;
+      const radius = sphereScreenRadius(width, height);
       return {
-        x: width * 0.5 + point.x * radius * perspective,
-        y: height * 0.5 - point.y * radius * perspective,
+        x: width * 0.5 + point.x * radius,
+        y: height * 0.5 - point.y * radius,
         depth: point.z,
-        scale: perspective
+        scale: 1
       };
     }
 
@@ -451,57 +757,422 @@
     }
 
     function colorForPeak(peak) {
+      if (state.renderStyle === "pink-lines") return "#f75ba7";
+      if (state.renderStyle === "plain-lines") return "#111111";
       if (peak > 0.9) return "#ff6c5f";
       if (peak > 0.68) return "#f2bd5c";
       if (peak > 0.35) return "#7be48b";
       return "#39d0bd";
     }
 
-    function drawStructure(points, width, height) {
+    function hexToRgb(hex) {
+      const value = hex.replace("#", "");
+      return {
+        r: parseInt(value.slice(0, 2), 16),
+        g: parseInt(value.slice(2, 4), 16),
+        b: parseInt(value.slice(4, 6), 16)
+      };
+    }
+
+    function rgba(hex, alpha) {
+      const rgb = hexToRgb(hex);
+      return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    }
+
+    function add3(a, b) {
+      return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
+    }
+
+    function scale3(vector, scalar) {
+      return { x: vector.x * scalar, y: vector.y * scalar, z: vector.z * scalar };
+    }
+
+    function dot3(a, b) {
+      return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+
+    function cross3(a, b) {
+      return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      };
+    }
+
+    function normalize3(vector, fallback = { x: 1, y: 0, z: 0 }) {
+      const length = Math.hypot(vector.x, vector.y, vector.z);
+      if (length < 0.0001) return fallback;
+      return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+    }
+
+    function lerp3(a, b, t) {
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+        z: a.z + (b.z - a.z) * t
+      };
+    }
+
+    const frontClipPlane = -0.04;
+
+    function clamp01(value) {
+      return Math.max(0, Math.min(1, value));
+    }
+
+    function hiddenDepthFade(depth) {
+      if (depth >= frontClipPlane) return 1;
+      const intensity = clamp01(state.fogDensity / 100);
+      const behindAmount = clamp01((frontClipPlane - depth) / (1 + frontClipPlane));
+      return clamp01(1 - intensity * (1.05 + behindAmount * 0.7));
+    }
+
+    function hiddenLinesVisible() {
+      return state.showHiddenLines && state.fogDensity < 100;
+    }
+
+    function isVisibleDepth(depth) {
+      return depth >= frontClipPlane || (hiddenLinesVisible() && hiddenDepthFade(depth) > 0.02);
+    }
+
+    function foggedAlpha(depth, baseAlpha) {
+      return baseAlpha * hiddenDepthFade(depth);
+    }
+
+    function drawBackground(width, height) {
+      const colors = palette();
+      ctx.fillStyle = colors.background;
+      ctx.fillRect(0, 0, width, height);
+
+      if (colors.backgroundGlow) {
+        const gradient = ctx.createRadialGradient(width * 0.5, height * 0.42, 0, width * 0.5, height * 0.5, Math.max(width, height) * 0.65);
+        gradient.addColorStop(0, colors.backgroundGlow);
+        gradient.addColorStop(1, "rgba(11, 12, 13, 0)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+      }
+    }
+
+    function drawSampledPath(samplePoint, count, strokeStyle, lineWidth) {
+      ctx.beginPath();
+      let started = false;
+      for (let i = 0; i <= count; i++) {
+        const rotated = rotate(samplePoint(i / count));
+        if (!isVisibleDepth(rotated.z)) {
+          started = false;
+          continue;
+        }
+        const p = project(rotated, canvas.clientWidth, canvas.clientHeight);
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+
+    function drawStructure(width, height) {
+      const colors = palette();
       ctx.save();
-      ctx.lineWidth = 1;
       const rings = [-0.6, -0.25, 0.12, 0.48, 0.78];
       for (const y of rings) {
-        ctx.beginPath();
         const r = Math.sqrt(Math.max(0, 1 - y * y));
-        for (let i = 0; i <= 96; i++) {
-          const theta = (i / 96) * Math.PI * 2;
-          const p = project(rotate({ x: Math.cos(theta) * r, y, z: Math.sin(theta) * r }), width, height);
-          if (i === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        }
-        ctx.strokeStyle = "rgba(98, 124, 117, 0.26)";
-        ctx.stroke();
+        drawSampledPath(t => {
+          const theta = t * Math.PI * 2;
+          return { x: Math.cos(theta) * r, y, z: Math.sin(theta) * r };
+        }, 96, colors.structureSecondary, 1);
       }
 
       for (let spoke = 0; spoke < 10; spoke++) {
-        ctx.beginPath();
         const theta = (spoke / 10) * Math.PI * 2;
-        for (let i = 0; i <= 64; i++) {
-          const phi = -Math.PI * 0.5 + (i / 64) * Math.PI;
-          const p = project(rotate({
+        drawSampledPath(t => {
+          const phi = -Math.PI * 0.5 + t * Math.PI;
+          return {
             x: Math.cos(theta) * Math.cos(phi),
             y: Math.sin(phi),
             z: Math.sin(theta) * Math.cos(phi)
-          }), width, height);
-          if (i === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        }
-        ctx.strokeStyle = "rgba(57, 208, 189, 0.14)";
-        ctx.stroke();
+          };
+        }, 64, colors.structure, 1);
       }
 
+      drawSampledPath(t => {
+        const theta = t * Math.PI * 2;
+        return { x: Math.cos(theta), y: 0, z: Math.sin(theta) };
+      }, 128, colors.equator, 1.2);
+      ctx.restore();
+    }
+
+    function drawHiddenLinesBoundary(width, height) {
+      if (hiddenLinesVisible()) return;
+      const colors = palette();
+      ctx.save();
       ctx.beginPath();
-      for (let i = 0; i <= 128; i++) {
-        const theta = (i / 128) * Math.PI * 2;
-        const p = project(rotate({ x: Math.cos(theta), y: 0, z: Math.sin(theta) }), width, height);
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      }
-      ctx.strokeStyle = "rgba(203, 168, 255, 0.18)";
-      ctx.lineWidth = 1.2;
+      ctx.arc(width * 0.5, height * 0.5, sphereScreenRadius(width, height), 0, Math.PI * 2);
+      ctx.strokeStyle = colors.structure;
+      ctx.lineWidth = 1;
       ctx.stroke();
       ctx.restore();
+    }
+
+    function drawFogVeil(width, height) {
+      if (state.fogDensity <= 0) return;
+      const colors = palette();
+      const alpha = Math.min(0.34, state.fogDensity / 320);
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, colors.fog);
+      gradient.addColorStop(0.48, `rgba(0, 0, 0, ${state.renderStyle === "plain-lines" ? 0 : alpha * 0.22})`);
+      gradient.addColorStop(1, colors.fog);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+    }
+
+    function drawSpeakerSphere(speaker, color, alpha, selected) {
+      const radius = 8.2 * speaker.scale;
+      const body = ctx.createRadialGradient(
+        speaker.sx - radius * 0.38,
+        speaker.sy - radius * 0.42,
+        radius * 0.08,
+        speaker.sx,
+        speaker.sy,
+        radius
+      );
+      body.addColorStop(0, state.renderStyle === "plain-lines" ? "rgba(255, 255, 255, 0.88)" : "rgba(241, 255, 250, 0.58)");
+      body.addColorStop(0.34, rgba(color, state.renderStyle === "plain-lines" ? 0.18 : 0.24));
+      body.addColorStop(0.72, state.renderStyle === "plain-lines" ? "rgba(80, 80, 80, 0.4)" : "rgba(72, 118, 111, 0.34)");
+      body.addColorStop(1, state.renderStyle === "plain-lines" ? "rgba(17, 17, 17, 0.76)" : "rgba(10, 18, 20, 0.72)");
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(speaker.sx, speaker.sy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = body;
+      ctx.fill();
+      ctx.clip();
+
+      const glow = ctx.createRadialGradient(
+        speaker.sx,
+        speaker.sy,
+        0,
+        speaker.sx,
+        speaker.sy,
+        radius * 0.9
+      );
+      glow.addColorStop(0, rgba(color, 0.28 + speaker.peak * 0.58));
+      glow.addColorStop(0.44, rgba(color, 0.16 + speaker.rms * 0.34));
+      glow.addColorStop(1, rgba(color, 0));
+      ctx.fillStyle = glow;
+      ctx.fillRect(speaker.sx - radius, speaker.sy - radius, radius * 2, radius * 2);
+
+      const gleam = ctx.createRadialGradient(
+        speaker.sx - radius * 0.34,
+        speaker.sy - radius * 0.4,
+        0,
+        speaker.sx - radius * 0.34,
+        speaker.sy - radius * 0.4,
+        radius * 0.46
+      );
+      gleam.addColorStop(0, `rgba(255, 255, 255, ${selected ? 0.56 : 0.34})`);
+      gleam.addColorStop(1, "rgba(255, 255, 255, 0)");
+      ctx.fillStyle = gleam;
+      ctx.fillRect(speaker.sx - radius, speaker.sy - radius, radius * 2, radius * 2);
+      ctx.restore();
+    }
+
+    function prismBasis(speaker) {
+      const normal = normalize3({ x: speaker.x, y: speaker.y, z: speaker.z }, { x: 0, y: 0, z: 1 });
+      const pole = { x: 0, y: 1, z: 0 };
+      const dot = dot3(normal, pole);
+      let tangent = {
+        x: pole.x - normal.x * dot,
+        y: pole.y - normal.y * dot,
+        z: pole.z - normal.z * dot
+      };
+      let longAxis = normalize3(tangent, { x: 1, y: 0, z: 0 });
+
+      if (Math.abs(dot3(longAxis, normal)) > 0.98) {
+        longAxis = normalize3(cross3({ x: 1, y: 0, z: 0 }, normal), { x: 1, y: 0, z: 0 });
+      }
+
+      const sideAxis = normalize3(cross3(normal, longAxis), { x: 1, y: 0, z: 0 });
+      return {
+        longAxis,
+        radialAxis: normal,
+        sideAxis
+      };
+    }
+
+    function drawPath(points) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.closePath();
+    }
+
+    function prismGeometry(speaker, width, height) {
+      const { longAxis, radialAxis, sideAxis } = prismBasis(speaker);
+      const radius = sphereScreenRadius(width, height);
+      const short = (10 * state.speakerSize) / Math.max(1, radius);
+      const long = short * 2;
+      const base = scale3(radialAxis, 1);
+      const makeVertex = (longSign, sideSign, radialAmount) => add3(
+        add3(
+          add3(base, scale3(longAxis, longSign * long * 0.5)),
+          scale3(sideAxis, sideSign * short * 0.5)
+        ),
+        scale3(radialAxis, radialAmount)
+      );
+      const vertices = [
+        makeVertex(-1, -1, 0),
+        makeVertex(1, -1, 0),
+        makeVertex(1, 1, 0),
+        makeVertex(-1, 1, 0),
+        makeVertex(-1, -1, short),
+        makeVertex(1, -1, short),
+        makeVertex(1, 1, short),
+        makeVertex(-1, 1, short)
+      ].map(vertex => {
+        const rotated = rotate(vertex);
+        return {
+          rotated,
+          screen: project(rotated, width, height)
+        };
+      });
+
+      return {
+        vertices,
+        faces: [
+          { indices: [0, 1, 2, 3], shade: 0.58 },
+          { indices: [4, 5, 6, 7], shade: 1 },
+          { indices: [0, 4, 7, 3], shade: 0.74 },
+          { indices: [1, 5, 6, 2], shade: 0.7 },
+          { indices: [3, 2, 6, 7], shade: 0.88 },
+          { indices: [0, 1, 5, 4], shade: 0.64 }
+        ]
+      };
+    }
+
+    function clipPolygonToFront(points, width, height) {
+      if (hiddenLinesVisible()) return points;
+      const plane = frontClipPlane;
+      const clipped = [];
+      for (let index = 0; index < points.length; index++) {
+        const current = points[index];
+        const previous = points[(index + points.length - 1) % points.length];
+        const currentInside = current.rotated.z >= plane;
+        const previousInside = previous.rotated.z >= plane;
+
+        if (currentInside !== previousInside) {
+          const t = (plane - previous.rotated.z) / (current.rotated.z - previous.rotated.z);
+          const rotated = lerp3(previous.rotated, current.rotated, t);
+          clipped.push({
+            rotated,
+            screen: project(rotated, width, height),
+            clipped: true
+          });
+        }
+
+        if (currentInside) clipped.push(current);
+      }
+      return clipped;
+    }
+
+    function faceFade(points, wasClipped) {
+      if (hiddenLinesVisible()) {
+        return points.reduce((sum, point) => sum + hiddenDepthFade(point.rotated.z), 0) / points.length;
+      }
+      const plane = frontClipPlane;
+      const band = 0.18;
+      const maxDepth = Math.max(...points.map(point => point.rotated.z));
+      const fade = Math.max(0, Math.min(1, (maxDepth - plane) / band));
+      return Math.max(wasClipped ? 0.5 : 0.28, fade);
+    }
+
+    function labelColor(selected) {
+      if (state.renderStyle === "plain-lines") return "#111111";
+      return selected ? palette().selectedLabel : palette().label;
+    }
+
+    function labelOffset(speaker, width, height) {
+      const fromCenterX = speaker.sx - width * 0.5;
+      const fromCenterY = speaker.sy - height * 0.5;
+      const length = Math.hypot(fromCenterX, fromCenterY);
+      const fallback = { x: 1, y: -1 };
+      const direction = length > 0.001
+        ? { x: fromCenterX / length, y: fromCenterY / length }
+        : fallback;
+      const distance = (state.speakerShape === "prism" ? 24 : 17) + state.speakerSize * 4;
+      return {
+        x: direction.x * distance,
+        y: direction.y * distance
+      };
+    }
+
+    function drawSpeakerPrism(speaker, color, baseAlpha, selected, width, height) {
+      const geometry = prismGeometry(speaker, width, height);
+      const faces = geometry.faces.map(face => {
+        const original = face.indices.map(index => geometry.vertices[index]);
+        const clipped = clipPolygonToFront(original, width, height);
+        if (clipped.length < 3) return null;
+        const wasClipped = clipped.length !== original.length || clipped.some(point => point.clipped);
+        const alpha = faceFade(clipped, wasClipped);
+        if (alpha <= 0.025) return null;
+        return {
+          points: clipped,
+          shade: face.shade,
+          alpha,
+          depth: clipped.reduce((sum, point) => sum + point.rotated.z, 0) / clipped.length,
+          wasClipped
+        };
+      }).filter(Boolean).sort((a, b) => a.depth - b.depth);
+
+      if (!faces.length) {
+        speaker.visible = false;
+        return false;
+      }
+
+      speaker.visible = true;
+
+      for (const face of faces) {
+        const points = face.points.map(point => point.screen);
+        const alpha = baseAlpha * face.alpha;
+        drawPath(points);
+        const gradient = ctx.createLinearGradient(
+          points[0].x,
+          points[0].y,
+          points[Math.floor(points.length / 2)].x,
+          points[Math.floor(points.length / 2)].y
+        );
+        const colorAlpha = (state.renderStyle === "plain-lines" ? 0.08 : 0.14) + speaker.rms * 0.12;
+        gradient.addColorStop(0, state.renderStyle === "plain-lines" ? "rgba(255, 255, 255, 0.82)" : rgba(color, colorAlpha * face.shade));
+        gradient.addColorStop(0.58, rgba(color, (0.18 + speaker.peak * 0.24) * face.shade));
+        gradient.addColorStop(1, state.renderStyle === "plain-lines" ? "rgba(17, 17, 17, 0.2)" : "rgba(235, 255, 248, 0.1)");
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.04, alpha);
+        ctx.lineWidth = selected ? 1.7 : 1;
+        ctx.strokeStyle = selected ? palette().selectedLabel : state.renderStyle === "plain-lines" ? "rgba(17, 17, 17, 0.58)" : rgba(color, 0.36 + speaker.peak * 0.22);
+        drawPath(points);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const visiblePoints = faces.flatMap(face => face.points.map(point => point.screen));
+      speaker.sx = visiblePoints.reduce((sum, point) => sum + point.x, 0) / visiblePoints.length;
+      speaker.sy = visiblePoints.reduce((sum, point) => sum + point.y, 0) / visiblePoints.length;
+      return true;
     }
 
     function draw() {
@@ -510,7 +1181,15 @@
       const height = rect.height;
       ctx.clearRect(0, 0, width, height);
 
-      state.time = performance.now();
+      const now = performance.now();
+      const deltaMs = state.lastFrame ? Math.min(48, now - state.lastFrame) : 16;
+      state.lastFrame = now;
+      state.time = now;
+      if (state.spin && !state.dragging) {
+        state.yaw -= deltaMs * 0.000075;
+      }
+
+      drawBackground(width, height);
 
       const sorted = speakers.map(speaker => {
         const m = meter(speaker.channel, state.time);
@@ -521,46 +1200,38 @@
         speaker.sx = p.x;
         speaker.sy = p.y;
         speaker.depth = p.depth;
-        speaker.scale = p.scale;
+        speaker.scale = p.scale * state.speakerSize;
+        speaker.visible = false;
         return speaker;
-      }).filter(speaker => !state.cutaway || speaker.depth > -0.1)
-        .sort((a, b) => a.depth - b.depth);
+      }).sort((a, b) => a.depth - b.depth);
 
-      if (state.structure) drawStructure(sorted, width, height);
+      drawStructure(width, height);
+      drawHiddenLinesBoundary(width, height);
+      drawFogVeil(width, height);
 
-      if (state.speakers) {
-        for (const speaker of sorted) {
-          const far = speaker.depth < 0;
-          const alpha = far ? 0.36 : 0.92;
-          const selected = state.selected === speaker.channel;
-          const color = colorForPeak(speaker.peak);
-          const size = (selected ? 8 : 6) * speaker.scale;
-          const ring = size + 5 + speaker.peak * 8;
+      for (const speaker of sorted) {
+        const far = speaker.depth < 0;
+        const baseAlpha = far ? 0.42 : 0.94;
+        const alpha = foggedAlpha(speaker.depth, baseAlpha);
+        const selected = state.selected === speaker.channel;
+        const color = colorForPeak(speaker.peak);
 
+        if (state.speakerShape === "sphere") {
+          if (!isVisibleDepth(speaker.depth)) continue;
+          speaker.visible = true;
+          drawSpeakerSphere(speaker, color, alpha, selected);
+        } else {
+          if (!drawSpeakerPrism(speaker, color, alpha, selected, width, height)) continue;
+        }
+
+        if (state.showSpeakerNumbers && (selected || !far)) {
+          const offset = labelOffset(speaker, width, height);
           ctx.save();
-          ctx.globalAlpha = alpha;
-          ctx.beginPath();
-          ctx.arc(speaker.sx, speaker.sy, ring, 0, Math.PI * 2);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = selected ? 2.5 : 1.5;
-          ctx.shadowColor = color;
-          ctx.shadowBlur = speaker.peak * 18;
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(speaker.sx, speaker.sy, size, 0, Math.PI * 2);
-          ctx.fillStyle = color;
-          ctx.shadowBlur = speaker.rms * 20;
-          ctx.fill();
+          ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = labelColor(selected);
+          ctx.fillText(speaker.channel.toString().padStart(2, "0"), speaker.sx + offset.x, speaker.sy + offset.y);
           ctx.restore();
-
-          if (state.labels && (!far || selected)) {
-            ctx.save();
-            ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
-            ctx.fillStyle = selected ? "#ffffff" : "rgba(230, 238, 235, 0.76)";
-            ctx.fillText(speaker.channel.toString().padStart(2, "0"), speaker.sx + 10, speaker.sy - 8);
-            ctx.restore();
-          }
         }
       }
 
@@ -584,51 +1255,114 @@
         selectionBody.textContent = "Click a speaker in the viewport to inspect channel identity, coordinates, and level state.";
       }
 
+      const barFill = palette().bar;
       const rows = speakers.map(s => `
         <div class="speaker-row">
           <span>${s.label}</span>
-          <span class="bar"><i style="width:${Math.round(s.peak * 100)}%"></i></span>
+          <span class="bar"><i style="width:${Math.round(s.peak * 100)}%; background:${barFill}"></i></span>
           <span>${s.peak.toFixed(2)}</span>
         </div>
       `).join("");
       list.innerHTML = rows;
     }
 
+    function cameraLabel(view) {
+      return view === "plan" ? "Plan" : view === "elevation" ? "Elevation" : "Isometric";
+    }
+
     function setView(view) {
       const presets = {
-        iso: [Math.PI * 0.25, Math.PI * 0.22, "Iso"],
-        plan: [0, Math.PI * 0.5, "Plan"],
-        front: [0, 0, "Front"],
-        side: [Math.PI * 0.5, 0, "Side"]
+        plan: [0, Math.PI * 0.5],
+        elevation: [0, 0],
+        isometric: [Math.PI * 0.25, Math.PI * 0.22]
       };
       const preset = presets[view];
+      state.cameraView = view;
       state.yaw = preset[0];
       state.pitch = preset[1];
-      cameraText.textContent = preset[2];
-      viewButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.view === view)));
+      cameraText.textContent = cameraLabel(view);
+      viewButtons.forEach(button => {
+        const active = button.dataset.view === view;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+
+    function setRenderStyle(renderStyle) {
+      state.renderStyle = renderStyle;
+      document.body.dataset.renderStyle = renderStyle;
+      renderStyleButtons.forEach(button => {
+        const active = button.dataset.renderStyle === renderStyle;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+
+    function exportPng() {
+      exportButton.disabled = true;
+      exportButton.textContent = "PNG...";
+      canvas.toBlob(blob => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `orbital-view-${state.cameraView}-axonometric.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+        exportButton.disabled = false;
+        exportButton.textContent = "Export PNG";
+      }, "image/png");
     }
 
     viewButtons.forEach(button => {
       button.addEventListener("click", () => setView(button.dataset.view));
     });
 
-    document.getElementById("reset").addEventListener("click", () => {
-      state.zoom = 1;
-      setView("iso");
+    renderStyleButtons.forEach(button => {
+      button.addEventListener("click", () => setRenderStyle(button.dataset.renderStyle));
     });
 
-    for (const id of ["structure", "speakers", "labels", "cutaway"]) {
-      const button = document.getElementById(id);
+    shapeButtons.forEach(button => {
       button.addEventListener("click", () => {
-        state[id] = !state[id];
-        button.setAttribute("aria-pressed", String(state[id]));
+        state.speakerShape = button.dataset.shape;
+        shapeButtons.forEach(shapeButton => {
+          const active = shapeButton.dataset.shape === state.speakerShape;
+          shapeButton.classList.toggle("active", active);
+          shapeButton.setAttribute("aria-pressed", String(active));
+        });
       });
-    }
+    });
 
-    document.getElementById("projection").addEventListener("click", event => {
-      state.projection = state.projection === "perspective" ? "orthographic" : "perspective";
-      event.currentTarget.setAttribute("aria-pressed", String(state.projection === "orthographic"));
-      event.currentTarget.textContent = state.projection === "orthographic" ? "Persp" : "Ortho";
+    document.getElementById("reset").addEventListener("click", () => {
+      state.zoom = 1;
+      setView(state.cameraView);
+    });
+
+    spinButton.addEventListener("click", () => {
+      state.spin = !state.spin;
+      spinButton.classList.toggle("active", state.spin);
+      spinButton.setAttribute("aria-pressed", String(state.spin));
+    });
+
+    exportButton.addEventListener("click", exportPng);
+
+    speakerSizeInput.addEventListener("input", event => {
+      state.speakerSize = Number(event.target.value);
+      speakerSizeValue.textContent = `${state.speakerSize.toFixed(2)}x`;
+    });
+
+    fogDensityInput.addEventListener("input", event => {
+      state.fogDensity = Number(event.target.value);
+      fogDensityValue.textContent = state.fogDensity.toString();
+    });
+
+    speakerNumbersCheckbox.addEventListener("change", event => {
+      state.showSpeakerNumbers = event.target.checked;
+    });
+
+    hiddenLinesSwitch.addEventListener("change", event => {
+      state.showHiddenLines = event.target.checked;
     });
 
     canvas.addEventListener("pointerdown", event => {
@@ -642,17 +1376,20 @@
       if (!state.dragging) return;
       const dx = event.clientX - state.lastX;
       const dy = event.clientY - state.lastY;
-      state.yaw += dx * 0.006;
+      state.yaw -= dx * 0.006;
       state.pitch = Math.max(-1.35, Math.min(1.35, state.pitch + dy * 0.006));
       state.lastX = event.clientX;
       state.lastY = event.clientY;
-      cameraText.textContent = "Custom";
-      viewButtons.forEach(button => button.setAttribute("aria-pressed", "false"));
+      cameraText.textContent = `${cameraLabel(state.cameraView)} adjusted`;
     });
 
     canvas.addEventListener("pointerup", event => {
       state.dragging = false;
       canvas.releasePointerCapture(event.pointerId);
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      state.dragging = false;
     });
 
     canvas.addEventListener("wheel", event => {
@@ -667,19 +1404,20 @@
       let best = null;
       let distance = Infinity;
       for (const speaker of speakers) {
+        if (!speaker.visible) continue;
         const d = Math.hypot(speaker.sx - x, speaker.sy - y);
         if (d < distance) {
           distance = d;
           best = speaker;
         }
       }
-      state.selected = distance < 24 ? best.channel : null;
+      state.selected = best && distance < 18 * state.speakerSize ? best.channel : null;
     });
 
     window.addEventListener("resize", resize);
+    setRenderStyle("color");
     resize();
     draw();
   </script>
 </body>
 </html>
-
