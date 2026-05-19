@@ -36,6 +36,12 @@ The current mockup previews the intended center-locked spherical monitor viewpor
 mockups/orbital-view-viewport/index.html
 ```
 
+The root launcher opens that live mockup file:
+
+```text
+Open Orbital View Kit.command
+```
+
 The accepted production renderer backend is documented at:
 
 ```text

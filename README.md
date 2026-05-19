@@ -50,6 +50,12 @@ mockups/orbital-view-viewport/index.html
 
 This is a disposable static mockup with fake speaker positions and fake meter animation. It is not production renderer source.
 
+Double-click the launcher to open the live mockup file with a cache-busting URL:
+
+```text
+Open Orbital View Kit.command
+```
+
 ## Renderer Backend
 
 ```text

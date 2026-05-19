@@ -9,6 +9,7 @@ META_AGENTS.md
 .env.example
 .gitignore
 Package.swift
+Open Orbital View Kit.command
 
 docs/
   architect-control.md

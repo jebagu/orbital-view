@@ -16,6 +16,8 @@ Static renderer draw-input invariants verified
 
 Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
+The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
+
 ## Current Work Package
 
 ```text
@@ -45,6 +47,7 @@ main tree
 - Added `docs/renderer-test-harness.md` to define the verification shape for first draw-loop work.
 - Implemented a minimal Metal draw pipeline and offscreen renderer smoke test.
 - Added renderer invariant tests for static draw-input stability across meter and camera updates.
+- Added a root `.command` launcher for the live browser mockup.
 
 ## In Progress
 
