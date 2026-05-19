@@ -74,7 +74,7 @@ MetalKit / MTKView renderer with SwiftUI wrapper
 - Camera target must remain center-locked in monitor mode.
 - Rendering must preserve physical speaker channel identity.
 - Renderer source must not own audio callbacks or host app meter timing.
-- Initial renderer seam changes are allowed only when the active task explicitly permits `Sources/OrbitalViewRender/`.
+- Renderer source changes are allowed only when the active task explicitly permits `Sources/OrbitalViewRender/`.
 - SwiftUI wrapper changes are allowed only when the active task explicitly permits `Sources/OrbitalViewSwiftUI/`.
 
 ### Review Required

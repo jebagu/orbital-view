@@ -37,11 +37,16 @@ docs/
   006-orbital-view-render-target-seam.md
   007-orbital-view-swiftui-wrapper-skeleton.md
   008-renderer-test-harness-plan.md
+  009-offscreen-renderer-smoke-test.md
   _template-task.md
 
 Sources/
   OrbitalViewCore/
   OrbitalViewRender/
+    OrbitalViewMetalDrawPipeline.swift
+    OrbitalViewMetalRenderer.swift
+    OrbitalViewRendering.swift
+    OrbitalViewRenderState.swift
   OrbitalViewSwiftUI/
   OrbitalViewWavefield/
 
@@ -64,6 +69,7 @@ work-packages/
       006-orbital-view-render-target-seam.md
       007-orbital-view-swiftui-wrapper-skeleton.md
       008-renderer-test-harness-plan.md
+      009-offscreen-renderer-smoke-test.md
   _template/
     MV.md
     slices/
@@ -92,4 +98,4 @@ reviewers/
 prompts/
 ```
 
-Renderer and downstream adapter source directories are intentionally absent until later tasks create them.
+Downstream app integration source remains intentionally absent until later tasks create it.

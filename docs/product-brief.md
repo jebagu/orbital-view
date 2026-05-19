@@ -36,20 +36,26 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 - Meter frame representation by physical channel.
 - Tests for the core validation and identity rules.
 
+## Implemented Foundation
+
+- Pure `OrbitalViewCore` data and validation target.
+- Local `OrbitalViewWavefield` JSON layout and meter-frame adapters.
+- Native `OrbitalViewRender` MetalKit seam with an initial offscreen smoke-tested draw path.
+- Compile-only `OrbitalViewSwiftUI` wrapper skeleton.
+- Disposable browser mockup for toolbar and camera interaction.
+
 ## Nice-To-Have Later
 
-- Native MetalKit renderer.
-- SwiftUI wrapper.
+- Full production MetalKit visuals.
+- SwiftUI controls, gestures, toolbar, and inspector UI.
 - DomeLab neutral geometry import.
 - Splat editing mode and renderer-kernel overlays.
 - Snapshot export.
-- Visual mockup for toolbar and camera interaction.
 
-## Out Of Scope For Initial Scaffold
+## Out Of Scope For Current Package
 
-- Swift source code.
-- Production renderer.
-- App integration.
+- Full production renderer visuals.
+- Downstream app integration.
 - WebView embedding.
 - DomeLab code import.
 - Audio playback, routing, MIDI, OSC, or render-pipeline behavior.
@@ -57,15 +63,16 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 
 ## First Usable Version
 
-The first usable implementation should:
+The first usable implementation already:
 
 - Build and test a pure Swift `OrbitalViewCore` package target.
 - Represent a scene with coordinate system, shell geometry, 30 physical speakers, meter levels by channel, and center-locked camera presets.
-- Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder, if the downstream layout type is cleanly available.
+- Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder.
+- Render a minimal offscreen Metal frame for deterministic renderer smoke coverage.
 
 ## Constraints
 
-- Tech stack: Swift package first; current renderer seam is native MetalKit with a compile-only SwiftUI wrapper skeleton.
+- Tech stack: Swift package first; current renderer is native MetalKit with a compile-only SwiftUI wrapper skeleton.
 - App type: reusable module consumed by local native apps.
 - Audio domain: visualizes measured levels only; does not own audio timing or routing.
 - Persistence: none in `OrbitalViewCore`.

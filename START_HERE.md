@@ -16,7 +16,7 @@ work-packages/orbital-view-kit/MV.md
 
 ## Current Goal
 
-Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, first viewport visual mockup, renderer backend decision, initial `OrbitalViewRender` seam, and compile-only `OrbitalViewSwiftUI` wrapper skeleton.
+Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, first viewport visual mockup, renderer backend decision, initial `OrbitalViewRender` seam, compile-only `OrbitalViewSwiftUI` wrapper skeleton, renderer test harness plan, and offscreen renderer smoke test.
 
 The current core already establishes pure Swift contracts and tests for:
 
@@ -57,9 +57,15 @@ The renderer test harness plan is:
 docs/renderer-test-harness.md
 ```
 
+The current renderer smoke test is:
+
+```text
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
 ## Do Not Start With
 
-- production rendering
+- full production rendering
 - WebView or DomeLab code import
 - Wavefield app tab changes
 - MIDI, OSC, playback, output routing, or audio rendering changes
@@ -70,7 +76,7 @@ docs/renderer-test-harness.md
 Create a new bounded task before implementing any renderer, SwiftUI, or downstream app integration work. Good next candidates:
 
 ```text
-First Metal draw-loop implementation plan
 SwiftUI control/gesture binding plan
-Offscreen renderer smoke tests
+Renderer invariant tests
+Pixel-probe renderer tests
 ```

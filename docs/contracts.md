@@ -162,9 +162,16 @@ OrbitalViewRenderState
 OrbitalViewMetalRenderer
 ```
 
+Current internal renderer harness:
+
+```text
+OrbitalViewMetalDrawPipeline
+OrbitalViewOffscreenFrame
+```
+
 ### Status
 
-Initial seam implemented. Production drawing, shaders, materials, hit testing, and SwiftUI wrapper remain deferred.
+Initial seam and minimal smoke-test draw path implemented. Full production drawing, shell rendering, materials, hit testing, and SwiftUI controls remain deferred.
 
 ### Tests Required
 
@@ -173,6 +180,7 @@ Initial seam implemented. Production drawing, shaders, materials, hit testing, a
 - camera updates emit camera events
 - selection updates emit selection events
 - Metal renderer conforms to `MTKViewDelegate`
+- offscreen renderer smoke test produces non-clear pixels when Metal is available
 
 ## Module: OrbitalViewSwiftUI
 

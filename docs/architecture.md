@@ -11,7 +11,7 @@ OrbitalViewCore
   Pure data contracts, validation, coordinate system, shell/speaker/meter/camera types.
 
 OrbitalViewRender
-  Initial MetalKit / MTKView renderer seam. Production drawing is deferred.
+  MetalKit / MTKView renderer seam with an initial offscreen smoke-tested draw path.
 
 OrbitalViewSwiftUI
   Compile-only SwiftUI wrapper skeleton for host apps.
@@ -26,7 +26,7 @@ OrbitalViewWavefield
   Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
-`OrbitalViewCore`, `OrbitalViewWavefield`, the initial `OrbitalViewRender` seam, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton are implemented. Production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton are implemented. `OrbitalViewRender` now has a minimal Metal draw path verified by an offscreen smoke test. Full production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -36,7 +36,7 @@ Current package:
 OrbitalViewCore tests and validates core scene contracts.
 OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
 OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
-OrbitalViewRender stores scene, meter, camera, and selection state behind a MetalKit renderer seam.
+OrbitalViewRender stores scene, meter, camera, and selection state behind a MetalKit renderer seam and can render fixed-size speaker quads for an offscreen smoke test.
 OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge.
 ```
 
@@ -55,6 +55,8 @@ The viewport receives scene and meter state from the host app. It does not parse
 ## Renderer Backend Decision
 
 Production rendering uses the custom MetalKit / MTKView direction in `OrbitalViewRender`, wrapped by `OrbitalViewSwiftUI` for host-app binding.
+
+Current renderer drawing is intentionally minimal: scene speaker anchors are projected into fixed-size Metal quads and meter values affect color/intensity only. Shell geometry, labels, hit testing, production camera projection, and visual polish are deferred.
 
 Long-term renderer source should not be SceneKit-first, RealityKit-first, WebView-based, or DomeLab-code-based. SceneKit or HTML mockups may be used only as disposable prototypes if a future task explicitly allows that scope.
 

@@ -2,11 +2,11 @@
 
 Orbital View Kit is the project-control scaffold for `OrbitalViewKit`, a reusable 3D spherical speaker viewport planned for Wavefield, Orbisonic, and Splat.
 
-The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, and Wavefield layout adaptation tests. A disposable viewport mockup now previews the intended monitor interaction before native renderer work.
+The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, and Wavefield layout adaptation tests. A disposable viewport mockup previews the intended monitor interaction, and the native renderer now has its first offscreen smoke-tested Metal draw path.
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the initial `OrbitalViewRender` seam, the compile-only `OrbitalViewSwiftUI` wrapper skeleton, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the `OrbitalViewRender` MetalKit renderer seam with an offscreen smoke-tested draw path, the compile-only `OrbitalViewSwiftUI` wrapper skeleton, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
 
 ## Main References
 
@@ -38,7 +38,7 @@ OrbitalViewSwiftUI
 
 `OrbitalViewWavefield` reads the current Wavefield speaker-layout JSON shape into `OrbitalViewCore` scenes and maps Wavefield-style channel/rms/peak records into `SpeakerMeterFrame` values without depending on or editing the Wavefield app package.
 
-`OrbitalViewRender` establishes the first MetalKit seam with renderer state, scene/meter/camera update methods, selection events, and an `MTKViewDelegate` shell. It does not draw yet.
+`OrbitalViewRender` establishes the first MetalKit seam with renderer state, scene/meter/camera update methods, selection events, an `MTKViewDelegate` path, and a minimal Metal draw pipeline verified by an offscreen smoke test. Full production visuals remain deferred.
 
 `OrbitalViewSwiftUI` exposes a public `OrbitalView` SwiftUI view and bridges the MetalKit renderer seam through `NSViewRepresentable`. It does not include controls, gestures, or inspector UI yet.
 
@@ -60,7 +60,7 @@ The accepted production renderer direction is a custom MetalKit / MTKView backen
 
 ## Still Out of Scope
 
-- Production drawing implementation
+- Full production drawing implementation
 - SwiftUI controls, gestures, and inspector UI
 - WebView integration
 - DomeLab code import

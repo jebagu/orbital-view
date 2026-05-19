@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-renderer test harness plan
+offscreen renderer smoke test
 ```
 
 ## Current Milestone
 
 ```text
-Renderer test harness plan defined
+Minimal Metal draw path verified offscreen
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an initial `OrbitalViewRender` MetalKit seam, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -43,6 +43,7 @@ main tree
 - Implemented `Sources/OrbitalViewRender/` and `Tests/OrbitalViewRenderTests/` as the first compile-focused renderer seam.
 - Implemented `Sources/OrbitalViewSwiftUI/` and `Tests/OrbitalViewSwiftUITests/` as the compile-only wrapper skeleton.
 - Added `docs/renderer-test-harness.md` to define the verification shape for first draw-loop work.
+- Implemented a minimal Metal draw pipeline and offscreen renderer smoke test.
 
 ## In Progress
 
@@ -53,7 +54,7 @@ none
 ## Pending
 
 - Decide and open the next bounded task.
-- Decide whether the next renderer slice should be first Metal draw-loop implementation plan, offscreen renderer smoke tests, or SwiftUI control/gesture binding plan.
+- Decide whether the next renderer slice should be renderer invariant tests, pixel-probe renderer tests, or SwiftUI control/gesture binding plan.
 
 ## Blocked
 
@@ -866,10 +867,106 @@ Next recommended task:
 First Metal draw-loop implementation plan or offscreen renderer smoke tests.
 ```
 
+### Update: 2026-05-19 Offscreen Renderer Smoke Test
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewMetalDrawPipeline` with a minimal Metal render pipeline.
+- Added `OrbitalViewMetalRenderer.draw(in:)` command encoding for `MTKView`.
+- Added an internal offscreen renderer helper that renders to a BGRA texture and reads pixels back for tests.
+- Rendered fixed-size speaker quads from scene speaker anchors.
+- Applied meter values to color/intensity without resizing speaker geometry.
+- Added an XCTest smoke test that asserts a deterministic scene produces non-clear pixels, with a clear skip when no Metal device exists.
+
+Files changed:
+
+```text
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Sources/OrbitalViewRender/OrbitalViewMetalRenderer.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+.tasks/009-offscreen-renderer-smoke-test.md
+work-packages/orbital-view-kit/slices/009-offscreen-renderer-smoke-test.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/renderer-test-harness.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/MV.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 24 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/renderer-test-harness.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/MV.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by this slice
+Tests/OrbitalViewRenderTests/ allowed by this slice
+```
+
+Result:
+
+```text
+OrbitalViewRender can now issue a minimal Metal draw command and prove non-empty offscreen output without opening a host app window.
+```
+
+Risks:
+
+- Current drawing is only a smoke baseline: fixed-size speaker quads, no shell geometry, no production camera projection, no labels, and no hit testing.
+- Metal availability remains machine-dependent; the test skips clearly when no Metal device exists.
+
+Next recommended task:
+
+```text
+Renderer invariant tests or pixel-probe renderer tests.
+```
+
 ## Open Questions
 
 - Exact downstream repository path for the first Wavefield integration.
-- Exact first renderer drawing implementation scope.
+- Exact production renderer drawing scope beyond the smoke baseline.
 
 ## Decision Log
 

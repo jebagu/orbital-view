@@ -28,7 +28,7 @@ OrbitalViewKit should eventually render a beautiful, center-locked, orbitable 3D
 
 ## Architecture Summary
 
-Start with `OrbitalViewCore`: pure Swift contracts and validation. Renderer, SwiftUI wrapper, DomeLab import, Splat overlays, and downstream app adapters are later slices.
+Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam and offscreen smoke-tested draw path. Full production visuals, SwiftUI controls, DomeLab import, Splat overlays, and downstream app adapters are later slices.
 
 ## Related OpenSpec Change
 
@@ -390,6 +390,44 @@ Protected path touch:
 no
 ```
 
+### Slice 009: Offscreen Renderer Smoke Test
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Implement the smallest Metal draw path and verify non-empty offscreen renderer output.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 008
+```
+
+Review required:
+
+```text
+protected-path, architecture, performance, and reliability review useful before accepting broader renderer work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewRender/ and Tests/OrbitalViewRenderTests/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -400,8 +438,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 008 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton exist with tests; the renderer test harness plan exists; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 009 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for first Metal draw-loop implementation plan, offscreen renderer smoke tests, or SwiftUI control/gesture binding plan.
+Open a new bounded task for renderer invariant tests, pixel-probe renderer tests, or SwiftUI control/gesture binding plan.

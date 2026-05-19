@@ -4,7 +4,7 @@
 
 Orbital View Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
 
-The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, the initial `OrbitalViewRender` seam, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton. The production renderer backend decision is accepted as MetalKit / MTKView, but production drawing, SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path. Production visual rendering, SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
 
 ## Local Hosting
 
@@ -51,7 +51,7 @@ openspec/changes/
 
 ## Current Project Assumption
 
-This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, the local adapter target `OrbitalViewWavefield`, the initial MetalKit renderer seam target `OrbitalViewRender`, and the SwiftUI wrapper skeleton target `OrbitalViewSwiftUI`.
+This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, the local adapter target `OrbitalViewWavefield`, the MetalKit renderer target `OrbitalViewRender`, and the SwiftUI wrapper skeleton target `OrbitalViewSwiftUI`.
 
 Current renderer source must stay within the active renderer task scope, and it must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
 

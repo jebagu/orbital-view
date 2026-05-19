@@ -59,10 +59,10 @@ Current renderer seam tests cover:
 - meter updates increment meter revision without rebuilding scene state
 - camera and selection updates emit events
 - `OrbitalViewMetalRenderer` provides an `MTKViewDelegate` seam
+- offscreen Metal smoke rendering produces a non-clear frame from a deterministic scene, or skips clearly when no Metal device exists
 
 Future renderer drawing checks should cover:
 
-- offscreen smoke test renders one non-empty deterministic frame
 - static geometry is not rebuilt for every meter frame
 - speaker mesh dimensions remain constant under VU updates
 - center-lock survives resize and camera preset changes

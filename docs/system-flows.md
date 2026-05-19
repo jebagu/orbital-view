@@ -54,9 +54,11 @@ flowchart TD
   Camera["OrbitalViewCameraState"] --> State
   Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
   State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
+  Delegate --> Pipeline["OrbitalViewMetalDrawPipeline"]
+  Pipeline --> Frame["MTKView frame or offscreen texture"]
 ```
 
-The current renderer seam stores validated state and emits camera/selection events. It does not issue draw commands yet.
+The current renderer seam stores validated state, emits camera/selection events, and issues a minimal Metal draw command for fixed-size speaker quads.
 
 ## Current SwiftUI Wrapper Flow
 
@@ -72,7 +74,7 @@ flowchart TD
 
 The current wrapper bridges state into the renderer seam. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
 
-## Future Offscreen Harness Flow
+## Current Offscreen Harness Flow
 
 ```mermaid
 flowchart LR
@@ -82,7 +84,7 @@ flowchart LR
   Probe --> XCTest["XCTest assertions"]
 ```
 
-The first drawing harness should prove non-empty offscreen output without opening a host app or using live audio.
+The current drawing harness proves non-empty offscreen output without opening a host app or using live audio.
 
 ## Boundary Flow
 

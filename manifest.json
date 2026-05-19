@@ -23,6 +23,7 @@
   ".tasks/006-orbital-view-render-target-seam.md",
   ".tasks/007-orbital-view-swiftui-wrapper-skeleton.md",
   ".tasks/008-renderer-test-harness-plan.md",
+  ".tasks/009-offscreen-renderer-smoke-test.md",
   ".tasks/_template-task.md",
   "AGENTS.md",
   "FILE_TREE.md",
@@ -80,6 +81,7 @@
   "Sources/OrbitalViewCore/OrbitalViewSpeaker.swift",
   "Sources/OrbitalViewCore/OrbitalViewValidationError.swift",
   "Sources/OrbitalViewCore/OrbitalViewVector3.swift",
+  "Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift",
   "Sources/OrbitalViewRender/OrbitalViewMetalRenderer.swift",
   "Sources/OrbitalViewRender/OrbitalViewRendering.swift",
   "Sources/OrbitalViewRender/OrbitalViewRenderState.swift",
@@ -103,6 +105,7 @@
   "work-packages/orbital-view-kit/slices/006-orbital-view-render-target-seam.md",
   "work-packages/orbital-view-kit/slices/007-orbital-view-swiftui-wrapper-skeleton.md",
   "work-packages/orbital-view-kit/slices/008-renderer-test-harness-plan.md",
+  "work-packages/orbital-view-kit/slices/009-offscreen-renderer-smoke-test.md",
   "work-packages/_template/MV.md",
   "work-packages/_template/reviews/specialty-review-template.md",
   "work-packages/_template/slices/000-slice-template.md"

@@ -30,6 +30,7 @@ Current tests prove state and wrapper behavior, not pixels:
 - camera and selection updates emit events
 - `OrbitalViewMetalRenderer` conforms to `MTKViewDelegate`
 - `OrbitalViewSwiftUI` forwards configuration without duplicate structural updates
+- offscreen renderer smoke coverage renders a deterministic scene into a BGRA texture and asserts non-clear pixels
 
 ## Harness Layers
 
@@ -59,7 +60,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 Status:
 
 ```text
-next renderer-code target
+implemented
 ```
 
 Purpose:
@@ -77,6 +78,15 @@ Expected behavior:
 - skip with a clear XCTest skip reason if no Metal device exists
 
 This layer should use a tiny deterministic scene, not the full Fey 30 fixture.
+
+Current implementation:
+
+```text
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
+The current draw path renders fixed-size speaker quads from scene speaker anchors. Meter values affect color and intensity only; they do not resize speaker geometry.
 
 ### Layer 3: Renderer Invariant Tests
 
@@ -154,12 +164,18 @@ Constraints:
 
 ## First Draw-Loop Slice Acceptance Criteria
 
+Status:
+
+```text
+complete for the smoke-test baseline
+```
+
 The first Metal draw-loop implementation should stop when all of this is true:
 
 - `OrbitalViewRender` has a minimal render pipeline.
 - A deterministic scene can render one offscreen frame.
 - XCTest can assert non-clear output.
-- Existing 23 tests still pass.
+- Existing tests still pass.
 - New tests skip cleanly if Metal is unavailable.
 - No SwiftUI gestures, toolbar, inspector UI, audio, or downstream app integration is added.
 

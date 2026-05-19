@@ -110,7 +110,7 @@ Decision record:
 docs/decisions/0002-renderer-backend.md
 ```
 
-The current seam stores scene, meter, camera, and selection state separately and exposes an `MTKViewDelegate` shell. Production drawing and SwiftUI wrapping are deferred.
+The current renderer stores scene, meter, camera, and selection state separately, exposes an `MTKViewDelegate` path, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. Full production visuals, hit testing, and SwiftUI controls are deferred.
 
 ### OrbitalViewSwiftUI Wrapper Skeleton
 
@@ -145,6 +145,24 @@ docs/renderer-test-harness.md
 
 The plan defines contract tests, offscreen renderer smoke tests, renderer invariant checks, targeted pixel probes, and optional interactive harness constraints.
 
+### Offscreen Renderer Smoke Test
+
+Purpose:
+
+```text
+Prove OrbitalViewRender can issue Metal draw commands and produce non-empty output without a host app window.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Sources/OrbitalViewRender/OrbitalViewMetalRenderer.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
+The current draw path renders fixed-size speaker quads from scene speaker anchors. Meter values affect color and intensity only, preserving the rule that VU behavior must not resize speaker geometry.
+
 ## Test Map
 
 ```text
@@ -156,6 +174,7 @@ camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.sw
 Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
 Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
 renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+offscreen renderer smoke output -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 renderer test harness plan -> docs/renderer-test-harness.md
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
@@ -164,4 +183,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-19 Renderer test harness plan
+2026-05-19 Offscreen renderer smoke test
