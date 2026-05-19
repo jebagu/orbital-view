@@ -32,9 +32,11 @@ docs/
 
 Sources/
   OrbitalViewCore/
+  OrbitalViewWavefield/
 
 Tests/
   OrbitalViewCoreTests/
+  OrbitalViewWavefieldTests/
 
 work-packages/
   orbital-view-kit/

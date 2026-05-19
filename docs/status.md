@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-core foundation
+adapter foundation
 ```
 
 ## Current Milestone
 
 ```text
-OrbitalViewCore foundation implemented
+Wavefield layout adapter implemented
 ```
 
 ## Summary
 
-Orbital View Kit now has its first pure Swift package target, `OrbitalViewCore`, with core data contracts, validation, scene builder helpers, and XCTest coverage. Renderer and downstream app integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore` plus `OrbitalViewWavefield`, a local adapter that maps Wavefield speaker-layout JSON into core monitor scenes. Renderer and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -36,6 +36,7 @@ main tree
 - Defined the first implementation task for `OrbitalViewCore`.
 - Implemented `Package.swift`, `Sources/OrbitalViewCore/`, and `Tests/OrbitalViewCoreTests/`.
 - Verified `OrbitalViewCore` with build and test commands using the full Xcode toolchain.
+- Implemented `Sources/OrbitalViewWavefield/` and `Tests/OrbitalViewWavefieldTests/` using a copied Fey 30 fixture.
 
 ## In Progress
 
@@ -46,8 +47,8 @@ none
 ## Pending
 
 - Decide and open the next bounded task.
-- Add Wavefield layout adapter only after inspecting the downstream Wavefield package.
 - Decide renderer backend in a later PRD or work package.
+- Add meter-frame adaptation only after deciding whether it belongs in a local JSON/DTO bridge or a downstream package adapter.
 
 ## Blocked
 
@@ -227,6 +228,91 @@ Next recommended task:
 
 ```text
 Plan the Wavefield layout adapter or renderer visual mockup as a new bounded task.
+```
+
+### Update: 2026-05-19 Wavefield Layout JSON Adapter
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Inspected the Wavefield package read-only at `/Users/jeremyguillory/Documents/vibecode projects/wavefield osx`.
+- Added `OrbitalViewWavefield` as a local adapter target.
+- Added `WavefieldSpeakerLayoutSceneAdapter` to convert Wavefield speaker-layout JSON into `OrbitalViewCore` scenes.
+- Copied the real Fey 30 fixture into the test bundle.
+- Added tests for channel order, labels, coordinates, caller-provided shell use, unsupported axes, invalid speaker count, and invalid direction rejection.
+
+Files changed:
+
+```text
+Package.swift
+Sources/OrbitalViewWavefield/
+Tests/OrbitalViewWavefieldTests/
+.tasks/002-wavefield-layout-json-adapter.md
+work-packages/orbital-view-kit/slices/002-wavefield-layout-json-adapter.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/test-strategy.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
+Tests/OrbitalViewWavefieldTests/Fixtures/fey-30-layout.json
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 13 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+Fixed test resource lookup after SwiftPM flattened the processed fixture path.
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Wavefield Fey layout JSON maps into an OrbitalViewCore monitor scene without channel reorder.
+```
+
+Risks:
+
+- This adapter reads Wavefield JSON shape directly; a future downstream package adapter may still be useful when integrating with Wavefield types.
+- Meter snapshot adaptation remains a separate decision.
+
+Next recommended task:
+
+```text
+Choose renderer visual mockup, renderer backend decision, or Wavefield meter-frame adapter.
 ```
 
 ## Open Questions

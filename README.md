@@ -6,7 +6,7 @@ The first implementation milestone is deliberately small: create `OrbitalViewCor
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, and the first pure Swift package target: `OrbitalViewCore`.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, and the local `OrbitalViewWavefield` layout JSON adapter target.
 
 ## Main References
 
@@ -28,6 +28,8 @@ OrbitalViewCore
 ```
 
 `OrbitalViewCore` provides pure data contracts and validation that can later support native SwiftUI/MetalKit rendering and downstream app integrations.
+
+`OrbitalViewWavefield` reads the current Wavefield speaker-layout JSON shape into `OrbitalViewCore` scenes without depending on or editing the Wavefield app package.
 
 ## Still Out of Scope
 

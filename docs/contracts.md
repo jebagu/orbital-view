@@ -156,3 +156,68 @@ Adapters belong in the lowest target that can cleanly depend on both `OrbitalVie
 
 Deferred until the actual downstream package layout is inspected during the first code task.
 
+## Module: OrbitalViewWavefield
+
+### Responsibility
+
+Convert Wavefield speaker-layout JSON into `OrbitalViewCore` monitor scenes.
+
+### Non-Responsibilities
+
+This module must not:
+
+- edit or depend on the Wavefield package
+- parse `.wfield` compositions
+- adapt live meter snapshots yet
+- render UI or 3D graphics
+- modify audio, playback, MIDI, OSC, routing, or output behavior
+
+### Public Interface
+
+```text
+WavefieldSpeakerLayoutSceneAdapter
+WavefieldSpeakerLayoutSceneAdapterError
+```
+
+### Inputs
+
+Wavefield speaker layout JSON with:
+
+```text
+coordinateSystem.type = unitSphereCartesian
+axes x/right, y/up, z/front
+mainSpeakerCount = 30
+speakers[] channel, label, position
+```
+
+### Outputs
+
+`OrbitalViewSceneSpec` with 30 physical speakers, Wavefield coordinate system, and direction anchors preserving channel order and labels.
+
+### Dependencies
+
+Allowed:
+
+```text
+Foundation
+OrbitalViewCore
+```
+
+Forbidden:
+
+```text
+Wavefield package targets
+SwiftUI
+AppKit
+MetalKit
+AVFoundation
+CoreMIDI
+```
+
+### Tests Required
+
+- Fey 30 fixture maps to 30 speakers.
+- Channels remain `1...30`.
+- Labels remain `Fey 01...Fey 30`.
+- Direction coordinates match the fixture.
+- Unsupported axes, invalid speaker count, and invalid unit directions fail explicitly.

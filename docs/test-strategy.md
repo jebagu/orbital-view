@@ -14,6 +14,7 @@ Once implementation starts, the test suite should prove:
 - monitor camera presets keep the target at origin
 - imported shell geometry references are valid
 - downstream adapters do not reorder Wavefield/Fey speakers
+- local Wavefield JSON adapter rejects invalid layout shape explicitly
 
 ## Unit Tests
 
@@ -36,6 +37,7 @@ Use when a downstream adapter is added:
 - assert channels remain `1...30`
 - assert labels remain stable
 - assert directions match the source layout
+- reject unsupported axes and invalid speaker counts
 
 ## Renderer Tests
 

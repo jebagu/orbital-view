@@ -21,9 +21,12 @@ OrbitalViewDomeLab
 
 OrbitalViewSplat
   Optional Splat editor overlays for virtual speakers, source objects, and renderer kernels.
+
+OrbitalViewWavefield
+  Local Wavefield speaker-layout JSON adapter into OrbitalViewCore.
 ```
 
-Only `OrbitalViewCore` is implemented.
+`OrbitalViewCore` and `OrbitalViewWavefield` are implemented. Renderer, SwiftUI, and downstream app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -31,6 +34,7 @@ Current package:
 
 ```text
 OrbitalViewCore tests and validates core scene contracts.
+OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
 ```
 
 Future runtime shape:
@@ -97,6 +101,7 @@ Persistence is out of scope for core.
 Core rules:
 
 - `OrbitalViewCore` has no dependency on SwiftUI, AppKit, MetalKit, AVFoundation, MIDI, OSC, playback, or downstream app targets.
+- `OrbitalViewWavefield` depends only on Foundation and `OrbitalViewCore`; it must not depend on Wavefield package targets unless a future task explicitly changes that boundary.
 - Host apps adapt their own layouts and meters into core scene contracts.
 - Renderer backends consume core types but do not change their semantic meaning.
 - App integrations must preserve speaker channel identity and order.

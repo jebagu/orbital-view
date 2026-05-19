@@ -109,6 +109,44 @@ Protected path touch:
 no
 ```
 
+### Slice 002: Wavefield Layout JSON Adapter
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Map Wavefield speaker-layout JSON into OrbitalViewCore scenes.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 001
+```
+
+Review required:
+
+```text
+normal
+```
+
+Protected path touch:
+
+```text
+no
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -119,8 +157,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 001 is complete. `OrbitalViewCore` exists with tests.
+Slice 002 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` exist with tests.
 
 ## Next Action
 
-Open a new bounded task for either Wavefield adapter planning, a visual mockup, or renderer backend decision.
+Open a new bounded task for renderer visual mockup, renderer backend decision, or Wavefield meter-frame adaptation.

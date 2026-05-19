@@ -18,7 +18,7 @@ reviewers/                    Human-readable review checklists
 prompts/                      Reusable project prompts
 ```
 
-Swift source directories are now present for `OrbitalViewCore`.
+Swift source directories are now present for `OrbitalViewCore` and `OrbitalViewWavefield`.
 
 ## Feature Map
 
@@ -49,19 +49,22 @@ work-packages/orbital-view-kit/MV.md
 .tasks/001-orbital-view-core-foundation.md
 ```
 
-### Future Wavefield Adapter
+### Wavefield Layout JSON Adapter
 
 Purpose:
 
 ```text
-Convert Wavefield speaker layout and meter structures into OrbitalViewCore scene and meter contracts.
+Convert Wavefield speaker-layout JSON into OrbitalViewCore scene contracts.
 ```
 
-Planned location:
+Implementation locations:
 
 ```text
-to be decided after inspecting the actual Wavefield package
+Sources/OrbitalViewWavefield/
+Tests/OrbitalViewWavefieldTests/
 ```
+
+The current adapter reads speaker-layout JSON only. Meter adaptation and direct Wavefield package type integration are not implemented.
 
 ### Future Renderer
 
@@ -86,9 +89,9 @@ speaker validation -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 shell reference validation -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 meter channel identity -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
-Wavefield layout adaptation -> downstream adapter tests, if implemented
+Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
 ```
 
 ## Last Updated
 
-2026-05-19 OrbitalViewCore foundation
+2026-05-19 Wavefield layout JSON adapter

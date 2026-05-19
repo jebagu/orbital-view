@@ -1,0 +1,322 @@
+{
+  "schema": "https://wavefield.local/schema/speaker-layout.v1.json",
+  "id": "fey-30",
+  "name": "Fey 30 Speaker Layout",
+  "coordinateSystem": {
+    "type": "unitSphereCartesian",
+    "axes": {
+      "x": "right",
+      "y": "up",
+      "z": "front"
+    }
+  },
+  "mainSpeakerCount": 30,
+  "subChannel": 31,
+  "speakers": [
+    {
+      "channel": 1,
+      "label": "Fey 01",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0,
+        "y": 0.554700196225229,
+        "z": -0.832050294337844
+      }
+    },
+    {
+      "channel": 2,
+      "label": "Fey 02",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.545454545454545,
+        "y": 0.181818181818182,
+        "z": -0.818181818181818
+      }
+    },
+    {
+      "channel": 3,
+      "label": "Fey 03",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.331448998468967,
+        "y": -0.45113891458276,
+        "z": -0.828622496172417
+      }
+    },
+    {
+      "channel": 4,
+      "label": "Fey 04",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.331448998468967,
+        "y": -0.45113891458276,
+        "z": -0.828622496172417
+      }
+    },
+    {
+      "channel": 5,
+      "label": "Fey 05",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.545454545454545,
+        "y": 0.181818181818182,
+        "z": -0.818181818181818
+      }
+    },
+    {
+      "channel": 6,
+      "label": "Fey 06",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.548614782048403,
+        "y": 0.630906999355663,
+        "z": -0.548614782048403
+      }
+    },
+    {
+      "channel": 7,
+      "label": "Fey 07",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.548614782048403,
+        "y": 0.630906999355663,
+        "z": -0.548614782048403
+      }
+    },
+    {
+      "channel": 8,
+      "label": "Fey 08",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.774258005430618,
+        "y": -0.251633851764951,
+        "z": -0.580693504072963
+      }
+    },
+    {
+      "channel": 9,
+      "label": "Fey 09",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0,
+        "y": -0.8,
+        "z": -0.6
+      }
+    },
+    {
+      "channel": 10,
+      "label": "Fey 10",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.774258005430618,
+        "y": -0.251633851764951,
+        "z": -0.580693504072963
+      }
+    },
+    {
+      "channel": 11,
+      "label": "Fey 11",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.923947703083417,
+        "y": 0.304902742017528,
+        "z": -0.230986925770854
+      }
+    },
+    {
+      "channel": 12,
+      "label": "Fey 12",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0,
+        "y": 0.970142500145332,
+        "z": -0.242535625036333
+      }
+    },
+    {
+      "channel": 13,
+      "label": "Fey 13",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.923947703083417,
+        "y": 0.304902742017528,
+        "z": -0.230986925770854
+      }
+    },
+    {
+      "channel": 14,
+      "label": "Fey 14",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.577947069890345,
+        "y": -0.791708314918281,
+        "z": -0.19792707872957
+      }
+    },
+    {
+      "channel": 15,
+      "label": "Fey 15",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.577947069890345,
+        "y": -0.791708314918281,
+        "z": -0.19792707872957
+      }
+    },
+    {
+      "channel": 16,
+      "label": "Fey 16",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.923947703083417,
+        "y": -0.304902742017528,
+        "z": 0.230986925770854
+      }
+    },
+    {
+      "channel": 17,
+      "label": "Fey 17",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.572638174674189,
+        "y": 0.795330798158596,
+        "z": 0.198832699539649
+      }
+    },
+    {
+      "channel": 18,
+      "label": "Fey 18",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.572638174674189,
+        "y": 0.795330798158596,
+        "z": 0.198832699539649
+      }
+    },
+    {
+      "channel": 19,
+      "label": "Fey 19",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.923947703083417,
+        "y": -0.304902742017528,
+        "z": 0.230986925770854
+      }
+    },
+    {
+      "channel": 20,
+      "label": "Fey 20",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0,
+        "y": -0.970142500145332,
+        "z": 0.242535625036333
+      }
+    },
+    {
+      "channel": 21,
+      "label": "Fey 21",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.479772219839528,
+        "y": -0.662085663378549,
+        "z": 0.575726663807434
+      }
+    },
+    {
+      "channel": 22,
+      "label": "Fey 22",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.776114000116266,
+        "y": 0.242535625036333,
+        "z": 0.582085500087199
+      }
+    },
+    {
+      "channel": 23,
+      "label": "Fey 23",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0,
+        "y": 0.8,
+        "z": 0.6
+      }
+    },
+    {
+      "channel": 24,
+      "label": "Fey 24",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.774258005430618,
+        "y": 0.251633851764951,
+        "z": 0.580693504072963
+      }
+    },
+    {
+      "channel": 25,
+      "label": "Fey 25",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.479772219839528,
+        "y": -0.662085663378549,
+        "z": 0.575726663807434
+      }
+    },
+    {
+      "channel": 26,
+      "label": "Fey 26",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0,
+        "y": -0.554700196225229,
+        "z": 0.832050294337844
+      }
+    },
+    {
+      "channel": 27,
+      "label": "Fey 27",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.545454545454545,
+        "y": -0.181818181818182,
+        "z": 0.818181818181818
+      }
+    },
+    {
+      "channel": 28,
+      "label": "Fey 28",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": -0.403422633196499,
+        "y": 0.556723233811169,
+        "z": 0.726160739753698
+      }
+    },
+    {
+      "channel": 29,
+      "label": "Fey 29",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.403422633196499,
+        "y": 0.556723233811169,
+        "z": 0.726160739753698
+      }
+    },
+    {
+      "channel": 30,
+      "label": "Fey 30",
+      "position": {
+        "type": "unitSphereCartesian",
+        "x": 0.545454545454545,
+        "y": -0.181818181818182,
+        "z": 0.818181818181818
+      }
+    }
+  ],
+  "notes": [
+    "Normalized from user-supplied Fey speaker coordinates on 2026-05-15.",
+    "Source coordinates are retained only in conversation context; this file stores unit-sphere Cartesian positions for loader validation.",
+    "Channel numbering is 1-based for human-facing docs. Implementation may convert to 0-based arrays internally."
+  ]
+}

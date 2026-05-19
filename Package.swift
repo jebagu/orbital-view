@@ -10,16 +10,33 @@ let package = Package(
         .library(
             name: "OrbitalViewCore",
             targets: ["OrbitalViewCore"]
+        ),
+        .library(
+            name: "OrbitalViewWavefield",
+            targets: ["OrbitalViewWavefield"]
         )
     ],
     targets: [
         .target(
             name: "OrbitalViewCore"
         ),
+        .target(
+            name: "OrbitalViewWavefield",
+            dependencies: ["OrbitalViewCore"]
+        ),
         .testTarget(
             name: "OrbitalViewCoreTests",
             dependencies: ["OrbitalViewCore"]
+        ),
+        .testTarget(
+            name: "OrbitalViewWavefieldTests",
+            dependencies: [
+                "OrbitalViewCore",
+                "OrbitalViewWavefield"
+            ],
+            resources: [
+                .process("Fixtures")
+            ]
         )
     ]
 )
-
