@@ -25,6 +25,44 @@ struct OrbitalViewOffscreenFrame: Equatable {
     }
 }
 
+struct OrbitalViewSpeakerStaticDrawInput: Equatable {
+    let id: String
+    let channel: Int
+    let projectedX: Float
+    let projectedY: Float
+    let quadRadius: Float
+}
+
+struct OrbitalViewSpeakerDrawInput: Equatable {
+    let staticInput: OrbitalViewSpeakerStaticDrawInput
+    let color: SIMD4<Float>
+
+    var position: SIMD4<Float> {
+        SIMD4<Float>(
+            staticInput.projectedX,
+            staticInput.projectedY,
+            staticInput.quadRadius,
+            1
+        )
+    }
+}
+
+struct OrbitalViewSpeakerDrawInputs: Equatable {
+    let speakers: [OrbitalViewSpeakerDrawInput]
+
+    var staticGeometry: [OrbitalViewSpeakerStaticDrawInput] {
+        speakers.map(\.staticInput)
+    }
+
+    var positions: [SIMD4<Float>] {
+        speakers.map(\.position)
+    }
+
+    var colors: [SIMD4<Float>] {
+        speakers.map(\.color)
+    }
+}
+
 final class OrbitalViewMetalDrawPipeline {
     private static let verticesPerSpeaker = 6
     private static let speakerQuadRadius: Float = 0.045
@@ -77,7 +115,7 @@ final class OrbitalViewMetalDrawPipeline {
             throw OrbitalViewMetalRenderError.commandEncoderCreationFailed
         }
 
-        let inputs = makeSpeakerInputs(from: state)
+        let inputs = Self.makeSpeakerDrawInputs(from: state)
         if !inputs.positions.isEmpty {
             guard
                 let positionBuffer = makeBuffer(from: inputs.positions),
@@ -169,27 +207,30 @@ final class OrbitalViewMetalDrawPipeline {
         }
     }
 
-    private func makeSpeakerInputs(from state: OrbitalViewRenderState) -> (
-        positions: [SIMD4<Float>],
-        colors: [SIMD4<Float>]
-    ) {
+    static func makeSpeakerDrawInputs(from state: OrbitalViewRenderState) -> OrbitalViewSpeakerDrawInputs {
         guard let scene = state.scene else {
-            return ([], [])
+            return OrbitalViewSpeakerDrawInputs(speakers: [])
         }
 
-        let positions = scene.speakers.map { speaker -> SIMD4<Float> in
+        let speakers = scene.speakers.map { speaker -> OrbitalViewSpeakerDrawInput in
             let position = projectedPosition(for: speaker)
-            return SIMD4<Float>(position.x, position.y, Self.speakerQuadRadius, 1)
+            let staticInput = OrbitalViewSpeakerStaticDrawInput(
+                id: speaker.id,
+                channel: speaker.channel,
+                projectedX: position.x,
+                projectedY: position.y,
+                quadRadius: speakerQuadRadius
+            )
+            return OrbitalViewSpeakerDrawInput(
+                staticInput: staticInput,
+                color: meterColor(for: speaker, meters: state.meters)
+            )
         }
 
-        let colors = scene.speakers.map { speaker -> SIMD4<Float> in
-            meterColor(for: speaker, meters: state.meters)
-        }
-
-        return (positions, colors)
+        return OrbitalViewSpeakerDrawInputs(speakers: speakers)
     }
 
-    private func projectedPosition(for speaker: OrbitalViewSpeaker) -> SIMD2<Float> {
+    private static func projectedPosition(for speaker: OrbitalViewSpeaker) -> SIMD2<Float> {
         switch speaker.anchor {
         case .direction(let direction, _):
             return SIMD2<Float>(Float(direction.x) * 0.72, Float(direction.y) * 0.72)
@@ -198,7 +239,7 @@ final class OrbitalViewMetalDrawPipeline {
         }
     }
 
-    private func meterColor(for speaker: OrbitalViewSpeaker, meters: SpeakerMeterFrame?) -> SIMD4<Float> {
+    private static func meterColor(for speaker: OrbitalViewSpeaker, meters: SpeakerMeterFrame?) -> SIMD4<Float> {
         guard let level = meters?.levelsByChannel[speaker.channel] else {
             return SIMD4<Float>(0.12, 0.58, 0.88, 1)
         }

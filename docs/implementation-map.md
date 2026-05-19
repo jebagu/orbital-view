@@ -163,6 +163,23 @@ Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 
 The current draw path renders fixed-size speaker quads from scene speaker anchors. Meter values affect color and intensity only, preserving the rule that VU behavior must not resize speaker geometry.
 
+### Renderer Invariant Tests
+
+Purpose:
+
+```text
+Lock down renderer draw-input invariants before expanding production visuals.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
+The current invariant tests compare static speaker draw inputs across meter-only and camera-only updates. Static inputs include speaker ID, physical channel, projected position, and quad radius.
+
 ## Test Map
 
 ```text
@@ -175,6 +192,7 @@ Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpe
 Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
 renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 offscreen renderer smoke output -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+renderer static draw-input invariants -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 renderer test harness plan -> docs/renderer-test-harness.md
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
@@ -183,4 +201,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-19 Offscreen renderer smoke test
+2026-05-19 Renderer invariant tests

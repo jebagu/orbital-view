@@ -4,7 +4,7 @@
 
 Orbital View Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
 
-The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path. Production visual rendering, SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path plus static draw-input invariant tests. Production visual rendering, SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
 
 ## Local Hosting
 

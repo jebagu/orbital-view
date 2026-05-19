@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-offscreen renderer smoke test
+renderer invariant tests
 ```
 
 ## Current Milestone
 
 ```text
-Minimal Metal draw path verified offscreen
+Static renderer draw-input invariants verified
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -44,6 +44,7 @@ main tree
 - Implemented `Sources/OrbitalViewSwiftUI/` and `Tests/OrbitalViewSwiftUITests/` as the compile-only wrapper skeleton.
 - Added `docs/renderer-test-harness.md` to define the verification shape for first draw-loop work.
 - Implemented a minimal Metal draw pipeline and offscreen renderer smoke test.
+- Added renderer invariant tests for static draw-input stability across meter and camera updates.
 
 ## In Progress
 
@@ -54,7 +55,7 @@ none
 ## Pending
 
 - Decide and open the next bounded task.
-- Decide whether the next renderer slice should be renderer invariant tests, pixel-probe renderer tests, or SwiftUI control/gesture binding plan.
+- Decide whether the next renderer slice should be pixel-probe renderer tests, a renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
 
 ## Blocked
 
@@ -961,6 +962,100 @@ Next recommended task:
 
 ```text
 Renderer invariant tests or pixel-probe renderer tests.
+```
+
+### Update: 2026-05-19 Renderer Invariant Tests
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added internal static speaker draw-input snapshots.
+- Separated static draw inputs from meter color inputs for testability.
+- Added tests proving meter-only updates leave speaker ID, channel, projected position, and quad radius unchanged.
+- Added tests proving camera-only updates leave static speaker draw inputs unchanged.
+- Added tests proving renderer draw inputs preserve ID/channel order and stable quad dimensions.
+
+Files changed:
+
+```text
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+.tasks/010-renderer-invariant-tests.md
+work-packages/orbital-view-kit/slices/010-renderer-invariant-tests.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/renderer-test-harness.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/product-brief.md
+work-packages/orbital-view-kit/MV.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/renderer-test-harness.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/MV.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by this slice
+Tests/OrbitalViewRenderTests/ allowed by this slice
+```
+
+Result:
+
+```text
+Renderer tests now prove meter and camera updates do not mutate static speaker draw inputs or physical channel identity.
+```
+
+Risks:
+
+- Current invariant tests compare static draw-input values, not Metal buffer rebuild counters. Explicit buffer/cache assertions should wait until static Metal buffers exist.
+
+Next recommended task:
+
+```text
+Pixel-probe renderer tests or renderer static buffer/cache plan.
 ```
 
 ## Open Questions

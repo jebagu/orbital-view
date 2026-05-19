@@ -54,11 +54,26 @@ flowchart TD
   Camera["OrbitalViewCameraState"] --> State
   Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
   State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
-  Delegate --> Pipeline["OrbitalViewMetalDrawPipeline"]
+  Delegate --> Inputs["Static speaker draw inputs + meter colors"]
+  Inputs --> Pipeline["OrbitalViewMetalDrawPipeline"]
   Pipeline --> Frame["MTKView frame or offscreen texture"]
 ```
 
 The current renderer seam stores validated state, emits camera/selection events, and issues a minimal Metal draw command for fixed-size speaker quads.
+
+## Current Renderer Invariant Flow
+
+```mermaid
+flowchart LR
+  Scene["Scene speakers"] --> StaticInputs["ID, channel, position, quad radius"]
+  Meter["Meter frame"] --> ColorInputs["speaker color/intensity"]
+  Camera["Camera state"] --> State["renderer state"]
+  StaticInputs --> Tests["invariant tests"]
+  ColorInputs --> Tests
+  State --> Tests
+```
+
+Meter and camera updates must not change the static speaker draw inputs. Meter changes affect color/intensity only in the current renderer baseline.
 
 ## Current SwiftUI Wrapper Flow
 

@@ -38,6 +38,7 @@ docs/
   007-orbital-view-swiftui-wrapper-skeleton.md
   008-renderer-test-harness-plan.md
   009-offscreen-renderer-smoke-test.md
+  010-renderer-invariant-tests.md
   _template-task.md
 
 Sources/
@@ -70,6 +71,7 @@ work-packages/
       007-orbital-view-swiftui-wrapper-skeleton.md
       008-renderer-test-harness-plan.md
       009-offscreen-renderer-smoke-test.md
+      010-renderer-invariant-tests.md
   _template/
     MV.md
     slices/

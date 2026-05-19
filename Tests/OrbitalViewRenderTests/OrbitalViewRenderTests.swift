@@ -84,6 +84,68 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertEqual(renderer.renderState.meterRevision, 1)
     }
 
+    func testMeterOnlyUpdatesDoNotChangeStaticSpeakerDrawInputs() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThreeSpeakerScene())
+
+        let baselineInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.2, peak: 0.35, clip: false),
+                    2: SpeakerMeterLevel(rms: 0.1, peak: 0.2, clip: false)
+                ]
+            )
+        )
+        let firstMeterInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 2,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.9, peak: 1, clip: true),
+                    2: SpeakerMeterLevel(rms: 0.75, peak: 0.85, clip: false)
+                ]
+            )
+        )
+        let hotMeterInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(baselineInputs.staticGeometry, firstMeterInputs.staticGeometry)
+        XCTAssertEqual(firstMeterInputs.staticGeometry, hotMeterInputs.staticGeometry)
+        XCTAssertNotEqual(firstMeterInputs.colors, hotMeterInputs.colors)
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(renderer.renderState.meterRevision, 2)
+    }
+
+    func testCameraOnlyUpdatesDoNotChangeStaticSpeakerDrawInputs() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThreeSpeakerScene())
+        let baselineInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        let camera = try OrbitalViewCameraState.preset(.isometric)
+        renderer.updateCamera(camera)
+        let cameraInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(baselineInputs.staticGeometry, cameraInputs.staticGeometry)
+        XCTAssertEqual(renderer.renderState.camera?.target, .origin)
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(renderer.renderState.cameraRevision, 1)
+    }
+
+    func testSpeakerDrawInputsPreserveChannelIdentityAndStableDimensions() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThreeSpeakerScene())
+
+        let inputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(inputs.staticGeometry.map(\.id), ["speaker-1", "speaker-2", "speaker-3"])
+        XCTAssertEqual(inputs.staticGeometry.map(\.channel), [1, 2, 3])
+        XCTAssertEqual(inputs.staticGeometry.map(\.quadRadius), [0.045, 0.045, 0.045])
+        XCTAssertEqual(inputs.positions.count, 3)
+        XCTAssertEqual(inputs.colors.count, 3)
+    }
+
     private func makeScene() throws -> OrbitalViewSceneSpec {
         let direction = try UnitSphereDirection(x: 1, y: 0, z: 0)
         let speaker = try OrbitalViewSpeaker(

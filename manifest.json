@@ -24,6 +24,7 @@
   ".tasks/007-orbital-view-swiftui-wrapper-skeleton.md",
   ".tasks/008-renderer-test-harness-plan.md",
   ".tasks/009-offscreen-renderer-smoke-test.md",
+  ".tasks/010-renderer-invariant-tests.md",
   ".tasks/_template-task.md",
   "AGENTS.md",
   "FILE_TREE.md",
@@ -106,6 +107,7 @@
   "work-packages/orbital-view-kit/slices/007-orbital-view-swiftui-wrapper-skeleton.md",
   "work-packages/orbital-view-kit/slices/008-renderer-test-harness-plan.md",
   "work-packages/orbital-view-kit/slices/009-offscreen-renderer-smoke-test.md",
+  "work-packages/orbital-view-kit/slices/010-renderer-invariant-tests.md",
   "work-packages/_template/MV.md",
   "work-packages/_template/reviews/specialty-review-template.md",
   "work-packages/_template/slices/000-slice-template.md"

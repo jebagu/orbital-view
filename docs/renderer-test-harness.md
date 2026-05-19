@@ -31,6 +31,7 @@ Current tests prove state and wrapper behavior, not pixels:
 - `OrbitalViewMetalRenderer` conforms to `MTKViewDelegate`
 - `OrbitalViewSwiftUI` forwards configuration without duplicate structural updates
 - offscreen renderer smoke coverage renders a deterministic scene into a BGRA texture and asserts non-clear pixels
+- renderer invariant tests verify static speaker draw inputs stay stable across meter and camera updates
 
 ## Harness Layers
 
@@ -93,7 +94,7 @@ The current draw path renders fixed-size speaker quads from scene speaker anchor
 Status:
 
 ```text
-future after first draw pass
+implemented for static speaker draw-input baseline
 ```
 
 Purpose:
@@ -110,6 +111,15 @@ Required invariants:
 - speaker mesh dimensions remain stable under meter changes
 - channel identity is preserved in draw inputs
 - monitor camera target remains origin-centered
+
+Current implementation:
+
+```text
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
+The current invariant tests compare internal static speaker draw inputs rather than Metal buffer allocation counts. Later production geometry work can add explicit buffer cache or rebuild-counter assertions once static Metal buffers exist.
 
 ### Layer 4: Pixel Probe Tests
 

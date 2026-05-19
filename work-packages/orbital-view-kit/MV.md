@@ -28,7 +28,7 @@ OrbitalViewKit should eventually render a beautiful, center-locked, orbitable 3D
 
 ## Architecture Summary
 
-Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam and offscreen smoke-tested draw path. Full production visuals, SwiftUI controls, DomeLab import, Splat overlays, and downstream app adapters are later slices.
+Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam, offscreen smoke-tested draw path, and static draw-input invariant tests. Full production visuals, SwiftUI controls, DomeLab import, Splat overlays, and downstream app adapters are later slices.
 
 ## Related OpenSpec Change
 
@@ -428,6 +428,44 @@ Protected path touch:
 Sources/OrbitalViewRender/ and Tests/OrbitalViewRenderTests/ allowed by this slice
 ```
 
+### Slice 010: Renderer Invariant Tests
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Verify static renderer draw inputs stay stable across meter-only and camera-only updates.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 009
+```
+
+Review required:
+
+```text
+protected-path, architecture, performance, and reliability review useful before accepting broader renderer work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewRender/ and Tests/OrbitalViewRenderTests/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -438,8 +476,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 009 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 010 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for renderer invariant tests, pixel-probe renderer tests, or SwiftUI control/gesture binding plan.
+Open a new bounded task for pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.

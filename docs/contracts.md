@@ -167,6 +167,8 @@ Current internal renderer harness:
 ```text
 OrbitalViewMetalDrawPipeline
 OrbitalViewOffscreenFrame
+OrbitalViewSpeakerDrawInputs
+OrbitalViewSpeakerStaticDrawInput
 ```
 
 ### Status
@@ -181,6 +183,9 @@ Initial seam and minimal smoke-test draw path implemented. Full production drawi
 - selection updates emit selection events
 - Metal renderer conforms to `MTKViewDelegate`
 - offscreen renderer smoke test produces non-clear pixels when Metal is available
+- meter-only updates leave static speaker draw inputs unchanged
+- camera-only updates leave static speaker draw inputs unchanged
+- draw inputs preserve physical speaker ID/channel order and stable dimensions
 
 ## Module: OrbitalViewSwiftUI
 

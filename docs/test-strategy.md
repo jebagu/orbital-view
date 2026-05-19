@@ -60,11 +60,11 @@ Current renderer seam tests cover:
 - camera and selection updates emit events
 - `OrbitalViewMetalRenderer` provides an `MTKViewDelegate` seam
 - offscreen Metal smoke rendering produces a non-clear frame from a deterministic scene, or skips clearly when no Metal device exists
+- meter-only and camera-only updates keep static speaker draw inputs stable
+- speaker draw inputs preserve ID/channel order and stable quad dimensions
 
 Future renderer drawing checks should cover:
 
-- static geometry is not rebuilt for every meter frame
-- speaker mesh dimensions remain constant under VU updates
 - center-lock survives resize and camera preset changes
 - selection emits speaker/channel identity without mutating playback
 - renderer target compiles without adding audio, playback, routing, MIDI, OSC, or downstream app dependencies

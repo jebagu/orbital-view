@@ -41,6 +41,7 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 - Pure `OrbitalViewCore` data and validation target.
 - Local `OrbitalViewWavefield` JSON layout and meter-frame adapters.
 - Native `OrbitalViewRender` MetalKit seam with an initial offscreen smoke-tested draw path.
+- Renderer invariant tests for stable static draw inputs under meter and camera updates.
 - Compile-only `OrbitalViewSwiftUI` wrapper skeleton.
 - Disposable browser mockup for toolbar and camera interaction.
 

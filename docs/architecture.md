@@ -26,7 +26,7 @@ OrbitalViewWavefield
   Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
-`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton are implemented. `OrbitalViewRender` now has a minimal Metal draw path verified by an offscreen smoke test. Full production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton are implemented. `OrbitalViewRender` now has a minimal Metal draw path verified by an offscreen smoke test and invariant tests for static draw inputs. Full production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -36,7 +36,7 @@ Current package:
 OrbitalViewCore tests and validates core scene contracts.
 OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
 OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
-OrbitalViewRender stores scene, meter, camera, and selection state behind a MetalKit renderer seam and can render fixed-size speaker quads for an offscreen smoke test.
+OrbitalViewRender stores scene, meter, camera, and selection state behind a MetalKit renderer seam and can render fixed-size speaker quads for an offscreen smoke test. Internal draw-input snapshots separate static speaker geometry from meter color inputs for invariant testing.
 OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge.
 ```
 
