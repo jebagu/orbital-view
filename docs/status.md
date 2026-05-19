@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-swiftui wrapper skeleton
+renderer test harness plan
 ```
 
 ## Current Milestone
 
 ```text
-Compile-only OrbitalViewSwiftUI wrapper skeleton implemented
+Renderer test harness plan defined
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an initial `OrbitalViewRender` MetalKit seam, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an initial `OrbitalViewRender` MetalKit seam, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -42,6 +42,7 @@ main tree
 - Accepted MetalKit / MTKView as the production renderer backend in `docs/decisions/0002-renderer-backend.md`.
 - Implemented `Sources/OrbitalViewRender/` and `Tests/OrbitalViewRenderTests/` as the first compile-focused renderer seam.
 - Implemented `Sources/OrbitalViewSwiftUI/` and `Tests/OrbitalViewSwiftUITests/` as the compile-only wrapper skeleton.
+- Added `docs/renderer-test-harness.md` to define the verification shape for first draw-loop work.
 
 ## In Progress
 
@@ -52,7 +53,7 @@ none
 ## Pending
 
 - Decide and open the next bounded task.
-- Decide whether the next renderer slice should be a renderer test harness plan, first Metal draw-loop implementation plan, or SwiftUI control/gesture binding plan.
+- Decide whether the next renderer slice should be first Metal draw-loop implementation plan, offscreen renderer smoke tests, or SwiftUI control/gesture binding plan.
 
 ## Blocked
 
@@ -779,10 +780,96 @@ Next recommended task:
 Renderer test harness plan, first Metal draw-loop implementation plan, or SwiftUI control/gesture binding plan.
 ```
 
+### Update: 2026-05-19 Renderer Test Harness Plan
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `docs/renderer-test-harness.md`.
+- Defined renderer harness layers from contract tests through offscreen smoke tests, invariant tests, pixel probes, and optional interactive harness.
+- Defined first Metal draw-loop acceptance criteria.
+- Updated active test strategy, system flows, implementation map, status, and work-package docs.
+
+Files changed:
+
+```text
+docs/renderer-test-harness.md
+.tasks/008-renderer-test-harness-plan.md
+work-packages/orbital-view-kit/slices/008-renderer-test-harness-plan.md
+docs/status.md
+docs/test-strategy.md
+docs/system-flows.md
+docs/implementation-map.md
+work-packages/orbital-view-kit/MV.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+none - planning/documentation slice only
+```
+
+Commands run:
+
+```text
+manifest parse -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 23 tests
+```
+
+Documentation updated:
+
+```text
+docs/renderer-test-harness.md
+docs/status.md
+docs/test-strategy.md
+docs/system-flows.md
+docs/implementation-map.md
+work-packages/orbital-view-kit/MV.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The first Metal draw-loop implementation now has explicit verification criteria before code starts.
+```
+
+Risks:
+
+- Offscreen Metal tests can be machine-dependent; future tests must skip clearly when no Metal device is available.
+- Full-frame snapshots are intentionally deferred until the visual design stabilizes.
+
+Next recommended task:
+
+```text
+First Metal draw-loop implementation plan or offscreen renderer smoke tests.
+```
+
 ## Open Questions
 
 - Exact downstream repository path for the first Wavefield integration.
-- Exact first renderer drawing scope after the wrapper skeleton.
+- Exact first renderer drawing implementation scope.
 
 ## Decision Log
 

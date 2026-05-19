@@ -352,6 +352,44 @@ Protected path touch:
 Sources/OrbitalViewSwiftUI/ allowed by this slice
 ```
 
+### Slice 008: Renderer Test Harness Plan
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Define offscreen renderer smoke tests, invariant tests, and pixel-probe strategy before draw-loop implementation.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 007
+```
+
+Review required:
+
+```text
+normal, with architecture/performance review useful before first draw-loop code
+```
+
+Protected path touch:
+
+```text
+no
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -362,8 +400,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 007 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton exist with tests; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 008 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton exist with tests; the renderer test harness plan exists; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for a renderer test harness plan, first Metal draw-loop implementation plan, or SwiftUI control/gesture binding plan.
+Open a new bounded task for first Metal draw-loop implementation plan, offscreen renderer smoke tests, or SwiftUI control/gesture binding plan.

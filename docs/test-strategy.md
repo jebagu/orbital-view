@@ -47,6 +47,12 @@ Use when a downstream adapter is added:
 
 The accepted renderer backend is MetalKit / MTKView, with SwiftUI in a wrapper target.
 
+Renderer harness details live in:
+
+```text
+docs/renderer-test-harness.md
+```
+
 Current renderer seam tests cover:
 
 - scene updates increment structural revision without touching meter revision
@@ -56,12 +62,14 @@ Current renderer seam tests cover:
 
 Future renderer drawing checks should cover:
 
+- offscreen smoke test renders one non-empty deterministic frame
 - static geometry is not rebuilt for every meter frame
 - speaker mesh dimensions remain constant under VU updates
 - center-lock survives resize and camera preset changes
 - selection emits speaker/channel identity without mutating playback
 - renderer target compiles without adding audio, playback, routing, MIDI, OSC, or downstream app dependencies
 - meter updates can be tested separately from structural scene updates
+- targeted pixel probes catch blank frames without brittle full-frame snapshots
 
 ## SwiftUI Wrapper Tests
 

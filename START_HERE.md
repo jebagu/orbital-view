@@ -51,6 +51,12 @@ Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
 
+The renderer test harness plan is:
+
+```text
+docs/renderer-test-harness.md
+```
+
 ## Do Not Start With
 
 - production rendering
@@ -64,7 +70,7 @@ Tests/OrbitalViewSwiftUITests/
 Create a new bounded task before implementing any renderer, SwiftUI, or downstream app integration work. Good next candidates:
 
 ```text
-Renderer test harness plan
 First Metal draw-loop implementation plan
 SwiftUI control/gesture binding plan
+Offscreen renderer smoke tests
 ```

@@ -22,6 +22,7 @@
   ".tasks/005-renderer-backend-decision.md",
   ".tasks/006-orbital-view-render-target-seam.md",
   ".tasks/007-orbital-view-swiftui-wrapper-skeleton.md",
+  ".tasks/008-renderer-test-harness-plan.md",
   ".tasks/_template-task.md",
   "AGENTS.md",
   "FILE_TREE.md",
@@ -38,6 +39,7 @@
   "docs/implementation-map.md",
   "docs/product-brief.md",
   "docs/protected-paths.md",
+  "docs/renderer-test-harness.md",
   "docs/review-policy.md",
   "docs/status.md",
   "docs/system-flows.md",
@@ -100,6 +102,7 @@
   "work-packages/orbital-view-kit/slices/005-renderer-backend-decision.md",
   "work-packages/orbital-view-kit/slices/006-orbital-view-render-target-seam.md",
   "work-packages/orbital-view-kit/slices/007-orbital-view-swiftui-wrapper-skeleton.md",
+  "work-packages/orbital-view-kit/slices/008-renderer-test-harness-plan.md",
   "work-packages/_template/MV.md",
   "work-packages/_template/reviews/specialty-review-template.md",
   "work-packages/_template/slices/000-slice-template.md"

@@ -129,6 +129,22 @@ Tests/OrbitalViewSwiftUITests/
 
 The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, and coordinator tests. SwiftUI controls, gestures, and inspector UI are deferred.
 
+### Renderer Test Harness Plan
+
+Purpose:
+
+```text
+Define how the first Metal draw-loop work will be verified before drawing behavior is added.
+```
+
+Implementation locations:
+
+```text
+docs/renderer-test-harness.md
+```
+
+The plan defines contract tests, offscreen renderer smoke tests, renderer invariant checks, targeted pixel probes, and optional interactive harness constraints.
+
 ## Test Map
 
 ```text
@@ -141,10 +157,11 @@ Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpe
 Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
 renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+renderer test harness plan -> docs/renderer-test-harness.md
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
 renderer backend decision -> docs/decisions/0002-renderer-backend.md
 ```
 
 ## Last Updated
 
-2026-05-19 OrbitalViewSwiftUI wrapper skeleton
+2026-05-19 Renderer test harness plan

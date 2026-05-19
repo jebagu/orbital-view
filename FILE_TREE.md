@@ -16,6 +16,7 @@ docs/
   architecture.md
   contracts.md
   protected-paths.md
+  renderer-test-harness.md
   system-flows.md
   implementation-map.md
   test-strategy.md
@@ -35,6 +36,7 @@ docs/
   005-renderer-backend-decision.md
   006-orbital-view-render-target-seam.md
   007-orbital-view-swiftui-wrapper-skeleton.md
+  008-renderer-test-harness-plan.md
   _template-task.md
 
 Sources/
@@ -61,6 +63,7 @@ work-packages/
       005-renderer-backend-decision.md
       006-orbital-view-render-target-seam.md
       007-orbital-view-swiftui-wrapper-skeleton.md
+      008-renderer-test-harness-plan.md
   _template/
     MV.md
     slices/

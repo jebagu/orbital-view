@@ -15,6 +15,7 @@ docs/product-brief.md
 docs/architecture.md
 docs/contracts.md
 docs/protected-paths.md
+docs/renderer-test-harness.md
 docs/test-strategy.md
 docs/status.md
 docs/decisions/0002-renderer-backend.md

@@ -72,6 +72,18 @@ flowchart TD
 
 The current wrapper bridges state into the renderer seam. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
 
+## Future Offscreen Harness Flow
+
+```mermaid
+flowchart LR
+  Fixture["Deterministic scene fixture"] --> Renderer["OrbitalViewRender"]
+  Renderer --> Texture["Offscreen Metal texture"]
+  Texture --> Probe["Pixel probes"]
+  Probe --> XCTest["XCTest assertions"]
+```
+
+The first drawing harness should prove non-empty offscreen output without opening a host app or using live audio.
+
 ## Boundary Flow
 
 ```mermaid
