@@ -8,44 +8,44 @@
     :root {
       color-scheme: dark;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-      background: #0b0c0d;
-      color: #f0f4f2;
-      --panel: #141616;
-      --panel-2: #191c1b;
-      --line: #2a302e;
-      --muted: #98a39e;
-      --text: #f0f4f2;
-      --teal: #39d0bd;
-      --green: #7be48b;
-      --amber: #f2bd5c;
-      --hot: #ff6c5f;
+      background: #071014;
+      color: #effcff;
+      --panel: rgba(13, 24, 29, 0.9);
+      --panel-2: rgba(255, 255, 255, 0.045);
+      --line: rgba(217, 251, 255, 0.14);
+      --muted: #9fb9bd;
+      --text: #effcff;
+      --teal: #5eead4;
+      --green: #18ce0f;
+      --amber: #facc15;
+      --hot: #fb7185;
       --pink: #f75ba7;
       --black: #111111;
-      --page-bg: #0b0c0d;
-      --rail-bg: #101211;
-      --toolbar-bg: rgba(5, 12, 15, 0.68);
-      --button-bg: #171a19;
-      --button-hover-bg: #1d2321;
-      --button-hover-border: #50615d;
-      --button-active-bg: #15302d;
-      --button-active-border: #39d0bd;
-      --button-active-text: #c9fff5;
-      --accent: #39d0bd;
-      --accent-strong: #7be48b;
-      --metric-bg: #111413;
-      --metric-border: #28302d;
-      --row-line: #242a28;
-      --bar-track: #28302d;
-      --status-bg: #101211;
-      --chip-bg: #151817;
-      --dot: #7be48b;
-      --dot-shadow: 0 0 10px rgba(123, 228, 139, 0.7);
-      --grid-line: #151817;
-      --main-bg: #0b0c0d;
+      --page-bg: linear-gradient(180deg, #071014 0%, #02070a 100%);
+      --rail-bg: rgba(13, 24, 29, 0.9);
+      --toolbar-bg: rgba(5, 12, 15, 0.7);
+      --button-bg: rgba(255, 255, 255, 0.045);
+      --button-hover-bg: rgba(94, 234, 212, 0.1);
+      --button-hover-border: rgba(217, 251, 255, 0.26);
+      --button-active-bg: rgba(94, 234, 212, 0.16);
+      --button-active-border: #5eead4;
+      --button-active-text: #effcff;
+      --accent: #5eead4;
+      --accent-strong: #aa88ff;
+      --metric-bg: rgba(255, 255, 255, 0.045);
+      --metric-border: rgba(217, 251, 255, 0.14);
+      --row-line: rgba(217, 251, 255, 0.1);
+      --bar-track: rgba(217, 251, 255, 0.14);
+      --status-bg: rgba(5, 12, 15, 0.7);
+      --chip-bg: rgba(255, 255, 255, 0.045);
+      --dot: #18ce0f;
+      --dot-shadow: 0 0 10px rgba(24, 206, 15, 0.7);
+      --grid-line: rgba(217, 251, 255, 0.05);
+      --main-bg: linear-gradient(180deg, #071014 0%, #02070a 100%);
       --slider-value: #ffffff;
     }
 
-    body[data-render-style="pink-lines"] {
+    body[data-render-style="flamingo"] {
       --page-bg: #0d090c;
       --rail-bg: #140c12;
       --toolbar-bg: rgba(25, 10, 18, 0.78);
@@ -74,7 +74,38 @@
       --main-bg: #0d090c;
     }
 
-    body[data-render-style="plain-lines"] {
+    body[data-render-style="purple"] {
+      color-scheme: dark;
+      --page-bg: linear-gradient(180deg, #0a0811 0%, #000000 100%);
+      --rail-bg: rgba(20, 24, 28, 0.92);
+      --toolbar-bg: rgba(29, 33, 37, 0.82);
+      --panel: rgba(20, 24, 28, 0.92);
+      --panel-2: rgba(170, 136, 255, 0.09);
+      --line: rgba(255, 255, 255, 0.12);
+      --muted: #aaacad;
+      --text: #f2f2f2;
+      --button-bg: rgba(170, 136, 255, 0.09);
+      --button-hover-bg: rgba(170, 136, 255, 0.15);
+      --button-hover-border: rgba(255, 255, 255, 0.24);
+      --button-active-bg: rgba(170, 136, 255, 0.2);
+      --button-active-border: #aa88ff;
+      --button-active-text: #f2f2f2;
+      --accent: #aa88ff;
+      --accent-strong: #32d6bf;
+      --metric-bg: rgba(170, 136, 255, 0.09);
+      --metric-border: rgba(255, 255, 255, 0.12);
+      --row-line: rgba(255, 255, 255, 0.08);
+      --bar-track: rgba(255, 255, 255, 0.12);
+      --status-bg: rgba(29, 33, 37, 0.82);
+      --chip-bg: rgba(170, 136, 255, 0.09);
+      --dot: #18ce0f;
+      --dot-shadow: 0 0 12px rgba(170, 136, 255, 0.72);
+      --grid-line: rgba(255, 255, 255, 0.045);
+      --main-bg: linear-gradient(180deg, #0a0811 0%, #000000 100%);
+      --slider-value: #f2f2f2;
+    }
+
+    body[data-render-style="bw"] {
       color-scheme: light;
       --page-bg: #ffffff;
       --rail-bg: #f3f3f3;
@@ -157,7 +188,7 @@
     .viewport-toolbar {
       align-content: start;
       display: grid;
-      gap: 12px;
+      gap: 16px;
       min-height: 0;
       overflow: auto;
       padding: 10px;
@@ -296,7 +327,7 @@
 
     .toolbar-slider-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr);
       gap: 10px;
       align-items: center;
     }
@@ -304,13 +335,6 @@
     input[type="range"] {
       width: 100%;
       accent-color: var(--accent);
-    }
-
-    .toolbar-slider-row strong {
-      min-width: 28px;
-      color: var(--slider-value);
-      font-size: 12px;
-      text-align: right;
     }
 
     main {
@@ -493,7 +517,7 @@
     }
   </style>
 </head>
-<body data-render-style="color">
+<body data-render-style="purple">
   <div class="app">
     <nav class="control-rail" aria-label="3D model controls">
       <div class="brand">
@@ -517,16 +541,17 @@
         <div class="toolbar-section">
           <span>Color</span>
           <div class="segmented" aria-label="Color">
-            <button class="render-style active" data-render-style="color" aria-pressed="true">Green</button>
-            <button class="render-style" data-render-style="pink-lines" aria-pressed="false">Pink</button>
-            <button class="render-style" data-render-style="plain-lines" aria-pressed="false">B&amp;W</button>
+            <button class="render-style active" data-render-style="purple" aria-pressed="true">Purple</button>
+            <button class="render-style" data-render-style="flamingo" aria-pressed="false">Flamingo</button>
+            <button class="render-style" data-render-style="green" aria-pressed="false">Green</button>
+            <button class="render-style" data-render-style="bw" aria-pressed="false">B&amp;W</button>
           </div>
         </div>
         <div class="toolbar-section">
           <span>Speaker Shape</span>
           <div class="segmented" aria-label="Speaker shape">
-            <button class="shape-mode active" data-shape="sphere" aria-pressed="true">Sphere</button>
-            <button class="shape-mode" data-shape="prism" aria-pressed="false">Prism</button>
+            <button class="shape-mode active" data-shape="prism" aria-pressed="true">Prism</button>
+            <button class="shape-mode" data-shape="sphere" aria-pressed="false">Sphere</button>
           </div>
         </div>
         <div class="control-group">
@@ -534,25 +559,23 @@
           <label class="toolbar-slider">
             <span>Speaker size</span>
             <div class="toolbar-slider-row">
-              <input id="speakerSize" type="range" min="0.75" max="2.25" step="0.05" value="1.35">
-              <strong id="speakerSizeValue">1.35x</strong>
+              <input id="speakerSize" type="range" min="0" max="100" step="1" value="50" aria-label="Speaker size">
             </div>
           </label>
           <label class="toolbar-slider">
             <span>Fog density</span>
             <div class="toolbar-slider-row">
-              <input id="fogDensity" type="range" min="0" max="100" step="1" value="38">
-              <strong id="fogDensityValue">38</strong>
+              <input id="fogDensity" type="range" min="0" max="100" step="1" value="57">
             </div>
           </label>
           <label class="switch-row toolbar-switch">
             <span>Speaker numbers</span>
-            <input id="speakerNumbers" type="checkbox" role="switch" checked aria-label="Speaker numbers">
+            <input id="speakerNumbers" type="checkbox" role="switch" aria-label="Speaker numbers">
             <i class="switch-track" aria-hidden="true"></i>
           </label>
           <label class="switch-row toolbar-switch">
             <span>Hidden Lines</span>
-            <input id="hiddenLines" type="checkbox" role="switch" checked aria-label="Hidden Lines">
+            <input id="hiddenLines" type="checkbox" role="switch" aria-label="Hidden Lines">
             <i class="switch-track" aria-hidden="true"></i>
           </label>
         </div>
@@ -602,9 +625,7 @@
     const spinButton = document.getElementById("spin");
     const exportButton = document.getElementById("exportPng");
     const speakerSizeInput = document.getElementById("speakerSize");
-    const speakerSizeValue = document.getElementById("speakerSizeValue");
     const fogDensityInput = document.getElementById("fogDensity");
-    const fogDensityValue = document.getElementById("fogDensityValue");
     const speakerNumbersCheckbox = document.getElementById("speakerNumbers");
     const hiddenLinesSwitch = document.getElementById("hiddenLines");
     const list = document.getElementById("speakerList");
@@ -616,18 +637,23 @@
     const selectionBody = document.getElementById("selectionBody");
 
     const palettes = {
-      color: {
-        background: "#0b0c0d",
-        structure: "rgba(57, 208, 189, 0.22)",
-        structureSecondary: "rgba(98, 124, 117, 0.24)",
-        equator: "rgba(203, 168, 255, 0.2)",
-        label: "rgba(230, 238, 235, 0.76)",
-        selectedLabel: "#ffffff",
-        fog: "rgba(11, 12, 13, 0.42)",
-        backgroundGlow: "rgba(57, 208, 189, 0.08)",
-        bar: "linear-gradient(90deg, #7be48b, #f2bd5c, #ff6c5f)"
+      green: {
+        backgroundTop: "#071014",
+        backgroundBottom: "#02070a",
+        structure: "rgba(217, 251, 255, 0.14)",
+        structureSecondary: "rgba(217, 251, 255, 0.08)",
+        equator: "rgba(170, 136, 255, 0.22)",
+        label: "rgba(159, 185, 189, 0.78)",
+        selectedLabel: "#effcff",
+        fog: "rgba(2, 7, 10, 0.5)",
+        backgroundGlow: "rgba(94, 234, 212, 0.1)",
+        meterLow: "#5eead4",
+        meterMid: "#18ce0f",
+        meterHigh: "#facc15",
+        meterHot: "#fb7185",
+        bar: "linear-gradient(90deg, #5eead4, #18ce0f, #facc15, #fb7185)"
       },
-      "pink-lines": {
+      flamingo: {
         background: "#0b0c0d",
         structure: "rgba(247, 91, 167, 0.34)",
         structureSecondary: "rgba(247, 91, 167, 0.22)",
@@ -638,7 +664,23 @@
         backgroundGlow: "rgba(247, 91, 167, 0.1)",
         bar: "linear-gradient(90deg, #f75ba7, #ffb3d7)"
       },
-      "plain-lines": {
+      purple: {
+        backgroundTop: "#0a0811",
+        backgroundBottom: "#000000",
+        structure: "rgba(255, 255, 255, 0.12)",
+        structureSecondary: "rgba(170, 136, 255, 0.18)",
+        equator: "rgba(50, 214, 191, 0.26)",
+        label: "rgba(170, 172, 173, 0.78)",
+        selectedLabel: "#f2f2f2",
+        fog: "rgba(0, 0, 0, 0.52)",
+        backgroundGlow: "rgba(170, 136, 255, 0.12)",
+        meterLow: "#aa88ff",
+        meterMid: "#32d6bf",
+        meterHigh: "#ffb236",
+        meterHot: "#ff3636",
+        bar: "linear-gradient(90deg, #aa88ff, #32d6bf, #ffb236, #ff3636)"
+      },
+      bw: {
         background: "#ffffff",
         structure: "rgba(17, 17, 17, 0.5)",
         structureSecondary: "rgba(17, 17, 17, 0.28)",
@@ -651,18 +693,32 @@
       }
     };
 
+    const speakerSizeCenter = 1.95;
+    const fogMidpointDensity = 30;
+    const fogDensityExponent = Math.log(fogMidpointDensity / 100) / Math.log(0.5);
+
+    function speakerSizeFromSlider(value) {
+      const offset = (Number(value) - 50) / 50;
+      return speakerSizeCenter * Math.pow(2, offset);
+    }
+
+    function fogDensityFromSlider(value) {
+      const normalized = Math.max(0, Math.min(1, Number(value) / 100));
+      return Math.round(100 * Math.pow(normalized, fogDensityExponent));
+    }
+
     const state = {
       yaw: Math.PI * 0.25,
       pitch: Math.PI * 0.22,
       zoom: 1,
       cameraView: "isometric",
-      renderStyle: "color",
-      speakerShape: "sphere",
-      speakerSize: 1.35,
+      renderStyle: "purple",
+      speakerShape: "prism",
+      speakerSize: speakerSizeFromSlider(speakerSizeInput.value),
       spin: false,
-      showSpeakerNumbers: true,
-      showHiddenLines: true,
-      fogDensity: 38,
+      showSpeakerNumbers: false,
+      showHiddenLines: false,
+      fogDensity: fogDensityFromSlider(fogDensityInput.value),
       selected: null,
       dragging: false,
       lastX: 0,
@@ -757,12 +813,13 @@
     }
 
     function colorForPeak(peak) {
-      if (state.renderStyle === "pink-lines") return "#f75ba7";
-      if (state.renderStyle === "plain-lines") return "#111111";
-      if (peak > 0.9) return "#ff6c5f";
-      if (peak > 0.68) return "#f2bd5c";
-      if (peak > 0.35) return "#7be48b";
-      return "#39d0bd";
+      if (state.renderStyle === "flamingo") return "#f75ba7";
+      if (state.renderStyle === "bw") return "#111111";
+      const colors = palette();
+      if (peak > 0.9) return colors.meterHot;
+      if (peak > 0.68) return colors.meterHigh;
+      if (peak > 0.35) return colors.meterMid;
+      return colors.meterLow;
     }
 
     function hexToRgb(hex) {
@@ -840,7 +897,14 @@
 
     function drawBackground(width, height) {
       const colors = palette();
-      ctx.fillStyle = colors.background;
+      if (colors.backgroundTop && colors.backgroundBottom) {
+        const background = ctx.createLinearGradient(0, 0, 0, height);
+        background.addColorStop(0, colors.backgroundTop);
+        background.addColorStop(1, colors.backgroundBottom);
+        ctx.fillStyle = background;
+      } else {
+        ctx.fillStyle = colors.background;
+      }
       ctx.fillRect(0, 0, width, height);
 
       if (colors.backgroundGlow) {
@@ -923,7 +987,7 @@
       const alpha = Math.min(0.34, state.fogDensity / 320);
       const gradient = ctx.createLinearGradient(0, 0, 0, height);
       gradient.addColorStop(0, colors.fog);
-      gradient.addColorStop(0.48, `rgba(0, 0, 0, ${state.renderStyle === "plain-lines" ? 0 : alpha * 0.22})`);
+      gradient.addColorStop(0.48, `rgba(0, 0, 0, ${state.renderStyle === "bw" ? 0 : alpha * 0.22})`);
       gradient.addColorStop(1, colors.fog);
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -942,10 +1006,10 @@
         speaker.sy,
         radius
       );
-      body.addColorStop(0, state.renderStyle === "plain-lines" ? "rgba(255, 255, 255, 0.88)" : "rgba(241, 255, 250, 0.58)");
-      body.addColorStop(0.34, rgba(color, state.renderStyle === "plain-lines" ? 0.18 : 0.24));
-      body.addColorStop(0.72, state.renderStyle === "plain-lines" ? "rgba(80, 80, 80, 0.4)" : "rgba(72, 118, 111, 0.34)");
-      body.addColorStop(1, state.renderStyle === "plain-lines" ? "rgba(17, 17, 17, 0.76)" : "rgba(10, 18, 20, 0.72)");
+      body.addColorStop(0, state.renderStyle === "bw" ? "rgba(255, 255, 255, 0.88)" : "rgba(241, 255, 250, 0.58)");
+      body.addColorStop(0.34, rgba(color, state.renderStyle === "bw" ? 0.18 : 0.24));
+      body.addColorStop(0.72, state.renderStyle === "bw" ? "rgba(80, 80, 80, 0.4)" : "rgba(72, 118, 111, 0.34)");
+      body.addColorStop(1, state.renderStyle === "bw" ? "rgba(17, 17, 17, 0.76)" : "rgba(10, 18, 20, 0.72)");
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -1096,7 +1160,7 @@
     }
 
     function labelColor(selected) {
-      if (state.renderStyle === "plain-lines") return "#111111";
+      if (state.renderStyle === "bw") return "#111111";
       return selected ? palette().selectedLabel : palette().label;
     }
 
@@ -1150,10 +1214,10 @@
           points[Math.floor(points.length / 2)].x,
           points[Math.floor(points.length / 2)].y
         );
-        const colorAlpha = (state.renderStyle === "plain-lines" ? 0.08 : 0.14) + speaker.rms * 0.12;
-        gradient.addColorStop(0, state.renderStyle === "plain-lines" ? "rgba(255, 255, 255, 0.82)" : rgba(color, colorAlpha * face.shade));
+        const colorAlpha = (state.renderStyle === "bw" ? 0.08 : 0.14) + speaker.rms * 0.12;
+        gradient.addColorStop(0, state.renderStyle === "bw" ? "rgba(255, 255, 255, 0.82)" : rgba(color, colorAlpha * face.shade));
         gradient.addColorStop(0.58, rgba(color, (0.18 + speaker.peak * 0.24) * face.shade));
-        gradient.addColorStop(1, state.renderStyle === "plain-lines" ? "rgba(17, 17, 17, 0.2)" : "rgba(235, 255, 248, 0.1)");
+        gradient.addColorStop(1, state.renderStyle === "bw" ? "rgba(17, 17, 17, 0.2)" : "rgba(235, 255, 248, 0.1)");
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.fillStyle = gradient;
@@ -1163,7 +1227,7 @@
         ctx.save();
         ctx.globalAlpha = Math.max(0.04, alpha);
         ctx.lineWidth = selected ? 1.7 : 1;
-        ctx.strokeStyle = selected ? palette().selectedLabel : state.renderStyle === "plain-lines" ? "rgba(17, 17, 17, 0.58)" : rgba(color, 0.36 + speaker.peak * 0.22);
+        ctx.strokeStyle = selected ? palette().selectedLabel : state.renderStyle === "bw" ? "rgba(17, 17, 17, 0.58)" : rgba(color, 0.36 + speaker.peak * 0.22);
         drawPath(points);
         ctx.stroke();
         ctx.restore();
@@ -1348,13 +1412,13 @@
     exportButton.addEventListener("click", exportPng);
 
     speakerSizeInput.addEventListener("input", event => {
-      state.speakerSize = Number(event.target.value);
-      speakerSizeValue.textContent = `${state.speakerSize.toFixed(2)}x`;
+      state.speakerSize = speakerSizeFromSlider(event.target.value);
+      event.target.setAttribute("aria-valuetext", `${state.speakerSize.toFixed(2)}x`);
     });
 
     fogDensityInput.addEventListener("input", event => {
-      state.fogDensity = Number(event.target.value);
-      fogDensityValue.textContent = state.fogDensity.toString();
+      state.fogDensity = fogDensityFromSlider(event.target.value);
+      event.target.setAttribute("aria-valuetext", state.fogDensity.toString());
     });
 
     speakerNumbersCheckbox.addEventListener("change", event => {
@@ -1415,7 +1479,9 @@
     });
 
     window.addEventListener("resize", resize);
-    setRenderStyle("color");
+    speakerSizeInput.setAttribute("aria-valuetext", `${state.speakerSize.toFixed(2)}x`);
+    fogDensityInput.setAttribute("aria-valuetext", state.fogDensity.toString());
+    setRenderStyle("purple");
     resize();
     draw();
   </script>

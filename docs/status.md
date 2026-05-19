@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-Mockup grouped controls and fog parity
+Mockup defaults and slider scale update
 ```
 
 ## Current Milestone
 
 ```text
-Browser mockup grouped controls and shell/speaker fog parity verified
+Static mockup Purple/Prism defaults and remapped sliders verified
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. The browser mockup now uses always-axonometric projection with no projection picker, groups controls under Camera, Color, Speaker Shape, and View Detail headings, themes the full surface from the Color palette, draws prism speakers as 8-vertex rectangular prisms, uses switch controls for speaker numbers and hidden lines, and applies fog depth fading consistently to hidden shell lines and hidden speaker faces. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. The browser mockup now uses always-axonometric projection with no projection picker, groups controls under Camera, Color, Speaker Shape, and View Detail headings, defaults to Purple and Prism, themes the full surface from Purple, Flamingo, Green, and B&W palettes, draws prism speakers as 8-vertex rectangular prisms, uses switch controls for speaker numbers and hidden lines defaulted off, applies fog depth fading consistently to hidden shell lines and hidden speaker faces, and remaps Speaker size and Fog density sliders around the requested visual midpoints. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -55,6 +55,8 @@ main tree
 - Removed the mockup Projection picker, made projection always axonometric, and changed prism speakers to face-clipped 3D cuboids.
 - Added mockup Speaker numbers and Hidden Lines controls, moved the lower control order, strengthened max fog, and improved label color/spacing.
 - Grouped the mockup controls under Camera, Color, Speaker Shape, and View Detail headings, converted Speaker numbers to a switch, and aligned hidden speaker fog fading with hidden shell-line fading.
+- Updated the mockup Color selector to Green, Flamingo, Purple, and B&W, with Green using Orbisonic Lab tokens and Purple using Kimi Purple tokens.
+- Reordered the mockup Color selector to Purple, Flamingo, Green, and B&W with Purple default; made Prism the default Speaker Shape; defaulted Speaker numbers and Hidden Lines off; centered the Speaker size slider at 1.95x; and remapped Fog density so the prior 30-density look sits at the slider midpoint.
 
 ## In Progress
 
@@ -1158,8 +1160,6 @@ Files changed:
 mockups/orbital-view-viewport/index.html
 mockups/orbital-view-viewport/notes.md
 docs/status.md
-docs/implementation-map.md
-docs/test-strategy.md
 ```
 
 Tests added or updated:
@@ -1612,6 +1612,169 @@ Next recommended task:
 
 ```text
 Open a protected SwiftUI/Metal renderer slice when production label and hidden-line controls should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Color Palette Update
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Updated the mockup Color selector to exactly `Green`, `Flamingo`, `Purple`, and `B&W`.
+- Mapped Green to the supplied Orbisonic Lab tokens across the UI shell, canvas background, shell lines, labels, glow, meter bars, buttons, panels, toolbar, status bar, and sliders.
+- Added Purple using the supplied Kimi Purple tokens across the same surfaces.
+- Kept Flamingo visually matched to the previous pink palette and B&W visually matched to the previous B&W palette.
+- Updated Green and Purple meter threshold colors to use their palette accent/success/warning/danger colors.
+- Kept the work limited to the disposable browser mockup and docs; no Swift renderer, SwiftUI wrapper, public API, or protected source path changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+node mockup palette assertions -> passed, Color buttons were Green, Flamingo, Purple, B&W and palette keys were green, flamingo, purple, bw
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+python3 -m http.server 8765 --bind 127.0.0.1 -> used as temporary local HTTP server for browser review, then stopped
+Browser visual review -> passed for Green, Flamingo, Purple, and B&W active states, body style keys, and palette CSS variables
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup now offers the requested four Color palettes in order: Green, Flamingo, Purple, and B&W.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation and canvas approximations; production SwiftUI/Metal palette support remains deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI/Metal renderer slice when production palette controls should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Defaults And Slider Scale Update
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Reordered the mockup Color buttons to `Purple`, `Flamingo`, `Green`, and `B&W`, with Purple as the default active palette.
+- Reordered Speaker Shape to `Prism`, then `Sphere`, with Prism as the default.
+- Set Speaker size to default at the slider midpoint, mapping midpoint to 1.95x, left edge to half size, and right edge to double size.
+- Kept Fog density defaulting to 38 while remapping the slider so the previous 30-density look is at the midpoint.
+- Defaulted Speaker numbers off and Hidden Lines off.
+- Increased the control rail section gap slightly so the Color and View Detail sections have more breathing room.
+- Kept the work limited to the disposable browser mockup and docs; no Swift renderer, SwiftUI wrapper, public API, or protected source path changed.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+node mockup defaults and slider assertions -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+node Playwright availability check -> Playwright not installed; rendered browser automation skipped
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup now opens with the requested Purple/Prism/off-switch defaults and remapped slider behavior.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation and canvas approximations; production SwiftUI/Metal control defaults remain deferred.
+- Rendered browser automation was not available in this workspace because Playwright is not installed; verification used static DOM/script assertions plus the Swift package checks.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI/Metal renderer slice when these controls should move beyond the mockup.
 ```
 
 ## Open Questions

@@ -93,7 +93,7 @@ Disposable browser mockups should stay separate from production Swift code. For 
 - `index.html` and `notes.md` exist
 - inline JavaScript parses with Node extraction
 - mockup text does not claim real audio, real meters, or production renderer behavior
-- static browser review confirms the DomeLab-style left control panel headings, no Projection picker, always-axonometric projection, full-surface Color palettes, speaker shape/size controls, Speaker numbers switch, Hidden Lines switch, consistent shell/speaker fog behavior, prism face clipping, PNG export, and inspector are usable
+- static browser review confirms the DomeLab-style left control panel headings, no Projection picker, always-axonometric projection, full-surface Color palettes, Purple/Prism defaults, remapped speaker size/fog sliders, Speaker numbers switch defaulted off, Hidden Lines switch defaulted off, consistent shell/speaker fog behavior, prism face clipping, PNG export, and inspector are usable
 
 ## Required Checks
 

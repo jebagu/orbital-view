@@ -4,8 +4,11 @@
 
 - Center-locked spherical monitor viewport.
 - DomeLab-style left-side 3D Model control panel grouped under Camera, Color, Speaker Shape, and View Detail headings.
-- DomeLab-style drag direction, spin direction, reset-to-current-preset behavior, always-axonometric projection, full-surface color palettes, hidden-line clipping, and canvas PNG export.
-- Speaker shape, size, and number-switch controls for comparing spheres against true 8-vertex rectangular-prism speaker cabinets.
+- DomeLab-style drag direction, spin direction, reset-to-current-preset behavior, always-axonometric projection, full-surface Purple, Flamingo, Green, and B&W color palettes, hidden-line clipping, and canvas PNG export.
+- Speaker shape, size, and number-switch controls for comparing true 8-vertex rectangular-prism speaker cabinets against spheres, with Prism as the default shape.
+- Purple, Prism, 1.95x centered speaker size, 38 fog density, Speaker numbers off, and Hidden Lines off are the current mockup defaults.
+- Speaker size uses a center-weighted slider where the midpoint is 1.95x, the left edge is half that size, and the right edge is double that size.
+- Fog density uses a remapped slider where the midpoint is the previous 30-density visual value, so the middle of the control is less dark.
 - Reversed vertical drag response for the mockup orbit control while leaving horizontal yaw unchanged.
 - Hidden Lines off, or Fog density at 100, draws a structure-style circular boundary and hides back-half structure and speaker faces.
 - Mid-range fog now fades hidden speaker faces and hidden shell lines through the same depth fade rule.
