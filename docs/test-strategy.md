@@ -45,11 +45,16 @@ Use when a downstream adapter is added:
 
 ## Renderer Tests
 
-Deferred until renderer work exists.
-
 The accepted renderer backend is MetalKit / MTKView, with SwiftUI in a wrapper target.
 
-Future renderer checks should cover:
+Current renderer seam tests cover:
+
+- scene updates increment structural revision without touching meter revision
+- meter updates increment meter revision without rebuilding scene state
+- camera and selection updates emit events
+- `OrbitalViewMetalRenderer` provides an `MTKViewDelegate` seam
+
+Future renderer drawing checks should cover:
 
 - static geometry is not rebuilt for every meter frame
 - speaker mesh dimensions remain constant under VU updates

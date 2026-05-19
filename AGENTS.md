@@ -4,7 +4,7 @@
 
 Orbital View Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
 
-The current implemented Swift package targets are `OrbitalViewCore` and `OrbitalViewWavefield`. The production renderer backend decision is accepted as MetalKit / MTKView, but renderer source, SwiftUI source, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, and the initial `OrbitalViewRender` seam. The production renderer backend decision is accepted as MetalKit / MTKView, but production drawing, SwiftUI source, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
 
 ## Local Hosting
 
@@ -51,9 +51,9 @@ openspec/changes/
 
 ## Current Project Assumption
 
-This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, and the local adapter target `OrbitalViewWavefield`.
+This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, the local adapter target `OrbitalViewWavefield`, and the initial MetalKit renderer seam target `OrbitalViewRender`.
 
-Current source must not implement a production renderer unless an explicit renderer task is opened, and it must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
+Current renderer source must stay within the active renderer task scope, and it must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
 
 ## Operating Rules
 
@@ -70,7 +70,7 @@ Current source must not implement a production renderer unless an explicit rende
 
 ## Protected Path Rule
 
-There are no source-code protected paths in this scaffold yet.
+`Sources/OrbitalViewRender/` is now a protected renderer path governed by `docs/protected-paths.md`.
 
 Future downstream integrations with Wavefield, Orbisonic, or Splat may touch protected audio, rendering, routing, metering, or playback paths. If a task reaches into those downstream repositories or modules, read `docs/protected-paths.md` and confirm the task explicitly permits the touch.
 

@@ -122,11 +122,11 @@ Splat app targets
 - center-locked camera presets
 - scene validation
 
-## Module: Future Renderer
+## Module: OrbitalViewRender
 
 ### Responsibility
 
-Render a validated `OrbitalViewCore` scene as a native 3D viewport.
+Provide the native renderer seam for validated `OrbitalViewCore` scenes.
 
 ### Accepted Backend
 
@@ -152,20 +152,27 @@ The renderer must not:
 - embed a WebView as the main renderer path
 - resize speaker geometry for meter animation
 
-### Future Public Interface
+### Public Interface
 
-No renderer API is implemented yet. A future renderer task should add a small seam for:
+Current renderer seam:
 
 ```text
-load scene
-update meter frame
-update camera
-emit selection/camera events
+OrbitalViewRendering
+OrbitalViewRenderState
+OrbitalViewMetalRenderer
 ```
 
 ### Status
 
-Deferred. Do not implement until a renderer task is opened.
+Initial seam implemented. Production drawing, shaders, materials, hit testing, and SwiftUI wrapper remain deferred.
+
+### Tests Required
+
+- scene updates increment structural revision without touching meter revision
+- meter updates increment meter revision without rebuilding scene state
+- camera updates emit camera events
+- selection updates emit selection events
+- Metal renderer conforms to `MTKViewDelegate`
 
 ## Module: Future Downstream Adapters
 

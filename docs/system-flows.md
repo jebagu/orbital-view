@@ -45,6 +45,19 @@ flowchart LR
 
 Static geometry, meter state, and camera state should stay separate so meter updates do not rebuild the scene.
 
+## Current Renderer Seam Flow
+
+```mermaid
+flowchart TD
+  Scene["OrbitalViewSceneSpec"] --> State["OrbitalViewRenderState"]
+  Meters["SpeakerMeterFrame"] --> State
+  Camera["OrbitalViewCameraState"] --> State
+  Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
+  State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
+```
+
+The current renderer seam stores validated state and emits camera/selection events. It does not issue draw commands yet.
+
 ## Boundary Flow
 
 ```mermaid

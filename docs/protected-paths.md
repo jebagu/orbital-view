@@ -2,7 +2,14 @@
 
 ## Current Scaffold
 
-There are Swift package source paths in this repository, but no protected source paths yet. Current `OrbitalViewCore` and `OrbitalViewWavefield` source changes are governed by normal task scope and tests.
+Current protected source paths:
+
+```text
+Sources/OrbitalViewRender/
+Tests/OrbitalViewRenderTests/
+```
+
+`OrbitalViewCore` and `OrbitalViewWavefield` source changes are governed by normal task scope and tests.
 
 ## Protected Path: Downstream Audio And Routing Integrations
 
@@ -65,6 +72,7 @@ MetalKit / MTKView renderer with SwiftUI wrapper
 - Camera target must remain center-locked in monitor mode.
 - Rendering must preserve physical speaker channel identity.
 - Renderer source must not own audio callbacks or host app meter timing.
+- Initial renderer seam changes are allowed only when the active task explicitly permits `Sources/OrbitalViewRender/`.
 
 ### Review Required
 

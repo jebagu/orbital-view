@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-renderer backend decision
+renderer seam
 ```
 
 ## Current Milestone
 
 ```text
-MetalKit renderer backend accepted
+Minimal OrbitalViewRender target seam implemented
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Renderer source and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an initial `OrbitalViewRender` MetalKit seam, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Production drawing, SwiftUI wrapping, and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -40,6 +40,7 @@ main tree
 - Implemented Wavefield-style meter frame adaptation into `SpeakerMeterFrame`.
 - Created `mockups/orbital-view-viewport/` to preview camera presets, selection, labels, cutaway, and fake meter glow before Swift renderer work.
 - Accepted MetalKit / MTKView as the production renderer backend in `docs/decisions/0002-renderer-backend.md`.
+- Implemented `Sources/OrbitalViewRender/` and `Tests/OrbitalViewRenderTests/` as the first compile-focused renderer seam.
 
 ## In Progress
 
@@ -50,7 +51,7 @@ none
 ## Pending
 
 - Decide and open the next bounded task.
-- Decide whether the next renderer slice should be a minimal `OrbitalViewRender` seam or a compile-only `OrbitalViewSwiftUI` wrapper skeleton.
+- Decide whether the next renderer slice should be a compile-only `OrbitalViewSwiftUI` wrapper skeleton or first Metal draw-loop implementation plan.
 
 ## Blocked
 
@@ -578,14 +579,113 @@ Risks:
 Next recommended task:
 
 ```text
-Minimal OrbitalViewRender target seam.
+Minimal OrbitalViewRender target seam, now complete.
+```
+
+### Update: 2026-05-19 OrbitalViewRender Target Seam
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewRender` package product and target.
+- Added `OrbitalViewRendering`, `OrbitalViewRenderState`, and `OrbitalViewMetalRenderer`.
+- Added an `MTKViewDelegate` seam without production drawing.
+- Kept scene, meter, camera, and selection update paths separate.
+- Added renderer seam tests for revision separation, event emission, and MTKView delegate conformance.
+
+Files changed:
+
+```text
+Package.swift
+Sources/OrbitalViewRender/
+Tests/OrbitalViewRenderTests/
+.tasks/006-orbital-view-render-target-seam.md
+work-packages/orbital-view-kit/slices/006-orbital-view-render-target-seam.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/product-brief.md
+work-packages/orbital-view-kit/MV.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+```
+
+Commands run:
+
+```text
+manifest parse -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 20 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/product-brief.md
+work-packages/orbital-view-kit/MV.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by this slice
+Tests/OrbitalViewRenderTests/ allowed by this slice
+```
+
+Result:
+
+```text
+OrbitalViewRender now has a compile-focused MetalKit seam with state/event tests, but no production drawing yet.
+```
+
+Risks:
+
+- The renderer is currently a no-op `MTKViewDelegate`; draw-loop behavior remains unimplemented.
+- The next source slice should avoid pulling SwiftUI, audio, or host-app dependencies into `OrbitalViewRender`.
+
+Next recommended task:
+
+```text
+Compile-only OrbitalViewSwiftUI wrapper skeleton or first Metal draw-loop implementation plan.
 ```
 
 ## Open Questions
 
 - Exact downstream repository path for the first Wavefield integration.
-- Exact first renderer slice scope: `OrbitalViewRender` target seam first, or `OrbitalViewSwiftUI` wrapper skeleton first.
+- Exact first renderer drawing scope after the seam.
 
 ## Decision Log
 
 - `docs/decisions/0001-initial-architecture.md`
+- `docs/decisions/0002-renderer-backend.md`

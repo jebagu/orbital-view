@@ -11,7 +11,7 @@ OrbitalViewCore
   Pure data contracts, validation, coordinate system, shell/speaker/meter/camera types.
 
 OrbitalViewRender
-  Native renderer backend. Decision 0002 accepts MetalKit / MTKView for production rendering.
+  Initial MetalKit / MTKView renderer seam. Production drawing is deferred.
 
 OrbitalViewSwiftUI
   SwiftUI wrapper for host apps.
@@ -26,7 +26,7 @@ OrbitalViewWavefield
   Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
-`OrbitalViewCore` and `OrbitalViewWavefield` are implemented. Renderer, SwiftUI, and downstream app source integration remain deferred, but the production renderer backend decision is accepted in `docs/decisions/0002-renderer-backend.md`.
+`OrbitalViewCore`, `OrbitalViewWavefield`, and the initial `OrbitalViewRender` seam are implemented. Production drawing, SwiftUI, and downstream app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -36,6 +36,7 @@ Current package:
 OrbitalViewCore tests and validates core scene contracts.
 OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
 OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
+OrbitalViewRender stores scene, meter, camera, and selection state behind a MetalKit renderer seam.
 ```
 
 Future runtime shape:
@@ -52,7 +53,7 @@ The viewport receives scene and meter state from the host app. It does not parse
 
 ## Renderer Backend Decision
 
-Production rendering should use a custom MetalKit / MTKView backend in `OrbitalViewRender`, wrapped by a separate `OrbitalViewSwiftUI` target for host-app binding.
+Production rendering uses the custom MetalKit / MTKView direction in `OrbitalViewRender`, wrapped by a separate future `OrbitalViewSwiftUI` target for host-app binding.
 
 Long-term renderer source should not be SceneKit-first, RealityKit-first, WebView-based, or DomeLab-code-based. SceneKit or HTML mockups may be used only as disposable prototypes if a future task explicitly allows that scope.
 
@@ -109,16 +110,19 @@ Core rules:
 
 - `OrbitalViewCore` has no dependency on SwiftUI, AppKit, MetalKit, AVFoundation, MIDI, OSC, playback, or downstream app targets.
 - `OrbitalViewWavefield` depends only on Foundation and `OrbitalViewCore`; it must not depend on Wavefield package targets unless a future task explicitly changes that boundary.
+- `OrbitalViewRender` may depend on Metal and MetalKit; it must not depend on SwiftUI, AVFoundation, CoreMIDI, or downstream app targets.
 - Host apps adapt their own layouts and meters into core scene contracts.
 - Renderer backends consume core types but do not change their semantic meaning.
 - App integrations must preserve speaker channel identity and order.
 
 ## External Dependencies
 
-Current implementation:
+Current implementation dependencies:
 
 ```text
-Foundation only
+Foundation
+Metal
+MetalKit
 ```
 
 Future production rendering may use Apple-native rendering frameworks. A major third-party dependency requires an explicit task decision.

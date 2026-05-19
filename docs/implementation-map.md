@@ -18,7 +18,7 @@ reviewers/                    Human-readable review checklists
 prompts/                      Reusable project prompts
 ```
 
-Swift source directories are now present for `OrbitalViewCore` and `OrbitalViewWavefield`.
+Swift source directories are now present for `OrbitalViewCore`, `OrbitalViewWavefield`, and `OrbitalViewRender`.
 
 ## Feature Map
 
@@ -83,12 +83,12 @@ mockups/orbital-view-viewport/notes.md
 
 This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It is not production renderer source.
 
-### Future Renderer
+### OrbitalViewRender Seam
 
 Purpose:
 
 ```text
-Render validated OrbitalViewCore scenes as a native 3D viewport.
+Provide the initial MetalKit renderer seam for validated OrbitalViewCore scenes.
 ```
 
 Accepted backend:
@@ -97,17 +97,34 @@ Accepted backend:
 MetalKit / MTKView custom renderer, wrapped by SwiftUI above it.
 ```
 
-Planned locations:
+Implementation locations:
 
 ```text
 Sources/OrbitalViewRender/
-Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewRenderTests/
 ```
 
 Decision record:
 
 ```text
 docs/decisions/0002-renderer-backend.md
+```
+
+The current seam stores scene, meter, camera, and selection state separately and exposes an `MTKViewDelegate` shell. Production drawing and SwiftUI wrapping are deferred.
+
+### Future SwiftUI Wrapper
+
+Purpose:
+
+```text
+Expose OrbitalViewRender through host-app SwiftUI bindings.
+```
+
+Planned locations:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
 ```
 
 ## Test Map
@@ -120,10 +137,11 @@ meter channel identity -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
 Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
+renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
 renderer backend decision -> docs/decisions/0002-renderer-backend.md
 ```
 
 ## Last Updated
 
-2026-05-19 Renderer backend decision
+2026-05-19 OrbitalViewRender target seam

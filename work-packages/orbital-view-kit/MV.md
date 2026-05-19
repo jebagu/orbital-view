@@ -56,10 +56,11 @@ mockups/orbital-view-viewport/
 
 ## Protected Paths
 
-Current scaffold:
+Current protected source paths:
 
 ```text
-none
+Sources/OrbitalViewRender/
+Tests/OrbitalViewRenderTests/
 ```
 
 Future downstream app integrations may touch protected audio, metering, routing, playback, or renderer paths and will require explicit task permission.
@@ -273,6 +274,44 @@ Protected path touch:
 no
 ```
 
+### Slice 006: OrbitalViewRender Target Seam
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Create a minimal MetalKit renderer target seam without production drawing.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 005
+```
+
+Review required:
+
+```text
+normal, with architecture/performance review useful before draw-loop work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewRender/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -283,8 +322,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 005 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` scene/meter adapters exist with tests, the first viewport interaction mockup exists, and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 006 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, and the initial `OrbitalViewRender` seam exist with tests; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for a minimal `OrbitalViewRender` target seam or compile-only `OrbitalViewSwiftUI` wrapper skeleton.
+Open a new bounded task for a compile-only `OrbitalViewSwiftUI` wrapper skeleton or first Metal draw-loop implementation plan.

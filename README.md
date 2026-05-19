@@ -6,7 +6,7 @@ The first implementation milestone is deliberately small: create `OrbitalViewCor
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the initial `OrbitalViewRender` seam, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
 
 ## Main References
 
@@ -24,15 +24,19 @@ mockups/orbital-view-viewport/index.html
 mockups/orbital-view-viewport/notes.md
 ```
 
-## Implemented Core Target
+## Implemented Targets
 
 ```text
 OrbitalViewCore
+OrbitalViewWavefield
+OrbitalViewRender
 ```
 
 `OrbitalViewCore` provides pure data contracts and validation that can later support native SwiftUI/MetalKit rendering and downstream app integrations.
 
 `OrbitalViewWavefield` reads the current Wavefield speaker-layout JSON shape into `OrbitalViewCore` scenes and maps Wavefield-style channel/rms/peak records into `SpeakerMeterFrame` values without depending on or editing the Wavefield app package.
+
+`OrbitalViewRender` establishes the first MetalKit seam with renderer state, scene/meter/camera update methods, selection events, and an `MTKViewDelegate` shell. It does not draw yet.
 
 ## Current Mockup
 
@@ -48,13 +52,12 @@ This is a disposable static mockup with fake speaker positions and fake meter an
 docs/decisions/0002-renderer-backend.md
 ```
 
-The accepted production renderer direction is a custom MetalKit / MTKView backend in a future `OrbitalViewRender` target, with SwiftUI wrapping in a separate future `OrbitalViewSwiftUI` target.
+The accepted production renderer direction is a custom MetalKit / MTKView backend in `OrbitalViewRender`, with SwiftUI wrapping in a separate future `OrbitalViewSwiftUI` target.
 
 ## Still Out of Scope
 
-- Production renderer
+- Production drawing implementation
 - SwiftUI wrapper
-- MetalKit integration
 - WebView integration
 - DomeLab code import
 - Wavefield, Orbisonic, or Splat source modifications

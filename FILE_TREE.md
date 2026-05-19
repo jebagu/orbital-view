@@ -33,14 +33,17 @@ docs/
   003-wavefield-meter-frame-adapter.md
   004-orbital-viewport-visual-mockup.md
   005-renderer-backend-decision.md
+  006-orbital-view-render-target-seam.md
   _template-task.md
 
 Sources/
   OrbitalViewCore/
+  OrbitalViewRender/
   OrbitalViewWavefield/
 
 Tests/
   OrbitalViewCoreTests/
+  OrbitalViewRenderTests/
   OrbitalViewWavefieldTests/
 
 work-packages/
@@ -53,6 +56,7 @@ work-packages/
       003-wavefield-meter-frame-adapter.md
       004-orbital-viewport-visual-mockup.md
       005-renderer-backend-decision.md
+      006-orbital-view-render-target-seam.md
   _template/
     MV.md
     slices/
