@@ -34,16 +34,19 @@ docs/
   004-orbital-viewport-visual-mockup.md
   005-renderer-backend-decision.md
   006-orbital-view-render-target-seam.md
+  007-orbital-view-swiftui-wrapper-skeleton.md
   _template-task.md
 
 Sources/
   OrbitalViewCore/
   OrbitalViewRender/
+  OrbitalViewSwiftUI/
   OrbitalViewWavefield/
 
 Tests/
   OrbitalViewCoreTests/
   OrbitalViewRenderTests/
+  OrbitalViewSwiftUITests/
   OrbitalViewWavefieldTests/
 
 work-packages/
@@ -57,6 +60,7 @@ work-packages/
       004-orbital-viewport-visual-mockup.md
       005-renderer-backend-decision.md
       006-orbital-view-render-target-seam.md
+      007-orbital-view-swiftui-wrapper-skeleton.md
   _template/
     MV.md
     slices/

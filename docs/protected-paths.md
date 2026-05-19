@@ -7,6 +7,8 @@ Current protected source paths:
 ```text
 Sources/OrbitalViewRender/
 Tests/OrbitalViewRenderTests/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
 ```
 
 `OrbitalViewCore` and `OrbitalViewWavefield` source changes are governed by normal task scope and tests.
@@ -73,6 +75,7 @@ MetalKit / MTKView renderer with SwiftUI wrapper
 - Rendering must preserve physical speaker channel identity.
 - Renderer source must not own audio callbacks or host app meter timing.
 - Initial renderer seam changes are allowed only when the active task explicitly permits `Sources/OrbitalViewRender/`.
+- SwiftUI wrapper changes are allowed only when the active task explicitly permits `Sources/OrbitalViewSwiftUI/`.
 
 ### Review Required
 

@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-renderer seam
+swiftui wrapper skeleton
 ```
 
 ## Current Milestone
 
 ```text
-Minimal OrbitalViewRender target seam implemented
+Compile-only OrbitalViewSwiftUI wrapper skeleton implemented
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an initial `OrbitalViewRender` MetalKit seam, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Production drawing, SwiftUI wrapping, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an initial `OrbitalViewRender` MetalKit seam, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Production drawing, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -41,6 +41,7 @@ main tree
 - Created `mockups/orbital-view-viewport/` to preview camera presets, selection, labels, cutaway, and fake meter glow before Swift renderer work.
 - Accepted MetalKit / MTKView as the production renderer backend in `docs/decisions/0002-renderer-backend.md`.
 - Implemented `Sources/OrbitalViewRender/` and `Tests/OrbitalViewRenderTests/` as the first compile-focused renderer seam.
+- Implemented `Sources/OrbitalViewSwiftUI/` and `Tests/OrbitalViewSwiftUITests/` as the compile-only wrapper skeleton.
 
 ## In Progress
 
@@ -51,7 +52,7 @@ none
 ## Pending
 
 - Decide and open the next bounded task.
-- Decide whether the next renderer slice should be a compile-only `OrbitalViewSwiftUI` wrapper skeleton or first Metal draw-loop implementation plan.
+- Decide whether the next renderer slice should be a renderer test harness plan, first Metal draw-loop implementation plan, or SwiftUI control/gesture binding plan.
 
 ## Blocked
 
@@ -677,13 +678,111 @@ Risks:
 Next recommended task:
 
 ```text
-Compile-only OrbitalViewSwiftUI wrapper skeleton or first Metal draw-loop implementation plan.
+Compile-only OrbitalViewSwiftUI wrapper skeleton, now complete, or first Metal draw-loop implementation plan.
+```
+
+### Update: 2026-05-19 OrbitalViewSwiftUI Wrapper Skeleton
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewSwiftUI` package product and target.
+- Added public `OrbitalView` SwiftUI view.
+- Added internal `OrbitalViewMetalView` `NSViewRepresentable` bridge around `MTKView`.
+- Added coordinator logic that applies scene, meter, camera, and selection configuration into `OrbitalViewMetalRenderer`.
+- Added SwiftUI wrapper tests for initialization, duplicate-update suppression, meter-only update behavior, and camera/selection event emission.
+
+Files changed:
+
+```text
+Package.swift
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+.tasks/007-orbital-view-swiftui-wrapper-skeleton.md
+work-packages/orbital-view-kit/slices/007-orbital-view-swiftui-wrapper-skeleton.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/product-brief.md
+work-packages/orbital-view-kit/MV.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+```
+
+Commands run:
+
+```text
+manifest parse -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 23 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/product-brief.md
+work-packages/orbital-view-kit/MV.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/ allowed by this slice
+Tests/OrbitalViewSwiftUITests/ allowed by this slice
+```
+
+Result:
+
+```text
+OrbitalViewSwiftUI now exposes a compile-only SwiftUI wrapper around the MetalKit renderer seam, with tests, but no controls or gestures yet.
+```
+
+Risks:
+
+- The wrapper currently bridges state into a no-op renderer delegate.
+- Camera gestures, picking, inspector controls, and draw-loop behavior remain unimplemented.
+
+Next recommended task:
+
+```text
+Renderer test harness plan, first Metal draw-loop implementation plan, or SwiftUI control/gesture binding plan.
 ```
 
 ## Open Questions
 
 - Exact downstream repository path for the first Wavefield integration.
-- Exact first renderer drawing scope after the seam.
+- Exact first renderer drawing scope after the wrapper skeleton.
 
 ## Decision Log
 

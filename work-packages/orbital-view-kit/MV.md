@@ -61,6 +61,8 @@ Current protected source paths:
 ```text
 Sources/OrbitalViewRender/
 Tests/OrbitalViewRenderTests/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
 ```
 
 Future downstream app integrations may touch protected audio, metering, routing, playback, or renderer paths and will require explicit task permission.
@@ -312,6 +314,44 @@ Protected path touch:
 Sources/OrbitalViewRender/ allowed by this slice
 ```
 
+### Slice 007: OrbitalViewSwiftUI Wrapper Skeleton
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Create a compile-only SwiftUI wrapper target above the MetalKit renderer seam.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 006
+```
+
+Review required:
+
+```text
+normal, with architecture review useful before gesture/control work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewSwiftUI/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -322,8 +362,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 006 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, and the initial `OrbitalViewRender` seam exist with tests; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 007 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton exist with tests; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for a compile-only `OrbitalViewSwiftUI` wrapper skeleton or first Metal draw-loop implementation plan.
+Open a new bounded task for a renderer test harness plan, first Metal draw-loop implementation plan, or SwiftUI control/gesture binding plan.

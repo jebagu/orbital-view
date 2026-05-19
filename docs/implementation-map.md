@@ -18,7 +18,7 @@ reviewers/                    Human-readable review checklists
 prompts/                      Reusable project prompts
 ```
 
-Swift source directories are now present for `OrbitalViewCore`, `OrbitalViewWavefield`, and `OrbitalViewRender`.
+Swift source directories are now present for `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI`.
 
 ## Feature Map
 
@@ -112,7 +112,7 @@ docs/decisions/0002-renderer-backend.md
 
 The current seam stores scene, meter, camera, and selection state separately and exposes an `MTKViewDelegate` shell. Production drawing and SwiftUI wrapping are deferred.
 
-### Future SwiftUI Wrapper
+### OrbitalViewSwiftUI Wrapper Skeleton
 
 Purpose:
 
@@ -120,12 +120,14 @@ Purpose:
 Expose OrbitalViewRender through host-app SwiftUI bindings.
 ```
 
-Planned locations:
+Implementation locations:
 
 ```text
 Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
+
+The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, and coordinator tests. SwiftUI controls, gestures, and inspector UI are deferred.
 
 ## Test Map
 
@@ -138,10 +140,11 @@ camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.sw
 Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
 Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
 renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
 renderer backend decision -> docs/decisions/0002-renderer-backend.md
 ```
 
 ## Last Updated
 
-2026-05-19 OrbitalViewRender target seam
+2026-05-19 OrbitalViewSwiftUI wrapper skeleton

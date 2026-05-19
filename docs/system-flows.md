@@ -58,6 +58,20 @@ flowchart TD
 
 The current renderer seam stores validated state and emits camera/selection events. It does not issue draw commands yet.
 
+## Current SwiftUI Wrapper Flow
+
+```mermaid
+flowchart TD
+  HostView["Host SwiftUI view"] --> OrbitalView["OrbitalView"]
+  OrbitalView --> Bridge["NSViewRepresentable"]
+  Bridge --> MTKView["MTKView"]
+  Bridge --> Renderer["OrbitalViewMetalRenderer"]
+  Renderer --> Events["camera/selection events"]
+  Events --> HostView
+```
+
+The current wrapper bridges state into the renderer seam. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
+
 ## Boundary Flow
 
 ```mermaid

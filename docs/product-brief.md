@@ -65,7 +65,7 @@ The first usable implementation should:
 
 ## Constraints
 
-- Tech stack: Swift package first; current renderer seam is native MetalKit with a SwiftUI wrapper later.
+- Tech stack: Swift package first; current renderer seam is native MetalKit with a compile-only SwiftUI wrapper skeleton.
 - App type: reusable module consumed by local native apps.
 - Audio domain: visualizes measured levels only; does not own audio timing or routing.
 - Persistence: none in `OrbitalViewCore`.

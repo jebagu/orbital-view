@@ -4,7 +4,7 @@
 
 Orbital View Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
 
-The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, and the initial `OrbitalViewRender` seam. The production renderer backend decision is accepted as MetalKit / MTKView, but production drawing, SwiftUI source, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, the initial `OrbitalViewRender` seam, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton. The production renderer backend decision is accepted as MetalKit / MTKView, but production drawing, SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
 
 ## Local Hosting
 
@@ -51,7 +51,7 @@ openspec/changes/
 
 ## Current Project Assumption
 
-This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, the local adapter target `OrbitalViewWavefield`, and the initial MetalKit renderer seam target `OrbitalViewRender`.
+This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, the local adapter target `OrbitalViewWavefield`, the initial MetalKit renderer seam target `OrbitalViewRender`, and the SwiftUI wrapper skeleton target `OrbitalViewSwiftUI`.
 
 Current renderer source must stay within the active renderer task scope, and it must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
 
@@ -70,7 +70,7 @@ Current renderer source must stay within the active renderer task scope, and it 
 
 ## Protected Path Rule
 
-`Sources/OrbitalViewRender/` is now a protected renderer path governed by `docs/protected-paths.md`.
+`Sources/OrbitalViewRender/` and `Sources/OrbitalViewSwiftUI/` are protected renderer/UI paths governed by `docs/protected-paths.md`.
 
 Future downstream integrations with Wavefield, Orbisonic, or Splat may touch protected audio, rendering, routing, metering, or playback paths. If a task reaches into those downstream repositories or modules, read `docs/protected-paths.md` and confirm the task explicitly permits the touch.
 

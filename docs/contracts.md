@@ -174,6 +174,66 @@ Initial seam implemented. Production drawing, shaders, materials, hit testing, a
 - selection updates emit selection events
 - Metal renderer conforms to `MTKViewDelegate`
 
+## Module: OrbitalViewSwiftUI
+
+### Responsibility
+
+Expose `OrbitalViewRender` through SwiftUI for native host apps.
+
+### Public Interface
+
+Current wrapper skeleton:
+
+```text
+OrbitalView
+```
+
+`OrbitalView` accepts a scene, optional meter frame, camera binding, selection binding, and event callback.
+
+### Non-Responsibilities
+
+The wrapper must not:
+
+- own audio processing
+- reorder channels
+- fake production meter data
+- mutate host playback state
+- parse downstream app file formats
+- import DomeLab code
+- embed a WebView as the main renderer path
+- implement production controls or gestures before an explicit task
+
+### Dependencies
+
+Allowed:
+
+```text
+SwiftUI
+MetalKit
+OrbitalViewCore
+OrbitalViewRender
+```
+
+Forbidden:
+
+```text
+AVFoundation
+CoreMIDI
+Wavefield app targets
+Orbisonic app targets
+Splat app targets
+```
+
+### Status
+
+Compile-only wrapper skeleton implemented. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
+
+### Tests Required
+
+- wrapper initializes with camera and selection bindings
+- coordinator does not repeat structural updates for identical configuration
+- coordinator emits camera and selection events
+
 ## Module: Future Downstream Adapters
 
 ### Responsibility

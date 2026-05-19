@@ -6,7 +6,7 @@ The first implementation milestone is deliberately small: create `OrbitalViewCor
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the initial `OrbitalViewRender` seam, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the initial `OrbitalViewRender` seam, the compile-only `OrbitalViewSwiftUI` wrapper skeleton, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
 
 ## Main References
 
@@ -30,6 +30,7 @@ mockups/orbital-view-viewport/notes.md
 OrbitalViewCore
 OrbitalViewWavefield
 OrbitalViewRender
+OrbitalViewSwiftUI
 ```
 
 `OrbitalViewCore` provides pure data contracts and validation that can later support native SwiftUI/MetalKit rendering and downstream app integrations.
@@ -37,6 +38,8 @@ OrbitalViewRender
 `OrbitalViewWavefield` reads the current Wavefield speaker-layout JSON shape into `OrbitalViewCore` scenes and maps Wavefield-style channel/rms/peak records into `SpeakerMeterFrame` values without depending on or editing the Wavefield app package.
 
 `OrbitalViewRender` establishes the first MetalKit seam with renderer state, scene/meter/camera update methods, selection events, and an `MTKViewDelegate` shell. It does not draw yet.
+
+`OrbitalViewSwiftUI` exposes a public `OrbitalView` SwiftUI view and bridges the MetalKit renderer seam through `NSViewRepresentable`. It does not include controls, gestures, or inspector UI yet.
 
 ## Current Mockup
 
@@ -57,7 +60,7 @@ The accepted production renderer direction is a custom MetalKit / MTKView backen
 ## Still Out of Scope
 
 - Production drawing implementation
-- SwiftUI wrapper
+- SwiftUI controls, gestures, and inspector UI
 - WebView integration
 - DomeLab code import
 - Wavefield, Orbisonic, or Splat source modifications

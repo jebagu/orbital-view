@@ -63,6 +63,21 @@ Future renderer drawing checks should cover:
 - renderer target compiles without adding audio, playback, routing, MIDI, OSC, or downstream app dependencies
 - meter updates can be tested separately from structural scene updates
 
+## SwiftUI Wrapper Tests
+
+Current wrapper skeleton tests cover:
+
+- `OrbitalView` initializes with camera and selection bindings
+- identical configuration updates do not repeatedly increment structural renderer revision
+- changed meter frames update meter revision without rebuilding scene state
+- camera and selection configuration emits renderer events
+
+Future wrapper tests should cover:
+
+- gesture updates bind camera state without breaking center lock
+- selection bindings round-trip from renderer picking to host UI
+- toolbar toggles do not mutate audio, playback, routing, or metering state
+
 ## Mockup Checks
 
 Disposable browser mockups should stay separate from production Swift code. For `mockups/orbital-view-viewport/`, verify:
