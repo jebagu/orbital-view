@@ -2,7 +2,7 @@
 
 ## Current Scaffold
 
-There are no source-code protected paths in this repository yet because no Swift package source has been created.
+There are Swift package source paths in this repository, but no protected source paths yet. Current `OrbitalViewCore` and `OrbitalViewWavefield` source changes are governed by normal task scope and tests.
 
 ## Protected Path: Downstream Audio And Routing Integrations
 
@@ -52,12 +52,19 @@ protected path reviewer
 
 `OrbitalViewRender` or `OrbitalViewSwiftUI` exists.
 
+Accepted backend:
+
+```text
+MetalKit / MTKView renderer with SwiftUI wrapper
+```
+
 ### Invariants
 
 - Meter updates must not rebuild static geometry every frame.
 - Speaker geometry must not resize for VU behavior.
 - Camera target must remain center-locked in monitor mode.
 - Rendering must preserve physical speaker channel identity.
+- Renderer source must not own audio callbacks or host app meter timing.
 
 ### Review Required
 
@@ -66,4 +73,3 @@ performance reviewer
 architecture reviewer
 reliability reviewer
 ```
-

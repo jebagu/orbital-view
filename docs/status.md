@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-visual mockup
+renderer backend decision
 ```
 
 ## Current Milestone
 
 ```text
-Orbital viewport mockup created
+MetalKit renderer backend accepted
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, and a disposable browser mockup for the orbitable spherical monitor viewport. Renderer source and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, a disposable browser mockup for the orbitable spherical monitor viewport, and an accepted MetalKit / MTKView production renderer backend decision. Renderer source and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -39,6 +39,7 @@ main tree
 - Implemented `Sources/OrbitalViewWavefield/` and `Tests/OrbitalViewWavefieldTests/` using a copied Fey 30 fixture.
 - Implemented Wavefield-style meter frame adaptation into `SpeakerMeterFrame`.
 - Created `mockups/orbital-view-viewport/` to preview camera presets, selection, labels, cutaway, and fake meter glow before Swift renderer work.
+- Accepted MetalKit / MTKView as the production renderer backend in `docs/decisions/0002-renderer-backend.md`.
 
 ## In Progress
 
@@ -49,8 +50,7 @@ none
 ## Pending
 
 - Decide and open the next bounded task.
-- Decide renderer backend in a later PRD or work package.
-- Decide whether the next renderer slice should be a backend decision document or first SwiftUI/Metal prototype.
+- Decide whether the next renderer slice should be a minimal `OrbitalViewRender` seam or a compile-only `OrbitalViewSwiftUI` wrapper skeleton.
 
 ## Blocked
 
@@ -136,7 +136,7 @@ Project is ready for the first bounded OrbitalViewCore implementation task.
 Risks:
 
 - Downstream Wavefield adapter placement still depends on inspecting the actual Wavefield package.
-- Production renderer backend is intentionally undecided.
+- Production renderer backend was not yet selected at this point; later resolved by Decision 0002.
 
 Next recommended task:
 
@@ -425,6 +425,7 @@ docs/status.md
 docs/implementation-map.md
 docs/test-strategy.md
 work-packages/orbital-view-kit/MV.md
+AGENTS.md
 README.md
 START_HERE.md
 FILE_TREE.md
@@ -476,18 +477,114 @@ Renderer-facing behavior can be reviewed visually without committing to Swift re
 Risks:
 
 - The mockup uses fake positions and fake meters, so it is interaction guidance only.
-- Production renderer backend remains undecided.
+- Production renderer backend was not yet selected at this point; later resolved by Decision 0002.
 
 Next recommended task:
 
 ```text
-Renderer backend decision or first native OrbitalViewSwiftUI/Metal prototype slice.
+Renderer backend decision, now complete, or first native OrbitalViewSwiftUI/Metal prototype slice.
+```
+
+### Update: 2026-05-19 Renderer Backend Decision
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `docs/decisions/0002-renderer-backend.md`.
+- Accepted MetalKit / MTKView as the production renderer backend.
+- Documented `OrbitalViewRender` as the future renderer target and `OrbitalViewSwiftUI` as the wrapper layer.
+- Rejected WebView, DomeLab code import, SceneKit-first, and RealityKit-first as long-term renderer paths.
+- Updated active architecture, contract, flow, test, status, and work-package docs.
+
+Files changed:
+
+```text
+docs/decisions/0002-renderer-backend.md
+.tasks/005-renderer-backend-decision.md
+work-packages/orbital-view-kit/slices/005-renderer-backend-decision.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/product-brief.md
+work-packages/orbital-view-kit/MV.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+none - decision/documentation slice only
+```
+
+Commands run:
+
+```text
+manifest parse -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 17 tests
+```
+
+Documentation updated:
+
+```text
+docs/decisions/0002-renderer-backend.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/product-brief.md
+work-packages/orbital-view-kit/MV.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Renderer backend is no longer open-ended; future production renderer work should start with a MetalKit / MTKView target seam.
+```
+
+Risks:
+
+- MetalKit is more engineering work than SceneKit or a browser prototype.
+- First renderer source slice should stay compile-focused to avoid overbuilding.
+
+Next recommended task:
+
+```text
+Minimal OrbitalViewRender target seam.
 ```
 
 ## Open Questions
 
 - Exact downstream repository path for the first Wavefield integration.
-- Whether renderer work should start with MetalKit directly or a smaller native prototype after core contracts exist.
+- Exact first renderer slice scope: `OrbitalViewRender` target seam first, or `OrbitalViewSwiftUI` wrapper skeleton first.
 
 ## Decision Log
 

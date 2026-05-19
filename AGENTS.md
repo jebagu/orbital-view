@@ -4,7 +4,7 @@
 
 Orbital View Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
 
-The current implementation target is a pure Swift package target named `OrbitalViewCore`. Renderer, SwiftUI, MetalKit, Wavefield, Orbisonic, and Splat integration work is deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore` and `OrbitalViewWavefield`. The production renderer backend decision is accepted as MetalKit / MTKView, but renderer source, SwiftUI source, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
 
 ## Local Hosting
 
@@ -51,9 +51,9 @@ openspec/changes/
 
 ## Current Project Assumption
 
-This repository contains project-control docs and the first pure Swift source target, `OrbitalViewCore`.
+This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, and the local adapter target `OrbitalViewWavefield`.
 
-Current source must remain core-only. It must not implement a production renderer and must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
+Current source must not implement a production renderer unless an explicit renderer task is opened, and it must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
 
 ## Operating Rules
 

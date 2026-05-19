@@ -16,7 +16,7 @@ work-packages/orbital-view-kit/MV.md
 
 ## Current Goal
 
-Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, and first viewport visual mockup.
+Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, first viewport visual mockup, and renderer backend decision.
 
 The current core already establishes pure Swift contracts and tests for:
 
@@ -36,6 +36,12 @@ The current mockup previews the intended center-locked spherical monitor viewpor
 mockups/orbital-view-viewport/index.html
 ```
 
+The accepted production renderer backend is documented at:
+
+```text
+docs/decisions/0002-renderer-backend.md
+```
+
 ## Do Not Start With
 
 - production rendering
@@ -49,7 +55,7 @@ mockups/orbital-view-viewport/index.html
 Create a new bounded task before implementing any renderer, SwiftUI, or downstream app integration work. Good next candidates:
 
 ```text
-OrbitalViewSwiftUI visual mockup
-Renderer backend decision
-First native OrbitalViewSwiftUI/Metal prototype
+Minimal OrbitalViewRender target seam
+Compile-only OrbitalViewSwiftUI wrapper skeleton
+Renderer test harness plan
 ```

@@ -36,6 +36,18 @@ Start with `OrbitalViewCore`: pure Swift contracts and validation. Renderer, Swi
 none
 ```
 
+## Renderer Backend Decision
+
+```text
+docs/decisions/0002-renderer-backend.md
+```
+
+Accepted direction:
+
+```text
+MetalKit / MTKView production renderer in OrbitalViewRender, with SwiftUI wrapper above it.
+```
+
 ## Visual Mockups
 
 ```text
@@ -223,6 +235,44 @@ Protected path touch:
 no
 ```
 
+### Slice 005: Renderer Backend Decision
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Accept the production renderer backend before adding native renderer source.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 004
+```
+
+Review required:
+
+```text
+normal, with architecture review useful before first renderer source
+```
+
+Protected path touch:
+
+```text
+no
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -233,8 +283,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 004 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` scene/meter adapters exist with tests, and the first viewport interaction mockup exists under `mockups/orbital-view-viewport/`.
+Slice 005 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` scene/meter adapters exist with tests, the first viewport interaction mockup exists, and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for renderer backend decision or first native OrbitalViewSwiftUI/Metal prototype.
+Open a new bounded task for a minimal `OrbitalViewRender` target seam or compile-only `OrbitalViewSwiftUI` wrapper skeleton.

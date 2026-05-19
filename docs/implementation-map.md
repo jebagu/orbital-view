@@ -91,11 +91,23 @@ Purpose:
 Render validated OrbitalViewCore scenes as a native 3D viewport.
 ```
 
+Accepted backend:
+
+```text
+MetalKit / MTKView custom renderer, wrapped by SwiftUI above it.
+```
+
 Planned locations:
 
 ```text
 Sources/OrbitalViewRender/
 Sources/OrbitalViewSwiftUI/
+```
+
+Decision record:
+
+```text
+docs/decisions/0002-renderer-backend.md
 ```
 
 ## Test Map
@@ -109,8 +121,9 @@ camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.sw
 Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
 Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
+renderer backend decision -> docs/decisions/0002-renderer-backend.md
 ```
 
 ## Last Updated
 
-2026-05-19 Orbital viewport visual mockup
+2026-05-19 Renderer backend decision

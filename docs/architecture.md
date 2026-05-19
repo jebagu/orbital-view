@@ -11,7 +11,7 @@ OrbitalViewCore
   Pure data contracts, validation, coordinate system, shell/speaker/meter/camera types.
 
 OrbitalViewRender
-  Native renderer backend, expected to be MetalKit when production rendering starts.
+  Native renderer backend. Decision 0002 accepts MetalKit / MTKView for production rendering.
 
 OrbitalViewSwiftUI
   SwiftUI wrapper for host apps.
@@ -26,7 +26,7 @@ OrbitalViewWavefield
   Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
-`OrbitalViewCore` and `OrbitalViewWavefield` are implemented. Renderer, SwiftUI, and downstream app source integration remain deferred.
+`OrbitalViewCore` and `OrbitalViewWavefield` are implemented. Renderer, SwiftUI, and downstream app source integration remain deferred, but the production renderer backend decision is accepted in `docs/decisions/0002-renderer-backend.md`.
 
 ## Runtime Architecture
 
@@ -49,6 +49,12 @@ Host app
 ```
 
 The viewport receives scene and meter state from the host app. It does not parse files, schedule playback, receive OSC, parse MIDI, or decide output routing.
+
+## Renderer Backend Decision
+
+Production rendering should use a custom MetalKit / MTKView backend in `OrbitalViewRender`, wrapped by a separate `OrbitalViewSwiftUI` target for host-app binding.
+
+Long-term renderer source should not be SceneKit-first, RealityKit-first, WebView-based, or DomeLab-code-based. SceneKit or HTML mockups may be used only as disposable prototypes if a future task explicitly allows that scope.
 
 ## Audio Architecture
 
@@ -117,6 +123,8 @@ Foundation only
 
 Future production rendering may use Apple-native rendering frameworks. A major third-party dependency requires an explicit task decision.
 
+The accepted production rendering framework is MetalKit.
+
 ## Performance Model
 
 Future renderer constraints:
@@ -139,6 +147,6 @@ Validation should reject invalid scene data early:
 
 ## Known Risks
 
-- Renderer backend choice affects long-term visual quality and development cost.
+- MetalKit gives the needed long-term control but costs more implementation effort than a high-level 3D framework.
 - DomeLab geometry import must use a neutral schema to avoid porting browser app internals.
 - Downstream Wavefield adapter location depends on actual package visibility when implementation starts.

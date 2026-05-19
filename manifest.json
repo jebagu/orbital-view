@@ -19,6 +19,7 @@
   ".tasks/002-wavefield-layout-json-adapter.md",
   ".tasks/003-wavefield-meter-frame-adapter.md",
   ".tasks/004-orbital-viewport-visual-mockup.md",
+  ".tasks/005-renderer-backend-decision.md",
   ".tasks/_template-task.md",
   "AGENTS.md",
   "FILE_TREE.md",
@@ -31,6 +32,7 @@
   "docs/bugs.md",
   "docs/contracts.md",
   "docs/decisions/0001-initial-architecture.md",
+  "docs/decisions/0002-renderer-backend.md",
   "docs/implementation-map.md",
   "docs/product-brief.md",
   "docs/protected-paths.md",
@@ -86,6 +88,7 @@
   "work-packages/orbital-view-kit/slices/002-wavefield-layout-json-adapter.md",
   "work-packages/orbital-view-kit/slices/003-wavefield-meter-frame-adapter.md",
   "work-packages/orbital-view-kit/slices/004-orbital-viewport-visual-mockup.md",
+  "work-packages/orbital-view-kit/slices/005-renderer-backend-decision.md",
   "work-packages/_template/MV.md",
   "work-packages/_template/reviews/specialty-review-template.md",
   "work-packages/_template/slices/000-slice-template.md"

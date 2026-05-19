@@ -128,6 +128,17 @@ Splat app targets
 
 Render a validated `OrbitalViewCore` scene as a native 3D viewport.
 
+### Accepted Backend
+
+Production renderer direction:
+
+```text
+MetalKit / MTKView custom renderer in OrbitalViewRender
+SwiftUI host wrapper in OrbitalViewSwiftUI
+```
+
+This decision is documented in `docs/decisions/0002-renderer-backend.md`.
+
 ### Non-Responsibilities
 
 The renderer must not:
@@ -137,6 +148,20 @@ The renderer must not:
 - fake meter data
 - mutate host playback state
 - parse downstream app file formats
+- import DomeLab code
+- embed a WebView as the main renderer path
+- resize speaker geometry for meter animation
+
+### Future Public Interface
+
+No renderer API is implemented yet. A future renderer task should add a small seam for:
+
+```text
+load scene
+update meter frame
+update camera
+emit selection/camera events
+```
 
 ### Status
 

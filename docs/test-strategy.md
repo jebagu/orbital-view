@@ -47,12 +47,16 @@ Use when a downstream adapter is added:
 
 Deferred until renderer work exists.
 
+The accepted renderer backend is MetalKit / MTKView, with SwiftUI in a wrapper target.
+
 Future renderer checks should cover:
 
 - static geometry is not rebuilt for every meter frame
 - speaker mesh dimensions remain constant under VU updates
 - center-lock survives resize and camera preset changes
 - selection emits speaker/channel identity without mutating playback
+- renderer target compiles without adding audio, playback, routing, MIDI, OSC, or downstream app dependencies
+- meter updates can be tested separately from structural scene updates
 
 ## Mockup Checks
 

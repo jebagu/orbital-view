@@ -65,7 +65,7 @@ The first usable implementation should:
 
 ## Constraints
 
-- Tech stack: Swift package first; native SwiftUI/MetalKit later.
+- Tech stack: Swift package first; accepted production renderer backend is native MetalKit with a SwiftUI wrapper later.
 - App type: reusable module consumed by local native apps.
 - Audio domain: visualizes measured levels only; does not own audio timing or routing.
 - Persistence: none in `OrbitalViewCore`.
@@ -80,4 +80,3 @@ The first usable implementation should:
 - Physical speaker channels are 1-based and must not be reordered.
 - DomeLab is a reference and future geometry-export source, not a dependency.
 - `OrbitalViewCore` should stay portable and independent of downstream app targets.
-

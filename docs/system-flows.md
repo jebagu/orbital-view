@@ -16,7 +16,7 @@ flowchart LR
   HostLayout["Host speaker layout"] --> Adapter["App adapter"]
   HostMeters["Host meter frames"] --> Adapter
   Adapter --> Core["OrbitalViewCore scene + meters"]
-  Core --> Renderer["OrbitalView renderer"]
+  Core --> Renderer["OrbitalViewRender MetalKit renderer"]
   Renderer --> UI["Host app viewport"]
 ```
 
@@ -27,9 +27,23 @@ flowchart TD
   User["User drag or preset click"] --> Wrapper["SwiftUI wrapper"]
   Wrapper --> Camera["OrbitalViewCameraState"]
   Camera --> Validate["Center-lock validation"]
-  Validate --> Renderer["Renderer camera update"]
+  Validate --> Renderer["MetalKit renderer camera update"]
   Renderer --> Event["cameraChanged event"]
 ```
+
+## Future Renderer Frame Flow
+
+```mermaid
+flowchart LR
+  Scene["Validated scene"] --> StaticGeometry["Static Metal buffers"]
+  MeterFrame["Latest meter frame"] --> VisualState["Display-rate visual envelope"]
+  Camera["Camera state"] --> ViewUniforms["View uniforms"]
+  StaticGeometry --> Draw["MTKView draw"]
+  VisualState --> Draw
+  ViewUniforms --> Draw
+```
+
+Static geometry, meter state, and camera state should stay separate so meter updates do not rebuild the scene.
 
 ## Boundary Flow
 
@@ -42,4 +56,3 @@ flowchart TD
 ```
 
 Orbital View Kit consumes measured state and emits UI-facing events. It does not own audio timing, playback, routing, MIDI, OSC, or output behavior.
-

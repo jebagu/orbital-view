@@ -24,6 +24,7 @@ docs/
   review-policy.md
   decisions/
     0001-initial-architecture.md
+    0002-renderer-backend.md
 
 .tasks/
   000-project-bootstrap.md
@@ -31,6 +32,7 @@ docs/
   002-wavefield-layout-json-adapter.md
   003-wavefield-meter-frame-adapter.md
   004-orbital-viewport-visual-mockup.md
+  005-renderer-backend-decision.md
   _template-task.md
 
 Sources/
@@ -50,6 +52,7 @@ work-packages/
       002-wavefield-layout-json-adapter.md
       003-wavefield-meter-frame-adapter.md
       004-orbital-viewport-visual-mockup.md
+      005-renderer-backend-decision.md
   _template/
     MV.md
     slices/

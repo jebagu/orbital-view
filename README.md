@@ -6,7 +6,7 @@ The first implementation milestone is deliberately small: create `OrbitalViewCor
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, and a static browser mockup for the spherical monitor viewport.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
 
 ## Main References
 
@@ -17,6 +17,7 @@ docs/contracts.md
 docs/protected-paths.md
 docs/test-strategy.md
 docs/status.md
+docs/decisions/0002-renderer-backend.md
 work-packages/orbital-view-kit/MV.md
 work-packages/orbital-view-kit/orbital-view-kit-codex-work-package.md
 mockups/orbital-view-viewport/index.html
@@ -40,6 +41,14 @@ mockups/orbital-view-viewport/index.html
 ```
 
 This is a disposable static mockup with fake speaker positions and fake meter animation. It is not production renderer source.
+
+## Renderer Backend
+
+```text
+docs/decisions/0002-renderer-backend.md
+```
+
+The accepted production renderer direction is a custom MetalKit / MTKView backend in a future `OrbitalViewRender` target, with SwiftUI wrapping in a separate future `OrbitalViewSwiftUI` target.
 
 ## Still Out of Scope
 
