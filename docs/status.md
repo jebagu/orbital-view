@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-adapter foundation
+visual mockup
 ```
 
 ## Current Milestone
 
 ```text
-Wavefield layout and meter adapters implemented
+Orbital viewport mockup created
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore` plus `OrbitalViewWavefield`, a local adapter that maps Wavefield speaker-layout JSON and Wavefield-style meter channel frames into core monitor scene/meter contracts. Renderer and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, and a disposable browser mockup for the orbitable spherical monitor viewport. Renderer source and downstream app source integration remain deferred.
 
 ## Current Work Package
 
@@ -38,6 +38,7 @@ main tree
 - Verified `OrbitalViewCore` with build and test commands using the full Xcode toolchain.
 - Implemented `Sources/OrbitalViewWavefield/` and `Tests/OrbitalViewWavefieldTests/` using a copied Fey 30 fixture.
 - Implemented Wavefield-style meter frame adaptation into `SpeakerMeterFrame`.
+- Created `mockups/orbital-view-viewport/` to preview camera presets, selection, labels, cutaway, and fake meter glow before Swift renderer work.
 
 ## In Progress
 
@@ -49,7 +50,7 @@ none
 
 - Decide and open the next bounded task.
 - Decide renderer backend in a later PRD or work package.
-- Decide whether to build a visual mockup or renderer backend decision next.
+- Decide whether the next renderer slice should be a backend decision document or first SwiftUI/Metal prototype.
 
 ## Blocked
 
@@ -396,6 +397,91 @@ Next recommended task:
 
 ```text
 Renderer visual mockup or renderer backend decision.
+```
+
+### Update: 2026-05-19 Orbital Viewport Visual Mockup
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a disposable static HTML/CSS/JS mockup for the OrbitalViewKit monitor viewport.
+- Added fake Fey-style speaker positions with animated fake meter glow, rings, labels, and selection state.
+- Added camera preset controls, reset, projection toggle, structure/speaker/label/cutaway toggles, and an inspector panel.
+- Added mockup notes capturing product questions and Swift implementation implications.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+.tasks/004-orbital-viewport-visual-mockup.md
+work-packages/orbital-view-kit/slices/004-orbital-viewport-visual-mockup.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/MV.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+none - static mockup and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 17 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/MV.md
+mockups/orbital-view-viewport/notes.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Renderer-facing behavior can be reviewed visually without committing to Swift renderer code yet.
+```
+
+Risks:
+
+- The mockup uses fake positions and fake meters, so it is interaction guidance only.
+- Production renderer backend remains undecided.
+
+Next recommended task:
+
+```text
+Renderer backend decision or first native OrbitalViewSwiftUI/Metal prototype slice.
 ```
 
 ## Open Questions

@@ -19,7 +19,7 @@ main tree
 Reasoning:
 
 ```text
-The current request is scaffold-only. The first implementation slice is small enough for the main tree.
+The completed slices are small enough for the main tree.
 ```
 
 ## Product Summary
@@ -33,13 +33,13 @@ Start with `OrbitalViewCore`: pure Swift contracts and validation. Renderer, Swi
 ## Related OpenSpec Change
 
 ```text
-none yet
+none
 ```
 
 ## Visual Mockups
 
 ```text
-none yet
+mockups/orbital-view-viewport/
 ```
 
 ## Protected Paths
@@ -185,6 +185,44 @@ Protected path touch:
 no
 ```
 
+### Slice 004: Orbital Viewport Visual Mockup
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Preview viewport interaction, camera presets, selection, labels, cutaway, and fake meter glow before renderer implementation.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 001
+```
+
+Review required:
+
+```text
+normal
+```
+
+Protected path touch:
+
+```text
+no
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -195,8 +233,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 003 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` scene/meter adapters exist with tests.
+Slice 004 is complete. `OrbitalViewCore` and `OrbitalViewWavefield` scene/meter adapters exist with tests, and the first viewport interaction mockup exists under `mockups/orbital-view-viewport/`.
 
 ## Next Action
 
-Open a new bounded task for renderer visual mockup or renderer backend decision.
+Open a new bounded task for renderer backend decision or first native OrbitalViewSwiftUI/Metal prototype.

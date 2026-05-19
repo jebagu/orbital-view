@@ -66,6 +66,23 @@ Tests/OrbitalViewWavefieldTests/
 
 The current adapter reads speaker-layout JSON and local channel/rms/peak meter DTOs. Direct Wavefield package type integration is not implemented.
 
+### Orbital Viewport Visual Mockup
+
+Purpose:
+
+```text
+Preview the intended spherical monitor viewport interaction before native renderer work.
+```
+
+Implementation locations:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+```
+
+This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It is not production renderer source.
+
 ### Future Renderer
 
 Purpose:
@@ -91,8 +108,9 @@ meter channel identity -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 Wavefield JSON layout adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
 Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
+visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
 ```
 
 ## Last Updated
 
-2026-05-19 Wavefield meter-frame adapter
+2026-05-19 Orbital viewport visual mockup

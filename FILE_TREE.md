@@ -28,6 +28,9 @@ docs/
 .tasks/
   000-project-bootstrap.md
   001-orbital-view-core-foundation.md
+  002-wavefield-layout-json-adapter.md
+  003-wavefield-meter-frame-adapter.md
+  004-orbital-viewport-visual-mockup.md
   _template-task.md
 
 Sources/
@@ -44,6 +47,9 @@ work-packages/
     orbital-view-kit-codex-work-package.md
     slices/
       001-orbital-view-core-foundation.md
+      002-wavefield-layout-json-adapter.md
+      003-wavefield-meter-frame-adapter.md
+      004-orbital-viewport-visual-mockup.md
   _template/
     MV.md
     slices/
@@ -56,6 +62,9 @@ openspec/
 
 mockups/
   README.md
+  orbital-view-viewport/
+    index.html
+    notes.md
   _template/
 
 .agents/

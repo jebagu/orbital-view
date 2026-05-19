@@ -16,7 +16,7 @@ work-packages/orbital-view-kit/MV.md
 
 ## Current Goal
 
-Prepare the next bounded slice after the `OrbitalViewCore` foundation and local Wavefield layout/meter adapters.
+Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, and first viewport visual mockup.
 
 The current core already establishes pure Swift contracts and tests for:
 
@@ -29,6 +29,12 @@ The current core already establishes pure Swift contracts and tests for:
 - scene validation
 
 The current Wavefield bridge already maps the Fey 30 speaker-layout JSON shape and Wavefield-style channel/rms/peak meter records into `OrbitalViewCore`.
+
+The current mockup previews the intended center-locked spherical monitor viewport at:
+
+```text
+mockups/orbital-view-viewport/index.html
+```
 
 ## Do Not Start With
 
@@ -45,5 +51,5 @@ Create a new bounded task before implementing any renderer, SwiftUI, or downstre
 ```text
 OrbitalViewSwiftUI visual mockup
 Renderer backend decision
-Combined scene + meter snapshot DTO
+First native OrbitalViewSwiftUI/Metal prototype
 ```

@@ -2,11 +2,11 @@
 
 Orbital View Kit is the project-control scaffold for `OrbitalViewKit`, a reusable 3D spherical speaker viewport planned for Wavefield, Orbisonic, and Splat.
 
-The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, and Wavefield layout adaptation tests.
+The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, and Wavefield layout adaptation tests. A disposable viewport mockup now previews the intended monitor interaction before native renderer work.
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, and the local `OrbitalViewWavefield` adapter target.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, and a static browser mockup for the spherical monitor viewport.
 
 ## Main References
 
@@ -19,6 +19,8 @@ docs/test-strategy.md
 docs/status.md
 work-packages/orbital-view-kit/MV.md
 work-packages/orbital-view-kit/orbital-view-kit-codex-work-package.md
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
 ```
 
 ## Implemented Core Target
@@ -30,6 +32,14 @@ OrbitalViewCore
 `OrbitalViewCore` provides pure data contracts and validation that can later support native SwiftUI/MetalKit rendering and downstream app integrations.
 
 `OrbitalViewWavefield` reads the current Wavefield speaker-layout JSON shape into `OrbitalViewCore` scenes and maps Wavefield-style channel/rms/peak records into `SpeakerMeterFrame` values without depending on or editing the Wavefield app package.
+
+## Current Mockup
+
+```text
+mockups/orbital-view-viewport/index.html
+```
+
+This is a disposable static mockup with fake speaker positions and fake meter animation. It is not production renderer source.
 
 ## Still Out of Scope
 

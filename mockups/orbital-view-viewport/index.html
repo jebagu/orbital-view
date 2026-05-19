@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orbital Viewport Mockup</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      background: #0b0c0d;
+      color: #f0f4f2;
+      --panel: #141616;
+      --panel-2: #191c1b;
+      --line: #2a302e;
+      --muted: #98a39e;
+      --text: #f0f4f2;
+      --teal: #39d0bd;
+      --green: #7be48b;
+      --amber: #f2bd5c;
+      --hot: #ff6c5f;
+      --violet: #cba8ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0b0c0d;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      grid-template-rows: 56px minmax(0, 1fr) 46px;
+      min-height: 100vh;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #101211;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      min-width: 168px;
+      line-height: 1.1;
+    }
+
+    .brand strong {
+      font-size: 13px;
+      letter-spacing: 0;
+      font-weight: 720;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #171a19;
+      color: var(--text);
+      min-height: 32px;
+      padding: 7px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #50615d;
+      background: #1d2321;
+    }
+
+    button[aria-pressed="true"] {
+      border-color: color-mix(in srgb, var(--teal) 80%, white 0%);
+      background: #15302d;
+      color: #c9fff5;
+    }
+
+    .divider {
+      width: 1px;
+      height: 26px;
+      background: var(--line);
+      margin: 0 4px;
+    }
+
+    main {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(#151817 1px, transparent 1px),
+        linear-gradient(90deg, #151817 1px, transparent 1px),
+        #0b0c0d;
+      background-size: 36px 36px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    aside {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      border-left: 1px solid var(--line);
+      background: var(--panel);
+      min-height: 0;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      padding: 12px;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: 0;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .metric {
+      min-height: 58px;
+      border: 1px solid #28302d;
+      border-radius: 7px;
+      padding: 8px;
+      background: #111413;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      margin-top: 5px;
+      letter-spacing: 0;
+    }
+
+    .speaker-list {
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .speaker-row {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) 42px;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+      border-bottom: 1px solid #242a28;
+      font-size: 12px;
+    }
+
+    .speaker-row:last-child {
+      border-bottom: 0;
+    }
+
+    .bar {
+      height: 6px;
+      border-radius: 3px;
+      background: #28302d;
+      overflow: hidden;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--green), var(--amber), var(--hot));
+    }
+
+    .status {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 16px;
+      align-items: center;
+      min-height: 46px;
+      padding: 8px 14px;
+      border-top: 1px solid var(--line);
+      background: #101211;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status strong {
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 6px 8px;
+      color: var(--text);
+      background: #151817;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--green) 70%, transparent);
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 62vh auto auto;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .status {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <strong>OrbitalViewKit</strong>
+        <span>Fey 30 / Monitor</span>
+      </div>
+      <div class="toolbar" aria-label="Viewport controls">
+        <button class="mode" data-view="iso" aria-pressed="true">Iso</button>
+        <button class="mode" data-view="plan" aria-pressed="false">Plan</button>
+        <button class="mode" data-view="front" aria-pressed="false">Front</button>
+        <button class="mode" data-view="side" aria-pressed="false">Side</button>
+        <button id="reset">Reset</button>
+        <span class="divider" aria-hidden="true"></span>
+        <button id="projection" aria-pressed="false">Ortho</button>
+        <button id="structure" aria-pressed="true">Structure</button>
+        <button id="speakers" aria-pressed="true">Speakers</button>
+        <button id="labels" aria-pressed="true">Labels</button>
+        <button id="cutaway" aria-pressed="false">Cutaway</button>
+      </div>
+    </header>
+
+    <main>
+      <canvas id="viewport" aria-label="Orbital 3D Sonic Sphere viewport"></canvas>
+    </main>
+
+    <aside>
+      <section class="panel">
+        <h1>Scene</h1>
+        <div class="metric-grid">
+          <div class="metric">
+            <span>Active</span>
+            <strong id="activeCount">0/30</strong>
+          </div>
+          <div class="metric">
+            <span>Peak</span>
+            <strong id="peakText">Fey 01</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 id="selectionTitle">No speaker selected</h2>
+        <p class="empty" id="selectionBody">Click a speaker in the viewport to inspect channel identity, coordinates, and level state.</p>
+      </section>
+
+      <section class="panel speaker-list" id="speakerList" aria-label="Speaker levels"></section>
+    </aside>
+
+    <footer class="status">
+      <span><strong id="cameraText">Iso</strong> / Center locked / Drag orbit / Wheel zoom</span>
+      <span class="chip"><i class="dot"></i><span id="sourceText">Fake meter stream</span></span>
+      <span class="chip"><span id="zoomText">Zoom 1.00x</span></span>
+    </footer>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("viewport");
+    const ctx = canvas.getContext("2d");
+    const viewButtons = [...document.querySelectorAll(".mode")];
+    const list = document.getElementById("speakerList");
+    const activeCount = document.getElementById("activeCount");
+    const peakText = document.getElementById("peakText");
+    const cameraText = document.getElementById("cameraText");
+    const zoomText = document.getElementById("zoomText");
+    const selectionTitle = document.getElementById("selectionTitle");
+    const selectionBody = document.getElementById("selectionBody");
+
+    const state = {
+      yaw: Math.PI * 0.25,
+      pitch: Math.PI * 0.22,
+      zoom: 1,
+      projection: "perspective",
+      structure: true,
+      speakers: true,
+      labels: true,
+      cutaway: false,
+      selected: null,
+      dragging: false,
+      lastX: 0,
+      lastY: 0,
+      time: 0
+    };
+
+    const rawSpeakers = [
+      [1, "Fey 01", 0, 0.554700196225229, -0.832050294337844],
+      [2, "Fey 02", 0.545454545454545, 0.181818181818182, -0.818181818181818],
+      [3, "Fey 03", 0.331448998468967, -0.45113891458276, -0.828622496172417],
+      [4, "Fey 04", -0.331448998468967, -0.45113891458276, -0.828622496172417],
+      [5, "Fey 05", -0.545454545454545, 0.181818181818182, -0.818181818181818],
+      [6, "Fey 06", -0.548614782048403, 0.630906999355663, -0.548614782048403],
+      [7, "Fey 07", 0.548614782048403, 0.630906999355663, -0.548614782048403],
+      [8, "Fey 08", 0.774258005430618, -0.251633851764951, -0.580693504072963],
+      [9, "Fey 09", 0, -0.8, -0.6],
+      [10, "Fey 10", -0.774258005430618, -0.251633851764951, -0.580693504072963],
+      [11, "Fey 11", -0.923947703083417, 0.304902742017528, -0.230986925770854],
+      [12, "Fey 12", 0, 0.970142500145332, -0.242535625036333],
+      [13, "Fey 13", 0.923947703083417, 0.304902742017528, -0.230986925770854],
+      [14, "Fey 14", 0.577947069890345, -0.791708314918281, -0.19792707872957],
+      [15, "Fey 15", -0.577947069890345, -0.791708314918281, -0.19792707872957],
+      [16, "Fey 16", -0.923947703083417, -0.304902742017528, 0.230986925770854],
+      [17, "Fey 17", -0.572638174674189, 0.795330798158596, 0.198832699539649],
+      [18, "Fey 18", 0.572638174674189, 0.795330798158596, 0.198832699539649],
+      [19, "Fey 19", 0.923947703083417, -0.304902742017528, 0.230986925770854],
+      [20, "Fey 20", 0, -0.970142500145332, 0.242535625036333],
+      [21, "Fey 21", -0.548614782048403, -0.630906999355663, 0.548614782048403],
+      [22, "Fey 22", 0.548614782048403, -0.630906999355663, 0.548614782048403],
+      [23, "Fey 23", 0.545454545454545, -0.181818181818182, 0.818181818181818],
+      [24, "Fey 24", 0, 0.8, 0.6],
+      [25, "Fey 25", -0.545454545454545, -0.181818181818182, 0.818181818181818],
+      [26, "Fey 26", -0.331448998468967, 0.45113891458276, 0.828622496172417],
+      [27, "Fey 27", 0.331448998468967, 0.45113891458276, 0.828622496172417],
+      [28, "Fey 28", 0, -0.554700196225229, 0.832050294337844],
+      [29, "Fey 29", -0.774258005430618, 0.251633851764951, 0.580693504072963],
+      [30, "Fey 30", 0.774258005430618, 0.251633851764951, 0.580693504072963]
+    ];
+
+    const speakers = rawSpeakers.map(([channel, label, x, y, z]) => ({
+      channel, label, x, y, z, rms: 0, peak: 0, sx: 0, sy: 0, depth: 0
+    }));
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function rotate(point) {
+      const cy = Math.cos(state.yaw);
+      const sy = Math.sin(state.yaw);
+      const cp = Math.cos(state.pitch);
+      const sp = Math.sin(state.pitch);
+
+      const x1 = point.x * cy - point.z * sy;
+      const z1 = point.x * sy + point.z * cy;
+      const y1 = point.y * cp - z1 * sp;
+      const z2 = point.y * sp + z1 * cp;
+      return { x: x1, y: y1, z: z2 };
+    }
+
+    function project(point, width, height) {
+      const radius = Math.min(width, height) * 0.34 * state.zoom;
+      const camera = 3.2;
+      const perspective = state.projection === "perspective" ? camera / (camera + point.z) : 1;
+      return {
+        x: width * 0.5 + point.x * radius * perspective,
+        y: height * 0.5 - point.y * radius * perspective,
+        depth: point.z,
+        scale: perspective
+      };
+    }
+
+    function meter(channel, t) {
+      const a = Math.sin(t * 0.0019 + channel * 0.73) * 0.5 + 0.5;
+      const b = Math.sin(t * 0.0031 + channel * 1.31) * 0.5 + 0.5;
+      const pulse = Math.max(0, Math.sin(t * 0.006 + channel) - 0.78) * 3.8;
+      const rms = Math.min(1, a * 0.44 + b * 0.16 + pulse * 0.16);
+      const peak = Math.min(1, rms + b * 0.28);
+      return { rms, peak };
+    }
+
+    function colorForPeak(peak) {
+      if (peak > 0.9) return "#ff6c5f";
+      if (peak > 0.68) return "#f2bd5c";
+      if (peak > 0.35) return "#7be48b";
+      return "#39d0bd";
+    }
+
+    function drawStructure(points, width, height) {
+      ctx.save();
+      ctx.lineWidth = 1;
+      const rings = [-0.6, -0.25, 0.12, 0.48, 0.78];
+      for (const y of rings) {
+        ctx.beginPath();
+        const r = Math.sqrt(Math.max(0, 1 - y * y));
+        for (let i = 0; i <= 96; i++) {
+          const theta = (i / 96) * Math.PI * 2;
+          const p = project(rotate({ x: Math.cos(theta) * r, y, z: Math.sin(theta) * r }), width, height);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.strokeStyle = "rgba(98, 124, 117, 0.26)";
+        ctx.stroke();
+      }
+
+      for (let spoke = 0; spoke < 10; spoke++) {
+        ctx.beginPath();
+        const theta = (spoke / 10) * Math.PI * 2;
+        for (let i = 0; i <= 64; i++) {
+          const phi = -Math.PI * 0.5 + (i / 64) * Math.PI;
+          const p = project(rotate({
+            x: Math.cos(theta) * Math.cos(phi),
+            y: Math.sin(phi),
+            z: Math.sin(theta) * Math.cos(phi)
+          }), width, height);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.strokeStyle = "rgba(57, 208, 189, 0.14)";
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      for (let i = 0; i <= 128; i++) {
+        const theta = (i / 128) * Math.PI * 2;
+        const p = project(rotate({ x: Math.cos(theta), y: 0, z: Math.sin(theta) }), width, height);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.strokeStyle = "rgba(203, 168, 255, 0.18)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function draw() {
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      ctx.clearRect(0, 0, width, height);
+
+      state.time = performance.now();
+
+      const sorted = speakers.map(speaker => {
+        const m = meter(speaker.channel, state.time);
+        speaker.rms = m.rms;
+        speaker.peak = m.peak;
+        const r = rotate(speaker);
+        const p = project(r, width, height);
+        speaker.sx = p.x;
+        speaker.sy = p.y;
+        speaker.depth = p.depth;
+        speaker.scale = p.scale;
+        return speaker;
+      }).filter(speaker => !state.cutaway || speaker.depth > -0.1)
+        .sort((a, b) => a.depth - b.depth);
+
+      if (state.structure) drawStructure(sorted, width, height);
+
+      if (state.speakers) {
+        for (const speaker of sorted) {
+          const far = speaker.depth < 0;
+          const alpha = far ? 0.36 : 0.92;
+          const selected = state.selected === speaker.channel;
+          const color = colorForPeak(speaker.peak);
+          const size = (selected ? 8 : 6) * speaker.scale;
+          const ring = size + 5 + speaker.peak * 8;
+
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(speaker.sx, speaker.sy, ring, 0, Math.PI * 2);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = selected ? 2.5 : 1.5;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = speaker.peak * 18;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(speaker.sx, speaker.sy, size, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.shadowBlur = speaker.rms * 20;
+          ctx.fill();
+          ctx.restore();
+
+          if (state.labels && (!far || selected)) {
+            ctx.save();
+            ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+            ctx.fillStyle = selected ? "#ffffff" : "rgba(230, 238, 235, 0.76)";
+            ctx.fillText(speaker.channel.toString().padStart(2, "0"), speaker.sx + 10, speaker.sy - 8);
+            ctx.restore();
+          }
+        }
+      }
+
+      updatePanel();
+      requestAnimationFrame(draw);
+    }
+
+    function updatePanel() {
+      const active = speakers.filter(s => s.peak > 0.12);
+      const peak = speakers.reduce((best, s) => s.peak > best.peak ? s : best, speakers[0]);
+      activeCount.textContent = `${active.length}/30`;
+      peakText.textContent = peak.label.replace("Fey ", "");
+      zoomText.textContent = `Zoom ${state.zoom.toFixed(2)}x`;
+
+      if (state.selected) {
+        const selected = speakers.find(s => s.channel === state.selected);
+        selectionTitle.textContent = selected.label;
+        selectionBody.textContent = `Channel ${selected.channel} / RMS ${selected.rms.toFixed(2)} / Peak ${selected.peak.toFixed(2)} / xyz ${selected.x.toFixed(3)}, ${selected.y.toFixed(3)}, ${selected.z.toFixed(3)}`;
+      } else {
+        selectionTitle.textContent = "No speaker selected";
+        selectionBody.textContent = "Click a speaker in the viewport to inspect channel identity, coordinates, and level state.";
+      }
+
+      const rows = speakers.map(s => `
+        <div class="speaker-row">
+          <span>${s.label}</span>
+          <span class="bar"><i style="width:${Math.round(s.peak * 100)}%"></i></span>
+          <span>${s.peak.toFixed(2)}</span>
+        </div>
+      `).join("");
+      list.innerHTML = rows;
+    }
+
+    function setView(view) {
+      const presets = {
+        iso: [Math.PI * 0.25, Math.PI * 0.22, "Iso"],
+        plan: [0, Math.PI * 0.5, "Plan"],
+        front: [0, 0, "Front"],
+        side: [Math.PI * 0.5, 0, "Side"]
+      };
+      const preset = presets[view];
+      state.yaw = preset[0];
+      state.pitch = preset[1];
+      cameraText.textContent = preset[2];
+      viewButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.view === view)));
+    }
+
+    viewButtons.forEach(button => {
+      button.addEventListener("click", () => setView(button.dataset.view));
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      state.zoom = 1;
+      setView("iso");
+    });
+
+    for (const id of ["structure", "speakers", "labels", "cutaway"]) {
+      const button = document.getElementById(id);
+      button.addEventListener("click", () => {
+        state[id] = !state[id];
+        button.setAttribute("aria-pressed", String(state[id]));
+      });
+    }
+
+    document.getElementById("projection").addEventListener("click", event => {
+      state.projection = state.projection === "perspective" ? "orthographic" : "perspective";
+      event.currentTarget.setAttribute("aria-pressed", String(state.projection === "orthographic"));
+      event.currentTarget.textContent = state.projection === "orthographic" ? "Persp" : "Ortho";
+    });
+
+    canvas.addEventListener("pointerdown", event => {
+      state.dragging = true;
+      state.lastX = event.clientX;
+      state.lastY = event.clientY;
+      canvas.setPointerCapture(event.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", event => {
+      if (!state.dragging) return;
+      const dx = event.clientX - state.lastX;
+      const dy = event.clientY - state.lastY;
+      state.yaw += dx * 0.006;
+      state.pitch = Math.max(-1.35, Math.min(1.35, state.pitch + dy * 0.006));
+      state.lastX = event.clientX;
+      state.lastY = event.clientY;
+      cameraText.textContent = "Custom";
+      viewButtons.forEach(button => button.setAttribute("aria-pressed", "false"));
+    });
+
+    canvas.addEventListener("pointerup", event => {
+      state.dragging = false;
+      canvas.releasePointerCapture(event.pointerId);
+    });
+
+    canvas.addEventListener("wheel", event => {
+      event.preventDefault();
+      state.zoom = Math.max(0.62, Math.min(1.75, state.zoom * (event.deltaY > 0 ? 0.94 : 1.06)));
+    }, { passive: false });
+
+    canvas.addEventListener("click", event => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      let best = null;
+      let distance = Infinity;
+      for (const speaker of speakers) {
+        const d = Math.hypot(speaker.sx - x, speaker.sy - y);
+        if (d < distance) {
+          distance = d;
+          best = speaker;
+        }
+      }
+      state.selected = distance < 24 ? best.channel : null;
+    });
+
+    window.addEventListener("resize", resize);
+    resize();
+    draw();
+  </script>
+</body>
+</html>
+

@@ -54,6 +54,15 @@ Future renderer checks should cover:
 - center-lock survives resize and camera preset changes
 - selection emits speaker/channel identity without mutating playback
 
+## Mockup Checks
+
+Disposable browser mockups should stay separate from production Swift code. For `mockups/orbital-view-viewport/`, verify:
+
+- `index.html` and `notes.md` exist
+- inline JavaScript parses with Node extraction
+- mockup text does not claim real audio, real meters, or production renderer behavior
+- static browser review confirms the viewport controls and inspector are usable
+
 ## Required Checks
 
 Current package:
@@ -61,6 +70,12 @@ Current package:
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Current mockup:
+
+```text
+node -e 'const fs=require("fs"); const html=fs.readFileSync("mockups/orbital-view-viewport/index.html","utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n"); new Function(scripts); console.log("inline JS parses");'
 ```
 
 The plain Command Line Tools environment on this machine can build but cannot currently run XCTest:
