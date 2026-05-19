@@ -3,7 +3,7 @@
 ## Status
 
 ```text
-pending
+complete
 ```
 
 ## Goal
@@ -121,4 +121,3 @@ Stop and report instead of continuing if:
 - a major dependency is required
 - renderer work becomes necessary
 - implementation cannot be verified
-

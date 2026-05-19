@@ -23,14 +23,14 @@ OrbitalViewSplat
   Optional Splat editor overlays for virtual speakers, source objects, and renderer kernels.
 ```
 
-Only `OrbitalViewCore` is in scope for the first implementation task.
+Only `OrbitalViewCore` is implemented.
 
 ## Runtime Architecture
 
-Current scaffold:
+Current package:
 
 ```text
-docs + tasks only
+OrbitalViewCore tests and validates core scene contracts.
 ```
 
 Future runtime shape:
@@ -103,10 +103,10 @@ Core rules:
 
 ## External Dependencies
 
-Current scaffold:
+Current implementation:
 
 ```text
-none
+Foundation only
 ```
 
 Future production rendering may use Apple-native rendering frameworks. A major third-party dependency requires an explicit task decision.
@@ -136,4 +136,3 @@ Validation should reject invalid scene data early:
 - Renderer backend choice affects long-term visual quality and development cost.
 - DomeLab geometry import must use a neutral schema to avoid porting browser app internals.
 - Downstream Wavefield adapter location depends on actual package visibility when implementation starts.
-

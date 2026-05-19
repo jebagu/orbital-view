@@ -76,7 +76,7 @@ Future downstream app integrations may touch protected audio, metering, routing,
 Status:
 
 ```text
-pending
+complete
 ```
 
 Goal:
@@ -88,7 +88,7 @@ Create pure core Swift contracts and tests.
 Agent:
 
 ```text
-unassigned
+Codex
 ```
 
 Depends on:
@@ -119,9 +119,8 @@ docs/bugs.md
 
 ## Current Status
 
-The work package is ready for Slice 001.
+Slice 001 is complete. `OrbitalViewCore` exists with tests.
 
 ## Next Action
 
-Run `.tasks/001-orbital-view-core-foundation.md`.
-
+Open a new bounded task for either Wavefield adapter planning, a visual mockup, or renderer backend decision.

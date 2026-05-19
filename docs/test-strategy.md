@@ -1,8 +1,8 @@
 # Test Strategy
 
-## Current Scaffold
+## Current Package
 
-No Swift package exists yet, so `swift build` and `swift test` are not applicable at scaffold initiation.
+The Swift package exists and is verified with the full Xcode toolchain.
 
 ## Testing Goals
 
@@ -50,19 +50,17 @@ Future renderer checks should cover:
 
 ## Required Checks
 
-Current scaffold:
+Current package:
 
 ```text
-find expected root files and docs
-search active docs for leftover placeholders
-git status --short
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ```
 
-Future Swift implementation:
+The plain Command Line Tools environment on this machine can build but cannot currently run XCTest:
 
 ```text
-swift build
-swift test
+swift test -> XCTest not available
 ```
 
 ## Test Data Rules
@@ -72,4 +70,3 @@ swift test
 - Do not rely on live audio devices.
 - Do not fake production meter sources in app UI tests.
 - Do not store secrets.
-

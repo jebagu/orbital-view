@@ -16,9 +16,9 @@ work-packages/orbital-view-kit/MV.md
 
 ## Current Goal
 
-Prepare a safe first implementation slice for `OrbitalViewCore`.
+Prepare the next bounded slice after the `OrbitalViewCore` foundation.
 
-The initial code should establish pure Swift contracts and tests for:
+The current core already establishes pure Swift contracts and tests for:
 
 - coordinate systems
 - vectors and unit-sphere directions
@@ -38,9 +38,10 @@ The initial code should establish pure Swift contracts and tests for:
 
 ## Recommended Next Prompt
 
-Use the bounded task prompt in:
+Create a new bounded task before implementing any renderer, SwiftUI, or downstream app integration work. Good next candidates:
 
 ```text
-.tasks/001-orbital-view-core-foundation.md
+OrbitalViewCore Wavefield adapter planning
+OrbitalViewSwiftUI visual mockup
+Renderer backend decision
 ```
-

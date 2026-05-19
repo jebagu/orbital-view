@@ -6,7 +6,7 @@ The first implementation milestone is deliberately small: create `OrbitalViewCor
 
 ## Current State
 
-This repository currently contains docs, tasks, OpenSpec templates, reviewer guidance, and the initial work package. It does not contain Swift package source code yet.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, and the first pure Swift package target: `OrbitalViewCore`.
 
 ## Main References
 
@@ -21,17 +21,16 @@ work-packages/orbital-view-kit/MV.md
 work-packages/orbital-view-kit/orbital-view-kit-codex-work-package.md
 ```
 
-## First Implementation Target
+## Implemented Core Target
 
 ```text
 OrbitalViewCore
 ```
 
-The first code task should not build a renderer. It should create pure data contracts and validation that can later support native SwiftUI/MetalKit rendering and downstream app integrations.
+`OrbitalViewCore` provides pure data contracts and validation that can later support native SwiftUI/MetalKit rendering and downstream app integrations.
 
-## Out of Scope For Initial Scaffold
+## Still Out of Scope
 
-- Swift package source code
 - Production renderer
 - SwiftUI wrapper
 - MetalKit integration
@@ -40,14 +39,11 @@ The first code task should not build a renderer. It should create pure data cont
 - Wavefield, Orbisonic, or Splat source modifications
 - GitHub remote or publishing setup
 
-## Expected Future Checks
+## Checks
 
-Once Swift source exists:
+Use the full Xcode toolchain when this shell's Command Line Tools install cannot find XCTest:
 
 ```text
-swift build
-swift test
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ```
-
-For the current scaffold-only state, those commands are not applicable.
-

@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-planning scaffold
+core foundation
 ```
 
 ## Current Milestone
 
 ```text
-project-control scaffold initiated
+OrbitalViewCore foundation implemented
 ```
 
 ## Summary
 
-Orbital View Kit is initialized as a docs-first project-control repository. The existing work package is now the source reference for the first implementation slice. No Swift package source exists yet.
+Orbital View Kit now has its first pure Swift package target, `OrbitalViewCore`, with core data contracts, validation, scene builder helpers, and XCTest coverage. Renderer and downstream app integration remain deferred.
 
 ## Current Work Package
 
@@ -34,15 +34,19 @@ main tree
 - Added OrbitalViewKit-specific project docs.
 - Moved the initial work package under `work-packages/orbital-view-kit/`.
 - Defined the first implementation task for `OrbitalViewCore`.
+- Implemented `Package.swift`, `Sources/OrbitalViewCore/`, and `Tests/OrbitalViewCoreTests/`.
+- Verified `OrbitalViewCore` with build and test commands using the full Xcode toolchain.
 
 ## In Progress
 
-- Baseline scaffold verification and Git commit.
+```text
+none
+```
 
 ## Pending
 
-- Implement `.tasks/001-orbital-view-core-foundation.md`.
-- Create the first Swift package target and tests.
+- Decide and open the next bounded task.
+- Add Wavefield layout adapter only after inspecting the downstream Wavefield package.
 - Decide renderer backend in a later PRD or work package.
 
 ## Blocked
@@ -89,8 +93,8 @@ none - scaffold only
 Commands run:
 
 ```text
-swift build -> not applicable; no Swift package exists yet
-swift test -> not applicable; no Swift package exists yet
+swift build -> not run during scaffold initiation; package did not exist yet
+swift test -> not run during scaffold initiation; package did not exist yet
 ```
 
 Documentation updated:
@@ -137,6 +141,94 @@ Next recommended task:
 .tasks/001-orbital-view-core-foundation.md
 ```
 
+### Update: 2026-05-19 OrbitalViewCore Foundation
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added Swift package manifest.
+- Added pure `OrbitalViewCore` target.
+- Added value types and validation for coordinate systems, vectors, shell geometry, speakers, meters, camera, selection, scene specs, and scene builders.
+- Added XCTest coverage for validation, meter channel identity, 30-speaker identity/order, and center-locked camera presets.
+
+Files changed:
+
+```text
+Package.swift
+Sources/OrbitalViewCore/
+Tests/OrbitalViewCoreTests/
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+.tasks/001-orbital-view-core-foundation.md
+work-packages/orbital-view-kit/MV.md
+work-packages/orbital-view-kit/slices/001-orbital-view-core-foundation.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+```
+
+Commands run:
+
+```text
+swift build -> passed with Command Line Tools XCTest path warning
+swift test -> failed before compiling tests because XCTest was unavailable from Command Line Tools
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 8 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+OrbitalViewCore foundation is implemented and verified.
+```
+
+Risks:
+
+- Wavefield layout adapter still requires downstream package inspection.
+- Renderer backend remains intentionally deferred.
+
+Next recommended task:
+
+```text
+Plan the Wavefield layout adapter or renderer visual mockup as a new bounded task.
+```
+
 ## Open Questions
 
 - Exact downstream repository path for the first Wavefield integration.
@@ -145,4 +237,3 @@ Next recommended task:
 ## Decision Log
 
 - `docs/decisions/0001-initial-architecture.md`
-

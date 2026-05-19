@@ -18,7 +18,7 @@ reviewers/                    Human-readable review checklists
 prompts/                      Reusable project prompts
 ```
 
-Swift source directories are not present yet.
+Swift source directories are now present for `OrbitalViewCore`.
 
 ## Feature Map
 
@@ -30,7 +30,7 @@ Purpose:
 Pure data contracts and validation for spherical speaker viewport scenes.
 ```
 
-Planned implementation locations:
+Implementation locations:
 
 ```text
 Package.swift
@@ -81,15 +81,14 @@ Sources/OrbitalViewSwiftUI/
 ## Test Map
 
 ```text
-unit direction validation -> Tests/OrbitalViewCoreTests/
-speaker validation -> Tests/OrbitalViewCoreTests/
-shell reference validation -> Tests/OrbitalViewCoreTests/
-meter channel identity -> Tests/OrbitalViewCoreTests/
-camera center-lock presets -> Tests/OrbitalViewCoreTests/
+unit direction validation -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+speaker validation -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+shell reference validation -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+meter channel identity -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+camera center-lock presets -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 Wavefield layout adaptation -> downstream adapter tests, if implemented
 ```
 
 ## Last Updated
 
-2026-05-19 project initiation
-
+2026-05-19 OrbitalViewCore foundation

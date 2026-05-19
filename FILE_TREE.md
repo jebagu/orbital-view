@@ -8,6 +8,7 @@ FILE_TREE.md
 META_AGENTS.md
 .env.example
 .gitignore
+Package.swift
 
 docs/
   architect-control.md
@@ -28,6 +29,12 @@ docs/
   000-project-bootstrap.md
   001-orbital-view-core-foundation.md
   _template-task.md
+
+Sources/
+  OrbitalViewCore/
+
+Tests/
+  OrbitalViewCoreTests/
 
 work-packages/
   orbital-view-kit/
@@ -60,5 +67,4 @@ reviewers/
 prompts/
 ```
 
-Swift source directories are intentionally absent until the first implementation task creates them.
-
+Renderer and downstream adapter source directories are intentionally absent until later tasks create them.
