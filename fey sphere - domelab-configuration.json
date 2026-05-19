@@ -1,0 +1,372 @@
+{
+  "schema": "domelab.project.v2",
+  "savedAt": "2026-05-19T11:49:39.121Z",
+  "state": {
+    "project": {
+      "units": "metric",
+      "currency": "USD",
+      "precisionMm": 1,
+      "lengthGroupToleranceMm": 1
+    },
+    "surface": {
+      "kind": "spherical",
+      "spherical": {
+        "diameterM": 7.166739952475426,
+        "radiusM": 3.583369976237713,
+        "domeHeightM": 7.166739952475426,
+        "baseDiameterM": 0,
+        "topOpeningDiameterM": 0,
+        "verticalCutPositionM": -3.583369976237713
+      },
+      "ellipsoidal": {
+        "xDiameterM": 8,
+        "yDiameterM": 6,
+        "zHeightM": 6,
+        "truncationHeightM": 3,
+        "topOpeningDiameterM": 0
+      },
+      "onion": {
+        "baseDiameterM": 7,
+        "shoulderHeightM": 2,
+        "maxBulgeDiameterM": 8.5,
+        "neckDiameterM": 3,
+        "apexHeightM": 5,
+        "overallHeightM": 6,
+        "topOpeningDiameterM": 0
+      },
+      "catenary": {
+        "spanDiameterM": 8,
+        "heightM": 5,
+        "shapeFactor": 1.5,
+        "truncationHeightM": 5,
+        "topOpeningDiameterM": 0
+      },
+      "paraboloid": {
+        "baseDiameterM": 8,
+        "heightM": 4,
+        "curvatureCoefficient": 1,
+        "truncationHeightM": 4,
+        "topOpeningDiameterM": 0
+      }
+    },
+    "pattern": {
+      "kind": "geodesic",
+      "triangles": {
+        "targetEdgeLengthM": 0.9,
+        "frequency": 4,
+        "equalEdgePreference": true,
+        "triangulationMethod": "alternating"
+      },
+      "hexagonsPentagons": {
+        "targetCellSizeM": 0.85,
+        "pentagonDistributionMode": "icosahedral",
+        "panelRegularityPreference": "regular",
+        "triangulateForStructure": false
+      },
+      "diamonds": {
+        "diamondWidthM": 0.9,
+        "diamondHeightM": 0.9,
+        "gridRotationDeg": 0,
+        "density": 1
+      },
+      "penrose": {
+        "tileScaleM": 1,
+        "projectionMethod": "radial",
+        "clippingBoundaryBehavior": "trim",
+        "triangulateForStructure": false
+      },
+      "quads": {
+        "uDivisions": 18,
+        "vDivisions": 9,
+        "quadAspectPreference": "balanced",
+        "diagonalBracing": false
+      },
+      "geodesic": {
+        "basePolyhedron": "icosahedron",
+        "frequency": 3,
+        "subdivisionMethod": "class-I",
+        "strutGroupingMode": "by-length",
+        "projectToSurface": true
+      },
+      "lamella": {
+        "sectors": 24,
+        "horizontalRings": 8,
+        "lamellaAngleDeg": 45,
+        "spacingMode": "equal-height"
+      },
+      "schwedlerRibbed": {
+        "meridionalRibs": 24,
+        "horizontalRings": 8,
+        "diagonalBracing": false,
+        "ribSpacingMode": "equal-height"
+      },
+      "kiewitt": {
+        "radialRibs": 18,
+        "hoopRings": 8,
+        "subdivisionCount": 8,
+        "triangulationMode": "alternating"
+      },
+      "threeWayGrid": {
+        "gridDensity": 1,
+        "targetEdgeLengthM": 0.85,
+        "triangulationOrientation": "alternating",
+        "ringAlignmentPreference": "balanced"
+      },
+      "gridshell": {
+        "gridSpacingM": 1,
+        "principalDirectionBias": 0,
+        "curvatureAdaptationStiffness": 0.6,
+        "shellMode": "quad"
+      },
+      "reciprocalFrame": {
+        "membersPerRing": 14,
+        "overlapLengthM": 0.2,
+        "memberDepthM": 0.12,
+        "rotationalOffsetDeg": 14,
+        "concentricTierCount": 4
+      }
+    },
+    "nodes": {
+      "kind": "points",
+      "points": {
+        "pointSizeMm": 75,
+        "nodeStyle": "connector",
+        "showNodeMarkers": true
+      },
+      "rings": {
+        "ringDiameterMm": 300,
+        "ringTubeDiameterMm": 30,
+        "orientationMode": "parallel-to-local-surface",
+        "showFullRingGeometry": true,
+        "rotationAboutNormalDeg": 0,
+        "eccentricOffsetMm": 0,
+        "weldStubLengthMm": 0,
+        "maxAttachments": null
+      }
+    },
+    "geometry": {
+      "pattern": "geodesic",
+      "shape": "full-sphere",
+      "diameterM": 7.166739952475426,
+      "sphereCoverage": 1,
+      "snapCoverageToNodeLayer": false,
+      "flatBase": false,
+      "capHeightM": 7.166739952475426,
+      "cutPlaneZ": -3.583369976237713,
+      "topCutPlaneZ": 3.583369976237713,
+      "bottomCutPlaneZ": -3.583369976237713,
+      "orientation": {
+        "mode": "vertex-up",
+        "rotationEuler": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "geodesic": {
+      "frequency": 3,
+      "basePolyhedron": "icosahedron",
+      "subdivisionClass": "class-I"
+    },
+    "lamella": {
+      "sectors": 24,
+      "rings": 8,
+      "style": "alternating",
+      "handedness": "right",
+      "hoopRings": true,
+      "crownRing": true,
+      "baseRing": true,
+      "triangulation": "alternating"
+    },
+    "ribbedRectangular": {
+      "ribs": 24,
+      "rings": 8,
+      "ribMode": "segmented-straight",
+      "ringMode": "segmented-straight",
+      "diagonalBracing": "none"
+    },
+    "connectorSystem": "flattened-drilled-bolted",
+    "connectors": {
+      "flattenedBolted": {
+        "holeDiameterMm": 12,
+        "holeOffsetMm": 20,
+        "flattenLengthMm": 50,
+        "flattenCompensationMm": 0,
+        "boltCost": 0,
+        "nutCost": 0,
+        "washerCost": 0
+      },
+      "ballHub": {
+        "socketSeatOffsetMm": 28,
+        "trimAllowanceMm": 4,
+        "ballDiameterMm": 60,
+        "socketAdapterCost": 4.5,
+        "maxValence": 8
+      },
+      "weldedNode": {
+        "weldSetbackMm": 12,
+        "copeAllowanceMm": 8,
+        "bevelDeg": 30,
+        "nodeShellCost": 7.5,
+        "weldCostPerEnd": 3.25
+      }
+    },
+    "material": {
+      "materialName": "Galvanized steel",
+      "profileType": "round tube",
+      "profileLabel": "33.7 mm x 2.5 mm round tube, pressed ends",
+      "strutDiameterMm": 33.7,
+      "costPerMeter": 17.4172166931235,
+      "stockLengthM": 6,
+      "wasteFactor": 1,
+      "endOperationCostPerEnd": 0,
+      "nodeBaseCost": 0,
+      "nodePerStrutAdder": 0,
+      "setupCost": 0,
+      "contingencyPercent": 0
+    },
+    "reference": {
+      "sourceLabel": "Christie parts list + lump-sum supplier invoice (normalized to USD)",
+      "note": "Updated cost reference normalized to USD from a GBP-denominated supplier invoice for an approximately 7 meter full sphere in 33.7 mm x 2.5 mm tube with pressed ends, holes, bolts, washers, and galvanized finish. The supplier invoiced the dome as a single ex-VAT amount of $7,361.56 plus $1,472.31 VAT, for $8,833.87 total. The line pricing below is a reconstructed allocation by cut length across the listed members and should be treated as internal reference costing rather than vendor-issued line items. Rows D-J remain feet and doorway pieces beyond the fitted 3V shell used in Dome Lab geometry.",
+      "knownParameters": [
+        "Pattern: 3V geodesic full sphere approximation.",
+        "Reference parts schedule total: 292 pieces and 422.659 m total cut length.",
+        "Pricing basis normalized to USD at $17.4172 per meter ex VAT.",
+        "Included scope in the normalized invoice: pressed both ends, 12 mm holes, M8 bolts and washers, galvanized finish, collection ready."
+      ],
+      "unknownParameters": [
+        "The original supplier invoice was issued as a lump sum and was not broken out by line item.",
+        "The live Dome Lab shell geometry excludes the feet and doorway modifiers listed in rows D-J."
+      ],
+      "pricingSummary": [
+        "Normalized ex-VAT invoice total: $7,361.56.",
+        "Normalized invoice total including VAT: $8,833.87.",
+        "Pricing basis: 422.659 m total cut length at $17.4172 per meter ex VAT.",
+        "Subtotals: primary sphere $6,847.84, feet $299.49, door assembly $214.22."
+      ],
+      "parts": [
+        {
+          "id": "A",
+          "description": "Pentagon radials",
+          "quantity": 55,
+          "cutLengthM": 1.289,
+          "fabricationLengthM": 1.249,
+          "endAngleADeg": 10,
+          "endAngleBDeg": 10,
+          "color": "Yellow",
+          "unitPriceUsd": 22.456468087550984,
+          "lineTotalUsd": 1234.7947883035563
+        },
+        {
+          "id": "B",
+          "description": "Pent/hex circumfs",
+          "quantity": 90,
+          "cutLengthM": 1.486,
+          "fabricationLengthM": 1.446,
+          "endAngleADeg": 12,
+          "endAngleBDeg": 12,
+          "color": "Blue",
+          "unitPriceUsd": 25.876989716780606,
+          "lineTotalUsd": 2329.3887493537086
+        },
+        {
+          "id": "C",
+          "description": "Hexagon radials",
+          "quantity": 120,
+          "cutLengthM": 1.518,
+          "fabricationLengthM": 1.478,
+          "endAngleADeg": 12,
+          "endAngleBDeg": 12,
+          "color": "Red",
+          "unitPriceUsd": 26.444823346929397,
+          "lineTotalUsd": 3172.716329063021
+        },
+        {
+          "id": "D",
+          "description": "Flattened pentagon radials",
+          "quantity": 5,
+          "cutLengthM": 1.274,
+          "fabricationLengthM": 1.234,
+          "endAngleADeg": 30,
+          "endAngleBDeg": 0,
+          "color": "Green",
+          "unitPriceUsd": 22.186071120813466,
+          "lineTotalUsd": 110.94387545240421
+        },
+        {
+          "id": "E",
+          "description": "Verticals for feet",
+          "quantity": 5,
+          "cutLengthM": 0.595,
+          "fabricationLengthM": 0.555,
+          "endAngleADeg": 40,
+          "endAngleBDeg": 90,
+          "color": "White",
+          "unitPriceUsd": 10.369723674383868,
+          "lineTotalUsd": 51.82157867524559
+        },
+        {
+          "id": "F",
+          "description": "Horizontals for feet",
+          "quantity": 10,
+          "cutLengthM": 1.422,
+          "fabricationLengthM": 1.382,
+          "endAngleADeg": 0,
+          "endAngleBDeg": 0,
+          "color": "Pink",
+          "unitPriceUsd": 24.76836215315678,
+          "lineTotalUsd": 247.6701016832309
+        },
+        {
+          "id": "G",
+          "description": "Doorway vertical",
+          "quantity": 2,
+          "cutLengthM": 1.699,
+          "fabricationLengthM": 1.659,
+          "endAngleADeg": 70,
+          "endAngleBDeg": 0,
+          "color": "Black",
+          "unitPriceUsd": 29.5949480094215,
+          "lineTotalUsd": 59.189896018843
+        },
+        {
+          "id": "H",
+          "description": "Doorway brace",
+          "quantity": 2,
+          "cutLengthM": 2.558,
+          "fabricationLengthM": 2.518,
+          "endAngleADeg": 40,
+          "endAngleBDeg": 40,
+          "color": "Purple",
+          "unitPriceUsd": 44.54790027000632,
+          "lineTotalUsd": 89.10932038834952
+        },
+        {
+          "id": "I",
+          "description": "Doorway hex radial",
+          "quantity": 2,
+          "cutLengthM": 1.195,
+          "fabricationLengthM": 1.155,
+          "endAngleADeg": 40,
+          "endAngleBDeg": 0,
+          "color": "Orange",
+          "unitPriceUsd": 20.80704659045212,
+          "lineTotalUsd": 41.62761302924111
+        },
+        {
+          "id": "J",
+          "description": "Doorway threshold",
+          "quantity": 1,
+          "cutLengthM": 1.395,
+          "fabricationLengthM": 1.355,
+          "endAngleADeg": 0,
+          "endAngleBDeg": 0,
+          "color": "White",
+          "unitPriceUsd": 24.295167461366116,
+          "lineTotalUsd": 24.295167461366116
+        }
+      ]
+    }
+  }
+}

@@ -522,7 +522,7 @@
     <nav class="control-rail" aria-label="3D model controls">
       <div class="brand">
         <strong>OrbitalViewKit</strong>
-        <span>Fey 30 / Monitor</span>
+        <span>Fey 30 / 3V Shell</span>
       </div>
       <div class="viewport-toolbar">
         <div class="toolbar-actions">
@@ -870,6 +870,149 @@
       };
     }
 
+    const feySphereGeodesicConfig = {
+      source: "fey sphere - domelab-configuration.json",
+      diameterM: 7.166739952475426,
+      radiusM: 3.583369976237713,
+      shape: "full-sphere",
+      sphereCoverage: 1,
+      orientationMode: "vertex-up",
+      basePolyhedron: "icosahedron",
+      frequency: 3,
+      subdivisionClass: "class-I",
+      showNodeMarkers: true
+    };
+
+    const icosahedronFaces = [
+      [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+      [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+      [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+      [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+    ];
+
+    function createIcosahedronVertices() {
+      const phi = (1 + Math.sqrt(5)) / 2;
+      return [
+        { x: -1, y: phi, z: 0 },
+        { x: 1, y: phi, z: 0 },
+        { x: -1, y: -phi, z: 0 },
+        { x: 1, y: -phi, z: 0 },
+        { x: 0, y: -1, z: phi },
+        { x: 0, y: 1, z: phi },
+        { x: 0, y: -1, z: -phi },
+        { x: 0, y: 1, z: -phi },
+        { x: phi, y: 0, z: -1 },
+        { x: phi, y: 0, z: 1 },
+        { x: -phi, y: 0, z: -1 },
+        { x: -phi, y: 0, z: 1 }
+      ].map(vertex => normalize3(vertex));
+    }
+
+    function rotateVectorBetween(vector, from, to) {
+      const source = normalize3(from);
+      const target = normalize3(to);
+      const axis = cross3(source, target);
+      const sin = Math.hypot(axis.x, axis.y, axis.z);
+      const cos = dot3(source, target);
+
+      if (sin < 0.00001) {
+        if (cos > 0) return vector;
+        return { x: vector.x, y: -vector.y, z: -vector.z };
+      }
+
+      const unitAxis = scale3(axis, 1 / sin);
+      return add3(
+        add3(
+          scale3(vector, cos),
+          scale3(cross3(unitAxis, vector), sin)
+        ),
+        scale3(unitAxis, dot3(unitAxis, vector) * (1 - cos))
+      );
+    }
+
+    function buildFeyGeodesicStructure(config) {
+      if (config.basePolyhedron !== "icosahedron" || config.subdivisionClass !== "class-I") {
+        throw new Error("Unsupported Fey geodesic configuration");
+      }
+
+      const frequency = config.frequency;
+      const baseVertices = createIcosahedronVertices();
+      const vertexUpSource = baseVertices[5];
+      const alignedBaseVertices = config.orientationMode === "vertex-up"
+        ? baseVertices.map(vertex => rotateVectorBetween(vertex, vertexUpSource, { x: 0, y: 1, z: 0 }))
+        : baseVertices;
+      const nodes = [];
+      const nodeIds = new Map();
+      const edgeIds = new Map();
+
+      function nodeKey(point) {
+        return `${point.x.toFixed(6)},${point.y.toFixed(6)},${point.z.toFixed(6)}`;
+      }
+
+      function nodeId(point) {
+        const normalized = normalize3(point);
+        const key = nodeKey(normalized);
+        if (!nodeIds.has(key)) {
+          nodeIds.set(key, nodes.length);
+          nodes.push(normalized);
+        }
+        return nodeIds.get(key);
+      }
+
+      function addEdge(a, b) {
+        if (a === b) return;
+        const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+        if (!edgeIds.has(key)) edgeIds.set(key, a < b ? [a, b] : [b, a]);
+      }
+
+      for (const face of icosahedronFaces) {
+        const a = alignedBaseVertices[face[0]];
+        const b = alignedBaseVertices[face[1]];
+        const c = alignedBaseVertices[face[2]];
+        const localNodes = new Map();
+
+        function localNodeId(i, j) {
+          const key = `${i}:${j}`;
+          if (!localNodes.has(key)) {
+            const k = frequency - i - j;
+            const point = add3(
+              add3(scale3(a, k / frequency), scale3(b, i / frequency)),
+              scale3(c, j / frequency)
+            );
+            localNodes.set(key, nodeId(point));
+          }
+          return localNodes.get(key);
+        }
+
+        for (let i = 0; i <= frequency; i++) {
+          for (let j = 0; j <= frequency - i; j++) {
+            const current = localNodeId(i, j);
+            for (const [di, dj] of [[1, 0], [0, 1], [-1, 1]]) {
+              const nextI = i + di;
+              const nextJ = j + dj;
+              if (nextI >= 0 && nextJ >= 0 && nextI + nextJ <= frequency) {
+                addEdge(current, localNodeId(nextI, nextJ));
+              }
+            }
+          }
+        }
+      }
+
+      const edges = [...edgeIds.values()].map(([a, b]) => ({
+        a,
+        b,
+        length: Math.hypot(nodes[a].x - nodes[b].x, nodes[a].y - nodes[b].y, nodes[a].z - nodes[b].z)
+      }));
+      const lengthKeys = [...new Set(edges.map(edge => edge.length.toFixed(5)))].sort((a, b) => Number(a) - Number(b));
+      for (const edge of edges) {
+        edge.lengthGroup = lengthKeys.indexOf(edge.length.toFixed(5));
+      }
+
+      return { nodes, edges, lengthKeys };
+    }
+
+    const feyGeodesicStructure = buildFeyGeodesicStructure(feySphereGeodesicConfig);
+
     const frontClipPlane = -0.04;
 
     function clamp01(value) {
@@ -916,57 +1059,70 @@
       }
     }
 
-    function drawSampledPath(samplePoint, count, strokeStyle, lineWidth) {
-      ctx.beginPath();
-      let started = false;
-      for (let i = 0; i <= count; i++) {
-        const rotated = rotate(samplePoint(i / count));
-        if (!isVisibleDepth(rotated.z)) {
-          started = false;
-          continue;
-        }
-        const p = project(rotated, canvas.clientWidth, canvas.clientHeight);
-        if (!started) {
-          ctx.moveTo(p.x, p.y);
-          started = true;
-        } else {
-          ctx.lineTo(p.x, p.y);
-        }
+    function clipSegmentToFront(start, end) {
+      if (hiddenLinesVisible()) return [start, end];
+
+      const startInside = start.z >= frontClipPlane;
+      const endInside = end.z >= frontClipPlane;
+      if (!startInside && !endInside) return null;
+      if (startInside && endInside) return [start, end];
+
+      const t = (frontClipPlane - start.z) / (end.z - start.z);
+      const clipped = lerp3(start, end, t);
+      return startInside ? [start, clipped] : [clipped, end];
+    }
+
+    function drawGeodesicNodes(width, height) {
+      if (!feySphereGeodesicConfig.showNodeMarkers) return;
+      const colors = palette();
+      ctx.save();
+      ctx.fillStyle = colors.structure;
+      for (const node of feyGeodesicStructure.nodes) {
+        const rotated = rotate(node);
+        if (!isVisibleDepth(rotated.z)) continue;
+        const p = project(rotated, width, height);
+        ctx.globalAlpha = 0.42 * hiddenDepthFade(rotated.z);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.45, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.strokeStyle = strokeStyle;
-      ctx.lineWidth = lineWidth;
-      ctx.stroke();
+      ctx.restore();
     }
 
     function drawStructure(width, height) {
       const colors = palette();
+      const edgeViews = feyGeodesicStructure.edges.map(edge => {
+        const start = rotate(feyGeodesicStructure.nodes[edge.a]);
+        const end = rotate(feyGeodesicStructure.nodes[edge.b]);
+        const clipped = clipSegmentToFront(start, end);
+        if (!clipped) return null;
+        const fade = Math.min(hiddenDepthFade(clipped[0].z), hiddenDepthFade(clipped[1].z));
+        if (fade <= 0.02) return null;
+        return {
+          edge,
+          start: clipped[0],
+          end: clipped[1],
+          depth: (clipped[0].z + clipped[1].z) * 0.5,
+          fade
+        };
+      }).filter(Boolean).sort((a, b) => a.depth - b.depth);
+
       ctx.save();
-      const rings = [-0.6, -0.25, 0.12, 0.48, 0.78];
-      for (const y of rings) {
-        const r = Math.sqrt(Math.max(0, 1 - y * y));
-        drawSampledPath(t => {
-          const theta = t * Math.PI * 2;
-          return { x: Math.cos(theta) * r, y, z: Math.sin(theta) * r };
-        }, 96, colors.structureSecondary, 1);
+      ctx.lineCap = "round";
+      for (const edgeView of edgeViews) {
+        const start = project(edgeView.start, width, height);
+        const end = project(edgeView.end, width, height);
+        const groupAlpha = [0.58, 0.78, 0.96][edgeView.edge.lengthGroup] || 0.72;
+        ctx.globalAlpha = groupAlpha * edgeView.fade;
+        ctx.strokeStyle = edgeView.edge.lengthGroup === 2 ? colors.equator : colors.structure;
+        ctx.lineWidth = edgeView.edge.lengthGroup === 2 ? 1.15 : 0.9;
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
       }
-
-      for (let spoke = 0; spoke < 10; spoke++) {
-        const theta = (spoke / 10) * Math.PI * 2;
-        drawSampledPath(t => {
-          const phi = -Math.PI * 0.5 + t * Math.PI;
-          return {
-            x: Math.cos(theta) * Math.cos(phi),
-            y: Math.sin(phi),
-            z: Math.sin(theta) * Math.cos(phi)
-          };
-        }, 64, colors.structure, 1);
-      }
-
-      drawSampledPath(t => {
-        const theta = t * Math.PI * 2;
-        return { x: Math.cos(theta), y: 0, z: Math.sin(theta) };
-      }, 128, colors.equator, 1.2);
       ctx.restore();
+      drawGeodesicNodes(width, height);
     }
 
     function drawHiddenLinesBoundary(width, height) {

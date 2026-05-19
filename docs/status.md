@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-Mockup defaults and slider scale update
+Mockup Fey geodesic shell update
 ```
 
 ## Current Milestone
 
 ```text
-Static mockup Purple/Prism defaults and remapped sliders verified
+Static mockup Fey 3V geodesic shell verified
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. The browser mockup now uses always-axonometric projection with no projection picker, groups controls under Camera, Color, Speaker Shape, and View Detail headings, defaults to Purple and Prism, themes the full surface from Purple, Flamingo, Green, and B&W palettes, draws prism speakers as 8-vertex rectangular prisms, uses switch controls for speaker numbers and hidden lines defaulted off, applies fog depth fading consistently to hidden shell lines and hidden speaker faces, and remaps Speaker size and Fog density sliders around the requested visual midpoints. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. The browser mockup now uses always-axonometric projection with no projection picker, groups controls under Camera, Color, Speaker Shape, and View Detail headings, draws the shell as a Fey 3V class-I icosahedron geodesic derived from the DomeLab project config values, defaults to Purple and Prism, themes the full surface from Purple, Flamingo, Green, and B&W palettes, draws prism speakers as 8-vertex rectangular prisms, uses switch controls for speaker numbers and hidden lines defaulted off, applies fog depth fading consistently to hidden shell lines and hidden speaker faces, and remaps Speaker size and Fog density sliders around the requested visual midpoints. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -57,6 +57,7 @@ main tree
 - Grouped the mockup controls under Camera, Color, Speaker Shape, and View Detail headings, converted Speaker numbers to a switch, and aligned hidden speaker fog fading with hidden shell-line fading.
 - Updated the mockup Color selector to Green, Flamingo, Purple, and B&W, with Green using Orbisonic Lab tokens and Purple using Kimi Purple tokens.
 - Reordered the mockup Color selector to Purple, Flamingo, Green, and B&W with Purple default; made Prism the default Speaker Shape; defaulted Speaker numbers and Hidden Lines off; centered the Speaker size slider at 1.95x; and remapped Fog density so the prior 30-density look sits at the slider midpoint.
+- Replaced the mockup's generic latitude/spoke shell structure with a generated Fey 3V class-I icosahedron geodesic shell from the DomeLab project config values.
 
 ## In Progress
 
@@ -1775,6 +1776,85 @@ Next recommended task:
 
 ```text
 Open a protected SwiftUI/Metal renderer slice when these controls should move beyond the mockup.
+```
+
+### Update: 2026-05-19 Mockup Fey Geodesic Shell Update
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Replaced the mockup's generic latitude rings and spokes with a generated Fey 3V class-I icosahedron geodesic shell.
+- Sourced the shell settings from `fey sphere - domelab-configuration.json`: full sphere, 7.166739952475426 m diameter, icosahedron base, frequency 3, class-I subdivision, vertex-up orientation.
+- Generated 92 geodesic nodes, 270 edges, and 3 strut-length groups for the normalized viewport shell.
+- Kept the geodesic as data-driven mockup behavior, not a DomeLab runtime dependency or production renderer implementation.
+- Kept speakers, fake meter animation, color defaults, shape defaults, and slider behavior unchanged.
+
+Files changed:
+
+```text
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none - static mockup behavior and docs only
+```
+
+Commands run:
+
+```text
+node inline-script parse for mockup -> passed
+node Fey geodesic generator count assertion -> passed, 92 nodes, 270 edges, 3 length groups
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+mockups/orbital-view-viewport/notes.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup shell now uses the Fey 3V geodesic structure instead of a generic spherical grid.
+```
+
+Risks:
+
+- This remains a browser mockup with fake meter animation and normalized unit-sphere shell coordinates; production SwiftUI/Metal geodesic import remains deferred.
+
+Next recommended task:
+
+```text
+Open a protected SwiftUI/Metal renderer slice when the Fey geodesic shell should move beyond the mockup.
 ```
 
 ## Open Questions

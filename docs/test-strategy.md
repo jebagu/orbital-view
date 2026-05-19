@@ -92,6 +92,7 @@ Disposable browser mockups should stay separate from production Swift code. For 
 
 - `index.html` and `notes.md` exist
 - inline JavaScript parses with Node extraction
+- Fey geodesic generator produces the expected 3V full-sphere counts: 92 nodes, 270 edges, and 3 length groups
 - mockup text does not claim real audio, real meters, or production renderer behavior
 - static browser review confirms the DomeLab-style left control panel headings, no Projection picker, always-axonometric projection, full-surface Color palettes, Purple/Prism defaults, remapped speaker size/fog sliders, Speaker numbers switch defaulted off, Hidden Lines switch defaulted off, consistent shell/speaker fog behavior, prism face clipping, PNG export, and inspector are usable
 
