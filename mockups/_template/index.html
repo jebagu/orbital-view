@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feature Mockup</title>
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      background: #111;
+      color: #f5f5f5;
+    }
+    body {
+      margin: 0;
+      padding: 32px;
+    }
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      border: 1px solid #333;
+      border-radius: 24px;
+      padding: 24px;
+      background: #181818;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .meter {
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #5aff8a 40%, #ffd45a 70%, #ff5a5a 100%);
+      margin: 16px 0;
+    }
+    .waveform {
+      height: 180px;
+      border-radius: 18px;
+      background:
+        repeating-linear-gradient(90deg, #2d8cff 0 4px, transparent 4px 12px),
+        #0c1b2d;
+      opacity: 0.85;
+    }
+    .state {
+      margin-top: 16px;
+      color: #bbb;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>[Feature Name]</h1>
+    <p>This is a disposable HTML mockup. It shows layout and flow, not real Swift or audio behavior.</p>
+
+    <section class="toolbar">
+      <button id="play">Play</button>
+      <button id="pause">Pause</button>
+      <button id="record">Record</button>
+      <button id="stop">Stop</button>
+    </section>
+
+    <section>
+      <h2>Audio Surface</h2>
+      <div class="waveform" aria-label="Fake waveform"></div>
+      <div class="meter" aria-label="Fake meter"></div>
+      <div class="state" id="state">State: idle</div>
+    </section>
+  </main>
+
+  <script>
+    const state = document.getElementById("state");
+    for (const id of ["play", "pause", "record", "stop"]) {
+      document.getElementById(id).addEventListener("click", () => {
+        state.textContent = `State: ${id}`;
+      });
+    }
+  </script>
+</body>
+</html>
