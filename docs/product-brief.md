@@ -40,26 +40,37 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 
 - Pure `OrbitalViewCore` data and validation target.
 - Local `OrbitalViewWavefield` JSON layout and meter-frame adapters.
-- Native `OrbitalViewRender` MetalKit seam with an initial offscreen smoke-tested draw path.
+- Local `OrbitalViewOrbisonic` adapter skeleton for Orbisonic renderer/output monitor speaker and meter records.
+- Native `OrbitalViewRender` MetalKit seam with an offscreen-tested instanced cube/prism speaker draw path.
 - Renderer invariant tests for stable static draw inputs under meter and camera updates.
 - Display-only VU visual settings for gain, checker pulse/ring/diagonal wave style, color scheme, and 30-channel renderer meter mapping.
-- Wavefield-style source-object frames, object meters keyed by `objectId`, capped trails/glow-trail settings, and `-5...+5` render/effect bounds.
-- `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray.
+- Sonic Sphere speaker shape contracts for cube defaults, fixed rectangular-prism z scale from one to two cubes, and face-center VU bloom distance.
+- Platform-neutral theme tokens and Daft Punk Bow as the first-class rainbow VU palette, with legacy `Tech Rainbow` settings migrating to Daft Punk Bow.
+- Music-mode cube scalar center-bloom defaults, validated bloom/response/peak-hold/release/hot-fill/face-pixel settings, diagnostics visibility, and legacy checker/ripple style migration.
+- Runtime-safe speaker meter sanitizing that replaces non-finite input, clamps finite host levels, and reports missing/extra/invalid/duplicate channel diagnostics.
+- Codable visual presets plus a persistence protocol contract, while keeping concrete storage out of `OrbitalViewCore`.
+- Renderer static cache plan and invariant tests for static speaker geometry keys, channel-to-instance mapping, cube/prism shape invalidation, and retained speaker buffer reuse.
+- Metal cube/prism center-bloom prototype that maps RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, and Daft Punk Bow to retained ramp uniforms without resizing speaker geometry.
+- Host source-object frames, object meters keyed by `objectId`, capped trails/glow-trail settings, and `-5...+5` render/effect bounds.
+- `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray, optional preset store actions, speaker height control, and diagnostics display.
+- Standalone `OrbitalViewViewer` SwiftPM executable with deterministic 30-speaker demo content, sample object overlays, camera preset buttons, and the existing VU settings tray.
+- Runtime-safe Wavefield meter adapter plus a guarded Wavefield app Orbital View tab that joins cached Fey speaker geometry to `PlayerSnapshot.meterSummary.multichannelLevels` by physical channel while preserving the existing Spherical VU tab.
+- Runtime-safe Orbisonic host adapter skeleton that defines `Orbisonic renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView` without importing the Orbisonic app.
 - Disposable browser mockup for toolbar and camera interaction.
 
 ## Nice-To-Have Later
 
-- Full production MetalKit visuals.
+- Shell/strut rendering and full production MetalKit visual polish.
 - Production checker facet animation/materials.
-- SwiftUI controls, gestures, toolbar, and inspector UI beyond the current VU settings tray.
+- SwiftUI gestures, toolbar, hit testing, and inspector UI beyond the current VU settings tray.
 - DomeLab neutral geometry import.
 - Splat editing mode and renderer-kernel overlays.
 - Snapshot export.
 
 ## Out Of Scope For Current Package
 
-- Full production renderer visuals.
-- Downstream app integration.
+- Full downstream production renderer integration.
+- Additional downstream app integration beyond the current Wavefield tab and Orbisonic contract skeleton.
 - WebView embedding.
 - DomeLab code import.
 - Audio playback, routing, MIDI, OSC, or render-pipeline behavior.
@@ -72,9 +83,11 @@ The first usable implementation already:
 - Build and test a pure Swift `OrbitalViewCore` package target.
 - Represent a scene with coordinate system, shell geometry, 30 physical speakers, meter levels by channel, and center-locked camera presets.
 - Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder.
-- Render a minimal offscreen Metal frame for deterministic renderer smoke coverage.
-- Apply display-only checker pulse/ring/diagonal wave visual settings to renderer color state without changing speaker geometry.
+- Render an offscreen Metal frame for deterministic renderer smoke and center-bloom pixel-probe coverage.
+- Apply display-only cube scalar center-bloom material settings to renderer speaker meshes without changing speaker geometry, while keeping checker pulse/ring/diagonal wave as a legacy/impulse-test style.
+- Keep Sonic Sphere speaker geometry fixed as cube/prism scene shape data while VU settings expose only validated display z scale.
 - Accept active source-object frames and object meter frames separately from speaker scene and speaker meter state.
+- Launch a standalone native Swift viewer from the package without opening a downstream host app.
 
 ## Constraints
 
@@ -85,12 +98,14 @@ The first usable implementation already:
 - External services: none.
 - Security/privacy: no network requirement.
 - Performance: renderer updates must avoid heavy geometry rebuilds for meter, object meter, and object trail changes.
-- Reliability: validation errors must be explicit and testable.
+- Reliability: validation errors must be explicit and testable, and host-facing unsafe meter input should be sanitized before it reaches strict frame constructors.
 
 ## Assumptions
 
 - Wavefield coordinates use `x = right`, `y = up`, `z = front`.
+- Orbisonic monitor coordinates use the same `x = right`, `y = up`, `z = front` basis for the current adapter skeleton.
 - Physical speaker channels are 1-based and must not be reordered.
-- Wavefield source-object IDs are 1-based, valid in `1...128`, and separate from physical speaker channels.
+- Wavefield presents the shared `Daft Punk Bow` color scheme in its host-level color-scheme options; the Orbisonic contract exposes the same shared color scheme through `OrbisonicOrbitalColorScheme.daftPunkBow`.
+- Source-object IDs are 1-based, valid in `1...128`, and separate from physical speaker channels.
 - DomeLab is a reference and future geometry-export source, not a dependency.
 - `OrbitalViewCore` should stay portable and independent of downstream app targets.

@@ -12,6 +12,7 @@ final class WavefieldSpeakerLayoutSceneAdapterTests: XCTestCase {
         XCTAssertEqual(scene.speakers.map(\.channel), Array(1...30))
         XCTAssertEqual(scene.speakers.first?.id, "fey-30-channel-1")
         XCTAssertEqual(scene.speakers.first?.label, "Fey 01")
+        XCTAssertEqual(scene.speakers.first?.shape, .cube(edgeM: 0.06))
         XCTAssertEqual(scene.speakers.last?.id, "fey-30-channel-30")
         XCTAssertEqual(scene.speakers.last?.label, "Fey 30")
 

@@ -8,8 +8,10 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     func testOrbitalViewInitializesWithBindings() throws {
         let scene = try makeScene()
         let camera = try OrbitalViewCameraState.preset(.isometric)
+        let diagnostics = OrbitalViewInputDiagnostics(missingChannels: [2])
         let view = OrbitalView(
             scene: scene,
+            inputDiagnostics: diagnostics,
             camera: .constant(camera),
             selection: .constant(nil)
         )
@@ -19,23 +21,104 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertNil(view.objectFrames)
         XCTAssertNil(view.objectMeters)
         XCTAssertEqual(view.objectVisualSettings, .default)
+        XCTAssertEqual(view.inputDiagnostics, diagnostics)
         XCTAssertFalse(view.showsMeterSettingsTray)
+        XCTAssertNil(view.visualPresetStore)
     }
 
     func testOrbitalViewSettingsInitializerOptsIntoTray() throws {
         let scene = try makeScene()
         let camera = try OrbitalViewCameraState.preset(.isometric)
         let settings = try SpeakerMeterVisualSettings(visualGainDB: 3, style: .coolPulse)
+        let diagnostics = OrbitalViewInputDiagnostics(extraChannels: [31])
+        let store = InMemoryVisualPresetStore()
         let view = OrbitalView(
             scene: scene,
             meters: nil,
+            inputDiagnostics: diagnostics,
+            visualPresetStore: store,
             meterVisualSettings: .constant(settings),
             camera: .constant(camera),
             selection: .constant(nil)
         )
 
         XCTAssertEqual(view.scene, scene)
+        XCTAssertEqual(view.inputDiagnostics, diagnostics)
         XCTAssertTrue(view.showsMeterSettingsTray)
+        XCTAssertNotNil(view.visualPresetStore)
+    }
+
+    func testVisualPresetControllerUsesOptionalStoreAndKeepsPersistenceOptional() throws {
+        let controllerWithoutStore = OrbitalViewVisualPresetController(store: nil)
+        XCTAssertNil(try controllerWithoutStore.saveAsDefault(settings: .default))
+        XCTAssertNil(try controllerWithoutStore.savePreset(displayName: "Ignored", settings: .default))
+        XCTAssertNil(try controllerWithoutStore.loadPreset())
+        XCTAssertEqual(try controllerWithoutStore.resetToFactory(), .default)
+
+        let store = InMemoryVisualPresetStore()
+        let controller = OrbitalViewVisualPresetController(store: store)
+        let customSettings = try SpeakerMeterVisualSettings(
+            visualGainDB: 4,
+            style: .cubeScalarCenterBloom,
+            colorScheme: .daftPunkBow,
+            speakerZScale: 1.8,
+            bloomMin: 0.1,
+            bloomMax: 0.88,
+            bloomEdge: 0.2,
+            responseCurve: 0.9,
+            peakHoldSeconds: 0.45,
+            releaseMemory: 0.4,
+            hotFill: 0.92,
+            facePixels: 14,
+            showsDiagnostics: true
+        )
+
+        let defaultPreset = try XCTUnwrap(controller.saveAsDefault(settings: customSettings))
+        XCTAssertEqual(defaultPreset.id, "default-music")
+        XCTAssertEqual(defaultPreset.displayName, "Default Music")
+        XCTAssertEqual(store.savedPreset, defaultPreset)
+
+        let customPreset = try XCTUnwrap(controller.savePreset(displayName: "  Stage Bow  ", settings: customSettings))
+        XCTAssertEqual(customPreset.id, "stage-bow")
+        XCTAssertEqual(customPreset.displayName, "Stage Bow")
+        XCTAssertEqual(try controller.loadPreset(), customPreset)
+        XCTAssertEqual(try controller.resetToSavedDefault(), customPreset)
+
+        XCTAssertEqual(try controller.resetToFactory(), .default)
+        XCTAssertTrue(store.didReset)
+    }
+
+    func testDiagnosticsSummaryReportsMissingExtraAndSanitizedChannels() {
+        let diagnostics = OrbitalViewInputDiagnostics(
+            missingChannels: [2, 4],
+            extraChannels: [31],
+            invalidChannels: [0],
+            duplicateChannels: [3],
+            replacedValues: [
+                OrbitalViewInputDiagnostics.ValueReplacement(channel: 1, field: "rms", replacement: 0)
+            ],
+            clampedValues: [
+                OrbitalViewInputDiagnostics.ValueClamp(channel: 5, field: "peak", original: 1.7, clamped: 1)
+            ],
+            timestampReplaced: true
+        )
+
+        XCTAssertEqual(
+            OrbitalViewInputDiagnosticsSummary.lines(for: diagnostics),
+            [
+                "Missing channels: 2, 4",
+                "Extra channels: 31",
+                "Invalid channels: 0",
+                "Duplicate channels: 3",
+                "Sanitized values: 1 replaced",
+                "Sanitized values: 1 clamped",
+                "Timestamp fallback used."
+            ]
+        )
+        XCTAssertEqual(
+            OrbitalViewInputDiagnosticsSummary.lines(for: .empty),
+            ["No channel diagnostics."]
+        )
     }
 
     func testCoordinatorAppliesConfigurationWithoutRepeatedStructuralUpdates() throws {
@@ -237,7 +320,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             channel: 1,
             label: "Fey 01",
             anchor: .direction(direction, offsetM: 0.05),
-            shape: .sphere(radiusM: 0.03)
+            shape: try SpeakerShape.sonicSphereDefault()
         )
 
         return try OrbitalViewSceneBuilder.makeMonitorScene(
@@ -245,5 +328,23 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             shell: .parametric(try OrbitalViewParametricShell(kind: .geodesic, radiusM: 1)),
             speakers: [speaker]
         )
+    }
+}
+
+private final class InMemoryVisualPresetStore: OrbitalViewVisualPresetStore, @unchecked Sendable {
+    private(set) var savedPreset: OrbitalViewVisualPreset?
+    private(set) var didReset = false
+
+    func loadVisualPreset() throws -> OrbitalViewVisualPreset? {
+        savedPreset
+    }
+
+    func saveVisualPreset(_ preset: OrbitalViewVisualPreset) throws {
+        savedPreset = preset
+    }
+
+    func resetVisualPreset() throws {
+        savedPreset = nil
+        didReset = true
     }
 }

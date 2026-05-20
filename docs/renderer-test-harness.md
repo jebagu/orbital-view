@@ -87,7 +87,7 @@ Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
 Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 ```
 
-The current draw path renders fixed-size speaker quads from scene speaker anchors. Meter values affect color and intensity only; they do not resize speaker geometry.
+The current speaker draw path renders fixed-size instanced cube/prism meshes from scene speaker anchors. Meter values affect material fill, halo/ring intensity, and clip flash only; they do not resize speaker geometry.
 
 ### Layer 3: Renderer Invariant Tests
 

@@ -16,12 +16,20 @@ let package = Package(
             targets: ["OrbitalViewWavefield"]
         ),
         .library(
+            name: "OrbitalViewOrbisonic",
+            targets: ["OrbitalViewOrbisonic"]
+        ),
+        .library(
             name: "OrbitalViewRender",
             targets: ["OrbitalViewRender"]
         ),
         .library(
             name: "OrbitalViewSwiftUI",
             targets: ["OrbitalViewSwiftUI"]
+        ),
+        .executable(
+            name: "OrbitalViewViewer",
+            targets: ["OrbitalViewViewer"]
         )
     ],
     targets: [
@@ -33,6 +41,10 @@ let package = Package(
             dependencies: ["OrbitalViewCore"]
         ),
         .target(
+            name: "OrbitalViewOrbisonic",
+            dependencies: ["OrbitalViewCore"]
+        ),
+        .target(
             name: "OrbitalViewRender",
             dependencies: ["OrbitalViewCore"]
         ),
@@ -41,6 +53,18 @@ let package = Package(
             dependencies: [
                 "OrbitalViewCore",
                 "OrbitalViewRender"
+            ]
+        ),
+        .target(
+            name: "OrbitalViewViewerSupport",
+            dependencies: ["OrbitalViewCore"]
+        ),
+        .executableTarget(
+            name: "OrbitalViewViewer",
+            dependencies: [
+                "OrbitalViewCore",
+                "OrbitalViewSwiftUI",
+                "OrbitalViewViewerSupport"
             ]
         ),
         .testTarget(
@@ -58,6 +82,13 @@ let package = Package(
             ]
         ),
         .testTarget(
+            name: "OrbitalViewOrbisonicTests",
+            dependencies: [
+                "OrbitalViewCore",
+                "OrbitalViewOrbisonic"
+            ]
+        ),
+        .testTarget(
             name: "OrbitalViewRenderTests",
             dependencies: [
                 "OrbitalViewCore",
@@ -70,6 +101,13 @@ let package = Package(
                 "OrbitalViewCore",
                 "OrbitalViewRender",
                 "OrbitalViewSwiftUI"
+            ]
+        ),
+        .testTarget(
+            name: "OrbitalViewViewerTests",
+            dependencies: [
+                "OrbitalViewCore",
+                "OrbitalViewViewerSupport"
             ]
         )
     ]

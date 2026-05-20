@@ -67,5 +67,25 @@ public struct WavefieldMeterFrameAdapter: Sendable {
 
         return try SpeakerMeterFrame(timestamp: timestamp, levelsByChannel: levelsByChannel)
     }
-}
 
+    public func makeSanitizedSpeakerMeterFrame(
+        timestamp: TimeInterval,
+        expectedChannels: [Int],
+        channels: [WavefieldMeterChannelFrame],
+        timestampFallback: TimeInterval = 0
+    ) throws -> SpeakerMeterFrameSanitizer.Result {
+        let samples = channels.map { channelFrame in
+            SpeakerMeterSample(
+                channel: channelFrame.channel,
+                rms: channelFrame.rms,
+                peak: channelFrame.peak,
+                clip: channelFrame.peak.isFinite && channelFrame.peak >= clipThreshold
+            )
+        }
+        return try SpeakerMeterFrameSanitizer(
+            expectedChannels: expectedChannels,
+            timestampFallback: timestampFallback
+        )
+        .sanitize(timestamp: timestamp, samples: samples)
+    }
+}

@@ -32,12 +32,28 @@ struct OrbitalViewSpeakerStaticDrawInput: Equatable {
     let projectedX: Float
     let projectedY: Float
     let quadRadius: Float
+    let meshVertexCount: Int
+    let meshDepthScale: Float
+}
+
+struct OrbitalViewSpeakerStaticGeometryCacheKey: Equatable {
+    struct Entry: Equatable {
+        let id: String
+        let channel: Int
+        let anchor: SpeakerAnchor
+        let shape: SpeakerShape
+        let visualRole: SpeakerVisualRole
+    }
+
+    let entries: [Entry]
 }
 
 struct OrbitalViewSpeakerDrawInput: Equatable {
     let staticInput: OrbitalViewSpeakerStaticDrawInput
     let meterLevel: SpeakerMeterLevel?
     let color: SIMD4<Float>
+    let material: SIMD4<Float>
+    let orientation: SIMD4<Float>
 
     var position: SIMD4<Float> {
         SIMD4<Float>(
@@ -62,6 +78,20 @@ struct OrbitalViewSpeakerDrawInputs: Equatable {
 
     var colors: [SIMD4<Float>] {
         speakers.map(\.color)
+    }
+
+    var materials: [SIMD4<Float>] {
+        speakers.map(\.material)
+    }
+
+    var orientations: [SIMD4<Float>] {
+        speakers.map(\.orientation)
+    }
+
+    var channelToInstanceIndex: [Int: Int] {
+        Dictionary(uniqueKeysWithValues: speakers.enumerated().map { index, input in
+            (input.staticInput.channel, index)
+        })
     }
 }
 
@@ -109,7 +139,8 @@ struct OrbitalViewObjectDrawInputs: Equatable {
 }
 
 final class OrbitalViewMetalDrawPipeline {
-    private static let verticesPerSpeaker = 6
+    private static let verticesPerSpeaker = 36
+    private static let rampUniformStopCount = 8
     private static let speakerQuadRadius: Float = 0.045
     private static let verticesPerObject = 6
     private static let projectionScale: Float = 0.72
@@ -117,17 +148,24 @@ final class OrbitalViewMetalDrawPipeline {
     private let deviceID: ObjectIdentifier
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
-    private let pipelineState: MTLRenderPipelineState
+    private let speakerPipelineState: MTLRenderPipelineState
+    private let objectPipelineState: MTLRenderPipelineState
     private var speakerPositionBuffer: MTLBuffer?
-    private var speakerColorBuffer: MTLBuffer?
+    private var speakerOrientationBuffer: MTLBuffer?
+    private var speakerMaterialBuffer: MTLBuffer?
+    private var speakerRampBuffer: MTLBuffer?
     private var objectPositionBuffer: MTLBuffer?
     private var objectColorBuffer: MTLBuffer?
     private var speakerPositionCapacity = 0
-    private var speakerColorCapacity = 0
+    private var speakerOrientationCapacity = 0
+    private var speakerMaterialCapacity = 0
+    private var speakerRampCapacity = 0
     private var objectPositionCapacity = 0
     private var objectColorCapacity = 0
     private var speakerPositionRevision: Int?
-    private var speakerColorRevisionKey: SpeakerColorRevisionKey?
+    private var speakerOrientationRevision: Int?
+    private var speakerMaterialRevisionKey: SpeakerMaterialRevisionKey?
+    private var speakerRampRevision: Int?
     private var objectPositionRevisionKey: ObjectPositionRevisionKey?
     private var objectColorRevisionKey: ObjectColorRevisionKey?
     private var speakerDrawCount = 0
@@ -144,19 +182,31 @@ final class OrbitalViewMetalDrawPipeline {
         self.commandQueue = commandQueue
 
         let library = try device.makeLibrary(source: orbitalViewMetalShaderSource, options: nil)
-        guard let vertexFunction = library.makeFunction(name: "orbital_vertex") else {
-            throw OrbitalViewMetalRenderError.missingShaderFunction("orbital_vertex")
+        guard let speakerVertexFunction = library.makeFunction(name: "orbital_speaker_vertex") else {
+            throw OrbitalViewMetalRenderError.missingShaderFunction("orbital_speaker_vertex")
         }
-        guard let fragmentFunction = library.makeFunction(name: "orbital_fragment") else {
-            throw OrbitalViewMetalRenderError.missingShaderFunction("orbital_fragment")
+        guard let speakerFragmentFunction = library.makeFunction(name: "orbital_speaker_fragment") else {
+            throw OrbitalViewMetalRenderError.missingShaderFunction("orbital_speaker_fragment")
+        }
+        guard let objectVertexFunction = library.makeFunction(name: "orbital_object_vertex") else {
+            throw OrbitalViewMetalRenderError.missingShaderFunction("orbital_object_vertex")
+        }
+        guard let objectFragmentFunction = library.makeFunction(name: "orbital_object_fragment") else {
+            throw OrbitalViewMetalRenderError.missingShaderFunction("orbital_object_fragment")
         }
 
-        let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.vertexFunction = vertexFunction
-        descriptor.fragmentFunction = fragmentFunction
-        descriptor.colorAttachments[0].pixelFormat = pixelFormat
+        let speakerDescriptor = MTLRenderPipelineDescriptor()
+        speakerDescriptor.vertexFunction = speakerVertexFunction
+        speakerDescriptor.fragmentFunction = speakerFragmentFunction
+        speakerDescriptor.colorAttachments[0].pixelFormat = pixelFormat
 
-        self.pipelineState = try device.makeRenderPipelineState(descriptor: descriptor)
+        let objectDescriptor = MTLRenderPipelineDescriptor()
+        objectDescriptor.vertexFunction = objectVertexFunction
+        objectDescriptor.fragmentFunction = objectFragmentFunction
+        objectDescriptor.colorAttachments[0].pixelFormat = pixelFormat
+
+        self.speakerPipelineState = try device.makeRenderPipelineState(descriptor: speakerDescriptor)
+        self.objectPipelineState = try device.makeRenderPipelineState(descriptor: objectDescriptor)
     }
 
     func uses(device: MTLDevice) -> Bool {
@@ -179,15 +229,26 @@ final class OrbitalViewMetalDrawPipeline {
 
         if let speakerResources = prepareSpeakerDrawResources(for: state) {
             let positionBuffer = speakerResources.positionBuffer
-            let colorBuffer = speakerResources.colorBuffer
+            let orientationBuffer = speakerResources.orientationBuffer
+            let materialBuffer = speakerResources.materialBuffer
+            let rampBuffer = speakerResources.rampBuffer
+            var bloomUniforms = Self.makeBloomUniforms(settings: state.meterVisualSettings)
 
-            encoder.setRenderPipelineState(pipelineState)
+            encoder.setRenderPipelineState(speakerPipelineState)
             encoder.setVertexBuffer(positionBuffer, offset: 0, index: 0)
-            encoder.setVertexBuffer(colorBuffer, offset: 0, index: 1)
+            encoder.setVertexBuffer(orientationBuffer, offset: 0, index: 1)
+            encoder.setVertexBuffer(materialBuffer, offset: 0, index: 2)
+            encoder.setFragmentBytes(
+                &bloomUniforms,
+                length: MemoryLayout<SIMD4<Float>>.stride,
+                index: 0
+            )
+            encoder.setFragmentBuffer(rampBuffer, offset: 0, index: 1)
             encoder.drawPrimitives(
                 type: .triangle,
                 vertexStart: 0,
-                vertexCount: speakerResources.drawCount * Self.verticesPerSpeaker
+                vertexCount: Self.verticesPerSpeaker,
+                instanceCount: speakerResources.drawCount
             )
         }
 
@@ -195,7 +256,7 @@ final class OrbitalViewMetalDrawPipeline {
             let positionBuffer = objectResources.positionBuffer
             let colorBuffer = objectResources.colorBuffer
 
-            encoder.setRenderPipelineState(pipelineState)
+            encoder.setRenderPipelineState(objectPipelineState)
             encoder.setVertexBuffer(positionBuffer, offset: 0, index: 0)
             encoder.setVertexBuffer(colorBuffer, offset: 0, index: 1)
             encoder.drawPrimitives(
@@ -279,13 +340,20 @@ final class OrbitalViewMetalDrawPipeline {
 
     private func prepareSpeakerDrawResources(
         for state: OrbitalViewRenderState
-    ) -> (positionBuffer: MTLBuffer, colorBuffer: MTLBuffer, drawCount: Int)? {
+    ) -> (
+        positionBuffer: MTLBuffer,
+        orientationBuffer: MTLBuffer,
+        materialBuffer: MTLBuffer,
+        rampBuffer: MTLBuffer,
+        drawCount: Int
+    )? {
         let positionRevision = state.structuralRevision
-        let colorRevisionKey = SpeakerColorRevisionKey(
+        let materialRevisionKey = SpeakerMaterialRevisionKey(
             structuralRevision: state.structuralRevision,
             meterRevision: state.meterRevision,
             meterVisualSettingsRevision: state.meterVisualSettingsRevision
         )
+        let rampRevision = state.meterVisualSettingsRevision
         var cachedInputs: OrbitalViewSpeakerDrawInputs?
 
         if speakerPositionRevision != positionRevision {
@@ -294,40 +362,62 @@ final class OrbitalViewMetalDrawPipeline {
             guard !inputs.positions.isEmpty else {
                 speakerDrawCount = 0
                 speakerPositionRevision = positionRevision
-                speakerColorRevisionKey = colorRevisionKey
+                speakerOrientationRevision = positionRevision
+                speakerMaterialRevisionKey = materialRevisionKey
                 return nil
             }
             guard updateSpeakerPositionBuffer(from: inputs.positions) != nil else {
                 return nil
             }
+            guard updateSpeakerOrientationBuffer(from: inputs.orientations) != nil else {
+                return nil
+            }
             speakerDrawCount = inputs.positions.count
             speakerPositionRevision = positionRevision
-            speakerColorRevisionKey = nil
+            speakerOrientationRevision = positionRevision
+            speakerMaterialRevisionKey = nil
         }
 
-        if speakerColorRevisionKey != colorRevisionKey {
+        if speakerOrientationRevision != positionRevision {
             let inputs = cachedInputs ?? Self.makeSpeakerDrawInputs(from: state)
-            guard !inputs.colors.isEmpty else {
+            guard updateSpeakerOrientationBuffer(from: inputs.orientations) != nil else {
+                return nil
+            }
+            speakerOrientationRevision = positionRevision
+        }
+
+        if speakerMaterialRevisionKey != materialRevisionKey {
+            let inputs = cachedInputs ?? Self.makeSpeakerDrawInputs(from: state)
+            guard !inputs.materials.isEmpty else {
                 speakerDrawCount = 0
-                speakerColorRevisionKey = colorRevisionKey
+                speakerMaterialRevisionKey = materialRevisionKey
                 return nil
             }
-            guard updateSpeakerColorBuffer(from: inputs.colors) != nil else {
+            guard updateSpeakerMaterialBuffer(from: inputs.materials) != nil else {
                 return nil
             }
-            speakerDrawCount = inputs.colors.count
-            speakerColorRevisionKey = colorRevisionKey
+            speakerDrawCount = inputs.materials.count
+            speakerMaterialRevisionKey = materialRevisionKey
+        }
+
+        if speakerRampRevision != rampRevision {
+            guard updateSpeakerRampBuffer(from: Self.makeRampUniforms(settings: state.meterVisualSettings)) != nil else {
+                return nil
+            }
+            speakerRampRevision = rampRevision
         }
 
         guard
             let positionBuffer = speakerPositionBuffer,
-            let colorBuffer = speakerColorBuffer,
+            let orientationBuffer = speakerOrientationBuffer,
+            let materialBuffer = speakerMaterialBuffer,
+            let rampBuffer = speakerRampBuffer,
             speakerDrawCount > 0
         else {
             return nil
         }
 
-        return (positionBuffer, colorBuffer, speakerDrawCount)
+        return (positionBuffer, orientationBuffer, materialBuffer, rampBuffer, speakerDrawCount)
     }
 
     private func prepareObjectDrawResources(
@@ -386,10 +476,30 @@ final class OrbitalViewMetalDrawPipeline {
         return (positionBuffer, colorBuffer, objectDrawCount)
     }
 
-    private func updateSpeakerColorBuffer(from values: [SIMD4<Float>]) -> MTLBuffer? {
-        let update = reusableBuffer(existing: speakerColorBuffer, capacity: speakerColorCapacity, values: values)
-        speakerColorBuffer = update.buffer
-        speakerColorCapacity = update.capacity
+    private func updateSpeakerOrientationBuffer(from values: [SIMD4<Float>]) -> MTLBuffer? {
+        let update = reusableBuffer(
+            existing: speakerOrientationBuffer,
+            capacity: speakerOrientationCapacity,
+            values: values
+        )
+        speakerOrientationBuffer = update.buffer
+        speakerOrientationCapacity = update.capacity
+        debugBufferAllocationCount += update.allocated ? 1 : 0
+        return update.buffer
+    }
+
+    private func updateSpeakerMaterialBuffer(from values: [SIMD4<Float>]) -> MTLBuffer? {
+        let update = reusableBuffer(existing: speakerMaterialBuffer, capacity: speakerMaterialCapacity, values: values)
+        speakerMaterialBuffer = update.buffer
+        speakerMaterialCapacity = update.capacity
+        debugBufferAllocationCount += update.allocated ? 1 : 0
+        return update.buffer
+    }
+
+    private func updateSpeakerRampBuffer(from values: [SIMD4<Float>]) -> MTLBuffer? {
+        let update = reusableBuffer(existing: speakerRampBuffer, capacity: speakerRampCapacity, values: values)
+        speakerRampBuffer = update.buffer
+        speakerRampCapacity = update.capacity
         debugBufferAllocationCount += update.allocated ? 1 : 0
         return update.buffer
     }
@@ -455,7 +565,9 @@ final class OrbitalViewMetalDrawPipeline {
                 channel: speaker.channel,
                 projectedX: position.x,
                 projectedY: position.y,
-                quadRadius: speakerQuadRadius
+                quadRadius: speakerQuadRadius,
+                meshVertexCount: verticesPerSpeaker,
+                meshDepthScale: meshDepthScale(for: speaker.shape)
             )
             return OrbitalViewSpeakerDrawInput(
                 staticInput: staticInput,
@@ -464,11 +576,33 @@ final class OrbitalViewMetalDrawPipeline {
                     for: speaker,
                     meters: state.meters,
                     settings: state.meterVisualSettings
-                )
+                ),
+                material: speakerMaterial(
+                    for: speaker,
+                    meters: state.meters,
+                    settings: state.meterVisualSettings
+                ),
+                orientation: speakerOrientation(for: speaker, depthScale: staticInput.meshDepthScale)
             )
         }
 
         return OrbitalViewSpeakerDrawInputs(speakers: speakers)
+    }
+
+    static func makeSpeakerStaticGeometryCacheKey(
+        from state: OrbitalViewRenderState
+    ) -> OrbitalViewSpeakerStaticGeometryCacheKey {
+        let entries = state.scene?.speakers.map { speaker in
+            OrbitalViewSpeakerStaticGeometryCacheKey.Entry(
+                id: speaker.id,
+                channel: speaker.channel,
+                anchor: speaker.anchor,
+                shape: speaker.shape,
+                visualRole: speaker.visualRole
+            )
+        } ?? []
+
+        return OrbitalViewSpeakerStaticGeometryCacheKey(entries: entries)
     }
 
     static func makeObjectDrawInputs(from state: OrbitalViewRenderState) -> OrbitalViewObjectDrawInputs {
@@ -563,6 +697,42 @@ final class OrbitalViewMetalDrawPipeline {
         SIMD2<Float>(Float(direction.x) * projectionScale, Float(direction.y) * projectionScale)
     }
 
+    private static func speakerOrientation(for speaker: OrbitalViewSpeaker, depthScale: Float) -> SIMD4<Float> {
+        let normal: SIMD3<Float>
+        switch speaker.anchor {
+        case .direction(let direction, _):
+            normal = normalizeNonZero(SIMD3<Float>(
+                Float(direction.x),
+                Float(direction.y),
+                Float(direction.z)
+            ))
+        case .node, .edge, .face:
+            normal = SIMD3<Float>(0, 0, 1)
+        }
+        return SIMD4<Float>(normal.x, normal.y, normal.z, depthScale)
+    }
+
+    private static func meshDepthScale(for shape: SpeakerShape) -> Float {
+        if let zScale = shape.sonicSphereZScale {
+            return Float(zScale)
+        }
+
+        switch shape {
+        case .rectangularPrism(let widthM, _, let depthM, _) where widthM > 0:
+            return Float(max(0.25, min(3, depthM / widthM)))
+        case .sphere, .cube, .rectangularPrism:
+            return 1
+        }
+    }
+
+    private static func normalizeNonZero(_ value: SIMD3<Float>) -> SIMD3<Float> {
+        let length = simd_length(value)
+        guard length > 0.000_001, length.isFinite else {
+            return SIMD3<Float>(0, 0, 1)
+        }
+        return value / length
+    }
+
     private static func objectCoreRadius(width: Float, settings: ObjectVisualSettings) -> Float {
         let widthLift = min(max(width * settings.widthScale, 0), 5) * 0.018
         return settings.coreSize + widthLift
@@ -639,6 +809,57 @@ final class OrbitalViewMetalDrawPipeline {
         )
     }
 
+    private static func speakerMaterial(
+        for speaker: OrbitalViewSpeaker,
+        meters: SpeakerMeterFrame?,
+        settings: SpeakerMeterVisualSettings
+    ) -> SIMD4<Float> {
+        guard let level = meters?.levelsByChannel[speaker.channel] else {
+            return SIMD4<Float>(0, 0, 0, settings.idleTint)
+        }
+
+        let gain = Float(pow(10.0, Double(settings.visualGainDB) / 20.0))
+        let rms = min(max(level.rms * gain, 0), 1)
+        let peak = min(max(level.peak * gain, 0), 1)
+        return SIMD4<Float>(rms, peak, level.clip ? 1 : 0, settings.idleTint)
+    }
+
+    private static func makeBloomUniforms(settings: SpeakerMeterVisualSettings) -> SIMD4<Float> {
+        SIMD4<Float>(
+            settings.bloomMin,
+            settings.bloomMax,
+            settings.bloomEdge,
+            settings.responseCurve
+        )
+    }
+
+    private static func makeRampUniforms(settings: SpeakerMeterVisualSettings) -> [SIMD4<Float>] {
+        let sortedRamp = settings.colorScheme.theme.vuRamp.sorted { $0.position < $1.position }
+        let fallback = [
+            OrbitalColorStop(position: 0, color: .rgb(0x202020)),
+            OrbitalColorStop(position: 1, color: .rgb(0xFFFFFF))
+        ]
+        let ramp = sortedRamp.isEmpty ? fallback : sortedRamp
+
+        var uniforms: [SIMD4<Float>] = []
+        uniforms.reserveCapacity(rampUniformStopCount)
+        for stop in ramp.prefix(rampUniformStopCount) {
+            uniforms.append(SIMD4<Float>(
+                Float(stop.color.red),
+                Float(stop.color.green),
+                Float(stop.color.blue),
+                Float(stop.position)
+            ))
+        }
+
+        let last = uniforms.last ?? SIMD4<Float>(1, 1, 1, 1)
+        while uniforms.count < rampUniformStopCount {
+            uniforms.append(last)
+        }
+
+        return uniforms
+    }
+
     private static func styleColor(
         value: Float,
         style: SpeakerMeterVisualStyle,
@@ -647,6 +868,11 @@ final class OrbitalViewMetalDrawPipeline {
         meters: SpeakerMeterFrame?
     ) -> SIMD4<Float> {
         switch style {
+        case .cubeScalarCenterBloom:
+            return rampColor(
+                value: value,
+                settings: settings
+            )
         case .checkerPulseRingAndDiagonalWave, .customTBD:
             return checkerPulseColor(
                 value: value,
@@ -676,6 +902,50 @@ final class OrbitalViewMetalDrawPipeline {
                 1
             )
         }
+    }
+
+    private static func rampColor(value: Float, settings: SpeakerMeterVisualSettings) -> SIMD4<Float> {
+        let ramp = settings.colorScheme.theme.vuRamp.sorted { $0.position < $1.position }
+        guard let first = ramp.first else {
+            return SIMD4<Float>(value, value, value, 1)
+        }
+
+        let curved = pow(
+            max(0, min(1, Double(value))),
+            Double(max(0.2, min(4, settings.responseCurve)))
+        )
+        let hotMix = Double(max(0, min(1, settings.hotFill)))
+        let idle = Double(max(0, min(1, settings.idleTint)))
+        let boosted = min(1, curved * (0.7 + (0.3 * hotMix)))
+        let position = max(0, min(1, boosted))
+
+        var lower = first
+        var upper = first
+        for stop in ramp {
+            if stop.position <= position {
+                lower = stop
+            }
+            if stop.position >= position {
+                upper = stop
+                break
+            }
+        }
+
+        let span = max(upper.position - lower.position, 0.000_001)
+        let t = (position - lower.position) / span
+        let red = lerp(lower.color.red, upper.color.red, t)
+        let green = lerp(lower.color.green, upper.color.green, t)
+        let blue = lerp(lower.color.blue, upper.color.blue, t)
+        return SIMD4<Float>(
+            Float(red * (idle + ((1 - idle) * position))),
+            Float(green * (idle + ((1 - idle) * position))),
+            Float(blue * (idle + ((1 - idle) * position))),
+            1
+        )
+    }
+
+    private static func lerp(_ start: Double, _ end: Double, _ t: Double) -> Double {
+        start + ((end - start) * t)
     }
 
     private static func checkerPulseColor(
@@ -757,6 +1027,13 @@ final class OrbitalViewMetalDrawPipeline {
                 accent: rgb(0xAA, 0x88, 0xFF),
                 accent2: rgb(0x32, 0xD6, 0xBF)
             )
+        case .daftPunkBow:
+            return CheckerPalette(
+                panel: rgb(0x14, 0x18, 0x1C),
+                muted: rgb(0x5B, 0x8C, 0xFF),
+                accent: rgb(0x22, 0xD3, 0xEE),
+                accent2: rgb(0xEF, 0x44, 0x44)
+            )
         case .orbisonicGreen:
             return CheckerPalette(
                 panel: rgb(0x07, 0x10, 0x0E),
@@ -833,7 +1110,7 @@ final class OrbitalViewMetalDrawPipeline {
         let trail: SIMD3<Float>
     }
 
-    private struct SpeakerColorRevisionKey: Equatable {
+    private struct SpeakerMaterialRevisionKey: Equatable {
         let structuralRevision: Int
         let meterRevision: Int
         let meterVisualSettingsRevision: Int
@@ -855,9 +1132,22 @@ private let orbitalViewMetalShaderSource = """
 #include <metal_stdlib>
 using namespace metal;
 
-struct OrbitalVertexOut {
+struct SpeakerVertexOut {
+    float4 position [[position]];
+    float2 faceUV;
+    float shade;
+    float4 material;
+};
+
+struct ObjectVertexOut {
     float4 position [[position]];
     float4 color;
+};
+
+struct SpeakerMeshVertex {
+    float3 localPosition;
+    float3 localNormal;
+    float2 uv;
 };
 
 static float2 orbital_corner(uint index) {
@@ -877,23 +1167,178 @@ static float2 orbital_corner(uint index) {
     }
 }
 
-vertex OrbitalVertexOut orbital_vertex(
-    uint vertexID [[vertex_id]],
-    const device float4 *speakerPositions [[buffer(0)]],
-    const device float4 *speakerColors [[buffer(1)]]
-) {
-    uint speakerIndex = vertexID / 6;
-    uint cornerIndex = vertexID % 6;
-    float4 speaker = speakerPositions[speakerIndex];
-    float2 position = speaker.xy + (orbital_corner(cornerIndex) * speaker.z);
+static float2 orbital_face_uv(uint index) {
+    switch (index) {
+    case 0:
+        return float2(0.0, 0.0);
+    case 1:
+        return float2(1.0, 0.0);
+    case 2:
+        return float2(0.0, 1.0);
+    case 3:
+        return float2(0.0, 1.0);
+    case 4:
+        return float2(1.0, 0.0);
+    default:
+        return float2(1.0, 1.0);
+    }
+}
 
-    OrbitalVertexOut out;
-    out.position = float4(position, 0.0, 1.0);
-    out.color = speakerColors[speakerIndex];
+static SpeakerMeshVertex speaker_cube_vertex(uint vertexID) {
+    uint faceIndex = vertexID / 6;
+    uint cornerIndex = vertexID % 6;
+    float2 uv = orbital_face_uv(cornerIndex);
+    float x = (uv.x * 2.0) - 1.0;
+    float y = (uv.y * 2.0) - 1.0;
+
+    SpeakerMeshVertex meshVertex;
+    meshVertex.uv = uv;
+
+    switch (faceIndex) {
+    case 0:
+        meshVertex.localPosition = float3(-x, y, -1.0);
+        meshVertex.localNormal = float3(0.0, 0.0, -1.0);
+        break;
+    case 1:
+        meshVertex.localPosition = float3(1.0, y, -x);
+        meshVertex.localNormal = float3(1.0, 0.0, 0.0);
+        break;
+    case 2:
+        meshVertex.localPosition = float3(x, 1.0, -y);
+        meshVertex.localNormal = float3(0.0, 1.0, 0.0);
+        break;
+    case 3:
+        meshVertex.localPosition = float3(-1.0, y, x);
+        meshVertex.localNormal = float3(-1.0, 0.0, 0.0);
+        break;
+    case 4:
+        meshVertex.localPosition = float3(x, -1.0, y);
+        meshVertex.localNormal = float3(0.0, -1.0, 0.0);
+        break;
+    default:
+        meshVertex.localPosition = float3(x, y, 1.0);
+        meshVertex.localNormal = float3(0.0, 0.0, 1.0);
+        break;
+    }
+
+    return meshVertex;
+}
+
+static float3 safe_normalize(float3 value, float3 fallback) {
+    float lengthSquared = dot(value, value);
+    if (lengthSquared <= 0.000001 || !isfinite(lengthSquared)) {
+        return fallback;
+    }
+    return value * rsqrt(lengthSquared);
+}
+
+static float3 speaker_world_vector(float3 local, float3 normalOut, float depthScale) {
+    float3 upReference = abs(normalOut.y) > 0.88 ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0);
+    float3 tangent = safe_normalize(cross(upReference, normalOut), float3(1.0, 0.0, 0.0));
+    float3 bitangent = safe_normalize(cross(normalOut, tangent), float3(0.0, 1.0, 0.0));
+    return (tangent * local.x) + (bitangent * local.y) + (normalOut * local.z * depthScale);
+}
+
+vertex SpeakerVertexOut orbital_speaker_vertex(
+    uint vertexID [[vertex_id]],
+    uint instanceID [[instance_id]],
+    const device float4 *speakerPositions [[buffer(0)]],
+    const device float4 *speakerOrientations [[buffer(1)]],
+    const device float4 *speakerMaterials [[buffer(2)]]
+) {
+    SpeakerMeshVertex mesh = speaker_cube_vertex(vertexID);
+    float4 speaker = speakerPositions[instanceID];
+    float4 orientation = speakerOrientations[instanceID];
+    float3 normalOut = safe_normalize(orientation.xyz, float3(0.0, 0.0, 1.0));
+    float depthScale = clamp(orientation.w, 0.25, 3.0);
+    float3 worldPosition = speaker_world_vector(mesh.localPosition, normalOut, depthScale);
+    float3 worldNormal = safe_normalize(speaker_world_vector(mesh.localNormal, normalOut, 1.0), normalOut);
+    float2 position = speaker.xy + (worldPosition.xy * speaker.z);
+    float3 lightDirection = normalize(float3(0.32, 0.54, 0.78));
+
+    SpeakerVertexOut out;
+    out.position = float4(position, clamp(worldPosition.z * 0.025, -0.1, 0.1), 1.0);
+    out.faceUV = mesh.uv;
+    out.shade = 0.56 + (0.44 * saturate(dot(worldNormal, lightDirection)));
+    out.material = speakerMaterials[instanceID];
     return out;
 }
 
-fragment float4 orbital_fragment(OrbitalVertexOut in [[stage_in]]) {
+static float3 ramp_color(float value, const device float4 *rampStops) {
+    float position = saturate(value);
+    float4 lower = rampStops[0];
+    float4 upper = rampStops[7];
+
+    for (uint index = 0; index < 8; index++) {
+        float4 stop = rampStops[index];
+        if (stop.w <= position) {
+            lower = stop;
+        }
+        if (stop.w >= position) {
+            upper = stop;
+            break;
+        }
+    }
+
+    float span = max(upper.w - lower.w, 0.000001);
+    float mixValue = saturate((position - lower.w) / span);
+    return mix(lower.rgb, upper.rgb, mixValue);
+}
+
+fragment float4 orbital_speaker_fragment(
+    SpeakerVertexOut in [[stage_in]],
+    constant float4 &bloomUniforms [[buffer(0)]],
+    const device float4 *rampStops [[buffer(1)]]
+) {
+    float rms = saturate(in.material.x);
+    float peak = saturate(in.material.y);
+    float clip = in.material.z;
+    float idleTint = saturate(in.material.w);
+    float bloomMin = saturate(bloomUniforms.x);
+    float bloomMax = max(bloomMin + 0.001, saturate(bloomUniforms.y));
+    float bloomEdge = max(bloomUniforms.z, 0.001);
+    float responseCurve = clamp(bloomUniforms.w, 0.2, 4.0);
+    float curvedRMS = pow(rms, responseCurve);
+    float curvedPeak = pow(peak, max(0.25, responseCurve * 0.85));
+    float centerDistance = length(in.faceUV - float2(0.5, 0.5)) * 1.41421356;
+    float centerBloom = 1.0 - smoothstep(bloomMin, bloomMax, centerDistance);
+    float ringDistance = abs(centerDistance - (0.72 - (curvedPeak * 0.18)));
+    float peakRing = (1.0 - smoothstep(0.0, bloomEdge, ringDistance)) * curvedPeak;
+    float scalar = saturate(max(curvedRMS, curvedPeak * 0.88));
+    float3 baseColor = ramp_color(scalar, rampStops);
+    float3 centerColor = ramp_color(saturate(curvedRMS + (centerBloom * curvedRMS * 0.35)), rampStops);
+    float3 ringColor = ramp_color(saturate(curvedPeak + 0.18), rampStops);
+    float body = saturate((idleTint * 0.46) + (curvedRMS * 0.38) + (centerBloom * curvedRMS * 0.82));
+    float3 rgb = (baseColor * body) + (centerColor * centerBloom * curvedRMS * 0.78);
+    rgb += ringColor * peakRing * (0.52 + (curvedPeak * 0.35));
+    rgb += ringColor * curvedPeak * 0.14;
+    rgb *= in.shade;
+
+    if (clip > 0.5) {
+        rgb = mix(rgb, float3(1.0, 0.08, 0.02), 0.86);
+        rgb += float3(0.38, 0.08, 0.02) * centerBloom;
+    }
+
+    return float4(saturate(rgb), 1.0);
+}
+
+vertex ObjectVertexOut orbital_object_vertex(
+    uint vertexID [[vertex_id]],
+    const device float4 *objectPositions [[buffer(0)]],
+    const device float4 *objectColors [[buffer(1)]]
+) {
+    uint objectIndex = vertexID / 6;
+    uint cornerIndex = vertexID % 6;
+    float4 object = objectPositions[objectIndex];
+    float2 position = object.xy + (orbital_corner(cornerIndex) * object.z);
+
+    ObjectVertexOut out;
+    out.position = float4(position, 0.0, 1.0);
+    out.color = objectColors[objectIndex];
+    return out;
+}
+
+fragment float4 orbital_object_fragment(ObjectVertexOut in [[stage_in]]) {
     return in.color;
 }
 """

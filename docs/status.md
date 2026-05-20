@@ -3,25 +3,840 @@
 ## Current Phase
 
 ```text
-native continuation package preflight complete; awaiting next explicit implementation slice
+native continuation package Slice 021 complete; standalone SwiftPM viewer added; separate web work package is the next optional package
 ```
 
 ## Current Milestone
 
 ```text
-Slices 000-012 from the prior package are complete; native continuation Slice 012 preflight verified the current tree builds and tests
+Native continuation Slices 012-021 are complete; Wavefield has a guarded native Orbital View tab, Orbisonic now has a package-level integration seam and host contract, and the package has a standalone SwiftPM viewer executable
 ```
 
 ## Summary
 
-Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, display-only checker pulse/ring/diagonal wave VU visual settings, and Wavefield source-object overlay contracts, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, accepts active object frames and object meter frames keyed by Wavefield `objectId`, and keeps static geometry stable under meter, settings, object meter, and trail updates. The project also has a renderer test harness plan, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, live object smoothing/interpolation, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, an `OrbitalViewRender` MetalKit renderer seam with an offscreen-tested instanced cube/prism speaker draw path, static draw-input invariant tests, static geometry cache-key tests, channel-to-instance mapping tests, retained speaker/object buffer reuse checks, shader-side cube scalar center-bloom speaker materials, legacy checker pulse/ring/diagonal wave VU settings, platform-neutral theme tokens, Daft Punk Bow VU palette/color-scheme migration through renderer ramp uniforms, runtime meter input sanitizing and diagnostics, Codable visual presets, Sonic Sphere cube/prism speaker shape contracts, face-center VU bloom distance contracts, and host source-object overlay contracts, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The tray now has Basic, Advanced, Presets, and Diagnostics sections, including speaker height, optional preset-store actions, and sanitizer diagnostics display without making persistence mandatory for hosts. `OrbitalViewViewer` is now a standalone SwiftPM executable that launches the package viewport with deterministic demo-only 30-speaker, speaker-meter, object-frame, object-meter, and object-visual-settings data from `OrbitalViewViewerSupport`. `OrbitalViewWavefield` now exposes a runtime-safe sanitized Wavefield meter adapter, and the sibling Wavefield app has a guarded native Orbital View tab that uses cached Fey speaker geometry joined by physical channel to `PlayerSnapshot.meterSummary.multichannelLevels`, passes Wavefield theme tokens into `OrbitalViewTheme`, exposes Daft Punk Bow in Wavefield color schemes, and leaves the existing Spherical VU tab available. `OrbitalViewOrbisonic` defines the package-level Orbisonic seam from `renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView`, exposes Daft Punk Bow through `OrbisonicOrbitalColorScheme`, and avoids importing the Orbisonic app. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, accepts active object frames and object meter frames keyed by source-object ID, and keeps static geometry stable under meter, settings, camera, object meter, and trail updates. The project also has renderer test harness and cache-plan docs, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Shell/strut rendering, checker facet animation/materials, live object smoothing/interpolation beyond static viewer snapshots, toolbar/gesture/hit-testing controls beyond the tray and package-local viewer buttons, and Splat host integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
+
+The root launcher `Open Orbital View Viewer.command` builds a local `Orbital View Viewer.app` bundle and opens it.
 
 The pinned local static server URL for the active single-screen cube VU mockup is:
 
 ```text
 http://127.0.0.1:8765/OrbitalViewKit/
+```
+
+### Update: 2026-05-20 Standalone SwiftPM Viewer
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewViewerSupport` as a package-local support target that depends only on `OrbitalViewCore`.
+- Added deterministic demo-only content: 30 channel-keyed speakers, a static speaker meter frame, source-object frames, object meters, and object visual settings.
+- Added the `OrbitalViewViewer` executable product and SwiftUI target.
+- Wired the executable to the public `OrbitalView` SwiftUI API, the existing VU settings tray, object overlay inputs, and local plan/front/side/isometric camera preset buttons.
+- Added focused viewer support tests.
+
+Run command:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewViewerTests
+```
+
+Results:
+
+```text
+swift build passed.
+Focused viewer tests passed: 3 tests, 0 failures.
+```
+
+Launcher:
+
+```text
+Open Orbital View Viewer.command
+Orbital View Viewer.app
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+No protected renderer, SwiftUI wrapper, or downstream app paths were edited. The new viewer consumes OrbitalViewSwiftUI through its public API.
+```
+
+### Update: 2026-05-20 Standalone Viewer Launch And Projection Fix
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Replaced the Terminal-only `swift run` launcher path with a root launcher that builds and opens a local macOS app bundle.
+- Added `scripts/build-orbital-viewer-app.sh` to produce `Orbital View Viewer.app` from the SwiftPM executable, with Swift/Clang caches forced under `.build` for launcher reliability.
+- Switched viewer demo speakers from arbitrary Fibonacci points to the accepted Fey 30 coordinate fixture.
+- Added viewer-level Plan, Front, Side, and Iso scene transforms so camera preset buttons visibly change the viewport while renderer-native camera projection remains deferred.
+- Removed the full VU settings tray from the standalone viewer surface and added a lighter shell-guide/label overlay.
+
+Commands run:
+
+```text
+zsh -n Open\ Orbital\ View\ Viewer.command
+zsh -n scripts/build-orbital-viewer-app.sh
+scripts/build-orbital-viewer-app.sh
+plutil -lint Orbital\ View\ Viewer.app/Contents/Info.plist
+open -n Orbital\ View\ Viewer.app
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewViewerTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Results:
+
+```text
+Launcher syntax checks passed.
+App bundle build passed and produced Orbital View Viewer.app.
+App bundle Info.plist passed plutil lint.
+Live app opened successfully through LaunchServices.
+Computer Use verified the app window opened and the Plan preset changed the visible scene/footer state.
+swift build passed.
+Focused viewer tests passed: 4 tests, 0 failures.
+swift test passed: 69 XCTest cases, 0 failures.
+git diff --check passed.
+```
+
+Bugs found or fixed:
+
+```text
+Fixed the first standalone viewer launcher/presentation bug: the launcher used command-line SwiftPM execution instead of a real app bundle, and the exposed camera buttons only updated renderer camera state even though renderer-native camera projection is still deferred.
+```
+
+### Update: 2026-05-20 Orbisonic Integration Seam And Shared Host Contract
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 021 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Inspected the sibling Orbisonic checkout enough to ground the seam in current concepts: renderer output speakers, `ChannelMeter`, `MeterSnapshot.danteMeters`, and Lab theme tokens.
+- Added `OrbitalViewOrbisonic` as a local adapter-skeleton target that depends only on `OrbitalViewCore`.
+- Defined the Orbisonic host contract: `Orbisonic renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView`.
+- Added DTOs for 30 physical output speaker records and normalized Orbisonic meter records.
+- Added sanitized meter adaptation through `SpeakerMeterFrameSanitizer`.
+- Added `OrbisonicOrbitalColorScheme` with `Daft Punk Bow` mapping directly to `OrbitalViewTheme.daftPunkBow`.
+- Renamed the private core object-ID helper from Wavefield-specific wording to source-object wording so Core/Render/SwiftUI stay host-neutral.
+- Confirmed no `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `PlayerSnapshot`, or `MeterSummary` references exist in `Sources/OrbitalViewCore`, `Sources/OrbitalViewRender`, or `Sources/OrbitalViewSwiftUI`.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbisonicOrbitalViewAdapterTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+rg -n "import OrbitalViewWavefield|import OrbitalViewOrbisonic|Wavefield app targets|Orbisonic app targets|PlayerSnapshot|MeterSummary|OrbitalViewWavefield|OrbitalViewOrbisonic" Sources/OrbitalViewCore Sources/OrbitalViewRender Sources/OrbitalViewSwiftUI
+```
+
+Results:
+
+```text
+swift build passed.
+Focused Orbisonic adapter tests passed: 4 tests, 0 failures.
+swift test passed: 65 XCTest cases, 0 failures.
+The downstream-adapter leak grep returned no matches in Core/Render/SwiftUI.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/orbisonic-integration-contract.md
+docs/product-brief.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+Fixed one Slice 021 compile issue in the new adapter: the throwing default speaker-shape initializer could not sit inside nil-coalescing without an explicit branch.
+```
+
+Protected paths touched:
+
+```text
+No protected renderer, SwiftUI, or downstream app paths were touched.
+Sources/OrbitalViewCore/ touched only to rename a private helper from Wavefield-specific wording to source-object wording.
+Sources/OrbitalViewOrbisonic/ added as normal Slice 021 scope.
+```
+
+Specialty review:
+
+```text
+P0 blockers: none.
+P1 should-fix: none found in the implemented scope.
+Protected path concerns: none; no Orbisonic app, Wavefield app, renderer, SwiftUI, audio, playback, routing, MIDI, OSC, metering, or output paths were changed.
+Architecture concerns: none; the new target depends only on Foundation and OrbitalViewCore, and Core/Render/SwiftUI do not import host adapter targets.
+Audio concerns: none; the contract consumes normalized host meter records and does not read buffers or change output semantics.
+Manual decisions needed: a future Orbisonic app slice still needs to map live Orbisonic types into the DTOs and decide how or whether to visualize 30.1 LFE separately.
+Recommended action: open the separate web work package when ready.
+```
+
+### Update: 2026-05-20 Wavefield Orbital View Tab Integration
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 020 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Added a runtime-safe `OrbitalViewWavefield` adapter from Wavefield-style channel RMS/peak frames into sanitized `SpeakerMeterFrame` plus `OrbitalViewInputDiagnostics`.
+- Wired the sibling Wavefield app to the local `OrbitalViewKit` package through a path dependency.
+- Added a guarded `Orbital View` app tab while keeping the existing `Spherical VU` tab available.
+- Built the Orbital View scene from Wavefield's cached Spherical VU/Fey speaker geometry and joined meter values by physical speaker channel.
+- Adapted `PlayerSnapshot.meterSummary.multichannelLevels` into `SpeakerMeterFrame` for MIDI Track to Speakers, nearest-speaker, and VBAP modes when multichannel levels are available.
+- Preserved Mono Equal as the only mode that mirrors mono RMS/peak to all modeled speaker channels.
+- Passed Wavefield color-scheme tokens into `OrbitalViewTheme` and added `Daft Punk Bow` to Wavefield color-scheme options.
+- Surfaced Orbital diagnostics for source label, signal source, active channel count, missing/extra/invalid/duplicate channels, replaced/clamped values, and timestamp fallback.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter WavefieldMeterFrameAdapterTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter 'WavefieldAppSupportTests/testTabContractMatchesDocumentedShellOrder|TabSourceActionTests/testSettingsColorSchemeOptionsMatchOrbisonicDesignLanguage|TabSourceActionTests/testSettingsColorSchemeSelectionDrivesCurrentPalette|TabSourceActionTests/testOrbitalViewModelUsesLoadedSpeakerGeometryAndMultichannelMeters|TabSourceActionTests/testOrbitalViewModelMirrorsOnlyExplicitMonoEqualMode|TabSourceActionTests/testSelectingEveryTabInstantiatesContentAndLogsSelection'
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Results:
+
+```text
+OrbitalViewKit swift build passed.
+Wavefield Receiver swift build passed after fixing SwiftPM manifest argument order and new-tab switch exhaustiveness.
+WavefieldMeterFrameAdapterTests passed: 5 tests, 0 failures.
+OrbitalViewKit full swift test passed: 61 XCTest tests, 0 failures.
+Focused Wavefield app integration tests passed: 6 tests, 0 failures.
+Wavefield Receiver full swift test passed: 446 XCTest tests, 0 failures.
+git diff --check passed in OrbitalViewKit and Wavefield Receiver.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+Wavefield Receiver docs/status.md
+Wavefield Receiver docs/architecture.md
+Wavefield Receiver docs/system-flows.md
+Wavefield Receiver docs/implementation-map.md
+Wavefield Receiver docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+Fixed Slice 020 integration compile issues: SwiftPM dependencies must follow products, the new Wavefield tab case had to be added to a PlayerPanel source-family switch, and SwiftUI diagnostics rows needed an explicitly enumerated ForEach.
+```
+
+Protected paths touched:
+
+```text
+Wavefield app UI and adapter paths allowed by Slice 020.
+Wavefield audio/playback/rendering/output/MIDI/OSC paths were not changed.
+Sources/OrbitalViewWavefield/ touched for the runtime-safe sanitized meter adapter.
+```
+
+Specialty review:
+
+```text
+P0 blockers: none.
+P1 should-fix: none found in the implemented scope.
+Protected path concerns: none; Wavefield app UI paths were allowed, and protected Wavefield audio/playback/rendering/output/MIDI/OSC paths were not touched.
+Audio concerns: none; the integration consumes existing PlayerSnapshot meter summaries and does not change playback, routing, rendering, MIDI, OSC, output, or metering semantics.
+Performance concerns: the Orbital View tab reuses cached speaker geometry through the Spherical VU snapshot and does not add audio-thread work.
+Manual decisions needed: future visual smoke testing in the Finder-launched Wavefield app remains useful as a follow-up.
+Recommended action: proceed to Slice 021 for Orbisonic integration seam and shared host contract.
+```
+
+Next recommended task:
+
+```text
+Slice 021 - Orbisonic integration seam and shared host contract
+```
+
+### Update: 2026-05-20 SwiftUI Viewport Controls, VU Tray, And Preset Save UI
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 019 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Preserved the existing `OrbitalViewMetalView` placement and coordinator flow; tray-only updates do not replace the viewport surface or rebuild renderer state.
+- Extended the opt-in bottom VU tray with Basic and Advanced sections.
+- Added the `Speaker Height: Cube -> 2 Cubes` control through `SpeakerMeterVisualSettings.speakerZScale`.
+- Added advanced controls for bloom range, bloom edge, response curve, peak hold, release, hot fill, face pixels, and diagnostics visibility while preserving existing checker controls.
+- Added optional preset UI actions: Save as Default, Save Preset, Load Preset, Reset to Saved Default, and Reset to Factory.
+- Added optional `OrbitalViewVisualPresetStore` injection so persistence remains host-provided and non-mandatory.
+- Added optional `OrbitalViewInputDiagnostics` injection and diagnostics summary display for missing, extra, invalid, duplicate, replaced, clamped, and timestamp-fallback meter input.
+- Added SwiftUI tests for the new initializer/store surfaces, preset controller behavior, diagnostics summaries, and existing coordinator no-reload behavior.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewRenderTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Results:
+
+```text
+swift build passed.
+swift test --filter OrbitalViewSwiftUITests passed: 8 tests, 0 failures.
+swift test --filter OrbitalViewRenderTests passed: 23 tests, 0 failures.
+swift test passed: 60 XCTest cases, 0 failures.
+git diff --check passed.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/ allowed by Slice 019 for the native VU tray, preset, and diagnostics surfaces.
+Tests/OrbitalViewSwiftUITests/ allowed by Slice 019 for compile/action coverage.
+```
+
+Specialty review:
+
+```text
+P0 blockers: none.
+P1 should-fix: none.
+P2 nice-to-fix: none for Slice 019.
+Safe autofixes: none.
+Manual decisions needed: none; persistence remains optional and host-owned.
+Protected path concerns: none; Sources/OrbitalViewSwiftUI/ and Tests/OrbitalViewSwiftUITests/ were explicitly allowed by Slice 019.
+Audio concerns: none; no audio, playback, routing, MIDI, OSC, or downstream metering paths were touched.
+Recommended action: proceed to Slice 020 for Wavefield Orbital View tab integration.
+```
+
+Next recommended task:
+
+```text
+Slice 020 - Wavefield Orbital View tab integration
+```
+
+### Update: 2026-05-20 Metal Cube/Prism Center-Bloom Renderer Prototype
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 018 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Replaced the speaker flat-quad draw path with instanced cube/prism speaker meshes using retained position, orientation, material, and ramp buffers.
+- Kept object overlays on the existing simple quad path so source-object work remains out of this slice.
+- Added shader-side procedural face-center bloom: RMS drives center fill/body glow, peak drives halo/ring intensity, and clip drives a hot flash.
+- Added Daft Punk Bow and other color-scheme ramp stops as retained renderer uniform data rather than per-speaker textures.
+- Preserved static speaker geometry across meter updates and kept channel-to-instance mapping by scene speaker order.
+- Added offscreen renderer tests for cube/prism mesh metadata, RMS/peak/clip material payloads, hot/clip pixel response without geometry-bound changes, and ramp-uniform color changes without geometry changes.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewRenderTests/testOffscreenRendererSmokeProducesNonClearFrame
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewRenderTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Results:
+
+```text
+swift build passed.
+The first offscreen smoke rerun exposed a Metal shader compile issue from using `vertex` as a local MSL variable name; renaming it to `meshVertex` fixed the runtime shader compile.
+swift test --filter OrbitalViewRenderTests passed: 23 tests, 0 failures.
+swift test passed: 58 XCTest cases, 0 failures.
+git diff --check passed.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/renderer-cache-plan.md
+docs/renderer-test-harness.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+Fixed one Slice 018-introduced Metal shader compile issue: `vertex` was reserved/ambiguous in MSL local declaration context.
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by Slice 018 for the Metal cube/prism center-bloom renderer prototype.
+Tests/OrbitalViewRenderTests/ allowed by Slice 018 for offscreen smoke and pixel-probe coverage.
+```
+
+Specialty review:
+
+```text
+P0 blockers: none.
+P1 should-fix: none.
+P2 nice-to-fix: add real depth/culling or sorted face rendering in a future visual-polish slice once shell/strut rendering and camera projection are in scope; current back-to-front face order is acceptable for this prototype.
+Safe autofixes: ramp sampling now clamps above the last stop to the last color, and the shader avoids the MSL `vertex` local-name compile issue.
+Manual decisions needed: none for Slice 018.
+Protected path concerns: none; Sources/OrbitalViewRender/ and Tests/OrbitalViewRenderTests/ were explicitly allowed by Slice 018.
+Audio concerns: none; no live audio, playback, routing, MIDI, OSC, or downstream metering paths were touched.
+Recommended action: proceed to Slice 019 for SwiftUI viewport controls, VU tray, and preset save UI.
+```
+
+Next recommended task:
+
+```text
+Slice 019 - SwiftUI viewport controls, VU tray, and preset save UI
+```
+
+### Update: 2026-05-20 Renderer Static Buffer/Cache Plan And Performance Invariants
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 017 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Added `docs/renderer-cache-plan.md` to define static speaker geometry keys, channel-to-instance mapping, retained buffer behavior, object-layer compatibility, and the production cube/prism cache migration path.
+- Added internal `OrbitalViewSpeakerStaticGeometryCacheKey` for renderer invariant tests.
+- Added `OrbitalViewSpeakerDrawInputs.channelToInstanceIndex` for channel-to-instance map tests.
+- Added renderer tests proving meter-only, settings-only, camera-only, and object-layer updates do not change static speaker geometry cache keys.
+- Added renderer tests proving cube and rectangular-prism scenes produce different static geometry cache keys.
+- Added renderer tests proving channel-to-instance mapping follows scene speaker order and ignores extra meter channels.
+- Added renderer tests proving retained speaker buffers do not allocate again for meter/settings/camera-only renders when capacity is sufficient.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewRenderTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Results:
+
+```text
+swift build passed.
+swift test --filter OrbitalViewRenderTests passed: 20 tests, 0 failures.
+swift test passed: 55 XCTest cases, 0 failures.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/renderer-cache-plan.md
+docs/status.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by Slice 017 for renderer cache-key and channel-map test harness additions.
+Tests/OrbitalViewRenderTests/ allowed by Slice 017 for renderer performance invariant coverage.
+```
+
+Specialty review:
+
+```text
+P0 blockers: none.
+P1 should-fix: none.
+Protected path concerns: none; touched paths are explicitly allowed by Slice 017.
+Performance concerns: none; tests now lock no new speaker buffer allocations for meter/settings/camera-only renders.
+Audio concerns: none; no host app audio, routing, playback, MIDI, OSC, or metering paths were touched.
+Recommended action: proceed to Slice 018 for the Metal cube/prism center-bloom renderer prototype.
+```
+
+Next recommended task:
+
+```text
+Slice 018 - Metal cube/prism center-bloom renderer prototype
+```
+
+### Update: 2026-05-20 Cube Scalar Bloom Settings, Sanitizer, Diagnostics, And Presets
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 016 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Added `SpeakerMeterVisualStyle.cubeScalarCenterBloom` as the default music-mode style.
+- Kept checker pulse/ring/diagonal wave available as the legacy/impulse-test style and migrated legacy `checkerRipple` style aliases to it.
+- Expanded `SpeakerMeterVisualSettings` with bloom min/max/edge, response curve, peak hold, release memory, hot fill, face pixels, diagnostics visibility, existing speaker z-scale, and Daft Punk Bow defaults.
+- Added `SpeakerMeterSample`, `SpeakerMeterFrameSanitizer`, and `OrbitalViewInputDiagnostics` so unsafe host samples can be converted into strict `SpeakerMeterFrame` values without crashing UI surfaces.
+- Added `OrbitalViewVisualPreset` and `OrbitalViewVisualPresetStore`; Core exposes only the value/protocol contract and remains persistence-free.
+- Added a minimal renderer color-input branch for the new style so existing renderer code stays exhaustive; full Metal cube/prism center-bloom drawing remains deferred.
+- Updated SwiftUI settings mutation to preserve the new settings fields during existing tray interactions.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewCoreTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Results:
+
+```text
+swift build passed.
+swift test --filter OrbitalViewCoreTests passed: 20 tests, 0 failures.
+swift test --filter OrbitalViewSwiftUITests passed: 6 tests, 0 failures.
+swift test passed: 51 XCTest cases, 0 failures.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ touched only to keep the existing renderer style switch exhaustive after adding cubeScalarCenterBloom.
+Sources/OrbitalViewSwiftUI/ touched only to preserve new settings fields during existing tray updates.
+Tests/OrbitalViewRenderTests/ touched only to update default-style expectations.
+```
+
+Specialty review:
+
+```text
+P0 blockers: none.
+P1 should-fix: none.
+Protected path concern: Slice 016 did not name OrbitalViewRender, but the enum addition required a compile-preserving switch branch; no renderer geometry, audio, timing, or full production drawing behavior was added.
+Audio concerns: none; sanitizer consumes host-provided samples and does not own callbacks or routing.
+Recommended action: proceed to Slice 017 for renderer static buffer/cache plan and performance invariants.
+```
+
+Next recommended task:
+
+```text
+Slice 017 - Renderer static buffer/cache plan and performance invariants
+```
+
+### Update: 2026-05-20 Daft Punk Bow Theme Tokens And Palette Migration
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 015 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Added platform-neutral `OrbitalColor` and `OrbitalColorStop` contracts.
+- Expanded `OrbitalViewTheme` from name-only to background, panel, line, text, muted text, accent, secondary accent, success, warning, danger, and `vuRamp` tokens.
+- Preserved legacy name-only theme decoding by filling missing token fields from the default theme.
+- Added `SpeakerMeterColorScheme.daftPunkBow` with user-facing display name `Daft Punk Bow`.
+- Added `OrbitalViewTheme.daftPunkBow` with the required seven-stop VU ramp.
+- Migrated legacy encoded `techRainbow` color schemes to `daftPunkBow`.
+- Added a renderer palette branch so existing checker color transforms compile with the new scheme.
+- Updated docs so Wavefield and Orbisonic host UIs can offer the same `Daft Punk Bow` color scheme later.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewCoreTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Results:
+
+```text
+swift build passed.
+swift test --filter OrbitalViewCoreTests passed: 18 tests, 0 failures.
+swift test passed: 49 XCTest cases, 0 failures.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/status.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed a local compile issue where the custom SpeakerMeterColorScheme Codable implementation needed the enum to explicitly conform to Codable
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by Slice 015 only to preserve compilation after enum changes
+```
+
+Object-tree compatibility:
+
+```text
+Contracts added are additive: OrbitalColor, OrbitalColorStop, expanded OrbitalViewTheme tokens, and SpeakerMeterColorScheme.daftPunkBow.
+No object-tree symbols were renamed or removed.
+Renderer layer shape is unchanged; only the existing speaker color palette switch gained a Daft Punk Bow branch.
+```
+
+Next recommended task:
+
+```text
+Slice 016 - Cube scalar bloom settings, sanitizer, diagnostics, and presets
+```
+
+### Update: 2026-05-20 Speaker Cube/Prism Shape And Face-Center VU Contract
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 014 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Added `SpeakerShape.cube(edgeM:)` and Sonic Sphere helper constructors for cube default and fixed rectangular-prism z scale.
+- Preserved the existing generic `SpeakerShape.rectangularPrism(widthM:heightM:depthM:bevelM:)` case for source/Codable compatibility.
+- Added `SpeakerFaceCenterBloom.normalizedDistanceFromFaceCenter(u:v:)` for per-face center-bloom math.
+- Added `SpeakerMeterVisualSettings.speakerZScale` with validated `1...2` range and legacy decode default `1`.
+- Changed the Wavefield layout adapter's default physical speaker shape from sphere to Sonic Sphere cube while preserving channel identity and caller override support.
+- Added core, Wavefield, and renderer tests for cube/prism validation, face-center distance, z-scale validation, default cube speaker mapping, and shape stability under meter/settings updates.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewCoreTests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Results:
+
+```text
+swift build passed.
+swift test --filter OrbitalViewCoreTests passed: 15 tests, 0 failures.
+swift test passed: 46 XCTest cases, 0 failures.
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Tests/OrbitalViewRenderTests/ allowed by Slice 014 for invariant coverage
+```
+
+Object-tree compatibility:
+
+```text
+Contracts added are additive: SpeakerShape.cube, SpeakerFaceCenterBloom, and SpeakerMeterVisualSettings.speakerZScale.
+No object-tree symbols were renamed or removed.
+Renderer source layers were unchanged; only renderer tests assert z-scale settings do not mutate speaker shape/static inputs.
+```
+
+Next recommended task:
+
+```text
+Slice 015 - Daft Punk Bow theme tokens and palette migration
+```
+
+### Update: 2026-05-20 Object Tree Merge Compatibility Review
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Opened Slice 013 from `orbital-view-vu-kit-native-codex-work-package.md`.
+- Located the separate object tree at `/Users/jeremyguillory/Documents/vibecode projects/orbital-view-with-objects`.
+- Compared public scene, camera, selection, renderer, SwiftUI, and object-related API surfaces.
+- Added `docs/object-tree-merge-compatibility.md` with merge findings, conflict expectations, and additive bridge guidance.
+- Left source unchanged because no current object-tree symbol conflict requires scaffolding.
+
+Commands run:
+
+```text
+find /Users/jeremyguillory/Documents -maxdepth 5 -type d -iname '*Orbital*View*Objects*'
+rg public symbol/object API scans across both trees
+diff -qr Sources between both trees
+diff -qr Tests between both trees
+```
+
+Results:
+
+```text
+The inspected object tree is older than the current VU tree. It already shares OrbitalViewSceneSpec.virtualObjects but lacks the current dynamic object frame, object meter, object visual settings, renderer object revision, retained object buffer, and SwiftUI object forwarding APIs.
+```
+
+Documentation updated:
+
+```text
+docs/object-tree-merge-compatibility.md
+docs/implementation-map.md
+docs/status.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Next recommended task:
+
+```text
+Slice 014 - Speaker cube/prism shape contract and face-center VU contract
 ```
 
 ### Update: 2026-05-20 Native Work Package Preflight Verification
@@ -117,7 +932,7 @@ docs/test-strategy.md
 mockups/orbital-view-viewport/index.html
 mockups/orbital-view-viewport/notes.md
 .tasks/012-wavefield-object-overlay-performance.md
-work-packages/orbital-view-kit/MV.md
+orbital-view-vu-kit-native-codex-work-package.md
 work-packages/orbital-view-kit/slices/012-wavefield-object-overlay-performance.md
 ```
 
@@ -154,7 +969,7 @@ docs/system-flows.md
 docs/test-strategy.md
 mockups/orbital-view-viewport/notes.md
 .tasks/012-wavefield-object-overlay-performance.md
-work-packages/orbital-view-kit/MV.md
+orbital-view-vu-kit-native-codex-work-package.md
 work-packages/orbital-view-kit/slices/012-wavefield-object-overlay-performance.md
 ```
 
@@ -219,7 +1034,7 @@ none
 ## Current Work Package
 
 ```text
-work-packages/orbital-view-kit/MV.md
+orbital-view-vu-kit-native-codex-work-package.md
 ```
 
 ## Current Tree
@@ -267,6 +1082,13 @@ codex/orbital-view-vu-kit branch
 - Reworked the cube VU mockup layout with a separate normal music meter and tabbed Tune/Advanced controls for the active monitor.
 - Added an exclusive VU drive toggle so Music and Impulse Test modes cannot run at the same time.
 - Opened and completed slice 012 for Wavefield source-object overlay contracts, object VU state, capped trails, retained renderer buffers, and matching mockup controls.
+- Completed Slice 013 object-tree merge compatibility documentation in `docs/object-tree-merge-compatibility.md`.
+- Completed Slice 014 cube/prism speaker shape, speaker z-scale setting, and face-center VU contracts.
+- Completed Slice 015 Daft Punk Bow theme tokens, VU ramp, and `techRainbow` migration.
+- Completed Slice 016 cube scalar bloom settings, sanitizer diagnostics, and visual preset contracts.
+- Completed Slice 017 renderer static buffer/cache plan and performance invariants.
+- Completed Slice 018 Metal cube/prism center-bloom renderer prototype.
+- Completed Slice 019 SwiftUI VU tray controls, optional preset store actions, and diagnostics display.
 
 ## In Progress
 
@@ -276,7 +1098,7 @@ none
 
 ## Pending
 
-- Next native continuation task is Slice 013 - Orbital View with Objects merge compatibility review.
+- Next native continuation task is Slice 020 - Wavefield Orbital View tab integration.
 
 ## Blocked
 

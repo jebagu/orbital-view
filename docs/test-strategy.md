@@ -16,9 +16,15 @@ Once implementation starts, the test suite should prove:
 - downstream adapters do not reorder Wavefield/Fey speakers
 - local Wavefield JSON adapter rejects invalid layout shape explicitly
 - local Wavefield meter adapter rejects duplicate channels and invalid levels explicitly
-- meter visual settings validate display gain, style, color scheme, and checker controls without touching audio behavior
-- source-object frame sets validate Wavefield object ID identity, unit-sphere poses, active-object caps, and trail caps explicitly
-- object meter frames preserve levels by Wavefield object ID
+- meter visual settings validate display gain, style, color scheme, checker controls, and speaker z scale without touching audio behavior
+- Daft Punk Bow color/theme contracts preserve display name, ramp stops, Codable round trips, and legacy `techRainbow` migration
+- cube scalar center-bloom is the default music style and validates bloom, response, peak hold, release, hot fill, face pixels, diagnostics visibility, and legacy checker/ripple migration
+- runtime meter sanitizing reports missing/extra/invalid/duplicate channels, replaces NaN/inf values, clamps finite values, and preserves strict constructor behavior
+- visual presets round-trip through Codable, validate decoded data, and can reset to the default music preset
+- Sonic Sphere speaker shapes validate cube edge and rectangular-prism z scale explicitly
+- face-center VU bloom math uses each face's local center, not a shared object center
+- source-object frame sets validate source-object ID identity, unit-sphere poses, active-object caps, and trail caps explicitly
+- object meter frames preserve levels by source-object ID
 - object visual settings default to conservative trails-off behavior and `-5...+5` bounds
 
 ## Unit Tests
@@ -30,6 +36,11 @@ Use for:
 - speaker ID/channel/shape validation
 - meter frame identity
 - meter visual settings validation plus style/color-scheme codability
+- platform-neutral theme token and VU ramp codability
+- cube scalar center-bloom default settings and legacy style migration
+- meter input sanitizer diagnostics and safe value replacement/clamping
+- visual preset Codable round trip, decode validation, and default reset
+- Sonic Sphere cube/prism z-scale and face-center bloom distance validation
 - object frame-set identity, duplicate object ID rejection, active-object caps, and trail-cap validation
 - object meter identity by object ID
 - object visual settings defaults and finite range validation
@@ -48,8 +59,15 @@ Use when a downstream adapter is added:
 - assert directions match the source layout
 - reject unsupported axes and invalid speaker counts
 - map channel/rms/peak records into `SpeakerMeterFrame`
+- map runtime Wavefield channel/rms/peak records into sanitized `SpeakerMeterFrame` plus diagnostics for missing, extra, invalid, duplicate, replaced, and clamped channels
 - preserve missing meter channels as absent values
 - derive clip from a configurable threshold
+- verify the Wavefield Orbital View host model joins cached Fey speaker geometry and `PlayerSnapshot.meterSummary.multichannelLevels` by channel
+- verify only explicit Mono Equal mode mirrors mono RMS/peak across modeled speaker channels
+- verify the Orbisonic adapter skeleton maps exactly 30 physical output speaker records into `OrbitalViewSceneSpec`
+- verify the Orbisonic adapter skeleton sanitizes normalized output-monitor VU records into `SpeakerMeterFrame`
+- verify the Orbisonic color-scheme contract includes Daft Punk Bow and maps it to `OrbitalViewTheme.daftPunkBow`
+- verify the standalone viewer support target builds deterministic 30-channel demo scene and meter data without importing UI or downstream host targets
 
 ## Renderer Tests
 
@@ -59,6 +77,7 @@ Renderer harness details live in:
 
 ```text
 docs/renderer-test-harness.md
+docs/renderer-cache-plan.md
 ```
 
 Current renderer seam tests cover:
@@ -69,10 +88,18 @@ Current renderer seam tests cover:
 - `OrbitalViewMetalRenderer` provides an `MTKViewDelegate` seam
 - offscreen Metal smoke rendering produces a non-clear frame from a deterministic scene, or skips clearly when no Metal device exists
 - meter-only and camera-only updates keep static speaker draw inputs stable
-- speaker draw inputs preserve ID/channel order and stable quad dimensions
+- settings-only updates keep static speaker geometry cache keys stable
+- cube and rectangular-prism speaker shapes produce different static geometry cache keys
+- speaker draw inputs expose instanced cube/prism mesh metadata, normal-out orientation, and RMS/peak/clip material payloads
+- offscreen center-bloom pixel probes prove hot and clipped channels change color/intensity without changing geometry bounds
+- Daft Punk Bow ramp uniform updates change offscreen color without changing static speaker geometry
+- channel-to-instance mapping preserves scene speaker order and physical channel identity
+- repeated meter/settings/camera-only renders reuse retained speaker buffers when capacity is sufficient
+- speaker draw inputs preserve ID/channel order and stable dimensions
 - 30 channel-keyed meter levels map to scene speakers by physical channel
-- checker color-scheme/settings changes affect every speaker color without changing geometry
+- meter color-scheme/settings changes affect every speaker color without changing geometry
 - meter visual gain/style updates affect color state without changing static geometry or raw meter revision
+- speaker z-scale setting updates do not mutate scene speaker shapes or static draw inputs
 - object frame, object meter, and object visual setting updates use separate renderer revisions
 - object meter-only changes do not rebuild static speaker or static object geometry
 - object disappearance removes object draw input and trail ownership
@@ -98,7 +125,9 @@ Current wrapper skeleton tests cover:
 - changed meter frames update meter revision without rebuilding scene state
 - changed meter visual settings update only meter visual settings state
 - object frame, object meter, and object visual settings snapshots forward to the renderer without reloading scene state
-- the settings-bound initializer opts into the collapsed VU settings tray with color-scheme/settings controls
+- the settings-bound initializer opts into the collapsed VU settings tray with color-scheme/settings controls, diagnostics input, and optional preset-store injection
+- visual preset actions use the optional store and no-op safely when persistence is absent
+- diagnostics summaries report missing, extra, invalid, duplicate, replaced, clamped, and timestamp-fallback input
 - camera and selection configuration emits renderer events
 
 Future wrapper tests should cover:
@@ -106,6 +135,15 @@ Future wrapper tests should cover:
 - gesture updates bind camera state without breaking center lock
 - selection bindings round-trip from renderer picking to host UI
 - toolbar toggles do not mutate audio, playback, routing, or metering state
+
+## Standalone Viewer Tests
+
+Current viewer tests cover:
+
+- deterministic 30-channel viewer scene creation
+- channel-keyed sample speaker meter coverage for every viewer speaker
+- sample source-object frames and object meters sharing object IDs
+- viewer object visual settings enabling trails/glow trails only inside the demo harness
 
 ## Mockup Checks
 
@@ -145,6 +183,18 @@ Current package:
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Focused host adapter check:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbisonicOrbitalViewAdapterTests
+```
+
+Focused standalone viewer check:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewViewerTests
 ```
 
 Current mockup:

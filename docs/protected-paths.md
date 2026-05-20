@@ -11,7 +11,7 @@ Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-`OrbitalViewCore` and `OrbitalViewWavefield` source changes are governed by normal task scope and tests.
+`OrbitalViewCore`, `OrbitalViewWavefield`, and `OrbitalViewOrbisonic` source changes are governed by normal task scope and tests.
 
 ## Protected Path: Downstream Audio And Routing Integrations
 

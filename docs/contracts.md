@@ -37,12 +37,18 @@ ShellFace
 OrbitalViewSpeaker
 SpeakerAnchor
 SpeakerShape
+SpeakerFaceCenterBloom
 SpeakerVisualRole
 SpeakerMeterFrame
 SpeakerMeterLevel
+SpeakerMeterSample
+SpeakerMeterFrameSanitizer
 SpeakerMeterVisualSettings
 SpeakerMeterVisualStyle
 SpeakerMeterColorScheme
+OrbitalViewInputDiagnostics
+OrbitalViewVisualPreset
+OrbitalViewVisualPresetStore
 OrbitalViewObjectFrameSet
 OrbitalViewObjectFrame
 ObjectMeterFrame
@@ -58,6 +64,8 @@ OrbitalViewOrbit
 OrbitalViewSelection
 OrbitalViewEvent
 OrbitalViewValidationError
+OrbitalColor
+OrbitalColorStop
 ```
 
 Exact Swift names may vary only if the task explains why.
@@ -69,12 +77,13 @@ Inputs are host-provided scene and meter data:
 - coordinate system
 - shell geometry or parametric shell spec
 - physical speaker list
-- active source-object frames keyed by Wavefield object ID
-- object meter levels keyed by Wavefield object ID
+- active source-object frames keyed by source-object ID
+- object meter levels keyed by source-object ID
 - display-only object visual settings for geometry, motion, meter skin, trails, glow trails, and bounds
 - meter levels keyed by physical channel
+- runtime-safe raw meter samples for sanitizer/adapters
 - display-only meter visual settings
-- color scheme and checker pulse/ring/diagonal wave controls
+- color scheme, platform-neutral theme tokens, VU ramp, cube scalar center-bloom controls, and legacy checker/ripple controls
 - camera state
 
 ### Outputs
@@ -85,6 +94,7 @@ Core may output:
 - validation errors
 - camera preset states
 - selection/event values for renderer or host app use
+- runtime input diagnostics for missing, extra, invalid, duplicate, replaced, or clamped meter input
 
 Core must not output audio, routing changes, playback state mutations, or UI navigation.
 
@@ -99,11 +109,24 @@ Core must not output audio, routing changes, playback state mutations, or UI nav
 - Physical channels should be unique unless a future contract explicitly allows duplicates for non-physical roles.
 - Speaker labels must not be empty after trimming.
 - Shape dimensions must be positive and finite.
+- Sonic Sphere production speaker shape defaults to `SpeakerShape.cube(edgeM:)`.
+- Sonic Sphere rectangular-prism shape uses fixed cube edge dimensions with local z depth scaled from `1.0...2.0`; `1.0` is cube height and `2.0` is two cubes stacked.
+- Speaker face-center bloom math uses each visible face's local `(0.5, 0.5)` center; face-local `u` and `v` coordinates must be finite and in `0...1`.
 - Edge anchor `t` must be in `0...1`.
 - Monitor camera presets must target the origin.
 - Meter visual gain must be finite and in `-24...24` dB.
+- Meter visual speaker z scale must be finite and in `1...2`.
+- `SpeakerMeterVisualStyle.cubeScalarCenterBloom` is the default music-mode style.
+- Legacy encoded checker/ripple style aliases decode to `checkerPulseRingAndDiagonalWave`.
+- Cube scalar center-bloom controls must stay in finite documented ranges: bloom min/max `0...1`, bloom edge `0.001...1`, response curve `0.2...4`, peak hold `0...3`, release/memory `0...1`, hot fill `0...1`, and face pixels `4...64`.
+- `SpeakerMeterColorScheme.daftPunkBow` is the user-facing Daft Punk Bow palette; legacy encoded `techRainbow` values decode to `daftPunkBow`.
+- `OrbitalViewTheme` is platform-neutral and carries background, panel, line, text, muted text, accent, secondary accent, success, warning, danger, and VU ramp tokens.
 - Checker visual controls must stay in documented finite ranges, including tile detail `4...32`.
-- Wavefield source-object IDs must be in `1...128`.
+- Strict `SpeakerMeterFrame` and `SpeakerMeterLevel` constructors must reject invalid channel/timestamp/value data; runtime host input safety belongs in `SpeakerMeterFrameSanitizer`.
+- `SpeakerMeterFrameSanitizer` may replace NaN/inf level values with safe zeros and clamp finite level values to `0...1`, while returning `OrbitalViewInputDiagnostics`.
+- `OrbitalViewVisualPreset` is Codable and validates ID, display name, and settings on decode.
+- `OrbitalViewCore` exposes only the visual-preset store protocol and remains persistence-free.
+- Source-object IDs must be in `1...128`.
 - Object frame sets must reject duplicate object IDs.
 - Object centers must be represented as unit-sphere directions.
 - Object width must be finite and non-negative.
@@ -147,6 +170,10 @@ Splat app targets
 - meter visual settings validation
 - meter visual style codability
 - meter color scheme and checker setting codability
+- Daft Punk Bow ramp stops, display name, Codable round trip, and `techRainbow` migration alias
+- cube scalar center-bloom default settings, range validation, legacy style migration, and settings Codable defaults
+- runtime meter sanitizer clamping, missing/extra channel diagnostics, invalid channel diagnostics, NaN/inf replacement, and timestamp fallback
+- visual preset Codable round trip, decode validation, and default reset
 - object frame identity, duplicate ID, active-object cap, and trail-cap validation
 - object meter identity by object ID
 - object visual settings defaults and validation
@@ -200,6 +227,7 @@ OrbitalViewMetalDrawPipeline
 OrbitalViewOffscreenFrame
 OrbitalViewSpeakerDrawInputs
 OrbitalViewSpeakerStaticDrawInput
+OrbitalViewSpeakerStaticGeometryCacheKey
 OrbitalViewObjectDrawInputs
 OrbitalViewObjectDrawInput
 OrbitalViewObjectStaticDrawInput
@@ -207,15 +235,16 @@ OrbitalViewObjectStaticDrawInput
 
 ### Status
 
-Initial seam, minimal smoke-test draw path, static draw-input invariants, meter visual setting plumbing, object overlay draw inputs, and retained Metal buffer reuse implemented. Full production drawing, shell rendering, materials, live object smoothing, hit testing, and broad SwiftUI controls remain deferred.
+Initial seam, instanced cube/prism speaker draw path, procedural face-center bloom shader, Daft Punk Bow ramp uniform path, static draw-input invariants, meter visual setting plumbing, object overlay draw inputs, and retained Metal buffer reuse implemented. Shell rendering, struts, live object smoothing, hit testing, and broad SwiftUI controls remain deferred.
 
 ### Tests Required
 
 - scene updates increment structural revision without touching meter revision
 - meter updates increment meter revision without rebuilding scene state
 - meter visual settings increment their own revision without touching structural or raw meter revisions
+- speaker z-scale visual setting updates do not mutate scene speaker shapes or static draw inputs
 - 30 channel-keyed meter levels map to speakers by physical channel
-- checker pulse/ring/diagonal wave is the default meter visual style
+- cube scalar center-bloom is the default meter visual style; checker pulse/ring/diagonal wave remains a legacy/impulse-test style
 - camera updates emit camera events
 - selection updates emit selection events
 - Metal renderer conforms to `MTKViewDelegate`
@@ -223,6 +252,12 @@ Initial seam, minimal smoke-test draw path, static draw-input invariants, meter 
 - meter-only updates leave static speaker draw inputs unchanged
 - camera-only updates leave static speaker draw inputs unchanged
 - draw inputs preserve physical speaker ID/channel order and stable dimensions
+- speaker draw inputs expose cube/prism mesh vertex count, shape depth scale, normal-out orientation, and RMS/peak/clip material payloads
+- offscreen pixel probes prove hot/clip meter changes alter color/intensity without changing speaker geometry bounds
+- Daft Punk Bow ramp uniform changes offscreen color without changing static speaker geometry
+- static speaker geometry cache keys include speaker shape, so cube and rectangular-prism scenes invalidate geometry separately
+- channel-to-instance maps preserve scene speaker order and physical channel identity
+- repeated meter/settings/camera-only renders reuse retained speaker buffers when capacity is sufficient
 - object frame updates increment object frame revision without touching speaker structural revision
 - object meter updates increment object meter revision without rebuilding speaker or object static geometry
 - object disappearance removes active object draw input and trail ownership
@@ -244,7 +279,16 @@ Current wrapper skeleton:
 OrbitalView
 ```
 
-`OrbitalView` accepts a scene, optional speaker meter frame, optional object frame set, optional object meter frame, object visual settings, camera binding, selection binding, and event callback. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with display gain, style, color scheme, and checker controls.
+Current Wavefield host seam:
+
+```text
+WavefieldOrbitalViewModel
+WavefieldMeterFrameAdapter.makeSanitizedSpeakerMeterFrame(...)
+```
+
+The Wavefield host seam consumes cached Fey speaker geometry, `PlayerSnapshot.meterSummary.multichannelLevels`, renderer mode, and Wavefield theme selection. MIDI Track to Speakers, nearest-speaker, and VBAP modes use multichannel levels when available; Mono Equal is the only mode allowed to mirror mono RMS/peak across speaker channels. Empty multichannel levels must stay empty and surface diagnostics rather than creating fake 30-channel meters.
+
+`OrbitalView` accepts a scene, optional speaker meter frame, optional object frame set, optional object meter frame, object visual settings, optional input diagnostics, camera binding, selection binding, and event callback. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with Basic, Advanced, Presets, and Diagnostics sections. The tray can receive an optional `OrbitalViewVisualPresetStore`; persistence is host-provided and never mandatory.
 
 ### Non-Responsibilities
 
@@ -257,7 +301,7 @@ The wrapper must not:
 - parse downstream app file formats
 - import DomeLab code
 - embed a WebView as the main renderer path
-- implement production controls or gestures before an explicit task
+- implement toolbar, gesture, hit-testing, or inspector controls before an explicit task
 - own per-frame object animation state in SwiftUI
 
 ### Dependencies
@@ -283,7 +327,7 @@ Splat app targets
 
 ### Status
 
-Wrapper skeleton plus optional VU settings tray implemented. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
+Wrapper skeleton plus optional VU settings tray implemented. The tray includes display settings, speaker height, advanced bloom/checker controls, optional visual-preset save/load/reset actions, and input diagnostics display. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
 
 ### Tests Required
 
@@ -292,6 +336,9 @@ Wrapper skeleton plus optional VU settings tray implemented. Toolbar controls, g
 - coordinator emits camera and selection events
 - existing initializer remains tray-free
 - settings-bound initializer opts into the tray
+- settings-bound initializer can receive optional diagnostics and an optional visual-preset store
+- preset actions work through an optional store and no-op safely when persistence is absent
+- diagnostics summaries report missing, extra, invalid, duplicate, replaced, clamped, and timestamp-fallback meter input
 - coordinator applies settings-only updates without reloading scene state
 - coordinator forwards object frame, object meter, and object visual settings snapshots without reloading scene state
 
@@ -307,7 +354,7 @@ Adapters belong in the lowest target that can cleanly depend on both `OrbitalVie
 
 ### Status
 
-Deferred until the actual downstream package layout is inspected during the first code task.
+Wavefield and Orbisonic now have package-level adapter targets. Splat remains deferred until its package layout is inspected during an explicit task.
 
 ## Module: OrbitalViewWavefield
 
@@ -383,3 +430,100 @@ CoreMIDI
 - Duplicate or invalid channels fail explicitly.
 - Non-finite RMS/peak values fail explicitly.
 - Clip flags derive from the configured peak threshold.
+
+## Module: OrbitalViewOrbisonic
+
+### Responsibility
+
+Define the package-level Orbisonic host seam for native Orbital View integration without importing the Orbisonic app.
+
+Required host contract:
+
+```text
+Orbisonic renderer/output monitor
+  -> 30 channel VU records
+  -> SpeakerMeterFrame
+  -> OrbitalView
+```
+
+### Non-Responsibilities
+
+This module must not:
+
+- edit or depend on the Orbisonic package
+- capture live input
+- read audio buffers directly
+- derive production routing
+- include the LFE/subwoofer channel in the 30 physical speaker viewport
+- render UI or 3D graphics
+- modify audio, playback, routing, metering, output, Roon, Spotify, or Dante behavior
+
+### Public Interface
+
+```text
+OrbisonicOrbitalViewAdapter
+OrbisonicOrbitalViewAdapterError
+OrbisonicOutputSpeakerRecord
+OrbisonicMeterRecord
+OrbisonicOrbitalMeterSource
+OrbisonicOrbitalColorScheme
+OrbitalViewCoordinateSystem.orbisonicMonitor
+```
+
+### Inputs
+
+Orbisonic host-owned output speaker records with:
+
+```text
+physicalChannel = 1...30
+position = unit-sphere-capable x/y/z
+label = host display label
+```
+
+Orbisonic host-owned meter records with:
+
+```text
+physicalChannel = 1...30
+rms = normalized display RMS in 0...1
+peak = normalized display peak in 0...1
+clip = host clip flag
+```
+
+The host may derive these records from current Orbisonic types such as renderer output speakers, `ChannelMeter`, or `MeterSnapshot.danteMeters`, but that mapping remains in Orbisonic until a future app integration slice.
+
+### Outputs
+
+`OrbitalViewSceneSpec` with 30 physical speakers using `OrbitalViewCoordinateSystem.orbisonicMonitor`.
+
+`SpeakerMeterFrameSanitizer.Result` with display-safe `SpeakerMeterFrame` values plus diagnostics for missing, extra, invalid, duplicate, replaced, clamped, and timestamp-fallback input.
+
+`OrbisonicOrbitalColorScheme.daftPunkBow` maps directly to `OrbitalViewTheme.daftPunkBow`.
+
+### Dependencies
+
+Allowed:
+
+```text
+Foundation
+OrbitalViewCore
+```
+
+Forbidden:
+
+```text
+Orbisonic app targets
+Wavefield app targets
+SwiftUI
+AppKit
+MetalKit
+AVFoundation
+CoreMIDI
+```
+
+### Tests Required
+
+- Orbisonic speaker records map to 30 physical speaker scene records.
+- Channels remain `1...30`.
+- Duplicate, incomplete, or wrong physical channel sets fail explicitly.
+- Orbisonic meter records sanitize missing, extra, invalid, duplicate, replaced, and clamped input.
+- Daft Punk Bow is present in the Orbisonic color-scheme contract and maps to `OrbitalViewTheme.daftPunkBow`.

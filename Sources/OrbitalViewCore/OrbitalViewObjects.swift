@@ -90,7 +90,7 @@ public struct OrbitalViewObjectFrame: Equatable, Sendable {
     }
 
     public func validate() throws {
-        try validateWavefieldObjectID(objectID, field: "object.objectID")
+        try validateSourceObjectID(objectID, field: "object.objectID")
         guard !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw OrbitalViewValidationError.emptyLabel
         }
@@ -125,7 +125,7 @@ public struct ObjectMeterFrame: Equatable, Sendable {
             throw OrbitalViewValidationError.nonFiniteValue(field: "objectMeter.timestamp")
         }
         for objectID in levelsByObjectID.keys {
-            try validateWavefieldObjectID(objectID, field: "objectMeter.objectID")
+            try validateSourceObjectID(objectID, field: "objectMeter.objectID")
         }
     }
 }
@@ -388,7 +388,7 @@ public struct OrbitalViewObjectRenderBounds: Equatable, Codable, Sendable {
     }
 }
 
-func validateWavefieldObjectID(_ objectID: Int, field: String) throws {
+func validateSourceObjectID(_ objectID: Int, field: String) throws {
     guard (1...OrbitalViewObjectFrameSet.maxObjectCount).contains(objectID) else {
         throw OrbitalViewValidationError.invalidObjectID(objectID)
     }

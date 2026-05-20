@@ -22,6 +22,45 @@ flowchart LR
   Renderer --> UI["Host app viewport"]
 ```
 
+## Current Wavefield Orbital View Flow
+
+```mermaid
+flowchart LR
+  Player["Wavefield PlayerSnapshot"] --> Summary["MeterSummary.multichannelLevels"]
+  Mode["Renderer mode"] --> Adapter["WavefieldOrbitalViewModel"]
+  Summary --> Adapter
+  Mono["Mono RMS/peak"] --> Adapter
+  Geometry["Cached Fey Spherical VU geometry"] --> Scene["OrbitalViewSceneSpec"]
+  Adapter --> Meter["SpeakerMeterFrame"]
+  Adapter --> Diagnostics["OrbitalViewInputDiagnostics"]
+  Theme["Wavefield color scheme"] --> OrbitalTheme["OrbitalViewTheme"]
+  Scene --> View["Wavefield Orbital View tab"]
+  Meter --> View
+  Diagnostics --> View
+  OrbitalTheme --> Scene
+```
+
+MIDI Track to Speakers, nearest-speaker, and VBAP modes use the measured multichannel levels when present. Mono Equal is the only host-selected mode that mirrors mono RMS/peak into every modeled speaker channel. Empty multichannel levels stay empty and surface diagnostics instead of fake 30-channel values.
+
+## Current Orbisonic Host Contract Flow
+
+```mermaid
+flowchart LR
+  Monitor["Orbisonic renderer/output monitor"] --> Records["30 physical channel VU records"]
+  Speakers["Orbisonic output speaker records"] --> Adapter["OrbitalViewOrbisonic adapter skeleton"]
+  Records --> Adapter
+  Theme["Orbisonic color scheme"] --> Daft["Daft Punk Bow or Orbisonic Lab theme"]
+  Daft --> Adapter
+  Adapter --> Scene["OrbitalViewSceneSpec"]
+  Adapter --> Meter["SpeakerMeterFrame"]
+  Adapter --> Diagnostics["OrbitalViewInputDiagnostics"]
+  Scene --> View["OrbitalView"]
+  Meter --> View
+  Diagnostics --> View
+```
+
+Orbisonic owns renderer/output monitor state, live input capture, output routing, Dante output, Roon/Spotify/Aux source selection, and meter production. `OrbitalViewOrbisonic` owns only the package-level DTO seam from 30 physical speaker records and normalized VU records into `OrbitalViewCore`. The LFE/subwoofer channel remains outside the 30 physical speaker viewport unless a future task explicitly defines a 30.1 visualization.
+
 ## Future Camera Flow
 
 ```mermaid
@@ -38,7 +77,10 @@ flowchart TD
 ```mermaid
 flowchart LR
   Scene["Validated scene"] --> StaticGeometry["Static Metal buffers"]
-  MeterFrame["Latest meter frame"] --> VisualState["Display-rate visual envelope"]
+  RawMeters["Host meter samples"] --> Sanitizer["SpeakerMeterFrameSanitizer"]
+  Sanitizer --> MeterFrame["Latest meter frame"]
+  Sanitizer --> Diagnostics["OrbitalViewInputDiagnostics"]
+  MeterFrame --> VisualState["Display-rate visual envelope"]
   Objects["Active object frame set"] --> ObjectPose["Object pose/width/trail inputs"]
   ObjectMeters["Object meter frame"] --> ObjectColor["Object meter skin colors"]
   Camera["Camera state"] --> ViewUniforms["View uniforms"]
@@ -51,50 +93,64 @@ flowchart LR
 
 Static speaker geometry, object pose/trail state, meter state, and camera state should stay separate so meter or trail updates do not rebuild the scene.
 
+## Current Meter Input Safety Flow
+
+```mermaid
+flowchart LR
+  HostSamples["Host channel/rms/peak samples"] --> Sanitizer["SpeakerMeterFrameSanitizer"]
+  Expected["Expected physical channels"] --> Sanitizer
+  Sanitizer --> StrictFrame["SpeakerMeterFrame"]
+  Sanitizer --> Diagnostics["missing/extra/invalid/duplicate/replaced/clamped diagnostics"]
+  StrictFrame --> Renderer["OrbitalViewRender state"]
+  Diagnostics --> HostUI["Host diagnostics UI"]
+```
+
+Strict meter constructors still reject invalid timestamps, channels, and non-finite values. The sanitizer is the runtime-safe adapter path for host UI surfaces that should keep running when a bad sample appears.
+
 ## Current Renderer Seam Flow
 
 ```mermaid
 flowchart TD
   Scene["OrbitalViewSceneSpec"] --> State["OrbitalViewRenderState"]
   Meters["SpeakerMeterFrame"] --> State
-  MeterSettings["SpeakerMeterVisualSettings"] --> State
+  MeterSettings["SpeakerMeterVisualSettings cube scalar center bloom"] --> State
   Objects["OrbitalViewObjectFrameSet"] --> State
   ObjectMeters["ObjectMeterFrame"] --> State
   ObjectSettings["ObjectVisualSettings"] --> State
   Camera["OrbitalViewCameraState"] --> State
   Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
   State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
-  Delegate --> Inputs["Static speaker draw inputs + object draw inputs + colors"]
+  Delegate --> Inputs["Speaker mesh/material inputs + object draw inputs"]
   Inputs --> Pipeline["OrbitalViewMetalDrawPipeline"]
   Pipeline --> Frame["MTKView frame or offscreen texture"]
 ```
 
-The current renderer seam stores validated state, emits camera/selection events, applies display-only speaker and object visual settings, and issues a minimal Metal draw command for fixed-size speaker/object quads.
+The current renderer seam stores validated state, emits camera/selection events, applies display-only speaker and object visual settings, renders speakers as fixed cube/prism meshes with shader-side center bloom, and keeps object overlays on the simpler quad draw path.
 
 ## Current Renderer Invariant Flow
 
 ```mermaid
 flowchart LR
-  Scene["Scene speakers"] --> StaticInputs["ID, channel, position, quad radius"]
-  Meter["Meter frame"] --> ColorInputs["speaker color/intensity"]
-  Settings["Visual gain + style"] --> ColorInputs
+  Scene["Scene speakers"] --> StaticInputs["ID, channel, position, quad radius, mesh depth"]
+  Meter["Meter frame"] --> MaterialInputs["RMS / peak / clip material"]
+  Settings["Visual gain + palette + bloom settings"] --> MaterialInputs
   Objects["Active objects"] --> ObjectInputs["object pose/width/trail draw inputs"]
   ObjectMeter["Object meters"] --> ObjectInputs
   Camera["Camera state"] --> State["renderer state"]
   StaticInputs --> Tests["invariant tests"]
-  ColorInputs --> Tests
+  MaterialInputs --> Tests
   ObjectInputs --> Tests
   State --> Tests
 ```
 
-Meter, meter visual setting, object meter, trail, and camera updates must not change the static speaker draw inputs. Speaker meter and display-setting changes affect color/intensity only in the current renderer baseline. Object disappearance is represented by removal from the active object frame set, which also removes trail draw-input ownership.
+Meter, object meter, trail, and camera updates must not change the static speaker draw inputs. Speaker meter and display-setting changes affect dynamic material/ramp data only; speaker z-scale settings do not mutate scene speaker shapes. Object disappearance is represented by removal from the active object frame set, which also removes trail draw-input ownership.
 
 ## Current Object Overlay Flow
 
 ```mermaid
 flowchart LR
-  Wavefield["Wavefield objectId snapshots"] --> Frames["OrbitalViewObjectFrameSet"]
-  WavefieldMeters["Object VU levels"] --> Meters["ObjectMeterFrame"]
+  HostObjects["Host source-object snapshots"] --> Frames["OrbitalViewObjectFrameSet"]
+  HostObjectMeters["Object VU levels"] --> Meters["ObjectMeterFrame"]
   Settings["ObjectVisualSettings"] --> Renderer["OrbitalViewRenderState revisions"]
   Frames --> Renderer
   Meters --> Renderer
@@ -111,6 +167,8 @@ Object centers stay canonical unit-sphere directions. The render/effect bounds d
 flowchart TD
   HostView["Host SwiftUI view"] --> OrbitalView["OrbitalView"]
   Tray["Optional VU settings tray"] --> OrbitalView
+  Presets["Optional host preset store"] --> Tray
+  Diagnostics["Input diagnostics"] --> Tray
   OrbitalView --> Bridge["NSViewRepresentable"]
   Bridge --> MTKView["MTKView"]
   Bridge --> Renderer["OrbitalViewMetalRenderer"]
@@ -118,7 +176,21 @@ flowchart TD
   Events --> HostView
 ```
 
-The current wrapper bridges state into the renderer seam and can show an optional collapsed VU settings tray. It forwards object snapshots and settings without per-frame SwiftUI-owned animation state. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
+The current wrapper bridges state into the renderer seam and can show an optional collapsed VU settings tray with Basic, Advanced, Presets, and Diagnostics sections. Preset persistence is optional and host-provided through `OrbitalViewVisualPresetStore`; diagnostics are host-provided through `OrbitalViewInputDiagnostics`. The wrapper forwards object snapshots and settings without per-frame SwiftUI-owned animation state. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
+
+## Current Standalone Viewer Flow
+
+```mermaid
+flowchart LR
+  Support["OrbitalViewViewerSupport deterministic demo content"] --> Viewer["OrbitalViewViewer SwiftUI executable"]
+  CameraButtons["Plan Front Side Iso buttons"] --> Viewer
+  Viewer --> SwiftUI["OrbitalViewSwiftUI public API"]
+  SwiftUI --> Renderer["OrbitalViewRender MTKView"]
+  Renderer --> Events["camera/selection events"]
+  Events --> Viewer
+```
+
+The standalone viewer launches the package viewport without a downstream host app. Its scene, speaker meters, object frames, object meters, and object visual settings are deterministic demo-only values from `OrbitalViewViewerSupport`; they are not a production meter source and do not touch audio, routing, playback, MIDI, OSC, output, or downstream app code.
 
 ## Current Offscreen Harness Flow
 
