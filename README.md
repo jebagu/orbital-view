@@ -2,11 +2,11 @@
 
 Orbital View Kit is the project-control scaffold for `OrbitalViewKit`, a reusable 3D spherical speaker viewport planned for Wavefield, Orbisonic, and Splat.
 
-The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, and Wavefield layout adaptation tests. A disposable viewport mockup previews the intended monitor interaction, and the native renderer now has its first offscreen smoke-tested Metal draw path with static draw-input invariant coverage.
+The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, display-only VU settings, and Wavefield layout adaptation tests. A disposable viewport mockup previews the intended monitor interaction, and the native renderer now has its first offscreen smoke-tested Metal draw path with static draw-input invariant coverage, 30-channel VU mapping, and the default checker pulse/ring/diagonal wave style.
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the `OrbitalViewRender` MetalKit renderer seam with an offscreen smoke-tested draw path and static draw-input invariant tests, the compile-only `OrbitalViewSwiftUI` wrapper skeleton, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the `OrbitalViewRender` MetalKit renderer seam with an offscreen smoke-tested draw path, static draw-input invariant tests, and checker VU visual settings, the `OrbitalViewSwiftUI` wrapper with an opt-in settings tray, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
 
 ## Main References
 
@@ -38,9 +38,9 @@ OrbitalViewSwiftUI
 
 `OrbitalViewWavefield` reads the current Wavefield speaker-layout JSON shape into `OrbitalViewCore` scenes and maps Wavefield-style channel/rms/peak records into `SpeakerMeterFrame` values without depending on or editing the Wavefield app package.
 
-`OrbitalViewRender` establishes the first MetalKit seam with renderer state, scene/meter/camera update methods, selection events, an `MTKViewDelegate` path, and a minimal Metal draw pipeline verified by an offscreen smoke test. Renderer invariant tests verify meter and camera updates do not change static speaker draw inputs. Full production visuals remain deferred.
+`OrbitalViewRender` establishes the first MetalKit seam with renderer state, scene/meter/meter-visual-settings/camera update methods, selection events, an `MTKViewDelegate` path, and a minimal Metal draw pipeline verified by an offscreen smoke test. Renderer invariant tests verify meter, meter visual settings, and camera updates do not change static speaker draw inputs. Full production visuals and animation remain deferred.
 
-`OrbitalViewSwiftUI` exposes a public `OrbitalView` SwiftUI view and bridges the MetalKit renderer seam through `NSViewRepresentable`. It does not include controls, gestures, or inspector UI yet.
+`OrbitalViewSwiftUI` exposes a public `OrbitalView` SwiftUI view and bridges the MetalKit renderer seam through `NSViewRepresentable`. It includes an opt-in collapsed bottom VU settings tray for display gain, style, color scheme, and checker controls. Gestures, toolbar controls, and inspector UI remain deferred.
 
 ## Current Mockup
 
@@ -66,8 +66,8 @@ The accepted production renderer direction is a custom MetalKit / MTKView backen
 
 ## Still Out of Scope
 
-- Full production drawing implementation
-- SwiftUI controls, gestures, and inspector UI
+- Full production drawing implementation and VU animation/materials
+- SwiftUI controls, gestures, and inspector UI beyond the current VU settings tray
 - WebView integration
 - DomeLab code import
 - Wavefield, Orbisonic, or Splat source modifications

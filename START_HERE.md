@@ -16,7 +16,7 @@ work-packages/orbital-view-kit/MV.md
 
 ## Current Goal
 
-Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, first viewport visual mockup, renderer backend decision, initial `OrbitalViewRender` seam, compile-only `OrbitalViewSwiftUI` wrapper skeleton, renderer test harness plan, offscreen renderer smoke test, and renderer invariant tests.
+Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, first viewport visual mockup, renderer backend decision, initial `OrbitalViewRender` seam, `OrbitalViewSwiftUI` wrapper, renderer test harness plan, offscreen renderer smoke test, renderer invariant tests, and checker VU meter plumbing/settings tray.
 
 The current core already establishes pure Swift contracts and tests for:
 
@@ -25,6 +25,7 @@ The current core already establishes pure Swift contracts and tests for:
 - shell geometry
 - physical speaker identity and anchors
 - meter frames by channel
+- display-only checker VU visual settings
 - center-locked camera presets
 - scene validation
 
@@ -69,7 +70,7 @@ The current renderer smoke test is:
 Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 ```
 
-The current renderer invariant tests are in the same file and cover static draw-input stability across meter and camera updates.
+The current renderer invariant tests are in the same file and cover static draw-input stability across meter, meter visual setting, and camera updates.
 
 ## Do Not Start With
 
@@ -84,6 +85,7 @@ The current renderer invariant tests are in the same file and cover static draw-
 Create a new bounded task before implementing any renderer, SwiftUI, or downstream app integration work. Good next candidates:
 
 ```text
+Production checker facet animation/materials
 SwiftUI control/gesture binding plan
 Pixel-probe renderer tests
 Renderer static buffer/cache plan

@@ -6,6 +6,7 @@ import SwiftUI
 struct OrbitalViewRenderConfiguration: Equatable {
     let scene: OrbitalViewSceneSpec
     let meters: SpeakerMeterFrame?
+    let meterVisualSettings: SpeakerMeterVisualSettings
     let camera: OrbitalViewCameraState
     let selection: OrbitalViewSelection?
 }
@@ -50,6 +51,10 @@ struct OrbitalViewMetalView: NSViewRepresentable {
 
             if appliedConfiguration?.meters != configuration.meters, let meters = configuration.meters {
                 renderer.updateMeters(meters)
+            }
+
+            if renderer.renderState.meterVisualSettings != configuration.meterVisualSettings {
+                renderer.updateMeterVisualSettings(configuration.meterVisualSettings)
             }
 
             if appliedConfiguration?.camera != configuration.camera {

@@ -40,6 +40,9 @@ SpeakerShape
 SpeakerVisualRole
 SpeakerMeterFrame
 SpeakerMeterLevel
+SpeakerMeterVisualSettings
+SpeakerMeterVisualStyle
+SpeakerMeterColorScheme
 OrbitalViewCameraState
 OrbitalViewMode
 OrbitalViewProjection
@@ -60,6 +63,8 @@ Inputs are host-provided scene and meter data:
 - physical speaker list
 - optional virtual objects later
 - meter levels keyed by physical channel
+- display-only meter visual settings
+- color scheme and checker pulse/ring/diagonal wave controls
 - camera state
 
 ### Outputs
@@ -86,6 +91,8 @@ Core must not output audio, routing changes, playback state mutations, or UI nav
 - Shape dimensions must be positive and finite.
 - Edge anchor `t` must be in `0...1`.
 - Monitor camera presets must target the origin.
+- Meter visual gain must be finite and in `-24...24` dB.
+- Checker visual controls must stay in documented finite ranges, including tile detail `4...32`.
 
 ### Side Effects
 
@@ -119,6 +126,9 @@ Splat app targets
 - speaker validation
 - shell reference validation
 - meter channel identity
+- meter visual settings validation
+- meter visual style codability
+- meter color scheme and checker setting codability
 - center-locked camera presets
 - scene validation
 
@@ -173,12 +183,15 @@ OrbitalViewSpeakerStaticDrawInput
 
 ### Status
 
-Initial seam and minimal smoke-test draw path implemented. Full production drawing, shell rendering, materials, hit testing, and SwiftUI controls remain deferred.
+Initial seam, minimal smoke-test draw path, static draw-input invariants, and meter visual setting plumbing implemented. Full production drawing, shell rendering, materials, animation, hit testing, and broad SwiftUI controls remain deferred.
 
 ### Tests Required
 
 - scene updates increment structural revision without touching meter revision
 - meter updates increment meter revision without rebuilding scene state
+- meter visual settings increment their own revision without touching structural or raw meter revisions
+- 30 channel-keyed meter levels map to speakers by physical channel
+- checker pulse/ring/diagonal wave is the default meter visual style
 - camera updates emit camera events
 - selection updates emit selection events
 - Metal renderer conforms to `MTKViewDelegate`
@@ -201,7 +214,7 @@ Current wrapper skeleton:
 OrbitalView
 ```
 
-`OrbitalView` accepts a scene, optional meter frame, camera binding, selection binding, and event callback.
+`OrbitalView` accepts a scene, optional meter frame, camera binding, selection binding, and event callback. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with display gain, style, color scheme, and checker controls.
 
 ### Non-Responsibilities
 
@@ -239,13 +252,16 @@ Splat app targets
 
 ### Status
 
-Compile-only wrapper skeleton implemented. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
+Wrapper skeleton plus optional VU settings tray implemented. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
 
 ### Tests Required
 
 - wrapper initializes with camera and selection bindings
 - coordinator does not repeat structural updates for identical configuration
 - coordinator emits camera and selection events
+- existing initializer remains tray-free
+- settings-bound initializer opts into the tray
+- coordinator applies settings-only updates without reloading scene state
 
 ## Module: Future Downstream Adapters
 

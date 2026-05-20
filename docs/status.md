@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-Mockup Fey geodesic shell update
+VU meter plumbing and settings tray
 ```
 
 ## Current Milestone
 
 ```text
-Static mockup Fey 3V geodesic shell verified
+Checker pulse/ring/diagonal wave VU settings and 30-channel renderer mapping verified
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. The browser mockup now uses always-axonometric projection with no projection picker, groups controls under Camera, Color, Speaker Shape, and View Detail headings, draws the shell as a Fey 3V class-I icosahedron geodesic derived from the DomeLab project config values, defaults to Purple and Prism, themes the full surface from Purple, Flamingo, Green, and B&W palettes, draws prism speakers as 8-vertex rectangular prisms, uses switch controls for speaker numbers and hidden lines defaulted off, applies fog depth fading consistently to hidden shell lines and hidden speaker faces, and remaps Speaker size and Fog density sliders around the requested visual midpoints. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and settings updates. The project also has a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -27,7 +27,7 @@ work-packages/orbital-view-kit/MV.md
 ## Current Tree
 
 ```text
-main tree
+codex/vu-meter-plumbing-tray branch
 ```
 
 ## Completed
@@ -58,6 +58,12 @@ main tree
 - Updated the mockup Color selector to Green, Flamingo, Purple, and B&W, with Green using Orbisonic Lab tokens and Purple using Kimi Purple tokens.
 - Reordered the mockup Color selector to Purple, Flamingo, Green, and B&W with Purple default; made Prism the default Speaker Shape; defaulted Speaker numbers and Hidden Lines off; centered the Speaker size slider at 1.95x; and remapped Fog density so the prior 30-density look sits at the slider midpoint.
 - Replaced the mockup's generic latitude/spoke shell structure with a generated Fey 3V class-I icosahedron geodesic shell from the DomeLab project config values.
+- Opened slice 011 on `codex/vu-meter-plumbing-tray`.
+- Added `SpeakerMeterVisualSettings`, `SpeakerMeterVisualStyle`, and `SpeakerMeterColorScheme` as pure core display contracts.
+- Made checker pulse/ring/diagonal wave with Kimi Purple the default VU style.
+- Added renderer meter visual settings state and revision separation.
+- Added 30-channel renderer draw-input mapping by physical speaker channel.
+- Added an opt-in SwiftUI collapsible VU settings tray for Visual Gain, Style, Color Scheme, and checker controls.
 
 ## In Progress
 
@@ -67,8 +73,7 @@ none
 
 ## Pending
 
-- Decide and open the next bounded task.
-- Decide whether the next renderer slice should be pixel-probe renderer tests, a renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
+- Decide whether the next renderer slice should implement production checker facet animation/materials, pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
 
 ## Blocked
 
@@ -77,6 +82,124 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-19 VU Meter Plumbing And Settings Tray
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added pure core `SpeakerMeterVisualSettings`, `SpeakerMeterVisualStyle`, and `SpeakerMeterColorScheme`.
+- Made checker pulse/ring/diagonal wave the default style for every speaker, with Kimi Purple as the default color scheme.
+- Added display gain validation for finite `-24...24` dB values.
+- Added validated checker settings for ring/front density, band softness, tile detail, idle tint, memory carryover, band velocity, and band width.
+- Added renderer visual settings state, update method, and separate revision counter.
+- Updated draw inputs to map meter levels by each speaker's physical channel and ignore extra frame channels.
+- Added visual gain/style/color-scheme/checker color transforms without resizing speaker geometry.
+- Added an opt-in SwiftUI `OrbitalView` initializer with a collapsed bottom VU settings tray and checker controls.
+- Preserved the existing tray-free `OrbitalView` initializer.
+- Added task and work-package slice docs for slice 011.
+
+Files changed:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewMeters.swift
+Sources/OrbitalViewRender/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewRenderTests/
+Tests/OrbitalViewSwiftUITests/
+.tasks/011-vu-meter-plumbing-tray.md
+work-packages/orbital-view-kit/slices/011-vu-meter-plumbing-tray.md
+work-packages/orbital-view-kit/MV.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/product-brief.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+```
+
+Commands run:
+
+```text
+git diff --check -> passed
+node manifest JSON parse -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 35 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/product-brief.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/MV.md
+.tasks/011-vu-meter-plumbing-tray.md
+work-packages/orbital-view-kit/slices/011-vu-meter-plumbing-tray.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by slice 011
+Tests/OrbitalViewRenderTests/ allowed by slice 011
+Sources/OrbitalViewSwiftUI/ allowed by slice 011
+Tests/OrbitalViewSwiftUITests/ allowed by slice 011
+```
+
+Result:
+
+```text
+Checker VU display settings and 30-channel renderer mapping are implemented and verified without touching downstream audio or app paths.
+```
+
+Risks:
+
+- Current checker VU visuals are color/intensity transforms only; true per-facet checker cells, bloom, rings, and materials remain deferred.
+- The SwiftUI tray is compile-tested but not visually reviewed in a host app yet.
+
+Next recommended task:
+
+```text
+Production checker facet animation/materials or pixel-probe renderer tests.
+```
 
 ### Update: 2026-05-19 Project Initiation
 

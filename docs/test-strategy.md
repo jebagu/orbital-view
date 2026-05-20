@@ -16,6 +16,7 @@ Once implementation starts, the test suite should prove:
 - downstream adapters do not reorder Wavefield/Fey speakers
 - local Wavefield JSON adapter rejects invalid layout shape explicitly
 - local Wavefield meter adapter rejects duplicate channels and invalid levels explicitly
+- meter visual settings validate display gain, style, color scheme, and checker controls without touching audio behavior
 
 ## Unit Tests
 
@@ -25,6 +26,7 @@ Use for:
 - shell node/edge/face validation
 - speaker ID/channel/shape validation
 - meter frame identity
+- meter visual settings validation plus style/color-scheme codability
 - camera preset state
 - scene builder behavior
 
@@ -62,6 +64,9 @@ Current renderer seam tests cover:
 - offscreen Metal smoke rendering produces a non-clear frame from a deterministic scene, or skips clearly when no Metal device exists
 - meter-only and camera-only updates keep static speaker draw inputs stable
 - speaker draw inputs preserve ID/channel order and stable quad dimensions
+- 30 channel-keyed meter levels map to scene speakers by physical channel
+- checker color-scheme/settings changes affect every speaker color without changing geometry
+- meter visual gain/style updates affect color state without changing static geometry or raw meter revision
 
 Future renderer drawing checks should cover:
 
@@ -78,6 +83,8 @@ Current wrapper skeleton tests cover:
 - `OrbitalView` initializes with camera and selection bindings
 - identical configuration updates do not repeatedly increment structural renderer revision
 - changed meter frames update meter revision without rebuilding scene state
+- changed meter visual settings update only meter visual settings state
+- the settings-bound initializer opts into the collapsed VU settings tray with color-scheme/settings controls
 - camera and selection configuration emits renderer events
 
 Future wrapper tests should cover:

@@ -51,6 +51,7 @@ Static geometry, meter state, and camera state should stay separate so meter upd
 flowchart TD
   Scene["OrbitalViewSceneSpec"] --> State["OrbitalViewRenderState"]
   Meters["SpeakerMeterFrame"] --> State
+  MeterSettings["SpeakerMeterVisualSettings"] --> State
   Camera["OrbitalViewCameraState"] --> State
   Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
   State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
@@ -59,7 +60,7 @@ flowchart TD
   Pipeline --> Frame["MTKView frame or offscreen texture"]
 ```
 
-The current renderer seam stores validated state, emits camera/selection events, and issues a minimal Metal draw command for fixed-size speaker quads.
+The current renderer seam stores validated state, emits camera/selection events, applies display-only meter visual settings, and issues a minimal Metal draw command for fixed-size speaker quads.
 
 ## Current Renderer Invariant Flow
 
@@ -67,19 +68,21 @@ The current renderer seam stores validated state, emits camera/selection events,
 flowchart LR
   Scene["Scene speakers"] --> StaticInputs["ID, channel, position, quad radius"]
   Meter["Meter frame"] --> ColorInputs["speaker color/intensity"]
+  Settings["Visual gain + style"] --> ColorInputs
   Camera["Camera state"] --> State["renderer state"]
   StaticInputs --> Tests["invariant tests"]
   ColorInputs --> Tests
   State --> Tests
 ```
 
-Meter and camera updates must not change the static speaker draw inputs. Meter changes affect color/intensity only in the current renderer baseline.
+Meter, meter visual setting, and camera updates must not change the static speaker draw inputs. Meter and display-setting changes affect color/intensity only in the current renderer baseline.
 
 ## Current SwiftUI Wrapper Flow
 
 ```mermaid
 flowchart TD
   HostView["Host SwiftUI view"] --> OrbitalView["OrbitalView"]
+  Tray["Optional VU settings tray"] --> OrbitalView
   OrbitalView --> Bridge["NSViewRepresentable"]
   Bridge --> MTKView["MTKView"]
   Bridge --> Renderer["OrbitalViewMetalRenderer"]
@@ -87,7 +90,7 @@ flowchart TD
   Events --> HostView
 ```
 
-The current wrapper bridges state into the renderer seam. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
+The current wrapper bridges state into the renderer seam and can show an optional collapsed VU settings tray. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
 
 ## Current Offscreen Harness Flow
 

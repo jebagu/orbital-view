@@ -16,6 +16,23 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(view.scene, scene)
         XCTAssertNil(view.meters)
+        XCTAssertFalse(view.showsMeterSettingsTray)
+    }
+
+    func testOrbitalViewSettingsInitializerOptsIntoTray() throws {
+        let scene = try makeScene()
+        let camera = try OrbitalViewCameraState.preset(.isometric)
+        let settings = try SpeakerMeterVisualSettings(visualGainDB: 3, style: .coolPulse)
+        let view = OrbitalView(
+            scene: scene,
+            meters: nil,
+            meterVisualSettings: .constant(settings),
+            camera: .constant(camera),
+            selection: .constant(nil)
+        )
+
+        XCTAssertEqual(view.scene, scene)
+        XCTAssertTrue(view.showsMeterSettingsTray)
     }
 
     func testCoordinatorAppliesConfigurationWithoutRepeatedStructuralUpdates() throws {
@@ -31,6 +48,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let configuration = OrbitalViewRenderConfiguration(
             scene: scene,
             meters: firstFrame,
+            meterVisualSettings: .default,
             camera: camera,
             selection: nil
         )
@@ -53,6 +71,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewRenderConfiguration(
                 scene: scene,
                 meters: secondFrame,
+                meterVisualSettings: .default,
                 camera: camera,
                 selection: nil
             )
@@ -60,6 +79,43 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
         XCTAssertEqual(coordinator.renderer.renderState.meterRevision, 2)
+    }
+
+    func testCoordinatorAppliesMeterVisualSettingsWithoutReloadingScene() throws {
+        let coordinator = OrbitalViewMetalView.Coordinator(renderer: OrbitalViewMetalRenderer())
+        let scene = try makeScene()
+        let camera = try OrbitalViewCameraState.preset(.isometric)
+        let initialSettings = SpeakerMeterVisualSettings.default
+        let boostedSettings = try SpeakerMeterVisualSettings(visualGainDB: 6, style: .warmPulse)
+
+        _ = coordinator.apply(
+            OrbitalViewRenderConfiguration(
+                scene: scene,
+                meters: nil,
+                meterVisualSettings: initialSettings,
+                camera: camera,
+                selection: nil
+            )
+        )
+
+        XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettingsRevision, 0)
+
+        _ = coordinator.apply(
+            OrbitalViewRenderConfiguration(
+                scene: scene,
+                meters: nil,
+                meterVisualSettings: boostedSettings,
+                camera: camera,
+                selection: nil
+            )
+        )
+
+        XCTAssertEqual(coordinator.renderer.renderState.scene, scene)
+        XCTAssertEqual(coordinator.renderer.renderState.meterRevision, 0)
+        XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings, boostedSettings)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettingsRevision, 1)
     }
 
     func testCoordinatorEmitsCameraAndSelectionEvents() throws {
@@ -72,6 +128,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewRenderConfiguration(
                 scene: scene,
                 meters: nil,
+                meterVisualSettings: .default,
                 camera: camera,
                 selection: selection
             )
@@ -82,6 +139,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewRenderConfiguration(
                 scene: scene,
                 meters: nil,
+                meterVisualSettings: .default,
                 camera: camera,
                 selection: selection
             )

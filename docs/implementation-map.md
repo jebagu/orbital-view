@@ -110,7 +110,7 @@ Decision record:
 docs/decisions/0002-renderer-backend.md
 ```
 
-The current renderer stores scene, meter, camera, and selection state separately, exposes an `MTKViewDelegate` path, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. Full production visuals, hit testing, and SwiftUI controls are deferred.
+The current renderer stores scene, meter, meter visual settings, camera, and selection state separately, exposes an `MTKViewDelegate` path, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. Full production visuals, animation, hit testing, and broad SwiftUI controls are deferred.
 
 ### OrbitalViewSwiftUI Wrapper Skeleton
 
@@ -127,7 +127,28 @@ Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, and coordinator tests. SwiftUI controls, gestures, and inspector UI are deferred.
+The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, optional bottom VU settings tray, and coordinator tests. SwiftUI gestures, toolbar controls, and inspector UI are deferred.
+
+### VU Meter Visual Settings And Tray
+
+Purpose:
+
+```text
+Pass display-only meter gain/style through core, renderer, and SwiftUI without touching audio behavior.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewMeters.swift
+Sources/OrbitalViewRender/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewRenderTests/
+Tests/OrbitalViewSwiftUITests/
+```
+
+The current implementation maps each scene speaker to `SpeakerMeterFrame.levelsByChannel` by physical channel, applies the default checker pulse/ring/diagonal wave color transform to every speaker, keeps Kimi Purple as the default color scheme, and preserves stable static speaker geometry. The SwiftUI tray is opt-in and collapsed by default with controls for visual gain, style, color scheme, ring/front density, band softness, tile detail, idle tint, memory, band velocity, and band width.
 
 ### Renderer Test Harness Plan
 
@@ -193,7 +214,9 @@ Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMet
 renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 offscreen renderer smoke output -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 renderer static draw-input invariants -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+renderer 30-channel VU mapping, checker color-scheme settings, and visual settings revisions -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+SwiftUI VU settings tray opt-in and settings-only coordinator updates -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 renderer test harness plan -> docs/renderer-test-harness.md
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
 renderer backend decision -> docs/decisions/0002-renderer-backend.md
@@ -201,4 +224,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-19 Mockup Fey geodesic shell
+2026-05-19 VU meter plumbing and settings tray
