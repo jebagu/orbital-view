@@ -5,6 +5,165 @@ import XCTest
 @testable import OrbitalViewSwiftUI
 
 final class OrbitalViewSwiftUITests: XCTestCase {
+    func testOrbitalViewportMockupMatchesNativeViewportContract() {
+        let view = OrbitalViewportMockup()
+
+        XCTAssertNotNil(view)
+        XCTAssertEqual(OrbitalViewportMockup.sourceMockupPath, "mockups/orbital-view-viewport/index.html")
+        XCTAssertEqual(OrbitalViewportMockup.controlSkinSource, "orbisonic-design-language")
+        XCTAssertEqual(OrbitalViewportMockup.desktopSize, CGSize(width: 1512, height: 850))
+        XCTAssertEqual(OrbitalViewportMockup.nativeDefaultWindowSize, CGSize(width: 1180, height: 760))
+        XCTAssertEqual(OrbitalViewportMockup.nativeMinimumWindowSize, CGSize(width: 980, height: 680))
+        XCTAssertEqual(OrbitalViewportMockup.leftRailWidth, 240)
+        XCTAssertEqual(OrbitalViewportMockup.inspectorWidth, 300)
+        XCTAssertEqual(OrbitalViewportMockup.footerHeight, 46)
+        XCTAssertEqual(OrbitalViewportMockup.speakerCount, 30)
+        XCTAssertEqual(OrbitalViewportMockup.feyGeodesicNodeCount, 92)
+        XCTAssertEqual(OrbitalViewportMockup.feyGeodesicEdgeCount, 270)
+    }
+
+    func testOrbitalViewportMockupKeepsNativeControlOptions() {
+        XCTAssertEqual(OrbitalViewportCameraView.allCases.map(\.title), ["Plan", "Elevation", "Isometric"])
+        XCTAssertEqual(OrbitalViewportRenderStyle.allCases.map(\.title), ["Purple", "Flamingo", "Green", "B&W"])
+        XCTAssertEqual(OrbitalViewportSpeakerShape.allCases, [.prism, .sphere])
+    }
+
+    func testOrbitalViewportUsesOrbisonicControlMetrics() {
+        XCTAssertEqual(OrbitalViewportLabTheme.panelRadius, 8)
+        XCTAssertEqual(OrbitalViewportLabTheme.controlRadius, 7)
+        XCTAssertEqual(OrbitalViewportLabTheme.controlHeight, 34)
+        XCTAssertEqual(OrbitalViewportLabTheme.switchColumnWidth, 54)
+        XCTAssertEqual(OrbitalViewportLabTheme.toggleRowHeight, 30)
+        XCTAssertTrue(OrbitalViewportLabSlider.rendersSingleTrack)
+        XCTAssertFalse(OrbitalViewportLabSlider.showsInlineValue)
+    }
+
+    func testOrbitalViewportOrbitStateUsesCameraOrbitAndStableSpin() {
+        let isometric = OrbitalViewportOrbitState.preset(.isometric)
+        XCTAssertEqual(isometric.yaw, 0, accuracy: 0.000_001)
+        XCTAssertEqual(isometric.pitch, 0, accuracy: 0.000_001)
+        XCTAssertEqual(isometric.cameraPosition.length, OrbitalViewportOrbitState.defaultDistance, accuracy: 0.000_001)
+
+        let dragged = isometric.applyingDrag(translation: CGSize(width: 20, height: -10))
+        XCTAssertEqual(dragged.yaw, isometric.yaw - 0.12, accuracy: 0.000_001)
+        XCTAssertEqual(dragged.pitch, isometric.pitch + 0.06, accuracy: 0.000_001)
+
+        let spun = isometric.spinning(deltaMS: 1_000)
+        XCTAssertEqual(spun.yaw, isometric.yaw - 0.075, accuracy: 0.000_001)
+        XCTAssertEqual(spun.pitch, isometric.pitch, accuracy: 0.000_001)
+    }
+
+    func testOrbitalViewportSpinMovesEveryPresetHorizontallyInScreenSpace() {
+        for view in OrbitalViewportCameraView.allCases {
+            let state = OrbitalViewportOrbitState.preset(view)
+            let spun = state.spinning(deltaMS: 1_000)
+            let movement = spun.cameraPosition - state.cameraPosition
+
+            XCTAssertGreaterThan(movement.length, 0.001, "\(view.title) should move while spinning")
+            XCTAssertEqual(
+                movement.dot(state.cameraBasis.up),
+                0,
+                accuracy: 0.000_001,
+                "\(view.title) spin should not move along the screen-vertical axis"
+            )
+        }
+    }
+
+    func testOrbitalViewportMouseWheelZoomDirectionIsSwapped() {
+        XCTAssertEqual(OrbitalViewportMath.zoomDelta(forScrollDeltaY: 4), 1)
+        XCTAssertEqual(OrbitalViewportMath.zoomDelta(forScrollDeltaY: -4), -1)
+    }
+
+    func testOrbitalViewportFogZeroIsHardDisabledAndHiddenLinesIgnoreFog() {
+        let disabled = OrbitalViewportFogConfiguration.make(
+            density: 0,
+            cameraDistance: OrbitalViewportOrbitState.defaultDistance
+        )
+
+        XCTAssertFalse(disabled.isEnabled)
+        XCTAssertEqual(disabled.normalizedDensity, 0)
+        XCTAssertEqual(disabled.startDistance, OrbitalViewportFogConfiguration.disabledStartDistance)
+        XCTAssertEqual(disabled.endDistance, OrbitalViewportFogConfiguration.disabledEndDistance)
+        XCTAssertEqual(disabled.densityExponent, 1)
+
+        var configuration = OrbitalViewportRenderConfiguration(
+            size: CGSize(width: 972, height: 804),
+            timeMS: 1200,
+            yaw: 0,
+            pitch: 0,
+            cameraView: .isometric,
+            zoom: 1,
+            renderStyle: .purple,
+            speakerShape: .prism,
+            speakerSize: 1.95,
+            fogDensity: 0,
+            showSpeakerNumbers: false,
+            showHiddenLines: true,
+            selectedChannel: nil
+        )
+        XCTAssertFalse(configuration.fogConfiguration.isEnabled)
+        XCTAssertTrue(configuration.hiddenLinesVisible)
+        XCTAssertEqual(configuration.foggedAlpha(depth: -1, baseAlpha: 0.42), 0.42)
+
+        configuration = OrbitalViewportRenderConfiguration(
+            size: configuration.size,
+            timeMS: configuration.timeMS,
+            yaw: configuration.yaw,
+            pitch: configuration.pitch,
+            cameraView: configuration.cameraView,
+            zoom: configuration.zoom,
+            renderStyle: configuration.renderStyle,
+            speakerShape: configuration.speakerShape,
+            speakerSize: configuration.speakerSize,
+            fogDensity: 100,
+            showSpeakerNumbers: configuration.showSpeakerNumbers,
+            showHiddenLines: true,
+            selectedChannel: configuration.selectedChannel
+        )
+        XCTAssertTrue(configuration.fogConfiguration.isEnabled)
+        XCTAssertTrue(configuration.hiddenLinesVisible)
+    }
+
+    func testOrbitalViewportPNGExportTargetsDesktopWithPNGName() {
+        let desktop = URL(fileURLWithPath: "/Users/example/Desktop", isDirectory: true)
+        let date = Date(timeIntervalSince1970: 1_798_588_800)
+        let url = OrbitalViewportPNGExporter.destinationURL(
+            style: .purple,
+            date: date,
+            desktopDirectory: desktop
+        )
+
+        XCTAssertEqual(url.deletingLastPathComponent(), desktop)
+        XCTAssertEqual(url.pathExtension, "png")
+        XCTAssertTrue(url.lastPathComponent.hasPrefix("Orbital View VU Kit "))
+        XCTAssertTrue(url.lastPathComponent.contains("Purple"))
+    }
+
+    func testOrbitalViewportSnapshotUsesThirtyFeySpeakersAndMeterStream() {
+        let configuration = OrbitalViewportRenderConfiguration(
+            size: CGSize(width: 972, height: 804),
+            timeMS: 1200,
+            yaw: 0,
+            pitch: 0,
+            cameraView: .isometric,
+            zoom: 1,
+            renderStyle: .purple,
+            speakerShape: .prism,
+            speakerSize: 1.95,
+            fogDensity: 30,
+            showSpeakerNumbers: false,
+            showHiddenLines: false,
+            selectedChannel: nil
+        )
+        let snapshot = OrbitalViewportSnapshot(configuration: configuration)
+
+        XCTAssertEqual(snapshot.speakers.count, 30)
+        XCTAssertEqual(snapshot.speakers.map(\.channel), Array(1...30))
+        XCTAssertEqual(snapshot.speakers.first?.label, "Fey 01")
+        XCTAssertTrue(snapshot.activeCount >= 0)
+        XCTAssertTrue(snapshot.peakSpeaker.peak >= snapshot.peakSpeaker.rms)
+    }
+
     func testOrbitalViewInitializesWithBindings() throws {
         let scene = try makeScene()
         let camera = try OrbitalViewCameraState.preset(.isometric)

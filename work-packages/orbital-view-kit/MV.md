@@ -544,6 +544,44 @@ Protected path touch:
 Sources/OrbitalViewRender/, Tests/OrbitalViewRenderTests/, Sources/OrbitalViewSwiftUI/, and Tests/OrbitalViewSwiftUITests/ allowed by this slice
 ```
 
+### Slice 013: Native Orbital Viewport 3D Parity
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Rebuild the standalone native app as a real SwiftUI/SceneKit 3D version of the browser viewport mockup with the same controls, layout roles, defaults, and fake meter stream.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 011
+```
+
+Review required:
+
+```text
+protected-path and visual/interaction review useful before downstream host integration
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewSwiftUI/ and Tests/OrbitalViewSwiftUITests/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -554,8 +592,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 012 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; Wavefield source-object frames/meters/settings flow through core, renderer, and SwiftUI; the first viewport interaction mockup exists with matching object controls below View Detail; and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 014 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; Wavefield source-object frames/meters/settings flow through core, renderer, and SwiftUI; and the standalone native app now launches an Orbisonic-design-language SwiftUI/SceneKit 3D review screen with Fey 30 fake meter stream, camera orbit, native controls, and SceneKit camera-space fog. The browser viewport mockup is only a loose behavior/control-inventory reference. The production renderer backend remains accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for production live object smoothing/interpolation, production checker facet animation/materials, pixel-probe renderer tests, or SwiftUI control/gesture binding plan.
+Open a new bounded task for native visual tightening against the Orbisonic design language, production live object smoothing/interpolation, production checker facet animation/materials, pixel-probe renderer tests, or downstream Wavefield/Orbisonic host integration.

@@ -3,22 +3,154 @@
 ## Current Phase
 
 ```text
-native continuation package Slice 021 complete; standalone SwiftPM viewer added; separate web work package is the next optional package
+native Orbisonic control skin and SceneKit camera-fog cleanup Slice 014 complete
 ```
 
 ## Current Milestone
 
 ```text
-Native continuation Slices 012-021 are complete; Wavefield has a guarded native Orbital View tab, Orbisonic now has a package-level integration seam and host contract, and the package has a standalone SwiftPM viewer executable
+Native continuation through Slice 014 is complete; the standalone SwiftPM app opens an Orbisonic-design-language native 3D Orbital View VU Kit screen
 ```
 
 ## Summary
 
-Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, an `OrbitalViewRender` MetalKit renderer seam with an offscreen-tested instanced cube/prism speaker draw path, static draw-input invariant tests, static geometry cache-key tests, channel-to-instance mapping tests, retained speaker/object buffer reuse checks, shader-side cube scalar center-bloom speaker materials, legacy checker pulse/ring/diagonal wave VU settings, platform-neutral theme tokens, Daft Punk Bow VU palette/color-scheme migration through renderer ramp uniforms, runtime meter input sanitizing and diagnostics, Codable visual presets, Sonic Sphere cube/prism speaker shape contracts, face-center VU bloom distance contracts, and host source-object overlay contracts, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The tray now has Basic, Advanced, Presets, and Diagnostics sections, including speaker height, optional preset-store actions, and sanitizer diagnostics display without making persistence mandatory for hosts. `OrbitalViewViewer` is now a standalone SwiftPM executable that launches the package viewport with deterministic demo-only 30-speaker, speaker-meter, object-frame, object-meter, and object-visual-settings data from `OrbitalViewViewerSupport`. `OrbitalViewWavefield` now exposes a runtime-safe sanitized Wavefield meter adapter, and the sibling Wavefield app has a guarded native Orbital View tab that uses cached Fey speaker geometry joined by physical channel to `PlayerSnapshot.meterSummary.multichannelLevels`, passes Wavefield theme tokens into `OrbitalViewTheme`, exposes Daft Punk Bow in Wavefield color schemes, and leaves the existing Spherical VU tab available. `OrbitalViewOrbisonic` defines the package-level Orbisonic seam from `renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView`, exposes Daft Punk Bow through `OrbisonicOrbitalColorScheme`, and avoids importing the Orbisonic app. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, accepts active object frames and object meter frames keyed by source-object ID, and keeps static geometry stable under meter, settings, camera, object meter, and trail updates. The project also has renderer test harness and cache-plan docs, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Shell/strut rendering, checker facet animation/materials, live object smoothing/interpolation beyond static viewer snapshots, toolbar/gesture/hit-testing controls beyond the tray and package-local viewer buttons, and Splat host integration remain deferred.
+Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, an `OrbitalViewRender` MetalKit renderer seam with an offscreen-tested instanced cube/prism speaker draw path, static draw-input invariant tests, static geometry cache-key tests, channel-to-instance mapping tests, retained speaker/object buffer reuse checks, shader-side cube scalar center-bloom speaker materials, legacy checker pulse/ring/diagonal wave VU settings, platform-neutral theme tokens, Daft Punk Bow VU palette/color-scheme migration through renderer ramp uniforms, runtime meter input sanitizing and diagnostics, Codable visual presets, Sonic Sphere cube/prism speaker shape contracts, face-center VU bloom distance contracts, and host source-object overlay contracts, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The tray has Basic, Advanced, Presets, and Diagnostics sections, including speaker height, optional preset-store actions, and sanitizer diagnostics display without making persistence mandatory for hosts. `OrbitalViewSwiftUI` also includes `OrbitalViewportMockup`, a native SwiftUI/SceneKit 3D review screen with Orbisonic-design-language native controls, fixed left/right rails, Fey 30 speaker list, fake meter stream, camera controls, color schemes, speaker shape, speaker size, fog density, speaker numbers, hidden lines, selection, spin, zoom, drag orbit, and PNG export. The standalone screen keeps the browser mockup only as a loose behavior/control-inventory reference, not as a pixel-for-pixel skin target. `OrbitalViewViewer` launches that native 3D screen as `Orbital View VU Kit.app`. `OrbitalViewWavefield` exposes a runtime-safe sanitized Wavefield meter adapter. `OrbitalViewOrbisonic` defines the package-level Orbisonic seam from `renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView`, exposes Daft Punk Bow through `OrbisonicOrbitalColorScheme`, and avoids importing the Orbisonic app. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, accepts active object frames and object meter frames keyed by source-object ID, and keeps static geometry stable under meter, settings, camera, object meter, and trail updates. The project also has renderer test harness and cache-plan docs, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Production Metal parity for this standalone SceneKit screen, downstream host wiring, live object smoothing/interpolation beyond static viewer snapshots, and Splat host integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
-The root launcher `Open Orbital View Viewer.command` builds a local `Orbital View Viewer.app` bundle and opens it.
+The root launcher `Open Native Orbital View VU Kit.command` builds a local `Orbital View VU Kit.app` bundle and opens it.
+
+The older root launcher `Open Orbital View Viewer.command` now opens the same `Orbital View VU Kit.app` bundle for compatibility.
+
+### Update: 2026-05-21 Native Orbisonic Control Skin And Camera Fog
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added Slice 014 task/slice docs to explicitly permit the standalone SwiftUI protected path follow-up.
+- Restyled `OrbitalViewportMockup` around package-local Orbisonic LabTheme-style tokens instead of web color-scheme skinning.
+- Replaced web-like control rows with Swift-native segmented/menu pickers, native toggles, native SwiftUI sliders, and compact Orbisonic-style buttons.
+- Replaced slider rows with Orbisonic's title/value plus cyan-tinted native slider composition, removing the duplicate/custom slider-track look.
+- Rebuilt the desktop shell as fixed left and right rails with the SceneKit viewport flexing in the center; VU bars now fill inside fixed row tracks.
+- Changed the standalone viewer window default to a native 1180 x 760 workbench size with a 980 x 680 minimum so both fixed rails are visible on the current display.
+- Changed the SceneKit view to orbit the camera around static content instead of rotating the content root.
+- Removed fog-driven manual material alpha fading from the SceneKit path; fog is now SceneKit camera-space fog while hidden-line visibility remains separate.
+- Reworked drag/spin timing so drag uses a stable start pose, spin accumulates from an anchored yaw, and mouse-up does not change the final pose.
+- Strengthened SceneKit speaker-number labels as centered, depth-independent billboards so the native Speaker Numbers switch is visibly effective.
+- Added focused SwiftUI tests for Orbisonic control metrics and camera-orbit/spin math.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testOrbitalViewport
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer CLANG_MODULE_CACHE_PATH=.build/clang-module-cache SWIFTPM_CACHE_DIR=.build/swiftpm-cache swift test --disable-sandbox --filter OrbitalViewSwiftUITests/testOrbitalViewport
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer CLANG_MODULE_CACHE_PATH=.build/clang-module-cache SWIFTPM_CACHE_DIR=.build/swiftpm-cache swift test --disable-sandbox
+zsh -n Open\ Native\ Orbital\ View\ VU\ Kit.command
+zsh -n Open\ Orbital\ View\ Viewer.command
+zsh -n scripts/build-orbital-viewer-app.sh
+scripts/build-orbital-viewer-app.sh
+plutil -lint Orbital\ View\ VU\ Kit.app/Contents/Info.plist
+open -n Orbital\ View\ VU\ Kit.app
+git diff --check
+node -e 'JSON.parse(require("fs").readFileSync("manifest.json", "utf8")); console.log("manifest parses")'
+```
+
+Results:
+
+```text
+swift build passed.
+Plain focused swift test hit the known SwiftPM user cache permission issue.
+Focused SwiftUI viewport tests passed with package-local caches: 5 tests, 0 failures.
+Full swift test passed with package-local caches: 74 tests, 0 failures, 5 Metal-dependent renderer tests skipped because no Metal device was available in the test process.
+Launcher/script syntax checks passed.
+App bundle build passed and produced Orbital View VU Kit.app.
+App bundle Info.plist passed plutil lint.
+Live app opened through LaunchServices.
+Computer Use verified the fresh native-size app window opens with both fixed rails visible, Orbisonic-native controls, native switches/sliders/pickers, and speaker-number switch state changing live.
+git diff --check passed.
+manifest.json parsed successfully.
+```
+
+Bugs found or fixed:
+
+```text
+Fixed native viewer control-skin drift from Orbisonic design language, duplicate-looking slider tracks, unstable panel width behavior, SceneKit fog feeling attached to model rotation, and drag/spin pose jumps.
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-20 Native Orbital Viewport 3D Parity
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Removed the rejected native Cube VU workbench/launcher changes and left the VU branch back at the prior VU state before rebuilding.
+- Added `OrbitalViewportMockup`, a SwiftUI screen matching the actual browser viewport mockup layout: 240px left rail, center viewport, 300px inspector, 46px footer, and the same control set.
+- Implemented the viewport as native SceneKit 3D, not a WebView or flat screen port: generated Fey 3V shell, 30 Fey speaker prisms/spheres, native lighting, fog, hidden-line visibility, labels, selection, orbit drag, spin, wheel/magnification zoom, and PNG snapshot export.
+- Changed the standalone executable window to `Orbital View VU Kit`.
+- Added `Open Native Orbital View VU Kit.command`.
+- Renamed the generated app bundle to `Orbital View VU Kit.app`.
+- Added focused SwiftUI tests for the native viewport contract.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer CLANG_MODULE_CACHE_PATH=.build/clang-module-cache SWIFTPM_CACHE_DIR=.build/swiftpm-cache swift test --disable-sandbox --filter OrbitalViewSwiftUITests/testOrbitalViewport
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer CLANG_MODULE_CACHE_PATH=.build/clang-module-cache SWIFTPM_CACHE_DIR=.build/swiftpm-cache swift test --disable-sandbox
+zsh -n Open\ Native\ Orbital\ View\ VU\ Kit.command
+zsh -n Open\ Orbital\ View\ Viewer.command
+zsh -n scripts/build-orbital-viewer-app.sh
+scripts/build-orbital-viewer-app.sh
+plutil -lint Orbital\ View\ VU\ Kit.app/Contents/Info.plist
+open -n Orbital\ View\ VU\ Kit.app
+git diff --check
+node -e 'JSON.parse(require("fs").readFileSync("manifest.json", "utf8")); console.log("manifest parses")'
+```
+
+Results:
+
+```text
+swift build passed.
+Focused native viewport tests passed: 3 tests, 0 failures.
+Full swift test passed: 72 tests, 0 failures, 5 Metal-dependent renderer tests skipped because no Metal device was available in the test process.
+Launcher/script syntax checks passed.
+App bundle build passed and produced Orbital View VU Kit.app.
+App bundle Info.plist passed plutil lint.
+Live app opened through LaunchServices.
+Computer Use verified the app window opened with the native 3D viewport, matching controls, inspector, footer, animated fake meter list, and color/style controls visible.
+git diff --check passed.
+manifest.json parsed successfully.
+```
+
+Bugs found or fixed:
+
+```text
+Fixed the rejected native workbench direction by removing the Cube VU workbench and replacing the standalone app entrypoint with the actual browser viewport mockup contract.
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
 
 The pinned local static server URL for the active single-screen cube VU mockup is:
 
@@ -3360,6 +3492,105 @@ Next recommended task:
 
 ```text
 Open a protected SwiftUI/Metal renderer slice when the Fey geodesic shell should move beyond the mockup.
+```
+
+### Update: 2026-05-21 Native VU Interaction, Fog, Zoom, And Export Polish
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Restored the preferred full-width button groups for camera, color, speaker shape, spin, reset, and export actions.
+- Replaced the remaining Speaker Size and Fog Density slider rows with a single-track Orbisonic-native SwiftUI slider composition and removed inline numeric values.
+- Aligned Speaker Numbers and Hidden Lines switches to a fixed trailing native-switch column.
+- Added an explicit fog disabled state so density `0` leaves the model fully visible and bypasses fallback fade paths.
+- Kept Hidden Lines independent of fog density.
+- Reworked spin to sweep horizontally in screen space for Plan, Elevation, and Isometric presets.
+- Kept drag anchored to its start pose, swapped vertical drag direction, and swapped mouse-wheel zoom direction.
+- Made Export PNG save a timestamped `.png` to Desktop and show transient footer success/failure feedback.
+
+Files changed:
+
+```text
+.tasks/014-native-orbisonic-control-skin-and-camera-fog.md
+Sources/OrbitalViewSwiftUI/OrbitalViewportMockup.swift
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+docs/protected-paths.md
+docs/bugs.md
+work-packages/orbital-view-kit/slices/014-native-orbisonic-control-skin-and-camera-fog.md
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testOrbitalViewport -> failed in the default environment because SwiftPM tried to write Clang module cache files under the user cache path
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer CLANG_MODULE_CACHE_PATH=.build/clang-module-cache SWIFTPM_CACHE_DIR=.build/swiftpm-cache swift test --disable-sandbox --filter OrbitalViewSwiftUITests/testOrbitalViewport -> passed, 9 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer CLANG_MODULE_CACHE_PATH=.build/clang-module-cache SWIFTPM_CACHE_DIR=.build/swiftpm-cache swift test --disable-sandbox -> passed, 78 tests executed, 5 skipped
+scripts/build-orbital-viewer-app.sh -> passed
+plutil -lint Orbital\ View\ VU\ Kit.app/Contents/Info.plist -> passed
+zsh -n Open\ Native\ Orbital\ View\ VU\ Kit.command -> passed
+zsh -n Open\ Orbital\ View\ Viewer.command -> passed
+git diff --check -> passed
+open -n Orbital\ View\ VU\ Kit.app -> passed
+Computer Use visual check -> passed for full-width buttons, hidden slider values, aligned switches, visible model, and Desktop PNG confirmation
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+docs/protected-paths.md
+docs/bugs.md
+.tasks/014-native-orbisonic-control-skin-and-camera-fog.md
+work-packages/orbital-view-kit/slices/014-native-orbisonic-control-skin-and-camera-fog.md
+```
+
+Bugs found or fixed:
+
+```text
+Fixed fog density 0 hiding the model, non-horizontal spin drift across presets, unwanted slider line/value treatment, unaligned switches, unclear Export PNG feedback, inverted-feeling vertical drag, inverted-feeling mouse-wheel zoom, and compact controls replacing the preferred full-width buttons.
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+Result:
+
+```text
+The native Orbital View VU Kit app keeps the Orbisonic-native skin, uses stable rails and controls, leaves the model visible at fog 0, spins horizontally across camera presets, uses the requested drag and wheel directions, and saves PNG exports to Desktop with visible confirmation.
+```
+
+Risks:
+
+- This remains a standalone SwiftUI/SceneKit review app with deterministic fake meter animation; downstream Orbisonic/Wavefield integration and production Metal renderer behavior are unchanged.
+- The default unsandboxed `swift test` path still needs local cache overrides on this machine because SwiftPM attempts to use a user-level Clang module cache.
+
+Next recommended task:
+
+```text
+Open a downstream integration slice when Orbisonic or Wavefield should embed the native VU kit surface against real host meter data.
 ```
 
 ## Open Questions

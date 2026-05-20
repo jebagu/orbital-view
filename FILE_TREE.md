@@ -10,6 +10,7 @@ META_AGENTS.md
 .gitignore
 Package.swift
 Open Orbital View Kit.command
+Open Native Orbital View VU Kit.command
 OrbitalViewKit -> mockups/sonicsphere-cube-vu-single-screen
 
 docs/
@@ -42,6 +43,8 @@ docs/
   009-offscreen-renderer-smoke-test.md
   010-renderer-invariant-tests.md
   011-vu-meter-plumbing-tray.md
+  012-wavefield-object-overlay-performance.md
+  013-native-orbital-viewport-3d-parity.md
   _template-task.md
 
 Sources/
@@ -52,12 +55,19 @@ Sources/
     OrbitalViewRendering.swift
     OrbitalViewRenderState.swift
   OrbitalViewSwiftUI/
+    OrbitalView.swift
+    OrbitalViewMetalView.swift
+    OrbitalViewportMockup.swift
+  OrbitalViewViewer/
+    OrbitalViewViewer.swift
+  OrbitalViewViewerSupport/
   OrbitalViewWavefield/
 
 Tests/
   OrbitalViewCoreTests/
   OrbitalViewRenderTests/
   OrbitalViewSwiftUITests/
+  OrbitalViewViewerTests/
   OrbitalViewWavefieldTests/
 
 work-packages/
@@ -76,6 +86,8 @@ work-packages/
       009-offscreen-renderer-smoke-test.md
       010-renderer-invariant-tests.md
       011-vu-meter-plumbing-tray.md
+      012-wavefield-object-overlay-performance.md
+      013-native-orbital-viewport-3d-parity.md
   _template/
     MV.md
     slices/

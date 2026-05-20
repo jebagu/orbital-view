@@ -53,7 +53,7 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 - Metal cube/prism center-bloom prototype that maps RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, and Daft Punk Bow to retained ramp uniforms without resizing speaker geometry.
 - Host source-object frames, object meters keyed by `objectId`, capped trails/glow-trail settings, and `-5...+5` render/effect bounds.
 - `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray, optional preset store actions, speaker height control, and diagnostics display.
-- Standalone `OrbitalViewViewer` SwiftPM executable with deterministic 30-speaker demo content, sample object overlays, camera preset buttons, and the existing VU settings tray.
+- Standalone `OrbitalViewViewer` SwiftPM executable that opens `Orbital View VU Kit.app`, a native SwiftUI/SceneKit 3D review surface with Orbisonic-design-language controls, inspector, footer, Fey 30 shell/speakers, fake meter stream, and local launcher.
 - Runtime-safe Wavefield meter adapter plus a guarded Wavefield app Orbital View tab that joins cached Fey speaker geometry to `PlayerSnapshot.meterSummary.multichannelLevels` by physical channel while preserving the existing Spherical VU tab.
 - Runtime-safe Orbisonic host adapter skeleton that defines `Orbisonic renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView` without importing the Orbisonic app.
 - Disposable browser mockup for toolbar and camera interaction.
@@ -62,10 +62,10 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 
 - Shell/strut rendering and full production MetalKit visual polish.
 - Production checker facet animation/materials.
-- SwiftUI gestures, toolbar, hit testing, and inspector UI beyond the current VU settings tray.
+- Production SwiftUI gestures, toolbar, hit testing, and inspector UI beyond the current VU settings tray and standalone native review app.
 - DomeLab neutral geometry import.
 - Splat editing mode and renderer-kernel overlays.
-- Snapshot export.
+- Production snapshot export.
 
 ## Out Of Scope For Current Package
 
@@ -87,11 +87,11 @@ The first usable implementation already:
 - Apply display-only cube scalar center-bloom material settings to renderer speaker meshes without changing speaker geometry, while keeping checker pulse/ring/diagonal wave as a legacy/impulse-test style.
 - Keep Sonic Sphere speaker geometry fixed as cube/prism scene shape data while VU settings expose only validated display z scale.
 - Accept active source-object frames and object meter frames separately from speaker scene and speaker meter state.
-- Launch a standalone native Swift viewer from the package without opening a downstream host app.
+- Launch a standalone native 3D SwiftUI/SceneKit viewer from the package without opening a downstream host app.
 
 ## Constraints
 
-- Tech stack: Swift package first; current renderer is native MetalKit with a SwiftUI wrapper and optional VU settings tray.
+- Tech stack: Swift package first; current production renderer is native MetalKit with a SwiftUI wrapper and optional VU settings tray. The standalone native review app uses SceneKit for native 3D review only and Orbisonic design language for controls.
 - App type: reusable module consumed by local native apps.
 - Audio domain: visualizes measured levels only; does not own audio timing or routing.
 - Persistence: none in `OrbitalViewCore`.

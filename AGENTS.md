@@ -4,7 +4,7 @@
 
 Orbital View VU Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
 
-The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI`. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU settings. `OrbitalViewSwiftUI` now has an opt-in collapsed VU settings tray with color-scheme and checker controls. Production visual rendering, production checker facet animation, broader SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer`. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path, static draw-input invariant tests, display-only VU settings, object overlay inputs, and retained-buffer checks. `OrbitalViewSwiftUI` has an opt-in collapsed VU settings tray with color-scheme/checker controls and a package-local native SwiftUI/SceneKit 3D `OrbitalViewportMockup` review screen that uses Orbisonic design language native controls while treating the browser viewport mockup only as a behavior/control-inventory reference. Production Metal visual parity for that screen, production checker facet animation, downstream Wavefield/Orbisonic/Splat host integration, and production host controls remain deferred until explicit tasks are opened.
 
 ## Local Hosting
 
@@ -63,7 +63,7 @@ openspec/changes/
 
 ## Current Project Assumption
 
-This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, the local adapter target `OrbitalViewWavefield`, the MetalKit renderer target `OrbitalViewRender`, and the SwiftUI wrapper skeleton target `OrbitalViewSwiftUI`.
+This repository contains project-control docs, the pure Swift source target `OrbitalViewCore`, the local adapter targets `OrbitalViewWavefield` and `OrbitalViewOrbisonic`, the MetalKit renderer target `OrbitalViewRender`, the SwiftUI wrapper/review target `OrbitalViewSwiftUI`, and the standalone `OrbitalViewViewer` executable that opens `Orbital View VU Kit.app`.
 
 Current renderer source must stay within the active renderer task scope, and it must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
 

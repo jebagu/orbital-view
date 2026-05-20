@@ -16,7 +16,7 @@ work-packages/orbital-view-kit/MV.md
 
 ## Current Goal
 
-Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield layout/meter adapters, first viewport visual mockup, renderer backend decision, initial `OrbitalViewRender` seam, `OrbitalViewSwiftUI` wrapper, renderer test harness plan, offscreen renderer smoke test, renderer invariant tests, and checker VU meter plumbing/settings tray.
+Prepare the next bounded slice after the `OrbitalViewCore` foundation, local Wavefield/Orbisonic adapter seams, first viewport visual mockup, renderer backend decision, initial `OrbitalViewRender` seam, `OrbitalViewSwiftUI` wrapper, renderer test harness plan, offscreen renderer smoke test, renderer invariant tests, checker VU meter plumbing/settings tray, object overlay plumbing, standalone viewer, native 3D viewport review app, and Orbisonic-native control/fog cleanup.
 
 The current core already establishes pure Swift contracts and tests for:
 
@@ -48,6 +48,12 @@ The root launcher opens that live mockup file:
 
 ```text
 Open Orbital View Kit.command
+```
+
+The native app launcher opens the SwiftUI/SceneKit 3D version of the viewport mockup:
+
+```text
+Open Native Orbital View VU Kit.command
 ```
 
 The accepted production renderer backend is documented at:
@@ -93,7 +99,8 @@ Create a new bounded task before implementing any renderer, SwiftUI, or downstre
 
 ```text
 Production checker facet animation/materials
-SwiftUI control/gesture binding plan
+Native/browser visual parity tightening
+SwiftUI production control/gesture binding plan
 Pixel-probe renderer tests
 Renderer static buffer/cache plan
 ```

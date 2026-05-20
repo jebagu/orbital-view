@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_DIR="${0:A:h:h}"
-APP_NAME="Orbital View Viewer"
+APP_NAME="Orbital View VU Kit"
 APP_BUNDLE="$PROJECT_DIR/$APP_NAME.app"
 EXECUTABLE_NAME="OrbitalViewViewer"
 
@@ -45,7 +45,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key>
   <string>$EXECUTABLE_NAME</string>
   <key>CFBundleIdentifier</key>
-  <string>local.orbitalviewkit.viewer</string>
+  <string>local.orbitalviewkit.vu-kit</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>

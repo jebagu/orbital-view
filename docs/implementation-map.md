@@ -133,6 +133,25 @@ mockups/orbital-view-viewport/notes.md
 
 This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It now mirrors DomeLab's 3D Model control panel on the left side of the viewport, grouped under Camera, Color, Speaker Shape, and View Detail headings. The shell structure is generated as a Fey 3V class-I icosahedron geodesic from the DomeLab project config values in `fey sphere - domelab-configuration.json`, normalized to the viewport sphere. Purple, Flamingo, Green, and B&W color palettes theme the full mockup surface, with Purple as the default. Projection is always axonometric, speaker numbers and hidden lines use switch controls defaulted off, speaker size is centered at 1.95x with half/double range mapping, fog density remaps the prior 30-density look to the slider midpoint, and prism mode is the default shape using true 8-vertex rectangular-prism speaker cabinets with hidden-line face clipping. It is not production renderer source.
 
+### Native Orbital Viewport 3D App
+
+Purpose:
+
+```text
+Provide a native SwiftUI/SceneKit viewport review app for local review and future host-app visual alignment.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewSwiftUI/OrbitalViewportMockup.swift
+Sources/OrbitalViewViewer/OrbitalViewViewer.swift
+Open Native Orbital View VU Kit.command
+scripts/build-orbital-viewer-app.sh
+```
+
+`OrbitalViewportMockup` keeps the browser mockup as a loose behavior/control-inventory reference while using Orbisonic design language as the control-skin source of truth. It renders native 3D SceneKit geometry with fixed left/right rails, native SwiftUI/AppKit-backed controls, Fey 30 speaker coordinates, generated 3V geodesic count contract, Purple/Prism/Isometric defaults, fake meter stream, color schemes, camera controls, speaker shape controls, speaker size, fog density, speaker numbers, hidden lines, selection, spin, drag orbit, wheel/magnification zoom, inspector, speaker list, footer, and PNG export. The SceneKit path orbits the camera around static content and uses SceneKit camera-space fog instead of rotating the model root or applying fog-driven material alpha fades. This is a native review app and does not replace the accepted production MetalKit renderer backend.
+
 ### Sonicsphere Cube VU Single-Screen Mockup
 
 Purpose:
@@ -218,6 +237,8 @@ Implementation locations:
 Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
+
+`OrbitalViewSwiftUI` also contains the package-local `OrbitalViewportMockup` native 3D review screen. That screen is separate from the production `OrbitalView` wrapper contract and uses SceneKit only for the standalone native review app surface.
 
 The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, optional bottom VU settings tray, object snapshot/settings forwarding, optional input diagnostics display, optional host-provided visual-preset store actions, and coordinator tests. SwiftUI gestures, toolbar controls, hit testing, and inspector UI are deferred.
 
@@ -436,7 +457,7 @@ object frame/meter/settings validation -> Tests/OrbitalViewCoreTests/OrbitalView
 object renderer revisions, disappearance, trail caps, and retained buffer reuse -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 SwiftUI object snapshot/settings forwarding -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
-SwiftUI VU settings tray opt-in, preset store actions, diagnostics summaries, and settings-only coordinator updates -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+SwiftUI VU settings tray opt-in, preset store actions, diagnostics summaries, settings-only coordinator updates, and standalone native viewport control/orbit/fog/export behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 renderer test harness plan -> docs/renderer-test-harness.md
 renderer static cache plan -> docs/renderer-cache-plan.md
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
@@ -445,4 +466,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-20 Renderer static buffer/cache plan and performance invariants slice
+2026-05-21 Standalone native Orbital View VU Kit control, orbit, fog, zoom, and export polish

@@ -277,6 +277,7 @@ Current wrapper skeleton:
 
 ```text
 OrbitalView
+OrbitalViewportMockup
 ```
 
 Current Wavefield host seam:
@@ -290,6 +291,8 @@ The Wavefield host seam consumes cached Fey speaker geometry, `PlayerSnapshot.me
 
 `OrbitalView` accepts a scene, optional speaker meter frame, optional object frame set, optional object meter frame, object visual settings, optional input diagnostics, camera binding, selection binding, and event callback. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with Basic, Advanced, Presets, and Diagnostics sections. The tray can receive an optional `OrbitalViewVisualPresetStore`; persistence is host-provided and never mandatory.
 
+`OrbitalViewportMockup` is a package-local native review surface for the standalone viewer app. It owns a fake meter stream and SceneKit 3D scene only inside that app. It uses Orbisonic design language as the source of truth for native SwiftUI/AppKit-backed control styling, while treating `mockups/orbital-view-viewport/index.html` only as a loose behavior/control-inventory reference. It must keep fixed left/right rails, camera-space SceneKit fog, camera orbit around static content, and deterministic fake review meters separate from production host meter input contracts.
+
 ### Non-Responsibilities
 
 The wrapper must not:
@@ -301,7 +304,7 @@ The wrapper must not:
 - parse downstream app file formats
 - import DomeLab code
 - embed a WebView as the main renderer path
-- implement toolbar, gesture, hit-testing, or inspector controls before an explicit task
+- implement production toolbar, gesture, hit-testing, or inspector controls before an explicit task
 - own per-frame object animation state in SwiftUI
 
 ### Dependencies
@@ -313,6 +316,13 @@ SwiftUI
 MetalKit
 OrbitalViewCore
 OrbitalViewRender
+```
+
+Allowed only for the standalone native review surface:
+
+```text
+AppKit
+SceneKit
 ```
 
 Forbidden:
@@ -327,7 +337,7 @@ Splat app targets
 
 ### Status
 
-Wrapper skeleton plus optional VU settings tray implemented. The tray includes display settings, speaker height, advanced bloom/checker controls, optional visual-preset save/load/reset actions, and input diagnostics display. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
+Wrapper skeleton plus optional VU settings tray implemented. The tray includes display settings, speaker height, advanced bloom/checker controls, optional visual-preset save/load/reset actions, and input diagnostics display. `OrbitalViewportMockup` implements the standalone native SwiftUI/SceneKit review screen with Orbisonic-design-language controls. Production toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
 
 ### Tests Required
 
@@ -338,6 +348,7 @@ Wrapper skeleton plus optional VU settings tray implemented. The tray includes d
 - settings-bound initializer opts into the tray
 - settings-bound initializer can receive optional diagnostics and an optional visual-preset store
 - preset actions work through an optional store and no-op safely when persistence is absent
+- native viewport mockup preserves browser chrome constants, Fey 30 count, 3V shell counts, camera options, color options, shape options, and fake meter snapshot identity
 - diagnostics summaries report missing, extra, invalid, duplicate, replaced, clamped, and timestamp-fallback meter input
 - coordinator applies settings-only updates without reloading scene state
 - coordinator forwards object frame, object meter, and object visual settings snapshots without reloading scene state

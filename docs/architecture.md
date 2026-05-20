@@ -32,10 +32,10 @@ OrbitalViewViewerSupport
   Deterministic package-local demo scene, speaker meter frame, object frames, object meters, and object visual settings.
 
 OrbitalViewViewer
-  Standalone SwiftUI executable harness that launches OrbitalViewSwiftUI without a downstream host app.
+  Standalone SwiftUI executable harness that launches the native 3D Orbital View VU Kit review app without a downstream host app.
 ```
 
-`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer` are implemented. `OrbitalViewRender` now has a Metal draw path that renders speakers as instanced cube/prism meshes with procedural face-center bloom, Daft Punk Bow ramp uniforms, invariant tests for static draw inputs, source-object draw inputs, and retained buffer reuse. The default VU style is music-mode cube scalar center bloom, while checker pulse/ring/diagonal wave remains available as a legacy/impulse-test style. `OrbitalViewSwiftUI` exposes an optional collapsible VU settings tray with Basic, Advanced, Presets, and Diagnostics sections, optional host-provided preset storage, and object overlay forwarding. `OrbitalViewViewer` is a package-local SwiftUI executable harness using deterministic demo data from `OrbitalViewViewerSupport`; it is not a host integration or meter source. The sibling Wavefield app now hosts a guarded native Orbital View tab through a local package dependency while keeping its existing Spherical VU tab available. The Orbisonic seam is currently a package-level adapter skeleton and contract only; it does not edit the Orbisonic app. Shell/strut rendering, toolbar/gesture/hit-testing controls beyond the viewer harness, live object smoothing, and Splat app source integration remain deferred.
+`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer` are implemented. `OrbitalViewRender` now has a Metal draw path that renders speakers as instanced cube/prism meshes with procedural face-center bloom, Daft Punk Bow ramp uniforms, invariant tests for static draw inputs, source-object draw inputs, and retained buffer reuse. The default VU style is music-mode cube scalar center bloom, while checker pulse/ring/diagonal wave remains available as a legacy/impulse-test style. `OrbitalViewSwiftUI` exposes an optional collapsible VU settings tray with Basic, Advanced, Presets, and Diagnostics sections, optional host-provided preset storage, object overlay forwarding, and a package-local `OrbitalViewportMockup` review screen. `OrbitalViewportMockup` uses SwiftUI plus SceneKit as a real native 3D app surface with Orbisonic-design-language controls; the browser viewport mockup is only a loose behavior/control-inventory reference. It is not a production renderer replacement or host meter source. `OrbitalViewViewer` launches that screen as `Orbital View VU Kit.app`. The Orbisonic seam is currently a package-level adapter skeleton and contract only; it does not edit the Orbisonic app. Production Metal shell/strut rendering, production toolbar/gesture/hit-testing controls, live object smoothing, and Splat app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -49,9 +49,9 @@ OrbitalViewOrbisonic defines a neutral Orbisonic contract for 30 physical output
 OrbitalViewCore can sanitize unsafe host meter samples into strict SpeakerMeterFrame values while returning OrbitalViewInputDiagnostics.
 OrbitalViewRender stores scene, meter, meter visual settings, camera, and selection state behind a MetalKit renderer seam and renders fixed cube/prism speaker meshes with shader-side face-center bloom for offscreen smoke and pixel-probe tests. Internal draw-input snapshots, static geometry cache keys, and channel-to-instance maps separate static speaker geometry from dynamic RMS/peak/clip material inputs for invariant testing.
 OrbitalViewRender also stores active object frames, object meter frames, object visual settings, and separate object revisions for source-object overlays. Object cores and capped trail samples render through the same minimal quad baseline while retaining Metal buffers across repeated draws.
-OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge, can opt into a bottom collapsible VU settings tray, can display host-provided input diagnostics, can use an optional host-provided visual preset store, and forwards object overlay inputs without owning object animation state.
+OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge, can opt into a bottom collapsible VU settings tray, can display host-provided input diagnostics, can use an optional host-provided visual preset store, forwards object overlay inputs without owning object animation state, and contains the standalone SceneKit-based `OrbitalViewportMockup` review screen.
 OrbitalViewViewerSupport constructs deterministic 30-channel demo scene data, a static sample speaker meter frame, sample source-object frames, sample object meters, and object visual settings for local viewer smoke use.
-OrbitalViewViewer launches OrbitalViewSwiftUI as a standalone SwiftPM executable, passes the support target's demo data into the same public SwiftUI API that host apps use, and exposes package-local camera preset buttons.
+OrbitalViewViewer launches `OrbitalViewportMockup` as a standalone SwiftPM executable named Orbital View VU Kit.
 The Wavefield app integration builds its scene from cached Fey/Spherical VU speaker geometry, adapts `PlayerSnapshot.meterSummary.multichannelLevels` through `OrbitalViewWavefield`, and passes Wavefield color-scheme tokens into `OrbitalViewTheme`.
 The future Orbisonic app integration should consume Orbisonic-owned renderer/output monitor records, use `OrbitalViewOrbisonic` DTOs or an equivalent host-side adapter, and pass `OrbisonicOrbitalColorScheme.daftPunkBow.theme` when the user selects Daft Punk Bow.
 ```
@@ -74,7 +74,7 @@ Production rendering uses the custom MetalKit / MTKView direction in `OrbitalVie
 
 Current renderer drawing renders scene speakers as fixed-size instanced cube/prism meshes oriented normal-out from existing speaker anchors. RMS drives center fill/body glow, peak drives halo/ring intensity, clip drives a hot flash, and the Daft Punk Bow VU ramp is passed through retained renderer uniforms. Object overlays remain on the simpler quad path. Shell geometry, struts, labels, hit testing, production camera projection, animation, and visual polish are deferred.
 
-Long-term renderer source should not be SceneKit-first, RealityKit-first, WebView-based, or DomeLab-code-based. SceneKit or HTML mockups may be used only as disposable prototypes if a future task explicitly allows that scope.
+Long-term production renderer source should not be SceneKit-first, RealityKit-first, WebView-based, or DomeLab-code-based. SceneKit is currently used only by the standalone native review screen; production host rendering remains MetalKit / MTKView.
 
 ## Audio Architecture
 
@@ -96,7 +96,7 @@ It must not:
 
 ## UI Architecture
 
-Broad viewport UI work is deferred, but the optional VU settings tray in `OrbitalViewSwiftUI` now includes Basic, Advanced, Presets, and Diagnostics sections.
+Broad production viewport UI work is deferred, but the optional VU settings tray in `OrbitalViewSwiftUI` now includes Basic, Advanced, Presets, and Diagnostics sections. The standalone `OrbitalViewportMockup` review screen uses Orbisonic design language native controls and keeps the browser mockup only as a loose behavior/control-inventory reference.
 
 Future UI should provide:
 
@@ -141,7 +141,7 @@ Core rules:
 - `OrbitalViewWavefield` depends only on Foundation and `OrbitalViewCore`; it must not depend on Wavefield package targets unless a future task explicitly changes that boundary.
 - `OrbitalViewOrbisonic` depends only on Foundation and `OrbitalViewCore`; it must not depend on Orbisonic package targets unless a future task explicitly changes that boundary.
 - `OrbitalViewRender` may depend on Metal and MetalKit; it must not depend on SwiftUI, AVFoundation, CoreMIDI, or downstream app targets.
-- `OrbitalViewSwiftUI` may depend on SwiftUI, MetalKit, `OrbitalViewCore`, and `OrbitalViewRender`; it must not depend on AVFoundation, CoreMIDI, or downstream app targets.
+- `OrbitalViewSwiftUI` may depend on SwiftUI, MetalKit, `OrbitalViewCore`, and `OrbitalViewRender`; the package-local `OrbitalViewportMockup` review surface may also use AppKit and SceneKit. It must not depend on AVFoundation, CoreMIDI, or downstream app targets.
 - `OrbitalViewViewerSupport` may depend only on Foundation and `OrbitalViewCore`; it provides deterministic demo data and must not become a production meter source.
 - `OrbitalViewViewer` may depend on SwiftUI, `OrbitalViewCore`, `OrbitalViewSwiftUI`, and `OrbitalViewViewerSupport`; it must stay a standalone package harness and not import Wavefield, Orbisonic, Splat, AVFoundation, CoreMIDI, playback, routing, or output targets.
 - Host apps adapt their own layouts and meters into core scene contracts.
@@ -156,8 +156,10 @@ Current implementation dependencies:
 
 ```text
 Foundation
+AppKit
 Metal
 MetalKit
+SceneKit
 SwiftUI
 ```
 

@@ -13,6 +13,24 @@ Tests/OrbitalViewSwiftUITests/
 
 `OrbitalViewCore`, `OrbitalViewWavefield`, and `OrbitalViewOrbisonic` source changes are governed by normal task scope and tests.
 
+Slice 013 explicitly allowed:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+for the standalone native SwiftUI/SceneKit browser-mockup-parity screen. That screen is a package-local review surface and does not change downstream audio, routing, or production renderer contracts.
+
+Slice 014 explicitly allowed:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+for the standalone native SwiftUI/SceneKit control-skin, camera-orbit, SceneKit fog, drag/zoom, and Desktop PNG export cleanup. That screen remains a package-local review surface and does not change downstream audio, routing, production renderer, or host-app contracts.
+
 ## Protected Path: Downstream Audio And Routing Integrations
 
 ### Applies When

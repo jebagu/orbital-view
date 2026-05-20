@@ -129,12 +129,20 @@ Current wrapper skeleton tests cover:
 - visual preset actions use the optional store and no-op safely when persistence is absent
 - diagnostics summaries report missing, extra, invalid, duplicate, replaced, clamped, and timestamp-fallback input
 - camera and selection configuration emits renderer events
+- `OrbitalViewportMockup` preserves the native viewport contract: source mockup path, Orbisonic design-language skin marker, 1512 x 850 design size, 240px rail, 300px inspector, 46px footer, 30 Fey speakers, and 92-node/270-edge 3V shell counts
+- native viewport control enums preserve the needed camera, color, and speaker shape options
+- native viewport control metrics preserve Orbisonic-style 8px panel radius, 7px control radius, 34px control height, right-aligned switch columns, and single-track value-hidden slider rows
+- native viewport orbit state preserves camera-orbit distance, swapped vertical drag-start math, anchored spin delta math, horizontal screen-space spin across presets, and swapped mouse-wheel zoom direction
+- native viewport fog tests prove density `0` is a hard disabled state and hidden-line visibility is not gated by fog
+- native viewport PNG export tests prove Desktop destination and `.png` naming
+- native viewport snapshots preserve 30 channel-keyed Fey speakers and deterministic fake meter levels
 
 Future wrapper tests should cover:
 
 - gesture updates bind camera state without breaking center lock
 - selection bindings round-trip from renderer picking to host UI
 - toolbar toggles do not mutate audio, playback, routing, or metering state
+- screenshot or pixel-probe coverage for the native Orbisonic-style control shell once native visual tolerances are defined
 
 ## Standalone Viewer Tests
 
@@ -144,6 +152,14 @@ Current viewer tests cover:
 - channel-keyed sample speaker meter coverage for every viewer speaker
 - sample source-object frames and object meters sharing object IDs
 - viewer object visual settings enabling trails/glow trails only inside the demo harness
+
+The current executable now launches the native SwiftUI/SceneKit Orbisonic-style review app surface directly. Focused launch verification should use:
+
+```text
+scripts/build-orbital-viewer-app.sh
+plutil -lint Orbital\ View\ VU\ Kit.app/Contents/Info.plist
+open -n Orbital\ View\ VU\ Kit.app
+```
 
 ## Mockup Checks
 

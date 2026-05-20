@@ -178,19 +178,23 @@ flowchart TD
 
 The current wrapper bridges state into the renderer seam and can show an optional collapsed VU settings tray with Basic, Advanced, Presets, and Diagnostics sections. Preset persistence is optional and host-provided through `OrbitalViewVisualPresetStore`; diagnostics are host-provided through `OrbitalViewInputDiagnostics`. The wrapper forwards object snapshots and settings without per-frame SwiftUI-owned animation state. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
 
-## Current Standalone Viewer Flow
+## Current Standalone Native 3D Viewer Flow
 
 ```mermaid
 flowchart LR
-  Support["OrbitalViewViewerSupport deterministic demo content"] --> Viewer["OrbitalViewViewer SwiftUI executable"]
-  CameraButtons["Plan Front Side Iso buttons"] --> Viewer
-  Viewer --> SwiftUI["OrbitalViewSwiftUI public API"]
-  SwiftUI --> Renderer["OrbitalViewRender MTKView"]
-  Renderer --> Events["camera/selection events"]
-  Events --> Viewer
+  Launcher["Open Native Orbital View VU Kit.command"] --> Builder["scripts/build-orbital-viewer-app.sh"]
+  Builder --> App["Orbital View VU Kit.app"]
+  App --> Mockup["OrbitalViewportMockup SwiftUI shell"]
+  Controls["Camera color shape detail controls"] --> Mockup
+  Mockup --> SceneKit["Native SceneKit 3D viewport"]
+  SceneKit --> Geometry["Fey 30 speakers + generated 3V shell"]
+  SceneKit --> Inspector["Scene metrics selection speaker list"]
+  SceneKit --> Export["PNG snapshot export"]
 ```
 
-The standalone viewer launches the package viewport without a downstream host app. Its scene, speaker meters, object frames, object meters, and object visual settings are deterministic demo-only values from `OrbitalViewViewerSupport`; they are not a production meter source and do not touch audio, routing, playback, MIDI, OSC, output, or downstream app code.
+The standalone app launches the native SwiftUI/SceneKit review viewport without a downstream host app. Its controls use Orbisonic design language native SwiftUI/AppKit-backed controls; the browser mockup is only a loose behavior/control-inventory reference. The SceneKit viewport keeps sphere content static, orbits the camera around the origin, and uses SceneKit camera-space fog while hidden-line visibility stays separate. Its 30-channel levels are a deterministic fake meter stream for review parity only; they are not a production meter source and do not touch audio, routing, playback, MIDI, OSC, output, or downstream app code. The package-local `OrbitalViewViewerSupport` deterministic data remains available for tests and future review surfaces.
+
+The standalone interaction polish keeps the preferred full-width native button groups, single-track value-hidden sliders, and aligned switch columns. Spin advances horizontally in screen space for Plan, Elevation, and Isometric presets, drag uses coordinator-owned start-pose state with the requested vertical direction, mouse-wheel zoom uses the requested direction, fog density `0` disables all fog/fallback fade behavior, and Export PNG writes a timestamped Desktop file with footer feedback.
 
 ## Current Offscreen Harness Flow
 
