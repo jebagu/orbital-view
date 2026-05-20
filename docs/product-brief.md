@@ -43,6 +43,7 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 - Native `OrbitalViewRender` MetalKit seam with an initial offscreen smoke-tested draw path.
 - Renderer invariant tests for stable static draw inputs under meter and camera updates.
 - Display-only VU visual settings for gain, checker pulse/ring/diagonal wave style, color scheme, and 30-channel renderer meter mapping.
+- Wavefield-style source-object frames, object meters keyed by `objectId`, capped trails/glow-trail settings, and `-5...+5` render/effect bounds.
 - `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray.
 - Disposable browser mockup for toolbar and camera interaction.
 
@@ -73,6 +74,7 @@ The first usable implementation already:
 - Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder.
 - Render a minimal offscreen Metal frame for deterministic renderer smoke coverage.
 - Apply display-only checker pulse/ring/diagonal wave visual settings to renderer color state without changing speaker geometry.
+- Accept active source-object frames and object meter frames separately from speaker scene and speaker meter state.
 
 ## Constraints
 
@@ -82,12 +84,13 @@ The first usable implementation already:
 - Persistence: none in `OrbitalViewCore`.
 - External services: none.
 - Security/privacy: no network requirement.
-- Performance: renderer updates must eventually avoid heavy geometry rebuilds for meter changes.
+- Performance: renderer updates must avoid heavy geometry rebuilds for meter, object meter, and object trail changes.
 - Reliability: validation errors must be explicit and testable.
 
 ## Assumptions
 
 - Wavefield coordinates use `x = right`, `y = up`, `z = front`.
 - Physical speaker channels are 1-based and must not be reordered.
+- Wavefield source-object IDs are 1-based, valid in `1...128`, and separate from physical speaker channels.
 - DomeLab is a reference and future geometry-export source, not a dependency.
 - `OrbitalViewCore` should stay portable and independent of downstream app targets.

@@ -4,6 +4,7 @@
 
 - Center-locked spherical monitor viewport.
 - DomeLab-style left-side 3D Model control panel grouped under Camera, Color, Speaker Shape, and View Detail headings.
+- Matching collapsible object tuning groups below View Detail in the same left rail: Object Geometry, Object Motion, Object Meter Skin, Trails, Glow Trails, and Bounds.
 - DomeLab-style drag direction, spin direction, reset-to-current-preset behavior, always-axonometric projection, full-surface Purple, Flamingo, Green, and B&W color palettes, hidden-line clipping, and canvas PNG export.
 - Fey sphere 3V geodesic shell structure generated from the DomeLab project config values in `fey sphere - domelab-configuration.json`.
 - Speaker shape, size, and number-switch controls for comparing true 8-vertex rectangular-prism speaker cabinets against spheres, with Prism as the default shape.
@@ -14,6 +15,7 @@
 - Hidden Lines off, or Fog density at 100, draws a structure-style circular boundary and hides back-half structure and speaker faces.
 - Mid-range fog now fades hidden speaker faces and hidden shell lines through the same depth fade rule.
 - Speaker geometry stays fixed while fake RMS/peak values change glow, ring, and color.
+- Object controls document the first Wavefield overlay defaults: Orb shape, Object Purple palette, trails off, glow trails off, conservative trail caps, and render/effect bounds shown as `5` for the canonical `-5...+5` cube.
 - Speaker click selection with channel, level, and coordinate inspection.
 - Fey-style 30-speaker layout using the same coordinate convention as the core docs.
 
@@ -21,6 +23,7 @@
 
 - No Swift, SwiftUI, MetalKit, or production renderer code.
 - No real audio, metering, smoothing, or callback timing.
+- No real object animation, object VU input, object trails, or live smoothing yet.
 - No DomeLab import.
 - No physical shell dimensions or cabinet model.
 - The geodesic shell uses the Fey config's 3V icosahedron settings, but the mockup normalizes the geometry to the viewport sphere instead of using physical meter-scale coordinates.
@@ -28,6 +31,7 @@
 - The cuboid clipping is a canvas mockup of production 3D clipping behavior, not a Metal implementation.
 - The meter animation is deterministic fake data.
 - The DomeLab controls are replicated as mockup behavior only; no DomeLab code or runtime dependency is imported.
+- Object controls are replicated as mockup behavior only; the real Swift contract is in `OrbitalViewCore` and renderer state, not this browser mockup.
 
 ## Product Questions for Jeremy
 
@@ -43,8 +47,10 @@ Later Swift work will need:
 - SwiftUI wrapper around a renderer view.
 - Renderer backend decision, likely MetalKit for production.
 - Adapter from `OrbitalViewSceneSpec` and `SpeakerMeterFrame` into renderer buffers.
+- Adapter from Wavefield active object snapshots and object VU levels into `OrbitalViewObjectFrameSet` and `ObjectMeterFrame`.
 - Camera state binding and center-lock enforcement.
 - Production equivalents for spin, PNG export, always-axonometric projection, color style, speaker shape/size, speaker-number visibility, hidden-line clipping, and fog density.
+- Production equivalents for object geometry, object motion smoothing, object meter skin, capped trails, shared glow-trail buffers, and `-5...+5` render/effect bounds.
 - A production geodesic import path should consume a neutral geometry/config contract instead of importing DomeLab runtime code.
 - Hit testing that returns `OrbitalViewSelection`.
 - Meter smoothing in the visual frame loop, not in audio callbacks.

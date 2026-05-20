@@ -211,6 +211,124 @@ final class OrbitalViewCoreTests: XCTestCase {
         }
     }
 
+    func testObjectFrameSetValidatesUnitSphereObjectsAndTrailCaps() throws {
+        let pose = try UnitSphereDirection(x: 1, y: 0, z: 0)
+        let trail = try [
+            UnitSphereDirection(x: 0, y: 1, z: 0),
+            UnitSphereDirection(x: 0, y: 0, z: 1)
+        ]
+        let object = try OrbitalViewObjectFrame(
+            objectID: 17,
+            label: "Lead Object",
+            pose: pose,
+            width: 0.25,
+            trail: trail
+        )
+        let frameSet = try OrbitalViewObjectFrameSet(
+            timestamp: 1,
+            activeObjects: [object],
+            maxTrailPointsPerObject: 2
+        )
+
+        XCTAssertEqual(frameSet.activeObjects.first?.objectID, 17)
+        XCTAssertEqual(frameSet.activeObjects.first?.trail.count, 2)
+        XCTAssertEqual(OrbitalViewObjectRenderBounds.default.minimum, -5)
+        XCTAssertEqual(OrbitalViewObjectRenderBounds.default.maximum, 5)
+
+        XCTAssertThrowsError(
+            try OrbitalViewObjectFrame(
+                objectID: 129,
+                label: "Invalid",
+                pose: pose
+            )
+        ) { error in
+            XCTAssertEqual(error as? OrbitalViewValidationError, .invalidObjectID(129))
+        }
+
+        XCTAssertThrowsError(
+            try OrbitalViewObjectFrame(
+                objectID: 1,
+                label: "Negative Width",
+                pose: pose,
+                width: -0.1
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "object.width", value: -0.10000000149011612, validRange: ">= 0")
+            )
+        }
+
+        XCTAssertThrowsError(
+            try OrbitalViewObjectFrameSet(
+                timestamp: 1,
+                activeObjects: [object],
+                maxTrailPointsPerObject: 1
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "objectFrame.trail", value: 2, validRange: "0...1")
+            )
+        }
+    }
+
+    func testObjectMeterFramePreservesObjectIdentity() throws {
+        let quiet = try ObjectMeterLevel(rms: 0.1, peak: 0.2, clip: false)
+        let hot = try ObjectMeterLevel(rms: 0.8, peak: 1, clip: true)
+        let frame = try ObjectMeterFrame(timestamp: 42, levelsByObjectID: [1: quiet, 128: hot])
+
+        XCTAssertEqual(frame.levelsByObjectID[1], quiet)
+        XCTAssertEqual(frame.levelsByObjectID[128], hot)
+        XCTAssertNil(frame.levelsByObjectID[2])
+
+        XCTAssertThrowsError(try ObjectMeterFrame(timestamp: 0, levelsByObjectID: [0: quiet])) { error in
+            XCTAssertEqual(error as? OrbitalViewValidationError, .invalidObjectID(0))
+        }
+
+        XCTAssertThrowsError(try ObjectMeterLevel(rms: .nan, peak: 0, clip: false)) { error in
+            XCTAssertEqual(error as? OrbitalViewValidationError, .nonFiniteValue(field: "objectMeter.rms"))
+        }
+    }
+
+    func testObjectVisualSettingsDefaultToCappedTrailsAndFiveUnitBounds() throws {
+        let defaults = ObjectVisualSettings.default
+        XCTAssertEqual(defaults.shape, .orb)
+        XCTAssertEqual(defaults.palette, .objectPurple)
+        XCTAssertFalse(defaults.trailsEnabled)
+        XCTAssertFalse(defaults.glowTrailsEnabled)
+        XCTAssertEqual(defaults.maxTrailPointsPerObject, 24)
+        XCTAssertEqual(defaults.bounds.halfExtent, 5)
+
+        let tuned = try ObjectVisualSettings(
+            shape: .comet,
+            palette: .sourceGold,
+            trailsEnabled: true,
+            maxTrailPointsPerObject: 64,
+            glowTrailsEnabled: true,
+            glowTrailWidth: 0.15,
+            bounds: OrbitalViewObjectRenderBounds(halfExtent: 5)
+        )
+        XCTAssertEqual(tuned.shape.displayName, "Comet")
+        XCTAssertEqual(tuned.palette.displayName, "Source Gold")
+        XCTAssertTrue(tuned.trailsEnabled)
+        XCTAssertTrue(tuned.glowTrailsEnabled)
+
+        XCTAssertThrowsError(try ObjectVisualSettings(maxTrailPointsPerObject: 257)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "objectVisual.maxTrailPointsPerObject", value: 257, validRange: "0...256")
+            )
+        }
+
+        XCTAssertThrowsError(try ObjectVisualSettings(bounds: OrbitalViewObjectRenderBounds(halfExtent: 0))) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .nonPositiveValue(field: "objectBounds.halfExtent", value: 0)
+            )
+        }
+    }
+
     func testCameraPresetsAreCenterLocked() throws {
         for mode in [OrbitalViewMode.plan, .frontElevation, .sideElevation, .isometric] {
             let camera = try OrbitalViewCameraState.preset(mode)

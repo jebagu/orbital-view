@@ -15,6 +15,8 @@ flowchart TD
 flowchart LR
   HostLayout["Host speaker layout"] --> Adapter["App adapter"]
   HostMeters["Host meter frames"] --> Adapter
+  HostObjects["Host source-object frames"] --> Adapter
+  HostObjectMeters["Host object meter frames"] --> Adapter
   Adapter --> Core["OrbitalViewCore scene + meters"]
   Core --> Renderer["OrbitalViewRender MetalKit renderer"]
   Renderer --> UI["Host app viewport"]
@@ -37,13 +39,17 @@ flowchart TD
 flowchart LR
   Scene["Validated scene"] --> StaticGeometry["Static Metal buffers"]
   MeterFrame["Latest meter frame"] --> VisualState["Display-rate visual envelope"]
+  Objects["Active object frame set"] --> ObjectPose["Object pose/width/trail inputs"]
+  ObjectMeters["Object meter frame"] --> ObjectColor["Object meter skin colors"]
   Camera["Camera state"] --> ViewUniforms["View uniforms"]
   StaticGeometry --> Draw["MTKView draw"]
   VisualState --> Draw
+  ObjectPose --> Draw
+  ObjectColor --> Draw
   ViewUniforms --> Draw
 ```
 
-Static geometry, meter state, and camera state should stay separate so meter updates do not rebuild the scene.
+Static speaker geometry, object pose/trail state, meter state, and camera state should stay separate so meter or trail updates do not rebuild the scene.
 
 ## Current Renderer Seam Flow
 
@@ -52,15 +58,18 @@ flowchart TD
   Scene["OrbitalViewSceneSpec"] --> State["OrbitalViewRenderState"]
   Meters["SpeakerMeterFrame"] --> State
   MeterSettings["SpeakerMeterVisualSettings"] --> State
+  Objects["OrbitalViewObjectFrameSet"] --> State
+  ObjectMeters["ObjectMeterFrame"] --> State
+  ObjectSettings["ObjectVisualSettings"] --> State
   Camera["OrbitalViewCameraState"] --> State
   Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
   State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
-  Delegate --> Inputs["Static speaker draw inputs + meter colors"]
+  Delegate --> Inputs["Static speaker draw inputs + object draw inputs + colors"]
   Inputs --> Pipeline["OrbitalViewMetalDrawPipeline"]
   Pipeline --> Frame["MTKView frame or offscreen texture"]
 ```
 
-The current renderer seam stores validated state, emits camera/selection events, applies display-only meter visual settings, and issues a minimal Metal draw command for fixed-size speaker quads.
+The current renderer seam stores validated state, emits camera/selection events, applies display-only speaker and object visual settings, and issues a minimal Metal draw command for fixed-size speaker/object quads.
 
 ## Current Renderer Invariant Flow
 
@@ -69,13 +78,32 @@ flowchart LR
   Scene["Scene speakers"] --> StaticInputs["ID, channel, position, quad radius"]
   Meter["Meter frame"] --> ColorInputs["speaker color/intensity"]
   Settings["Visual gain + style"] --> ColorInputs
+  Objects["Active objects"] --> ObjectInputs["object pose/width/trail draw inputs"]
+  ObjectMeter["Object meters"] --> ObjectInputs
   Camera["Camera state"] --> State["renderer state"]
   StaticInputs --> Tests["invariant tests"]
   ColorInputs --> Tests
+  ObjectInputs --> Tests
   State --> Tests
 ```
 
-Meter, meter visual setting, and camera updates must not change the static speaker draw inputs. Meter and display-setting changes affect color/intensity only in the current renderer baseline.
+Meter, meter visual setting, object meter, trail, and camera updates must not change the static speaker draw inputs. Speaker meter and display-setting changes affect color/intensity only in the current renderer baseline. Object disappearance is represented by removal from the active object frame set, which also removes trail draw-input ownership.
+
+## Current Object Overlay Flow
+
+```mermaid
+flowchart LR
+  Wavefield["Wavefield objectId snapshots"] --> Frames["OrbitalViewObjectFrameSet"]
+  WavefieldMeters["Object VU levels"] --> Meters["ObjectMeterFrame"]
+  Settings["ObjectVisualSettings"] --> Renderer["OrbitalViewRenderState revisions"]
+  Frames --> Renderer
+  Meters --> Renderer
+  Renderer --> DrawInputs["Object cores + capped trail samples"]
+  DrawInputs --> Buffers["Retained Metal position/color buffers"]
+  Buffers --> Draw["MTKView draw"]
+```
+
+Object centers stay canonical unit-sphere directions. The render/effect bounds default to `-5...+5` on x, y, and z; clipping affects object trails/glow/debug visuals, not canonical poses.
 
 ## Current SwiftUI Wrapper Flow
 
@@ -90,7 +118,7 @@ flowchart TD
   Events --> HostView
 ```
 
-The current wrapper bridges state into the renderer seam and can show an optional collapsed VU settings tray. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
+The current wrapper bridges state into the renderer seam and can show an optional collapsed VU settings tray. It forwards object snapshots and settings without per-frame SwiftUI-owned animation state. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
 
 ## Current Offscreen Harness Flow
 
@@ -128,6 +156,7 @@ This flow is limited to the disposable browser mockup. Music mode lets the user 
 ```mermaid
 flowchart TD
   Audio["Host audio and metering"] --> Snapshot["Measured meter snapshot"]
+  Objects["Host object positions"] --> Snapshot
   Snapshot --> Viewport["OrbitalViewKit"]
   Viewport --> Selection["Selection and camera events"]
   Selection --> HostUI["Host UI diagnostics"]

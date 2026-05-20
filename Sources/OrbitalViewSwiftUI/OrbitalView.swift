@@ -4,6 +4,9 @@ import SwiftUI
 public struct OrbitalView: View {
     public let scene: OrbitalViewSceneSpec
     public let meters: SpeakerMeterFrame?
+    public let objectFrames: OrbitalViewObjectFrameSet?
+    public let objectMeters: ObjectMeterFrame?
+    public let objectVisualSettings: ObjectVisualSettings
 
     let showsMeterSettingsTray: Bool
 
@@ -17,12 +20,18 @@ public struct OrbitalView: View {
     public init(
         scene: OrbitalViewSceneSpec,
         meters: SpeakerMeterFrame? = nil,
+        objectFrames: OrbitalViewObjectFrameSet? = nil,
+        objectMeters: ObjectMeterFrame? = nil,
+        objectVisualSettings: ObjectVisualSettings = .default,
         camera: Binding<OrbitalViewCameraState>,
         selection: Binding<OrbitalViewSelection?> = .constant(nil),
         onEvents: @escaping ([OrbitalViewEvent]) -> Void = { _ in }
     ) {
         self.scene = scene
         self.meters = meters
+        self.objectFrames = objectFrames
+        self.objectMeters = objectMeters
+        self.objectVisualSettings = objectVisualSettings
         self.showsMeterSettingsTray = false
         self._camera = camera
         self._selection = selection
@@ -33,6 +42,9 @@ public struct OrbitalView: View {
     public init(
         scene: OrbitalViewSceneSpec,
         meters: SpeakerMeterFrame? = nil,
+        objectFrames: OrbitalViewObjectFrameSet? = nil,
+        objectMeters: ObjectMeterFrame? = nil,
+        objectVisualSettings: ObjectVisualSettings = .default,
         meterVisualSettings: Binding<SpeakerMeterVisualSettings>,
         camera: Binding<OrbitalViewCameraState>,
         selection: Binding<OrbitalViewSelection?> = .constant(nil),
@@ -40,6 +52,9 @@ public struct OrbitalView: View {
     ) {
         self.scene = scene
         self.meters = meters
+        self.objectFrames = objectFrames
+        self.objectMeters = objectMeters
+        self.objectVisualSettings = objectVisualSettings
         self.showsMeterSettingsTray = true
         self._camera = camera
         self._selection = selection
@@ -54,6 +69,9 @@ public struct OrbitalView: View {
                     scene: scene,
                     meters: meters,
                     meterVisualSettings: meterVisualSettings,
+                    objectFrames: objectFrames,
+                    objectMeters: objectMeters,
+                    objectVisualSettings: objectVisualSettings,
                     camera: camera,
                     selection: selection
                 ),

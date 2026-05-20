@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-initialization and baseline slices complete; no active implementation task
+native continuation package preflight complete; awaiting next explicit implementation slice
 ```
 
 ## Current Milestone
 
 ```text
-Slices 000-011 are complete; bootstrap complete and active task is awaiting explicit open
+Slices 000-012 from the prior package are complete; native continuation Slice 012 preflight verified the current tree builds and tests
 ```
 
 ## Summary
 
-Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and settings updates. The project also has a renderer test harness plan, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, display-only checker pulse/ring/diagonal wave VU visual settings, and Wavefield source-object overlay contracts, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, accepts active object frames and object meter frames keyed by Wavefield `objectId`, and keeps static geometry stable under meter, settings, object meter, and trail updates. The project also has a renderer test harness plan, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, live object smoothing/interpolation, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -22,6 +22,172 @@ The pinned local static server URL for the active single-screen cube VU mockup i
 
 ```text
 http://127.0.0.1:8765/OrbitalViewKit/
+```
+
+### Update: 2026-05-20 Native Work Package Preflight Verification
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Began `orbital-view-vu-kit-native-codex-work-package.md`.
+- Treated the package's first slice as the active preflight restore/build verification step.
+- Verified the current working tree already contains the core source files and Fey 30 fixture resources that the uploaded package warned could be missing.
+- Left source behavior unchanged because no restore blocker was present.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Results:
+
+```text
+swift build passed.
+swift test passed: 43 XCTest cases, 0 failures.
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+```
+
+Bugs found or fixed:
+
+```text
+none; no missing source or fixture blockers were present in the current working tree
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Next recommended task:
+
+```text
+Slice 013 - Orbital View with Objects merge compatibility review
+```
+
+### Update: 2026-05-20 Wavefield Object Overlay Performance Slice
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewObjectFrameSet`, `OrbitalViewObjectFrame`, `ObjectMeterFrame`, `ObjectMeterLevel`, `ObjectVisualSettings`, object visual shape/palette enums, and default `-5...+5` render/effect bounds.
+- Added object ID validation in the `1...128` range, active-object caps, duplicate object rejection, non-negative width validation, and trail cap validation.
+- Added renderer object frame, object meter, and object visual settings state with revisions separate from speaker scene, speaker meter, and speaker visual setting revisions.
+- Added object draw inputs for object cores and capped trail samples, with glow trails sharing the same capped object draw-input stream.
+- Reworked the Metal draw pipeline to retain speaker/object position and color buffers and reuse capacity across repeated draws.
+- Added SwiftUI object frame, object meter, and object visual settings forwarding without SwiftUI-owned per-frame object animation state.
+- Preserved the existing viewport mockup control rail and added Object Geometry, Object Motion, Object Meter Skin, Trails, Glow Trails, and Bounds groups below View Detail.
+- Added task and work-package slice docs for slice 012.
+
+Files changed:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewObjects.swift
+Sources/OrbitalViewCore/OrbitalViewValidationError.swift
+Sources/OrbitalViewRender/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewRenderTests/
+Tests/OrbitalViewSwiftUITests/
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/orbital-view-viewport/index.html
+mockups/orbital-view-viewport/notes.md
+.tasks/012-wavefield-object-overlay-performance.md
+work-packages/orbital-view-kit/MV.md
+work-packages/orbital-view-kit/slices/012-wavefield-object-overlay-performance.md
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+docs/test-strategy.md
+node object-control mockup assertions
+```
+
+Commands run:
+
+```text
+node inline JavaScript parse for both mockups -> passed
+node object-control mockup assertions -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 43 tests
+git diff --check -> passed
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/orbital-view-viewport/notes.md
+.tasks/012-wavefield-object-overlay-performance.md
+work-packages/orbital-view-kit/MV.md
+work-packages/orbital-view-kit/slices/012-wavefield-object-overlay-performance.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by slice 012
+Tests/OrbitalViewRenderTests/ allowed by slice 012
+Sources/OrbitalViewSwiftUI/ allowed by slice 012
+Tests/OrbitalViewSwiftUITests/ allowed by slice 012
+```
+
+Result:
+
+```text
+Wavefield-style source-object overlay contracts, renderer draw inputs, SwiftUI forwarding, retained buffer reuse checks, and matching mockup controls are implemented without changing speaker VU ownership or channel identity.
+```
+
+Risks:
+
+- Live object smoothing is represented as tunable settings and documented behavior, but production replay/live interpolation is still deferred.
+- Current object visuals use the minimal quad renderer baseline; final materials, bloom, true shape rendering, and shader-driven glow trails remain future renderer work.
+
+Next recommended task:
+
+```text
+Open a production live object smoothing/interpolation slice, then a production object material/trail shader slice.
 ```
 
 ### Update: 2026-05-20 Cube Scalar VU Simplification
@@ -59,7 +225,7 @@ work-packages/orbital-view-kit/MV.md
 ## Current Tree
 
 ```text
-codex/vu-meter-plumbing-tray branch
+codex/orbital-view-vu-kit branch
 ```
 
 ## Completed
@@ -100,6 +266,7 @@ codex/vu-meter-plumbing-tray branch
 - Added browser-only real music analysis to the cube VU mockup using tab capture for YouTube, local audio file playback, and Web Audio RMS/peak/bass-driven ripple behavior.
 - Reworked the cube VU mockup layout with a separate normal music meter and tabbed Tune/Advanced controls for the active monitor.
 - Added an exclusive VU drive toggle so Music and Impulse Test modes cannot run at the same time.
+- Opened and completed slice 012 for Wavefield source-object overlay contracts, object VU state, capped trails, retained renderer buffers, and matching mockup controls.
 
 ## In Progress
 
@@ -109,7 +276,7 @@ none
 
 ## Pending
 
-- No active implementation task. The next renderer/work-package slice must be explicitly opened before starting.
+- Next native continuation task is Slice 013 - Orbital View with Objects merge compatibility review.
 
 ## Blocked
 

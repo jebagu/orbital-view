@@ -222,6 +222,25 @@
       gap: 10px;
     }
 
+    details.control-group {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    details.control-group > summary {
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0;
+      list-style: none;
+      text-transform: uppercase;
+    }
+
+    details.control-group > summary::-webkit-details-marker {
+      display: none;
+    }
+
     button {
       border: 1px solid var(--line);
       background: var(--button-bg);
@@ -579,6 +598,138 @@
             <i class="switch-track" aria-hidden="true"></i>
           </label>
         </div>
+        <details class="control-group object-controls" open>
+          <summary>Object Geometry</summary>
+          <div class="segmented" aria-label="Object shape">
+            <button class="object-shape active" data-object-shape="orb" aria-pressed="true">Orb</button>
+            <button class="object-shape" data-object-shape="halo" aria-pressed="false">Halo</button>
+            <button class="object-shape" data-object-shape="comet" aria-pressed="false">Comet</button>
+          </div>
+          <label class="toolbar-slider">
+            <span>Core size</span>
+            <div class="toolbar-slider-row">
+              <input id="objectCoreSize" type="range" min="1" max="24" step="1" value="6" aria-label="Object core size">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Width scale</span>
+            <div class="toolbar-slider-row">
+              <input id="objectWidthScale" type="range" min="0" max="500" step="5" value="100" aria-label="Object width scale">
+            </div>
+          </label>
+        </details>
+        <details class="control-group object-controls">
+          <summary>Object Motion</summary>
+          <label class="toolbar-slider">
+            <span>Smoothing</span>
+            <div class="toolbar-slider-row">
+              <input id="objectSmoothing" type="range" min="0" max="100" step="1" value="8" aria-label="Object smoothing">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Lookbehind ms</span>
+            <div class="toolbar-slider-row">
+              <input id="objectLookbehind" type="range" min="0" max="120" step="1" value="30" aria-label="Object visual lookbehind">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Snap threshold</span>
+            <div class="toolbar-slider-row">
+              <input id="objectSnapThreshold" type="range" min="0" max="314" step="1" value="95" aria-label="Object snap threshold">
+            </div>
+          </label>
+        </details>
+        <details class="control-group object-controls">
+          <summary>Object Meter Skin</summary>
+          <div class="segmented" aria-label="Object palette">
+            <button class="object-palette active" data-object-palette="objectPurple" aria-pressed="true">Purple</button>
+            <button class="object-palette" data-object-palette="sourceGold" aria-pressed="false">Gold</button>
+            <button class="object-palette" data-object-palette="spectralBlue" aria-pressed="false">Blue</button>
+          </div>
+          <label class="toolbar-slider">
+            <span>Glow</span>
+            <div class="toolbar-slider-row">
+              <input id="objectGlow" type="range" min="0" max="200" step="1" value="65" aria-label="Object glow">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Clip flash</span>
+            <div class="toolbar-slider-row">
+              <input id="objectClipFlash" type="range" min="0" max="200" step="1" value="100" aria-label="Object clip flash">
+            </div>
+          </label>
+        </details>
+        <details class="control-group object-controls">
+          <summary>Trails</summary>
+          <label class="switch-row toolbar-switch">
+            <span>Trails</span>
+            <input id="objectTrails" type="checkbox" role="switch" aria-label="Object trails">
+            <i class="switch-track" aria-hidden="true"></i>
+          </label>
+          <label class="toolbar-slider">
+            <span>Trail length</span>
+            <div class="toolbar-slider-row">
+              <input id="objectTrailLength" type="range" min="0" max="1000" step="10" value="120" aria-label="Object trail length">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Trail decay</span>
+            <div class="toolbar-slider-row">
+              <input id="objectTrailDecay" type="range" min="0" max="100" step="1" value="72" aria-label="Object trail decay">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Max points</span>
+            <div class="toolbar-slider-row">
+              <input id="objectMaxTrailPoints" type="range" min="0" max="64" step="1" value="24" aria-label="Object max trail points">
+            </div>
+          </label>
+        </details>
+        <details class="control-group object-controls">
+          <summary>Glow Trails</summary>
+          <label class="switch-row toolbar-switch">
+            <span>Glow trails</span>
+            <input id="objectGlowTrails" type="checkbox" role="switch" aria-label="Object glow trails">
+            <i class="switch-track" aria-hidden="true"></i>
+          </label>
+          <label class="toolbar-slider">
+            <span>Glow intensity</span>
+            <div class="toolbar-slider-row">
+              <input id="objectGlowTrailIntensity" type="range" min="0" max="200" step="1" value="50" aria-label="Object glow trail intensity">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Glow width</span>
+            <div class="toolbar-slider-row">
+              <input id="objectGlowTrailWidth" type="range" min="0" max="50" step="1" value="9" aria-label="Object glow trail width">
+            </div>
+          </label>
+          <label class="toolbar-slider">
+            <span>Glow decay</span>
+            <div class="toolbar-slider-row">
+              <input id="objectGlowTrailDecay" type="range" min="0" max="100" step="1" value="65" aria-label="Object glow trail decay">
+            </div>
+          </label>
+        </details>
+        <details class="control-group object-controls">
+          <summary>Bounds</summary>
+          <label class="toolbar-slider">
+            <span>Bounds +/-</span>
+            <div class="toolbar-slider-row">
+              <input id="objectBounds" type="range" min="1" max="10" step="1" value="5" aria-label="Object bounds half extent">
+            </div>
+          </label>
+          <label class="switch-row toolbar-switch">
+            <span>Show bounds</span>
+            <input id="objectShowBounds" type="checkbox" role="switch" aria-label="Show object bounds">
+            <i class="switch-track" aria-hidden="true"></i>
+          </label>
+          <label class="switch-row toolbar-switch">
+            <span>Clip diagnostics</span>
+            <input id="objectClipDiagnostics" type="checkbox" role="switch" aria-label="Object clip diagnostics" checked>
+            <i class="switch-track" aria-hidden="true"></i>
+          </label>
+        </details>
       </div>
     </nav>
 
@@ -628,6 +779,26 @@
     const fogDensityInput = document.getElementById("fogDensity");
     const speakerNumbersCheckbox = document.getElementById("speakerNumbers");
     const hiddenLinesSwitch = document.getElementById("hiddenLines");
+    const objectShapeButtons = [...document.querySelectorAll(".object-shape")];
+    const objectPaletteButtons = [...document.querySelectorAll(".object-palette")];
+    const objectCoreSizeInput = document.getElementById("objectCoreSize");
+    const objectWidthScaleInput = document.getElementById("objectWidthScale");
+    const objectSmoothingInput = document.getElementById("objectSmoothing");
+    const objectLookbehindInput = document.getElementById("objectLookbehind");
+    const objectSnapThresholdInput = document.getElementById("objectSnapThreshold");
+    const objectGlowInput = document.getElementById("objectGlow");
+    const objectClipFlashInput = document.getElementById("objectClipFlash");
+    const objectTrailsInput = document.getElementById("objectTrails");
+    const objectTrailLengthInput = document.getElementById("objectTrailLength");
+    const objectTrailDecayInput = document.getElementById("objectTrailDecay");
+    const objectMaxTrailPointsInput = document.getElementById("objectMaxTrailPoints");
+    const objectGlowTrailsInput = document.getElementById("objectGlowTrails");
+    const objectGlowTrailIntensityInput = document.getElementById("objectGlowTrailIntensity");
+    const objectGlowTrailWidthInput = document.getElementById("objectGlowTrailWidth");
+    const objectGlowTrailDecayInput = document.getElementById("objectGlowTrailDecay");
+    const objectBoundsInput = document.getElementById("objectBounds");
+    const objectShowBoundsInput = document.getElementById("objectShowBounds");
+    const objectClipDiagnosticsInput = document.getElementById("objectClipDiagnostics");
     const list = document.getElementById("speakerList");
     const activeCount = document.getElementById("activeCount");
     const peakText = document.getElementById("peakText");
@@ -718,6 +889,26 @@
       spin: false,
       showSpeakerNumbers: false,
       showHiddenLines: false,
+      objectShape: "orb",
+      objectPalette: "objectPurple",
+      objectCoreSize: Number(objectCoreSizeInput.value) / 100,
+      objectWidthScale: Number(objectWidthScaleInput.value) / 100,
+      objectSmoothing: Number(objectSmoothingInput.value) / 100,
+      objectLookbehindMs: Number(objectLookbehindInput.value),
+      objectSnapThreshold: Number(objectSnapThresholdInput.value) / 100,
+      objectGlow: Number(objectGlowInput.value) / 100,
+      objectClipFlash: Number(objectClipFlashInput.value) / 100,
+      objectTrails: false,
+      objectTrailLength: Number(objectTrailLengthInput.value) / 100,
+      objectTrailDecay: Number(objectTrailDecayInput.value) / 100,
+      objectMaxTrailPoints: Number(objectMaxTrailPointsInput.value),
+      objectGlowTrails: false,
+      objectGlowTrailIntensity: Number(objectGlowTrailIntensityInput.value) / 100,
+      objectGlowTrailWidth: Number(objectGlowTrailWidthInput.value) / 100,
+      objectGlowTrailDecay: Number(objectGlowTrailDecayInput.value) / 100,
+      objectBoundsHalfExtent: Number(objectBoundsInput.value),
+      objectShowBounds: false,
+      objectClipDiagnostics: true,
       fogDensity: fogDensityFromSlider(fogDensityInput.value),
       selected: null,
       dragging: false,
@@ -1583,6 +1774,100 @@
 
     hiddenLinesSwitch.addEventListener("change", event => {
       state.showHiddenLines = event.target.checked;
+    });
+
+    objectShapeButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        state.objectShape = button.dataset.objectShape;
+        objectShapeButtons.forEach(shapeButton => {
+          const active = shapeButton.dataset.objectShape === state.objectShape;
+          shapeButton.classList.toggle("active", active);
+          shapeButton.setAttribute("aria-pressed", String(active));
+        });
+      });
+    });
+
+    objectPaletteButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        state.objectPalette = button.dataset.objectPalette;
+        objectPaletteButtons.forEach(paletteButton => {
+          const active = paletteButton.dataset.objectPalette === state.objectPalette;
+          paletteButton.classList.toggle("active", active);
+          paletteButton.setAttribute("aria-pressed", String(active));
+        });
+      });
+    });
+
+    objectCoreSizeInput.addEventListener("input", event => {
+      state.objectCoreSize = Number(event.target.value) / 100;
+    });
+
+    objectWidthScaleInput.addEventListener("input", event => {
+      state.objectWidthScale = Number(event.target.value) / 100;
+    });
+
+    objectSmoothingInput.addEventListener("input", event => {
+      state.objectSmoothing = Number(event.target.value) / 100;
+    });
+
+    objectLookbehindInput.addEventListener("input", event => {
+      state.objectLookbehindMs = Number(event.target.value);
+    });
+
+    objectSnapThresholdInput.addEventListener("input", event => {
+      state.objectSnapThreshold = Number(event.target.value) / 100;
+    });
+
+    objectGlowInput.addEventListener("input", event => {
+      state.objectGlow = Number(event.target.value) / 100;
+    });
+
+    objectClipFlashInput.addEventListener("input", event => {
+      state.objectClipFlash = Number(event.target.value) / 100;
+    });
+
+    objectTrailsInput.addEventListener("change", event => {
+      state.objectTrails = event.target.checked;
+    });
+
+    objectTrailLengthInput.addEventListener("input", event => {
+      state.objectTrailLength = Number(event.target.value) / 100;
+    });
+
+    objectTrailDecayInput.addEventListener("input", event => {
+      state.objectTrailDecay = Number(event.target.value) / 100;
+    });
+
+    objectMaxTrailPointsInput.addEventListener("input", event => {
+      state.objectMaxTrailPoints = Number(event.target.value);
+    });
+
+    objectGlowTrailsInput.addEventListener("change", event => {
+      state.objectGlowTrails = event.target.checked;
+    });
+
+    objectGlowTrailIntensityInput.addEventListener("input", event => {
+      state.objectGlowTrailIntensity = Number(event.target.value) / 100;
+    });
+
+    objectGlowTrailWidthInput.addEventListener("input", event => {
+      state.objectGlowTrailWidth = Number(event.target.value) / 100;
+    });
+
+    objectGlowTrailDecayInput.addEventListener("input", event => {
+      state.objectGlowTrailDecay = Number(event.target.value) / 100;
+    });
+
+    objectBoundsInput.addEventListener("input", event => {
+      state.objectBoundsHalfExtent = Number(event.target.value);
+    });
+
+    objectShowBoundsInput.addEventListener("change", event => {
+      state.objectShowBounds = event.target.checked;
+    });
+
+    objectClipDiagnosticsInput.addEventListener("change", event => {
+      state.objectClipDiagnostics = event.target.checked;
     });
 
     canvas.addEventListener("pointerdown", event => {

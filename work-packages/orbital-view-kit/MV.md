@@ -24,11 +24,11 @@ The completed slices are small enough for the main tree.
 
 ## Product Summary
 
-OrbitalViewKit should eventually render a beautiful, center-locked, orbitable 3D Sonic Sphere-style viewport. Speakers remain physical objects while RMS, peak, and clip state appear through material, glow, rings, and bloom rather than geometry resizing.
+OrbitalViewKit should eventually render a beautiful, center-locked, orbitable 3D Sonic Sphere-style viewport. Speakers remain physical objects while RMS, peak, and clip state appear through material, glow, rings, and bloom rather than geometry resizing. Wavefield source objects are overlaid as unit-sphere objects keyed by `objectId`, with separate object VU skin and capped trails.
 
 ## Architecture Summary
 
-Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam, offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings. Full production checker facet animation, broader SwiftUI controls, DomeLab import, Splat overlays, and downstream app adapters are later slices.
+Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam, offscreen smoke-tested draw path, static draw-input invariant tests, display-only checker pulse/ring/diagonal wave VU visual settings, source-object overlay draw inputs, and retained buffer reuse. Full production checker facet animation, live object smoothing, broader SwiftUI controls, DomeLab import, Splat overlays, and downstream app adapters are later slices.
 
 ## Related OpenSpec Change
 
@@ -76,7 +76,9 @@ Future downstream app integrations may touch protected audio, metering, routing,
 ## Performance Constraints
 
 - Core validation should be deterministic and lightweight.
-- Future renderer meter updates must avoid rebuilding static geometry every frame.
+- Renderer meter/object/trail updates must avoid rebuilding static geometry every frame.
+- SwiftUI must not own per-frame object position state.
+- Metal buffers should be retained and reused when capacity is sufficient.
 
 ## Reliability Constraints
 
@@ -504,6 +506,44 @@ Protected path touch:
 Sources/OrbitalViewRender/, Tests/OrbitalViewRenderTests/, Sources/OrbitalViewSwiftUI/, and Tests/OrbitalViewSwiftUITests/ allowed by this slice
 ```
 
+### Slice 012: Wavefield Object Overlay Performance Slice
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Add Wavefield source-object frame, object meter, object visual settings, capped trail, retained renderer buffer, and mockup control contracts while preserving speaker VU behavior.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 011
+```
+
+Review required:
+
+```text
+protected-path, architecture, performance, and reliability review useful before production live smoothing work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewRender/, Tests/OrbitalViewRenderTests/, Sources/OrbitalViewSwiftUI/, and Tests/OrbitalViewSwiftUITests/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -514,8 +554,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 011 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 012 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; Wavefield source-object frames/meters/settings flow through core, renderer, and SwiftUI; the first viewport interaction mockup exists with matching object controls below View Detail; and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for production checker facet animation/materials, pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
+Open a new bounded task for production live object smoothing/interpolation, production checker facet animation/materials, pixel-probe renderer tests, or SwiftUI control/gesture binding plan.

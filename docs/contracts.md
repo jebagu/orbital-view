@@ -43,6 +43,14 @@ SpeakerMeterLevel
 SpeakerMeterVisualSettings
 SpeakerMeterVisualStyle
 SpeakerMeterColorScheme
+OrbitalViewObjectFrameSet
+OrbitalViewObjectFrame
+ObjectMeterFrame
+ObjectMeterLevel
+ObjectVisualSettings
+ObjectVisualShape
+ObjectVisualPalette
+OrbitalViewObjectRenderBounds
 OrbitalViewCameraState
 OrbitalViewMode
 OrbitalViewProjection
@@ -61,7 +69,9 @@ Inputs are host-provided scene and meter data:
 - coordinate system
 - shell geometry or parametric shell spec
 - physical speaker list
-- optional virtual objects later
+- active source-object frames keyed by Wavefield object ID
+- object meter levels keyed by Wavefield object ID
+- display-only object visual settings for geometry, motion, meter skin, trails, glow trails, and bounds
 - meter levels keyed by physical channel
 - display-only meter visual settings
 - color scheme and checker pulse/ring/diagonal wave controls
@@ -93,6 +103,14 @@ Core must not output audio, routing changes, playback state mutations, or UI nav
 - Monitor camera presets must target the origin.
 - Meter visual gain must be finite and in `-24...24` dB.
 - Checker visual controls must stay in documented finite ranges, including tile detail `4...32`.
+- Wavefield source-object IDs must be in `1...128`.
+- Object frame sets must reject duplicate object IDs.
+- Object centers must be represented as unit-sphere directions.
+- Object width must be finite and non-negative.
+- Active objects must not exceed the frame-set cap, default `128`.
+- Trail samples must not exceed the frame-set cap or object visual settings cap.
+- Object visual settings must keep trails off by default and cap max trail points to `0...256`.
+- Object render/effect bounds default to a cube from `-5...+5` on x, y, and z.
 
 ### Side Effects
 
@@ -129,6 +147,9 @@ Splat app targets
 - meter visual settings validation
 - meter visual style codability
 - meter color scheme and checker setting codability
+- object frame identity, duplicate ID, active-object cap, and trail-cap validation
+- object meter identity by object ID
+- object visual settings defaults and validation
 - center-locked camera presets
 - scene validation
 
@@ -179,11 +200,14 @@ OrbitalViewMetalDrawPipeline
 OrbitalViewOffscreenFrame
 OrbitalViewSpeakerDrawInputs
 OrbitalViewSpeakerStaticDrawInput
+OrbitalViewObjectDrawInputs
+OrbitalViewObjectDrawInput
+OrbitalViewObjectStaticDrawInput
 ```
 
 ### Status
 
-Initial seam, minimal smoke-test draw path, static draw-input invariants, and meter visual setting plumbing implemented. Full production drawing, shell rendering, materials, animation, hit testing, and broad SwiftUI controls remain deferred.
+Initial seam, minimal smoke-test draw path, static draw-input invariants, meter visual setting plumbing, object overlay draw inputs, and retained Metal buffer reuse implemented. Full production drawing, shell rendering, materials, live object smoothing, hit testing, and broad SwiftUI controls remain deferred.
 
 ### Tests Required
 
@@ -199,6 +223,12 @@ Initial seam, minimal smoke-test draw path, static draw-input invariants, and me
 - meter-only updates leave static speaker draw inputs unchanged
 - camera-only updates leave static speaker draw inputs unchanged
 - draw inputs preserve physical speaker ID/channel order and stable dimensions
+- object frame updates increment object frame revision without touching speaker structural revision
+- object meter updates increment object meter revision without rebuilding speaker or object static geometry
+- object disappearance removes active object draw input and trail ownership
+- trails and glow trails share the same capped object draw-input stream
+- repeated object rendering reuses retained Metal buffer capacity
+- 30 speakers plus 128 active objects with capped trails stay inside the renderer input caps
 
 ## Module: OrbitalViewSwiftUI
 
@@ -214,7 +244,7 @@ Current wrapper skeleton:
 OrbitalView
 ```
 
-`OrbitalView` accepts a scene, optional meter frame, camera binding, selection binding, and event callback. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with display gain, style, color scheme, and checker controls.
+`OrbitalView` accepts a scene, optional speaker meter frame, optional object frame set, optional object meter frame, object visual settings, camera binding, selection binding, and event callback. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with display gain, style, color scheme, and checker controls.
 
 ### Non-Responsibilities
 
@@ -228,6 +258,7 @@ The wrapper must not:
 - import DomeLab code
 - embed a WebView as the main renderer path
 - implement production controls or gestures before an explicit task
+- own per-frame object animation state in SwiftUI
 
 ### Dependencies
 
@@ -262,6 +293,7 @@ Wrapper skeleton plus optional VU settings tray implemented. Toolbar controls, g
 - existing initializer remains tray-free
 - settings-bound initializer opts into the tray
 - coordinator applies settings-only updates without reloading scene state
+- coordinator forwards object frame, object meter, and object visual settings snapshots without reloading scene state
 
 ## Module: Future Downstream Adapters
 

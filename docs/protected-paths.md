@@ -71,6 +71,8 @@ MetalKit / MTKView renderer with SwiftUI wrapper
 
 - Meter updates must not rebuild static geometry every frame.
 - Meter visual setting updates must not rebuild static geometry.
+- Object meter, object trail, and object visual setting updates must not rebuild static speaker geometry.
+- Object draw buffers should be retained and reused when capacity is sufficient.
 - Speaker geometry must not resize for VU behavior.
 - Camera target must remain center-locked in monitor mode.
 - Rendering must preserve physical speaker channel identity.

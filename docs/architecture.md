@@ -26,7 +26,7 @@ OrbitalViewWavefield
   Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
-`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` are implemented. `OrbitalViewRender` now has a minimal Metal draw path verified by an offscreen smoke test, invariant tests for static draw inputs, and display-only VU visual settings. The default VU style is checker pulse/ring/diagonal wave with Kimi Purple colors. `OrbitalViewSwiftUI` exposes an optional collapsible VU settings tray. Full production facet animation, broad SwiftUI controls/gestures, and downstream app source integration remain deferred.
+`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` are implemented. `OrbitalViewRender` now has a minimal Metal draw path verified by an offscreen smoke test, invariant tests for static draw inputs, display-only VU visual settings, Wavefield-style source-object draw inputs, and retained buffer reuse. The default VU style is checker pulse/ring/diagonal wave with Kimi Purple colors. `OrbitalViewSwiftUI` exposes an optional collapsible VU settings tray and forwards object overlay state. Full production facet animation, broad SwiftUI controls/gestures, live object smoothing, and downstream app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -37,7 +37,8 @@ OrbitalViewCore tests and validates core scene contracts.
 OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
 OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
 OrbitalViewRender stores scene, meter, meter visual settings, camera, and selection state behind a MetalKit renderer seam and can render fixed-size speaker quads for an offscreen smoke test. Internal draw-input snapshots separate static speaker geometry from meter color inputs for invariant testing.
-OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge and can opt into a bottom collapsible VU settings tray.
+OrbitalViewRender also stores active object frames, object meter frames, object visual settings, and separate object revisions for source-object overlays. Object cores and capped trail samples render through the same minimal quad baseline while retaining Metal buffers across repeated draws.
+OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge, can opt into a bottom collapsible VU settings tray, and forwards object overlay inputs without owning object animation state.
 ```
 
 Future runtime shape:
@@ -105,6 +106,9 @@ Wavefield and Orbisonic use monitor mode. Splat may enable edit modes later.
 - meter frames by channel
 - meter visual settings
 - meter color schemes and checker visual controls
+- source-object frames by Wavefield object ID
+- object meter frames by Wavefield object ID
+- object visual settings for geometry, motion, trails, glow trails, and render/effect bounds
 - camera state
 - selection and events
 
@@ -143,6 +147,9 @@ Future renderer constraints:
 
 - Do not rebuild shell or speaker geometry for every meter update.
 - Do not rebuild shell or speaker geometry for display-only meter visual setting updates.
+- Do not rebuild speaker or object static geometry for object meter-only or trail-only updates.
+- Reuse Metal buffers across repeated draws when capacity is sufficient.
+- Keep object animation out of SwiftUI per-frame state; SwiftUI forwards snapshots and settings only.
 - Smooth visual envelopes on display refresh, not in audio callbacks.
 - Use instancing for repeated speakers, nodes, and struts when practical.
 - Keep meter updates separate from structural scene updates.

@@ -38,6 +38,12 @@ Sources/OrbitalViewCore/
 Tests/OrbitalViewCoreTests/
 ```
 
+Key object-overlay file:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewObjects.swift
+```
+
 Related docs:
 
 ```text
@@ -134,7 +140,7 @@ Decision record:
 docs/decisions/0002-renderer-backend.md
 ```
 
-The current renderer stores scene, meter, meter visual settings, camera, and selection state separately, exposes an `MTKViewDelegate` path, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. Full production visuals, animation, hit testing, and broad SwiftUI controls are deferred.
+The current renderer stores scene, speaker meter, speaker meter visual settings, object frames, object meters, object visual settings, camera, and selection state separately, exposes an `MTKViewDelegate` path, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. It retains speaker/object position and color buffers across repeated draws when capacity is sufficient. Full production visuals, live object smoothing, hit testing, and broad SwiftUI controls are deferred.
 
 ### OrbitalViewSwiftUI Wrapper Skeleton
 
@@ -151,7 +157,7 @@ Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, optional bottom VU settings tray, and coordinator tests. SwiftUI gestures, toolbar controls, and inspector UI are deferred.
+The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, optional bottom VU settings tray, object snapshot/settings forwarding, and coordinator tests. SwiftUI gestures, toolbar controls, and inspector UI are deferred.
 
 ### VU Meter Visual Settings And Tray
 
@@ -173,6 +179,28 @@ Tests/OrbitalViewSwiftUITests/
 ```
 
 The current implementation maps each scene speaker to `SpeakerMeterFrame.levelsByChannel` by physical channel, applies the default checker pulse/ring/diagonal wave color transform to every speaker, keeps Kimi Purple as the default color scheme, and preserves stable static speaker geometry. The SwiftUI tray is opt-in and collapsed by default with controls for visual gain, style, color scheme, ring/front density, band softness, tile detail, idle tint, memory, band velocity, and band width.
+
+### Wavefield Object Overlay
+
+Purpose:
+
+```text
+Accept Wavefield source-object snapshots, object VU levels, object visual tuning settings, and bounded trails without changing speaker VU behavior.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewObjects.swift
+Sources/OrbitalViewRender/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewRenderTests/
+Tests/OrbitalViewSwiftUITests/
+mockups/orbital-view-viewport/index.html
+```
+
+Object centers use canonical unit-sphere directions keyed by Wavefield `objectId` in `1...128`. The render/effect bounds default to a cube from `-5...+5` on x, y, and z. Trails are off by default, capped by both frame and settings contracts, and glow trails share the same capped draw-input stream. Renderer state keeps object frame, object meter, and object visual setting revisions separate from speaker scene and speaker VU revisions.
 
 ### Renderer Test Harness Plan
 
@@ -239,6 +267,9 @@ renderer seam state separation and events -> Tests/OrbitalViewRenderTests/Orbita
 offscreen renderer smoke output -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 renderer static draw-input invariants -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 renderer 30-channel VU mapping, checker color-scheme settings, and visual settings revisions -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+object frame/meter/settings validation -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+object renderer revisions, disappearance, trail caps, and retained buffer reuse -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+SwiftUI object snapshot/settings forwarding -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 SwiftUI VU settings tray opt-in and settings-only coordinator updates -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 renderer test harness plan -> docs/renderer-test-harness.md
@@ -248,4 +279,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-20 Center-bloom cube VU mockup
+2026-05-20 Wavefield object overlay performance slice

@@ -98,6 +98,109 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertEqual(renderer.renderState.meterVisualSettingsRevision, 1)
     }
 
+    func testObjectFrameAndMeterUpdatesStaySeparateFromSpeakerGeometry() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThreeSpeakerScene())
+        let baselineSpeakers = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let objectFrame = try OrbitalViewObjectFrameSet(
+            timestamp: 1,
+            activeObjects: [
+                makeObject(objectID: 7, direction: (1, 0, 0), width: 0.25)
+            ]
+        )
+
+        renderer.updateObjects(objectFrame)
+        let objectInputs = OrbitalViewMetalDrawPipeline.makeObjectDrawInputs(from: renderer.renderState)
+        let speakersAfterObjects = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(baselineSpeakers.staticGeometry, speakersAfterObjects.staticGeometry)
+        XCTAssertEqual(objectInputs.staticObjects.map(\.objectID), [7])
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(renderer.renderState.objectFrameRevision, 1)
+        XCTAssertEqual(renderer.renderState.objectMeterRevision, 0)
+
+        renderer.updateObjectMeters(
+            try ObjectMeterFrame(
+                timestamp: 1.2,
+                levelsByObjectID: [
+                    7: ObjectMeterLevel(rms: 0.2, peak: 0.85, clip: false)
+                ]
+            )
+        )
+        let meteredObjectInputs = OrbitalViewMetalDrawPipeline.makeObjectDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(objectInputs.staticObjects, meteredObjectInputs.staticObjects)
+        XCTAssertNotEqual(objectInputs.colors, meteredObjectInputs.colors)
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(renderer.renderState.meterRevision, 0)
+        XCTAssertEqual(renderer.renderState.objectFrameRevision, 1)
+        XCTAssertEqual(renderer.renderState.objectMeterRevision, 1)
+    }
+
+    func testObjectDisappearRemovesObjectDrawInputAndTrailOwnership() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.updateObjectVisualSettings(
+            try ObjectVisualSettings(trailsEnabled: true, maxTrailPointsPerObject: 3)
+        )
+        renderer.updateObjects(
+            try OrbitalViewObjectFrameSet(
+                timestamp: 1,
+                activeObjects: [
+                    makeObject(
+                        objectID: 4,
+                        direction: (1, 0, 0),
+                        trailDirections: [(0, 1, 0), (0, 0, 1), (-1, 0, 0)]
+                    )
+                ],
+                maxTrailPointsPerObject: 3
+            )
+        )
+
+        let activeInputs = OrbitalViewMetalDrawPipeline.makeObjectDrawInputs(from: renderer.renderState)
+        XCTAssertEqual(activeInputs.staticObjects.map(\.objectID), [4])
+        XCTAssertEqual(activeInputs.objects.count, 4)
+        XCTAssertEqual(activeInputs.objects.filter { $0.isTrailSample }.count, 3)
+
+        renderer.updateObjects(try OrbitalViewObjectFrameSet(timestamp: 2, activeObjects: []))
+        let emptyInputs = OrbitalViewMetalDrawPipeline.makeObjectDrawInputs(from: renderer.renderState)
+
+        XCTAssertTrue(emptyInputs.objects.isEmpty)
+        XCTAssertTrue(emptyInputs.staticObjects.isEmpty)
+        XCTAssertEqual(renderer.renderState.objectFrameRevision, 2)
+    }
+
+    func testTrailsAndGlowTrailsShareCappedObjectDrawInputs() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.updateObjectVisualSettings(
+            try ObjectVisualSettings(
+                trailsEnabled: true,
+                maxTrailPointsPerObject: 2,
+                glowTrailsEnabled: true,
+                glowTrailWidth: 0.12
+            )
+        )
+        renderer.updateObjects(
+            try OrbitalViewObjectFrameSet(
+                timestamp: 1,
+                activeObjects: [
+                    makeObject(
+                        objectID: 9,
+                        direction: (1, 0, 0),
+                        trailDirections: [(0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0)]
+                    )
+                ],
+                maxTrailPointsPerObject: 4
+            )
+        )
+
+        let inputs = OrbitalViewMetalDrawPipeline.makeObjectDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(inputs.staticObjects.map(\.objectID), [9])
+        XCTAssertEqual(inputs.objects.count, 3)
+        XCTAssertEqual(inputs.objects.filter { $0.isTrailSample }.count, 2)
+        XCTAssertTrue(inputs.objects.filter { $0.isTrailSample }.allSatisfy { $0.quadRadius <= 0.12 })
+    }
+
     func testMeterVisualStyleChangesVisualRevisionWithoutChangingRawMeterState() throws {
         let renderer = OrbitalViewMetalRenderer()
         renderer.loadScene(try makeThreeSpeakerScene())
@@ -187,6 +290,32 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertTrue(frame.containsNonClearPixel)
         XCTAssertEqual(renderer.renderState.structuralRevision, 1)
         XCTAssertEqual(renderer.renderState.meterRevision, 1)
+    }
+
+    func testRepeatedObjectRenderReusesMetalBufferCapacity() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("Metal device unavailable; skipping retained buffer reuse check.")
+        }
+
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThirtySpeakerScene())
+        renderer.updateObjectVisualSettings(
+            try ObjectVisualSettings(trailsEnabled: true, maxTrailPointsPerObject: 3, glowTrailsEnabled: true)
+        )
+        renderer.updateObjects(
+            try OrbitalViewObjectFrameSet(
+                timestamp: 1,
+                activeObjects: makeObjectSet(count: 128, trailCount: 3),
+                maxTrailPointsPerObject: 3
+            )
+        )
+
+        _ = try renderer.renderOffscreen(device: device, width: 96, height: 96)
+        let firstAllocationCount = try renderer.debugBufferAllocationCount(device: device)
+        _ = try renderer.renderOffscreen(device: device, width: 96, height: 96)
+        let secondAllocationCount = try renderer.debugBufferAllocationCount(device: device)
+
+        XCTAssertEqual(firstAllocationCount, secondAllocationCount)
     }
 
     func testMeterOnlyUpdatesDoNotChangeStaticSpeakerDrawInputs() throws {
@@ -319,5 +448,40 @@ final class OrbitalViewRenderTests: XCTestCase {
             ),
             shape: .sphere(radiusM: 0.03)
         )
+    }
+
+    private func makeObject(
+        objectID: Int,
+        direction: (Double, Double, Double),
+        width: Float = 0,
+        trailDirections: [(Double, Double, Double)] = []
+    ) throws -> OrbitalViewObjectFrame {
+        try OrbitalViewObjectFrame(
+            objectID: objectID,
+            label: "Object \(objectID)",
+            pose: UnitSphereDirection.normalized(x: direction.0, y: direction.1, z: direction.2),
+            width: width,
+            trail: trailDirections.map {
+                try UnitSphereDirection.normalized(x: $0.0, y: $0.1, z: $0.2)
+            }
+        )
+    }
+
+    private func makeObjectSet(count: Int, trailCount: Int) throws -> [OrbitalViewObjectFrame] {
+        try (1...count).map { objectID in
+            let trail = (0..<trailCount).map { index -> (Double, Double, Double) in
+                (
+                    Double((objectID + index) % 11 + 1),
+                    Double((objectID + index) % 7 + 1),
+                    Double((objectID + index) % 5 + 1)
+                )
+            }
+            return try makeObject(
+                objectID: objectID,
+                direction: (Double(objectID % 13 + 1), Double(objectID % 9 + 1), Double(objectID % 5 + 1)),
+                width: Float(objectID % 4) * 0.1,
+                trailDirections: trail
+            )
+        }
     }
 }

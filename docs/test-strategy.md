@@ -17,6 +17,9 @@ Once implementation starts, the test suite should prove:
 - local Wavefield JSON adapter rejects invalid layout shape explicitly
 - local Wavefield meter adapter rejects duplicate channels and invalid levels explicitly
 - meter visual settings validate display gain, style, color scheme, and checker controls without touching audio behavior
+- source-object frame sets validate Wavefield object ID identity, unit-sphere poses, active-object caps, and trail caps explicitly
+- object meter frames preserve levels by Wavefield object ID
+- object visual settings default to conservative trails-off behavior and `-5...+5` bounds
 
 ## Unit Tests
 
@@ -27,6 +30,9 @@ Use for:
 - speaker ID/channel/shape validation
 - meter frame identity
 - meter visual settings validation plus style/color-scheme codability
+- object frame-set identity, duplicate object ID rejection, active-object caps, and trail-cap validation
+- object meter identity by object ID
+- object visual settings defaults and finite range validation
 - camera preset state
 - scene builder behavior
 
@@ -67,10 +73,17 @@ Current renderer seam tests cover:
 - 30 channel-keyed meter levels map to scene speakers by physical channel
 - checker color-scheme/settings changes affect every speaker color without changing geometry
 - meter visual gain/style updates affect color state without changing static geometry or raw meter revision
+- object frame, object meter, and object visual setting updates use separate renderer revisions
+- object meter-only changes do not rebuild static speaker or static object geometry
+- object disappearance removes object draw input and trail ownership
+- trails and glow trails share capped object draw inputs
+- repeated object rendering reuses retained Metal buffer capacity
+- 30 speakers plus 128 active objects with capped trails stay inside the renderer input model
 
 Future renderer drawing checks should cover:
 
 - center-lock survives resize and camera preset changes
+- live object smoothing behavior for replay interpolation, visual lookbehind, and damped chase
 - selection emits speaker/channel identity without mutating playback
 - renderer target compiles without adding audio, playback, routing, MIDI, OSC, or downstream app dependencies
 - meter updates can be tested separately from structural scene updates
@@ -84,6 +97,7 @@ Current wrapper skeleton tests cover:
 - identical configuration updates do not repeatedly increment structural renderer revision
 - changed meter frames update meter revision without rebuilding scene state
 - changed meter visual settings update only meter visual settings state
+- object frame, object meter, and object visual settings snapshots forward to the renderer without reloading scene state
 - the settings-bound initializer opts into the collapsed VU settings tray with color-scheme/settings controls
 - camera and selection configuration emits renderer events
 
@@ -102,6 +116,8 @@ Disposable browser mockups should stay separate from production Swift code. For 
 - Fey geodesic generator produces the expected 3V full-sphere counts: 92 nodes, 270 edges, and 3 length groups
 - mockup text does not claim real audio, real meters, or production renderer behavior
 - static browser review confirms the DomeLab-style left control panel headings, no Projection picker, always-axonometric projection, full-surface Color palettes, Purple/Prism defaults, remapped speaker size/fog sliders, Speaker numbers switch defaulted off, Hidden Lines switch defaulted off, consistent shell/speaker fog behavior, prism face clipping, PNG export, and inspector are usable
+- object control groups appear below View Detail in the same left rail style: Object Geometry, Object Motion, Object Meter Skin, Trails, Glow Trails, and Bounds
+- object controls expose default trails off, glow trails off, conservative max trail points, and fixed bounds value `5` for the `-5...+5` cube
 
 For `mockups/sonicsphere-cube-vu-single-screen/`, verify:
 

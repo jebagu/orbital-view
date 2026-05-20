@@ -16,6 +16,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(view.scene, scene)
         XCTAssertNil(view.meters)
+        XCTAssertNil(view.objectFrames)
+        XCTAssertNil(view.objectMeters)
+        XCTAssertEqual(view.objectVisualSettings, .default)
         XCTAssertFalse(view.showsMeterSettingsTray)
     }
 
@@ -49,6 +52,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             scene: scene,
             meters: firstFrame,
             meterVisualSettings: .default,
+            objectFrames: nil,
+            objectMeters: nil,
+            objectVisualSettings: .default,
             camera: camera,
             selection: nil
         )
@@ -72,6 +78,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: secondFrame,
                 meterVisualSettings: .default,
+                objectFrames: nil,
+                objectMeters: nil,
+                objectVisualSettings: .default,
                 camera: camera,
                 selection: nil
             )
@@ -93,6 +102,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: initialSettings,
+                objectFrames: nil,
+                objectMeters: nil,
+                objectVisualSettings: .default,
                 camera: camera,
                 selection: nil
             )
@@ -106,6 +118,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: boostedSettings,
+                objectFrames: nil,
+                objectMeters: nil,
+                objectVisualSettings: .default,
                 camera: camera,
                 selection: nil
             )
@@ -116,6 +131,69 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
         XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings, boostedSettings)
         XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettingsRevision, 1)
+    }
+
+    func testCoordinatorForwardsObjectStateWithoutReloadingScene() throws {
+        let coordinator = OrbitalViewMetalView.Coordinator(renderer: OrbitalViewMetalRenderer())
+        let scene = try makeScene()
+        let camera = try OrbitalViewCameraState.preset(.isometric)
+        let objectFrames = try OrbitalViewObjectFrameSet(
+            timestamp: 1,
+            activeObjects: [
+                OrbitalViewObjectFrame(
+                    objectID: 3,
+                    label: "Object 3",
+                    pose: UnitSphereDirection(x: 1, y: 0, z: 0)
+                )
+            ]
+        )
+        let objectMeters = try ObjectMeterFrame(
+            timestamp: 1,
+            levelsByObjectID: [
+                3: ObjectMeterLevel(rms: 0.2, peak: 0.8, clip: false)
+            ]
+        )
+        let objectSettings = try ObjectVisualSettings(trailsEnabled: true, maxTrailPointsPerObject: 8)
+
+        _ = coordinator.apply(
+            OrbitalViewRenderConfiguration(
+                scene: scene,
+                meters: nil,
+                meterVisualSettings: .default,
+                objectFrames: objectFrames,
+                objectMeters: objectMeters,
+                objectVisualSettings: objectSettings,
+                camera: camera,
+                selection: nil
+            )
+        )
+
+        XCTAssertEqual(coordinator.renderer.renderState.scene, scene)
+        XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.objectFrames, objectFrames)
+        XCTAssertEqual(coordinator.renderer.renderState.objectMeters, objectMeters)
+        XCTAssertEqual(coordinator.renderer.renderState.objectVisualSettings, objectSettings)
+        XCTAssertEqual(coordinator.renderer.renderState.objectFrameRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.objectMeterRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.objectVisualSettingsRevision, 1)
+
+        _ = coordinator.apply(
+            OrbitalViewRenderConfiguration(
+                scene: scene,
+                meters: nil,
+                meterVisualSettings: .default,
+                objectFrames: objectFrames,
+                objectMeters: objectMeters,
+                objectVisualSettings: objectSettings,
+                camera: camera,
+                selection: nil
+            )
+        )
+
+        XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.objectFrameRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.objectMeterRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.objectVisualSettingsRevision, 1)
     }
 
     func testCoordinatorEmitsCameraAndSelectionEvents() throws {
@@ -129,6 +207,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: .default,
+                objectFrames: nil,
+                objectMeters: nil,
+                objectVisualSettings: .default,
                 camera: camera,
                 selection: selection
             )
@@ -140,6 +221,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: .default,
+                objectFrames: nil,
+                objectMeters: nil,
+                objectVisualSettings: .default,
                 camera: camera,
                 selection: selection
             )

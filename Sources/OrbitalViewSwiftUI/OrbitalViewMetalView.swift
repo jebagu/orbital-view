@@ -7,6 +7,9 @@ struct OrbitalViewRenderConfiguration: Equatable {
     let scene: OrbitalViewSceneSpec
     let meters: SpeakerMeterFrame?
     let meterVisualSettings: SpeakerMeterVisualSettings
+    let objectFrames: OrbitalViewObjectFrameSet?
+    let objectMeters: ObjectMeterFrame?
+    let objectVisualSettings: ObjectVisualSettings
     let camera: OrbitalViewCameraState
     let selection: OrbitalViewSelection?
 }
@@ -55,6 +58,18 @@ struct OrbitalViewMetalView: NSViewRepresentable {
 
             if renderer.renderState.meterVisualSettings != configuration.meterVisualSettings {
                 renderer.updateMeterVisualSettings(configuration.meterVisualSettings)
+            }
+
+            if appliedConfiguration?.objectFrames != configuration.objectFrames, let objectFrames = configuration.objectFrames {
+                renderer.updateObjects(objectFrames)
+            }
+
+            if appliedConfiguration?.objectMeters != configuration.objectMeters, let objectMeters = configuration.objectMeters {
+                renderer.updateObjectMeters(objectMeters)
+            }
+
+            if renderer.renderState.objectVisualSettings != configuration.objectVisualSettings {
+                renderer.updateObjectVisualSettings(configuration.objectVisualSettings)
             }
 
             if appliedConfiguration?.camera != configuration.camera {
