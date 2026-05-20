@@ -14,9 +14,41 @@ Slices 000-011 are complete; bootstrap complete and active task is awaiting expl
 
 ## Summary
 
-Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and settings updates. The project also has a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and settings updates. The project also has a renderer test harness plan, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
+
+The pinned local static server URL for the active single-screen cube VU mockup is:
+
+```text
+http://127.0.0.1:8765/OrbitalViewKit/
+```
+
+### Update: 2026-05-20 Cube Scalar VU Simplification
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Simplified the single-screen cube VU mockup so Music mode behaves like a normal VU meter.
+- Collapsed Web Audio RMS, peak, and bass into one `vuScalar`.
+- Changed cube rendering in Music mode to center-bloom scalar face fill instead of beat, transient, or ripple drops.
+- Converted the four visible cube cards into Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom variants.
+- Made `vuScalar` equal the RMS percent exactly, so the Cube VU readout and the RMS readout match.
+- Reduced mockup canvas work by removing mini-cube redraws, lowering default face resolution to 9 x 9, capping canvas DPR, and throttling canvas redraws to 24 fps.
+- Added cached cube tile geometry, cached palette/RGB conversion, smaller analyser FFT, fewer spectrum bars, and down-sampled waveform drawing to reduce main-thread stalls.
+- Reduced the visible Tune tab to audio source, Cube VU scalar, surface, and palette controls.
+- Kept the old artificial pulse/ripple path only in Impulse Test mode for renderer stress testing.
+
+Protected paths touched:
+
+```text
+none
+```
 
 ## Current Work Package
 
@@ -64,6 +96,10 @@ codex/vu-meter-plumbing-tray branch
 - Added renderer meter visual settings state and revision separation.
 - Added 30-channel renderer draw-input mapping by physical speaker channel.
 - Added an opt-in SwiftUI collapsible VU settings tray for Visual Gain, Style, Color Scheme, and checker controls.
+- Imported `mockups/sonicsphere-cube-vu-single-screen/` as a no-scroll single-screen browser mockup and exposed it at `/OrbitalViewKit/` for the pinned local server.
+- Added browser-only real music analysis to the cube VU mockup using tab capture for YouTube, local audio file playback, and Web Audio RMS/peak/bass-driven ripple behavior.
+- Reworked the cube VU mockup layout with a separate normal music meter and tabbed Tune/Advanced controls for the active monitor.
+- Added an exclusive VU drive toggle so Music and Impulse Test modes cannot run at the same time.
 
 ## In Progress
 
@@ -82,6 +118,363 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-20 Exclusive Music Or Impulse Test Drive
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a VU drive switch with Music and Impulse Test modes.
+- Moved artificial impulse controls from Tune into a dedicated Impulse tab.
+- Made Music mode disable artificial Drop/Repeat controls and use only tab/local-file Web Audio analysis.
+- Made Impulse Test mode stop active music capture/playback, decay audio meters, clear existing music-driven drops, and enable only artificial Drop/Repeat controls.
+- Removed the startup artificial impulse so the default Music mode is not mixed with fake drops.
+
+Files changed:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/sonicsphere-cube-vu-single-screen/index.html
+mockups/sonicsphere-cube-vu-single-screen/notes.md
+mockups/sonicsphere-cube-vu-single-screen/sonicsphere-cube-vu-design.md
+```
+
+Tests added or updated:
+
+```text
+docs/test-strategy.md
+node exclusive drive mode structure assertions
+```
+
+Commands run:
+
+```text
+node inline JavaScript parse for both mockups
+node exclusive drive mode structure assertions
+curl -I http://127.0.0.1:8765/OrbitalViewKit/
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/sonicsphere-cube-vu-single-screen/notes.md
+mockups/sonicsphere-cube-vu-single-screen/sonicsphere-cube-vu-design.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed the remaining path where manual artificial impulses could be layered over live music capture
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The browser mockup now has exactly one active VU drive source: Music or Impulse Test.
+```
+
+Risks:
+
+```text
+Tab/local audio capture remains browser-permission dependent. The exclusive mode behavior was verified by static assertions; live capture permission UI was not re-run for this small control-flow change.
+```
+
+Next recommended task:
+
+```text
+Use Music mode for real track tuning and Impulse Test mode only for repeatable visual calibration.
+```
+
+### Update: 2026-05-20 Wide Music Meter Layout For Browser Mockup
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Reworked the single-screen cube VU mockup for the active Chrome monitor viewport.
+- Added a separate normal Music Meter panel above the cube previews with RMS/Peak/Bass bars, spectrum bars, waveform, and dB readout.
+- Moved custom palette JSON and implementation export controls into an Advanced tab.
+- Kept the Tune tab focused on live audio source, palette, ripple, hot cube, and surface controls.
+- Reduced the fixed artboard from 1512 x 982 to 1512 x 850 CSS pixels so browser chrome does not force the whole workbench into a tiny scale.
+- Verified live YouTube tab capture was actively driving the normal meter and the cube VU in Chrome.
+
+Files changed:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/sonicsphere-cube-vu-single-screen/index.html
+mockups/sonicsphere-cube-vu-single-screen/notes.md
+mockups/sonicsphere-cube-vu-single-screen/sonicsphere-cube-vu-design.md
+```
+
+Tests added or updated:
+
+```text
+docs/test-strategy.md
+node layout/audio mockup structure assertions
+```
+
+Commands run:
+
+```text
+node inline JavaScript parse for both mockups
+node layout/audio mockup structure assertions
+curl -I http://127.0.0.1:8765/OrbitalViewKit/
+Chrome visual inspection through Computer Use for http://127.0.0.1:8765/OrbitalViewKit/ with active YouTube tab capture
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/sonicsphere-cube-vu-single-screen/notes.md
+mockups/sonicsphere-cube-vu-single-screen/sonicsphere-cube-vu-design.md
+```
+
+Bugs found or fixed:
+
+```text
+fixed cramped primary control layout by tabbing advanced controls and adding a dedicated meter preview area
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The live browser mockup is easier to read on the current monitor, with a normal music meter for captured YouTube/local-file audio and less crowded tuning controls.
+```
+
+Risks:
+
+```text
+Tab audio capture still depends on browser permission and selecting a source with audio sharing enabled. The layout was visually checked in the active Chrome monitor window, but automated screenshot diffing is not part of this static mockup.
+```
+
+Next recommended task:
+
+```text
+Use the improved mockup to choose meter envelope defaults before opening a production renderer animation slice.
+```
+
+### Update: 2026-05-20 Real Music VU Browser Mockup
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added an Audio Source control group to the single-screen cube VU mockup.
+- Added browser tab-audio capture for YouTube or other playing tabs using `getDisplayMedia`.
+- Added local audio file playback and analysis for browser-supported audio files through the page's `<audio>` element.
+- Added Web Audio RMS, peak, and bass analysis for live level readouts; the cube `vuScalar` now follows RMS exactly.
+- Simplified Music mode so cube faces bloom from the `vuScalar`; music no longer creates beat/transient/ripple drops.
+- Preserved manual `Drop one` and fake repeat impulse behavior as a fallback, later moved behind the exclusive Impulse Test mode.
+- Kept the implementation limited to the disposable browser mockup and docs; no Swift package, renderer, audio, routing, or downstream app contracts changed.
+
+Files changed:
+
+```text
+README.md
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/README.md
+mockups/sonicsphere-cube-vu-single-screen/index.html
+mockups/sonicsphere-cube-vu-single-screen/notes.md
+```
+
+Tests added or updated:
+
+```text
+docs/test-strategy.md
+node audio mockup structure assertions
+```
+
+Commands run:
+
+```text
+node inline JavaScript parse for both mockups
+node audio mockup structure assertions
+curl -I http://127.0.0.1:8765/OrbitalViewKit/
+Chrome visual inspection through Computer Use for http://127.0.0.1:8765/OrbitalViewKit/
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Documentation updated:
+
+```text
+README.md
+docs/status.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+mockups/README.md
+mockups/sonicsphere-cube-vu-single-screen/notes.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The cube VU mockup now supports real browser music analysis via YouTube/tab capture or local audio file playback while preserving its fake/manual impulse simulator fallback behind Impulse Test mode.
+```
+
+Risks:
+
+- Tab audio capture depends on browser support, user permission, and selecting a source with audio sharing enabled.
+- Actual capture/file playback permission flows are browser-mediated and were not fully automated by the test harness; static parser/structure checks, server response, and visual layout inspection passed.
+
+Next recommended task:
+
+```text
+Open a production renderer animation slice if the real-music behavior should be translated from the browser mockup into Metal meter envelopes.
+```
+
+### Update: 2026-05-20 Sonicsphere Cube VU Single-Screen Mockup
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Imported the supplied `sonicsphere-cube-vu-single-screen.zip` as a disposable static mockup.
+- Added `notes.md` beside the imported design note so the mockup follows the project mockup convention.
+- Added a root `OrbitalViewKit` symlink entrypoint for the stable local server path.
+- Pinned the local web URL to `http://127.0.0.1:8765/OrbitalViewKit/`.
+- Rebalanced the mockup to an equal 50/50 model/control split and scaled up the control rail to fill its half.
+- Documented the new mockup in the project docs and mockup index.
+
+Files changed:
+
+```text
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+mockups/README.md
+mockups/sonicsphere-cube-vu-single-screen/
+OrbitalViewKit
+```
+
+Tests added or updated:
+
+```text
+docs/test-strategy.md
+```
+
+Commands run:
+
+```text
+node inline JavaScript parse for both mockups
+browser viewport measurement for http://127.0.0.1:8765/OrbitalViewKit/
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Documentation updated:
+
+```text
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+mockups/README.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The cube VU mockup is locally hosted at the permanent project URL and verified as a no-scroll one-page layout with equal model/control columns.
+```
+
+Risks:
+
+- The mockup uses fake impulse/meter behavior and should not be treated as production renderer code.
+
+Next recommended task:
+
+```text
+Decide which center-bloom cube VU variant should inform the production Metal checker/facet animation task.
+```
 
 ### Update: 2026-05-19 VU Meter Plumbing And Settings Tray
 

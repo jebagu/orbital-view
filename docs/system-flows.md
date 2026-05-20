@@ -104,6 +104,25 @@ flowchart LR
 
 The current drawing harness proves non-empty offscreen output without opening a host app or using live audio.
 
+## Current Browser Mockup Music Flow
+
+```mermaid
+flowchart LR
+  YouTube["YouTube or other tab audio"] --> Capture["Browser tab capture"]
+  LocalFile["Local MP3/M4A/WAV"] --> AudioElement["HTML audio element"]
+  Capture --> WebAudio["Web Audio analyser"]
+  AudioElement --> WebAudio
+  Mode["Exclusive VU drive mode"] --> WebAudio
+  Mode --> Impulse["Impulse Test drops"]
+  WebAudio --> Metrics["RMS / peak / bass"]
+  Metrics --> Scalar["VU scalar = RMS"]
+  Metrics --> Meter["Normal Music Meter"]
+  Scalar --> Mockup["Cube center-bloom VU animation"]
+  Impulse --> Mockup
+```
+
+This flow is limited to the disposable browser mockup. Music mode lets the user hear music while the page analyzes browser audio, sets the cube VU scalar equal to the RMS percent, and blooms cube faces outward from that scalar. Peak and bass remain visible diagnostics. Impulse Test mode stops browser audio capture/playback and uses only artificial drops. It does not change `OrbitalViewCore`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, host app routing, or production meter ownership.
+
 ## Boundary Flow
 
 ```mermaid

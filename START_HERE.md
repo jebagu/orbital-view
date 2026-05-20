@@ -31,10 +31,17 @@ The current core already establishes pure Swift contracts and tests for:
 
 The current Wavefield bridge already maps the Fey 30 speaker-layout JSON shape and Wavefield-style channel/rms/peak meter records into `OrbitalViewCore`.
 
-The current mockup previews the intended center-locked spherical monitor viewport at:
+The current browser mockups are:
 
 ```text
 mockups/orbital-view-viewport/index.html
+mockups/sonicsphere-cube-vu-single-screen/index.html
+```
+
+The pinned local server URL for the active single-screen cube VU mockup is:
+
+```text
+http://127.0.0.1:8765/OrbitalViewKit/
 ```
 
 The root launcher opens that live mockup file:

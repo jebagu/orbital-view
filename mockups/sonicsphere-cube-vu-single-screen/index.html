@@ -1,0 +1,1871 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sonicsphere Cube Scalar VU · MacBook Fit</title>
+  <style>
+    :root {
+      --bg0: #071014;
+      --bg1: #02070A;
+      --panel: #0D181D;
+      --card: #0B1418;
+      --line: rgba(255,255,255,0.12);
+      --text: #EFFCFB;
+      --muted: #8ca3a0;
+      --accent: #5EEAD4;
+      --accent2: #AA88FF;
+      --success: #18CE0F;
+      --warning: #FACC15;
+      --danger: #FB7185;
+      --shadow: rgba(0,0,0,0.58);
+      --vu-bg: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 82% -8%, color-mix(in srgb, var(--accent2) 22%, transparent), transparent 44%),
+        radial-gradient(circle at 8% 4%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 38%),
+        linear-gradient(145deg, var(--bg0), var(--bg1));
+    }
+
+    button, select, input, textarea { font: inherit; }
+
+    .viewport-shell {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    .fit-stage {
+      /* Wide monitor target: keep the artboard shallow enough that Chrome UI does not force tiny scaling. */
+      --fit-scale: 1;
+      --stage-x: 0px;
+      --stage-y: 0px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1512px;
+      height: 850px;
+      overflow: hidden;
+      transform: translate(var(--stage-x), var(--stage-y)) scale(var(--fit-scale));
+      transform-origin: top left;
+      will-change: transform;
+    }
+
+    .app {
+      /* Fixed wide-monitor stage; left side is metering plus cubes, right side is tabbed controls. */
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 1fr);
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .main {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 218px minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .meter-panel {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .meter-head {
+      min-width: 0;
+      padding: 8px 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .meter-head h2 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .meter-head .meter-source {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 780;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meter-canvas-shell {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      margin: 7px 8px 8px;
+      border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+      border-radius: 11px;
+      overflow: hidden;
+      background: rgba(0,0,0,0.22);
+    }
+
+    .meter-canvas-shell canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .four-up {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--panel) 88%, white 4%), color-mix(in srgb, var(--panel) 84%, black 14%));
+      box-shadow: 0 18px 54px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.055);
+    }
+
+    .study {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .panel-head {
+      min-width: 0;
+      padding: 6px 8px 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .panel-head-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-head h2 {
+      min-width: 0;
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .panel-head p { display: none; }
+
+    .badge {
+      flex: 0 0 auto;
+      padding: 3px 6px;
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      border-radius: 999px;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      font-size: 8px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .study-canvas {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      margin: 5px;
+      border-radius: 11px;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+      background: rgba(0,0,0,0.20);
+    }
+
+    .study-canvas canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .chips { display: none; }
+
+    .controls {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      padding: 7px;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-flow: row;
+      gap: 6px;
+      align-content: start;
+      align-items: start;
+    }
+
+    .brand {
+      grid-column: 1 / -1;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 3px;
+      align-content: start;
+      overflow: hidden;
+    }
+
+    .eyebrow {
+      width: max-content;
+      max-width: 100%;
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .lede {
+      margin: 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.18;
+    }
+
+    .control-group {
+      min-width: 0;
+      min-height: 0;
+      padding: 6px;
+      border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--card) 74%, black 12%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+      overflow: hidden;
+    }
+
+    .palette-group,
+    .audio-group,
+    .scalar-group,
+    .impulse-group,
+    .hot-group,
+    .surface-group,
+    .custom-palette-group {
+      grid-column: auto;
+    }
+
+    .ripple-group,
+    .export-group {
+      grid-column: 1 / -1;
+    }
+
+    .control-title {
+      margin: 0 0 4px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+      color: var(--accent);
+      font-size: 9.5px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 8.5px;
+      font-weight: 720;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    label.control {
+      display: grid;
+      gap: 2px;
+      margin: 3px 0;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 720;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .value {
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 9.5px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    select, textarea, input[type="file"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--text);
+      background: rgba(0,0,0,0.22);
+      outline: none;
+    }
+
+    select {
+      padding: 5px 7px;
+      font-size: 10.5px;
+      font-weight: 760;
+    }
+
+    input[type="file"] {
+      min-width: 0;
+      padding: 5px 7px;
+      font-size: 9.5px;
+      font-weight: 720;
+    }
+
+    input[type="file"]::file-selector-button {
+      margin-right: 7px;
+      border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+      border-radius: 7px;
+      color: var(--text);
+      background: color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,0.2));
+      font: inherit;
+      font-weight: 850;
+    }
+
+    textarea {
+      min-height: 34px;
+      max-height: 44px;
+      padding: 5px 7px;
+      resize: none;
+      color: color-mix(in srgb, var(--text) 92%, var(--accent) 8%);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 8.5px;
+      line-height: 1.12;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    input[type="range"] {
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, black 22%), color-mix(in srgb, var(--accent2) 32%, black 18%));
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border: 2px solid color-mix(in srgb, var(--text) 82%, transparent);
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent), 0 0 16px color-mix(in srgb, var(--accent) 32%, transparent);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border: 2px solid color-mix(in srgb, var(--text) 82%, transparent);
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .toggle {
+      margin: 4px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 780;
+    }
+
+    .toggle input { accent-color: var(--accent); }
+
+    .drive-mode-switch {
+      min-width: 0;
+      min-height: 0;
+      padding: 6px;
+      border: 1px solid color-mix(in srgb, var(--line) 92%, transparent);
+      border-radius: 11px;
+      background: rgba(0,0,0,0.18);
+      display: grid;
+      grid-template-columns: auto repeat(2, minmax(0, 1fr));
+      align-items: center;
+      gap: 6px;
+    }
+
+    .drive-mode-switch span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .mode-btn {
+      min-width: 0;
+      padding: 6px 8px;
+      border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+      border-radius: 8px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.18);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .mode-btn.active {
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 56%, var(--line));
+      background: color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,0.25));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+      margin: 4px 0;
+    }
+
+    .btn {
+      min-width: 0;
+      padding: 5px 6px;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+      border-radius: 8px;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, rgba(255,255,255,0.08)), rgba(255,255,255,0.025));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: translateY(1px); }
+
+    .btn:disabled,
+    input:disabled,
+    select:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .audio-group {
+      display: grid;
+      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+      gap: 5px;
+    }
+
+    .audio-group .button-row,
+    .audio-group label.control {
+      margin: 0;
+    }
+
+    .audio-player {
+      width: 100%;
+      height: 27px;
+      filter: saturate(1.08);
+    }
+
+    .audio-readout {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .audio-pill {
+      min-width: 0;
+      padding: 4px 5px;
+      border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+      border-radius: 7px;
+      background: rgba(0,0,0,0.16);
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1;
+      font-weight: 820;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .audio-pill strong {
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 9px;
+    }
+
+    .scalar-group {
+      display: grid;
+      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+      gap: 4px;
+    }
+
+    .scalar-group label.control {
+      margin: 0;
+    }
+
+    .scalar-display {
+      min-width: 0;
+      min-height: 40px;
+      padding: 7px 8px;
+      border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+      border-radius: 9px;
+      overflow: hidden;
+      background: rgba(0,0,0,0.22);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scalar-display span {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 840;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .scalar-display strong {
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 3px;
+      margin-top: 4px;
+    }
+
+    .swatch {
+      height: 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+
+    .vu-strip {
+      height: 9px;
+      margin-top: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--vu-bg);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .custom-palette-group {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      gap: 4px;
+    }
+
+    .custom-palette-group textarea {
+      min-height: 0;
+      max-height: none;
+      height: 100%;
+    }
+
+    .custom-palette-group .button-row { margin: 0; }
+
+    .export-group {
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      gap: 4px;
+    }
+
+    .export-group label.control,
+    .export-group .button-row { margin: 0; }
+
+    .export-textarea {
+      min-height: 0;
+      max-height: none;
+      height: 100%;
+    }
+
+    .status {
+      min-height: 10px;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.15;
+    }
+
+    .control-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .control-tab {
+      min-width: 0;
+      padding: 8px 10px;
+      border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+      border-radius: 9px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.22);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .control-tab.active {
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 54%, var(--line));
+      background: color-mix(in srgb, var(--accent) 18%, rgba(0,0,0,0.24));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 20px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .tab-page {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .tab-page:not(.active) { display: none; }
+
+
+    /* FINAL LOCK: wide-monitor workbench, no scrolling. */
+    .app {
+      grid-template-columns: minmax(0, 1.12fr) minmax(500px, 0.88fr);
+      grid-template-rows: minmax(0, 1fr);
+    }
+    .four-up {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+    .controls {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 68px 40px 37px minmax(0, 1fr);
+      gap: 8px;
+      padding: 10px;
+      align-content: stretch;
+      align-items: stretch;
+    }
+    .brand { min-height: 0; }
+    .tune-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 1.12fr) minmax(0, 0.88fr);
+      grid-template-areas:
+        "audio   scalar"
+        "surface palette";
+      gap: 8px;
+    }
+    .impulse-panel {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr);
+      gap: 8px;
+    }
+    .advanced-panel {
+      display: grid;
+      grid-template-rows: minmax(0, 0.74fr) minmax(0, 1.26fr);
+      gap: 8px;
+    }
+    .audio-group { grid-area: audio; }
+    .scalar-group { grid-area: scalar; }
+    .palette-group { grid-area: palette; }
+    .impulse-panel .impulse-group { grid-area: auto; }
+    .ripple-group { grid-area: ripple; grid-column: auto; }
+    .hot-group { grid-area: hot; }
+    .surface-group { grid-area: surface; }
+    .detail-only { display: none; }
+    .eyebrow { padding: 4px 9px; font-size: 10px; }
+    h1 { font-size: 30px; line-height: 0.95; }
+    .lede { display: none; }
+    .panel-head { padding: 7px 9px 0; }
+    .panel-head h2 { font-size: 12px; }
+    .badge { font-size: 7px; padding: 2px 5px; }
+    .study-canvas { margin: 6px; }
+    .control-group { padding: 8px; border-radius: 12px; }
+    label.control { margin: 4px 0; font-size: 12px; gap: 3px; }
+    .control-title { margin-bottom: 6px; font-size: 11px; }
+    .hint { font-size: 10px; }
+    .value { font-size: 11px; }
+    .toggle { margin: 5px 0; font-size: 12px; }
+    .button-row { gap: 7px; margin: 6px 0; }
+    .btn { padding: 7px 9px; font-size: 11px; border-radius: 9px; }
+    select { padding: 7px 9px; font-size: 12px; }
+    input[type="range"] { height: 12px; }
+    input[type="range"]::-webkit-slider-thumb { width: 15px; height: 15px; }
+    input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; }
+    .swatches { gap: 4px; margin-top: 7px; }
+    .swatch { height: 16px; border-radius: 5px; }
+    .vu-strip { height: 12px; margin-top: 7px; }
+    .custom-palette-group {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      gap: 5px;
+    }
+    .custom-palette-group textarea {
+      height: 100%;
+      min-height: 120px;
+      max-height: none;
+      font-size: 10px;
+    }
+    .export-group {
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      gap: 6px;
+    }
+    .export-textarea {
+      height: 100%;
+      min-height: 220px;
+      max-height: none;
+      font-size: 10px;
+    }
+    .status { font-size: 10px; min-height: 12px; }
+</style>
+</head>
+<body>
+  <div class="viewport-shell">
+    <div class="fit-stage" id="fitStage" aria-label="MacBook-fit no-scroll workbench">
+      <div class="app">
+        <main class="main" aria-label="Cube ripple preview and captured audio meter">
+          <section class="panel meter-panel" aria-label="Captured YouTube and local-file audio meter">
+            <div class="meter-head">
+              <h2>Music Meter</h2>
+              <div class="meter-source" id="meterSourceLabel">waiting for tab capture or local file</div>
+            </div>
+            <div class="meter-canvas-shell"><canvas id="meterCanvas"></canvas></div>
+          </section>
+
+          <section class="four-up">
+            <article class="panel study">
+              <div class="panel-head">
+                <div class="panel-head-top"><h2>01 · Soft Center Bloom</h2><span class="badge">default</span></div>
+                <p>Smooth center-out VU bloom. Clearest small-screen speaker state.</p>
+              </div>
+              <div class="study-canvas"><canvas id="canvasPacketXL"></canvas></div>
+            </article>
+            <article class="panel study">
+              <div class="panel-head">
+                <div class="panel-head-top"><h2>02 · Hot Core Bloom</h2><span class="badge">peak</span></div>
+                <p>Center bloom with stronger hot-color takeover on peaks.</p>
+              </div>
+              <div class="study-canvas"><canvas id="canvasHotFlood"></canvas></div>
+            </article>
+            <article class="panel study">
+              <div class="panel-head">
+                <div class="panel-head-top"><h2>03 · Halo Edge Bloom</h2><span class="badge">edge</span></div>
+                <p>Center bloom with a visible edge at the scalar boundary.</p>
+              </div>
+              <div class="study-canvas"><canvas id="canvasCapillaryEdge"></canvas></div>
+            </article>
+            <article class="panel study">
+              <div class="panel-head">
+                <div class="panel-head-top"><h2>04 · Block Center Bloom</h2><span class="badge">stress</span></div>
+                <p>Posterized center bloom for very small speaker sizes.</p>
+              </div>
+              <div class="study-canvas"><canvas id="canvasTinyBold"></canvas></div>
+            </article>
+          </section>
+        </main>
+
+        <aside class="panel controls" aria-label="Cube scalar VU controls">
+          <div class="brand">
+            <div class="eyebrow">Wavefield · Sonicsphere</div>
+            <h1>Cube scalar <span>VU tuner</span></h1>
+            <p class="lede">Wide workbench: music meter plus cube viewports, with primary tuning controls on this tab.</p>
+          </div>
+
+          <div class="drive-mode-switch" role="group" aria-label="VU drive mode">
+            <span>VU drive</span>
+            <button class="mode-btn active" type="button" data-drive-mode="music" aria-pressed="true">Music</button>
+            <button class="mode-btn" type="button" data-drive-mode="impulse" aria-pressed="false">Impulse Test</button>
+          </div>
+
+          <div class="control-tabs" role="tablist" aria-label="Control pages">
+            <button class="control-tab active" type="button" data-tab-target="tunePanel" role="tab" aria-selected="true">Tune</button>
+            <button class="control-tab" type="button" data-tab-target="impulsePanel" role="tab" aria-selected="false">Impulse</button>
+            <button class="control-tab" type="button" data-tab-target="advancedPanel" role="tab" aria-selected="false">Advanced</button>
+          </div>
+
+          <div class="tab-page tune-panel active" id="tunePanel" role="tabpanel">
+            <div class="control-group audio-group">
+              <div class="control-title">Audio source <span class="hint">music driven</span></div>
+              <div class="button-row"><button class="btn" id="captureAudioButton" type="button">Capture YouTube/Tab</button><button class="btn" id="stopAudioButton" type="button">Stop Capture</button></div>
+              <label class="control">Local file<input id="audioFileInput" type="file" accept="audio/*" /></label>
+              <audio id="localAudio" class="audio-player" controls preload="metadata"></audio>
+              <div class="audio-readout" aria-label="Live audio levels">
+                <span class="audio-pill">RMS <strong id="audioRmsValue">0%</strong></span>
+                <span class="audio-pill">Peak <strong id="audioPeakValue">0%</strong></span>
+                <span class="audio-pill">Bass <strong id="audioBassValue">0%</strong></span>
+              </div>
+              <div class="status" id="audioStatus">idle - use tab capture for YouTube or load a local audio file.</div>
+            </div>
+
+            <div class="control-group palette-group">
+              <div class="control-title">Palette <span class="hint">ODL + Tech Rainbow</span></div>
+              <label class="control">Theme<select id="paletteSelect"></select></label>
+              <div class="swatches" id="swatches" aria-hidden="true"></div>
+              <div class="vu-strip" id="vuStrip" aria-hidden="true"></div>
+            </div>
+
+            <div class="control-group scalar-group">
+              <div class="control-title">Cube VU <span class="hint">RMS scalar</span></div>
+              <div class="scalar-display"><span>Same value as RMS</span><strong id="vuScalarValue">0%</strong></div>
+              <div class="status">Cube bloom radius follows the RMS percent exactly.</div>
+            </div>
+
+            <div class="control-group ripple-group detail-only">
+              <div class="control-title">Ripple shape <span class="hint">bold bands</span></div>
+              <label class="control"><span class="control-row"><span>Band width / fatness</span><span class="value" id="bandWidthValue">4.2 tiles</span></span><input id="bandWidth" type="range" min="1" max="9" step="0.1" value="4.2" /></label>
+              <label class="control"><span class="control-row"><span>Color range / compression</span><span class="value" id="vuDriveValue">1.70×</span></span><input id="vuDrive" type="range" min="0.5" max="4" step="0.05" value="1.7" /></label>
+              <label class="control"><span class="control-row"><span>Attack sharpness</span><span class="value" id="attackValue">42%</span></span><input id="attack" type="range" min="0" max="1" step="0.01" value="0.42" /></label>
+              <label class="control"><span class="control-row"><span>Outward speed</span><span class="value" id="speedValue">0.43</span></span><input id="speed" type="range" min="0.15" max="0.95" step="0.01" value="0.43" /></label>
+              <label class="control"><span class="control-row"><span>Damping</span><span class="value" id="dampingValue">32%</span></span><input id="damping" type="range" min="0.05" max="1.1" step="0.01" value="0.32" /></label>
+              <label class="control"><span class="control-row"><span>Edge softness</span><span class="value" id="softnessValue">55%</span></span><input id="softness" type="range" min="0" max="1" step="0.01" value="0.55" /></label>
+            </div>
+
+            <div class="control-group hot-group detail-only">
+              <div class="control-title">Hot cube <span class="hint">whole color</span></div>
+              <label class="control"><span class="control-row"><span>Hot fill strength</span><span class="value" id="hotFillValue">86%</span></span><input id="hotFill" type="range" min="0" max="1" step="0.01" value="0.86" /></label>
+              <label class="control"><span class="control-row"><span>Hot threshold</span><span class="value" id="hotThresholdValue">68%</span></span><input id="hotThreshold" type="range" min="0.35" max="0.98" step="0.01" value="0.68" /></label>
+              <label class="control"><span class="control-row"><span>Whole-cube memory</span><span class="value" id="memoryValue">64%</span></span><input id="memory" type="range" min="0.08" max="0.95" step="0.01" value="0.64" /></label>
+            </div>
+
+            <div class="control-group surface-group">
+              <div class="control-title">Surface <span class="hint">low poly</span></div>
+              <label class="control"><span class="control-row"><span>Face pixels</span><span class="value" id="tilesValue">9 × 9</span></span><input id="tiles" type="range" min="6" max="14" step="1" value="9" /></label>
+              <label class="control"><span class="control-row"><span>Idle tint</span><span class="value" id="idleValue">25%</span></span><input id="idleTint" type="range" min="0" max="0.62" step="0.01" value="0.25" /></label>
+              <label class="control"><span class="control-row"><span>Face phase stagger</span><span class="value" id="faceDelayValue">4%</span></span><input id="faceDelay" type="range" min="0" max="0.18" step="0.005" value="0.04" /></label>
+              <label class="control"><span class="control-row"><span>Checker contrast</span><span class="value" id="checkerValue">8%</span></span><input id="checker" type="range" min="0" max="0.4" step="0.01" value="0.08" /></label>
+            </div>
+          </div>
+
+          <div class="tab-page impulse-panel" id="impulsePanel" role="tabpanel">
+            <div class="control-group impulse-group">
+              <div class="control-title">Impulse test <span class="hint" id="impulseModeHint">exclusive</span></div>
+              <div class="button-row"><button class="btn" id="impulseButton" type="button">Drop one</button><button class="btn" id="clearButton" type="button">Clear</button></div>
+              <label class="toggle"><span>Repeat impulse</span><input id="repeat" type="checkbox" checked /></label>
+              <label class="control"><span class="control-row"><span>Impulse interval</span><span class="value" id="periodValue">0.85s</span></span><input id="period" type="range" min="0" max="2" step="0.01" value="0.85" /></label>
+              <label class="control"><span class="control-row"><span>Impulse amplitude</span><span class="value" id="amplitudeValue">78%</span></span><input id="amplitude" type="range" min="0" max="1" step="0.01" value="0.78" /></label>
+              <label class="control"><span class="control-row"><span>Amplitude swing</span><span class="value" id="swingValue">12%</span></span><input id="swing" type="range" min="0" max="0.65" step="0.01" value="0.12" /></label>
+            </div>
+          </div>
+
+          <div class="tab-page advanced-panel" id="advancedPanel" role="tabpanel">
+            <div class="control-group custom-palette-group">
+              <div class="control-title">Custom palette <span class="hint">optional JSON</span></div>
+              <textarea id="paletteJson" spellcheck="false" aria-label="Custom palette JSON" placeholder='{"name":"Custom","chassis":["#071014","#02070A"],"panel":"#0D181D","accent":"#5EEAD4","accentSecondary":"#AA88FF","success":"#18CE0F","warning":"#FACC15","danger":"#FB7185"}'></textarea>
+              <div class="button-row"><button class="btn" id="loadPalette" type="button">Load</button><button class="btn" id="resetPalette" type="button">Reset</button></div>
+              <div class="status" id="paletteStatus">Tech Rainbow cycles through every stop on normal repeated impulses.</div>
+            </div>
+
+            <div class="control-group export-group">
+              <div class="control-title">Export implementation <span class="hint">copy to app</span></div>
+              <label class="control">Export variant<select id="exportVariant"><option value="packetXL">Pond Packet XL</option><option value="hotFlood">Hot Flood Packet</option><option value="capillaryEdge">Broad Capillary Edge</option><option value="tinyBold">Tiny Speaker Bold</option></select></label>
+              <div class="button-row"><button class="btn" id="copyExport" type="button">Copy JSON</button><button class="btn" id="downloadExport" type="button">Download JSON</button></div>
+              <textarea id="exportText" class="export-textarea" readonly spellcheck="false" aria-label="Generated implementation JSON"></textarea>
+              <div class="status" id="exportStatus">Export includes controls, palette mappings, Tech Rainbow, and cube math.</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const DESIGN_VIEWPORT = { width: 1512, height: 850 };
+    function fitStage() {
+      const viewport = window.visualViewport || { width: window.innerWidth, height: window.innerHeight };
+      const vw = Math.max(1, viewport.width || window.innerWidth || DESIGN_VIEWPORT.width);
+      const vh = Math.max(1, viewport.height || window.innerHeight || DESIGN_VIEWPORT.height);
+      const scale = Math.max(0.1, Math.min(vw / DESIGN_VIEWPORT.width, vh / DESIGN_VIEWPORT.height) * 0.997);
+      const x = Math.max(0, (vw - DESIGN_VIEWPORT.width * scale) * 0.5);
+      const y = Math.max(0, (vh - DESIGN_VIEWPORT.height * scale) * 0.5);
+      const stage = document.getElementById('fitStage');
+      if (!stage) return;
+      stage.dataset.scale = scale.toFixed(5);
+      stage.style.setProperty('--fit-scale', scale.toFixed(5));
+      stage.style.setProperty('--stage-x', `${x.toFixed(2)}px`);
+      stage.style.setProperty('--stage-y', `${y.toFixed(2)}px`);
+    }
+    fitStage();
+    window.addEventListener('resize', fitStage, { passive: true });
+    window.addEventListener('orientationchange', fitStage, { passive: true });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', fitStage, { passive: true });
+
+    const SQRT2 = Math.SQRT2;
+    const clamp01 = v => Math.max(0, Math.min(1, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const smoothstep = (a, b, x) => {
+      const t = clamp01((x - a) / Math.max(1e-6, b - a));
+      return t * t * (3 - 2 * t);
+    };
+    const hash = n => {
+      const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    };
+
+    const TECH_RAINBOW_STOPS = [
+      { stop: 0.00, color: '#A78BFA', role: 'violet' },
+      { stop: 0.18, color: '#5B8CFF', role: 'blue' },
+      { stop: 0.34, color: '#22D3EE', role: 'cyan' },
+      { stop: 0.50, color: '#34D399', role: 'green' },
+      { stop: 0.66, color: '#FDE047', role: 'yellow' },
+      { stop: 0.82, color: '#FB923C', role: 'orange' },
+      { stop: 1.00, color: '#EF4444', role: 'red / hot' }
+    ];
+
+    const PALETTES = {
+      'Tech Rainbow': {
+        chassis: ['#071014', '#02070A'], panel: '#0D181D', card: '#0B1418', line: 'rgba(255,255,255,0.13)',
+        accent: '#A78BFA', accentSecondary: '#22D3EE', success: '#A78BFA', warning: '#34D399', danger: '#EF4444',
+        vuStops: TECH_RAINBOW_STOPS, cycleAllStops: true,
+        sourceGradient: 'linear-gradient(90deg, #A78BFA 0%, #5B8CFF 18%, #22D3EE 34%, #34D399 50%, #FDE047 66%, #FB923C 82%, #EF4444 100%)',
+        text: '#F8F7FF', muted: '#A8B8C8'
+      },
+      'Orbisonic Lab': { chassis: ['#071014', '#02070A'], panel: '#0D181D', card: '#0B1418', line: 'rgba(255,255,255,0.12)', accent: '#5EEAD4', accentSecondary: '#AA88FF', success: '#18CE0F', warning: '#FACC15', danger: '#FB7185', text: '#EFFCFB', muted: '#8CA3A0' },
+      'Kimi Purple': { chassis: ['#0A0811', '#000000'], panel: '#14181C', card: '#111219', line: 'rgba(255,255,255,0.13)', accent: '#AA88FF', accentSecondary: '#32D6BF', success: '#18CE0F', warning: '#FFB236', danger: '#FF3636', text: '#F2EEFF', muted: '#A7A0B8' },
+      'Rack Mint': { chassis: ['#26292C', '#202226'], panel: '#4C4F52', card: '#2F3235', line: 'rgba(255,255,255,0.16)', accent: '#79E4B8', accentSecondary: '#EEA4E6', success: '#79E4B8', warning: '#76CBF8', danger: '#EEA4E6', text: '#F4F6F5', muted: '#C3C8C6' },
+      'Rack Pink': { chassis: ['#26292C', '#202226'], panel: '#4C4F52', card: '#2F3235', line: 'rgba(255,255,255,0.16)', accent: '#EEA4E6', accentSecondary: '#79E4B8', success: '#79E4B8', warning: '#76CBF8', danger: '#EEA4E6', text: '#F8F4F7', muted: '#CAC4C9' },
+      'Rack Blue': { chassis: ['#26292C', '#202226'], panel: '#4C4F52', card: '#2F3235', line: 'rgba(255,255,255,0.16)', accent: '#76CBF8', accentSecondary: '#79E4B8', success: '#79E4B8', warning: '#EEA4E6', danger: '#FF6D7A', text: '#F2F8FC', muted: '#C0C9CE' },
+      'Ember Console': { chassis: ['#140D08', '#060504'], panel: '#1B1612', card: '#15100C', line: 'rgba(255,255,255,0.12)', accent: '#FFB236', accentSecondary: '#5EEAD4', success: '#4DD484', warning: '#FACC15', danger: '#FB7185', text: '#FFF5EA', muted: '#BBAA97' },
+      'Graphite': { chassis: ['#0F1012', '#040506'], panel: '#191B1E', card: '#121416', line: 'rgba(255,255,255,0.13)', accent: '#E5E7EB', accentSecondary: '#5EEAD4', success: '#34D399', warning: '#FBBF24', danger: '#F87171', text: '#F4F7F8', muted: '#A5ADB3' },
+      'Flamingo Green': { chassis: ['#2A2E38', '#1E212A'], panel: '#1E212A', card: '#181B23', line: 'rgba(255,255,255,0.14)', accent: '#2ECC8A', accentSecondary: '#F48FAA', success: '#2ECC8A', warning: '#197B67', danger: '#A75472', text: '#F7FAF9', muted: '#B3B8BE' },
+      'Flamingo Pink': { chassis: ['#2A2E38', '#1E212A'], panel: '#1E212A', card: '#181B23', line: 'rgba(255,255,255,0.14)', accent: '#F48FAA', accentSecondary: '#2ECC8A', success: '#2ECC8A', warning: '#A75472', danger: '#F48FAA', text: '#FFF6FA', muted: '#BCB3BA' },
+      'Dusty Rose': { chassis: ['#2A2E38', '#1E212A'], panel: '#1E212A', card: '#181B23', line: 'rgba(255,255,255,0.14)', accent: '#A75472', accentSecondary: '#2ECC8A', success: '#2ECC8A', warning: '#197B67', danger: '#F48FAA', text: '#FAF4F7', muted: '#BBB2B8' }
+    };
+
+    const VARIANT_DEFINITIONS = {
+      packetXL: { label: 'Soft Center Bloom', widthMul: 1.0, hotBoost: 0.78, rim: false, poster: false, tinyTiles: false, bloomMin: 0.08, bloomMax: 1.04, bloomEdge: 0.16, radiusCurve: 0.82, heatMul: 0.74, coreHeat: 0.16, coreBoost: 0.22, use: 'default small-screen speaker VU: soft center-out scalar bloom' },
+      hotFlood: { label: 'Hot Core Bloom', widthMul: 1.0, hotBoost: 1.28, rim: false, poster: false, tinyTiles: false, bloomMin: 0.11, bloomMax: 1.12, bloomEdge: 0.18, radiusCurve: 0.72, heatMul: 0.92, coreHeat: 0.24, coreBoost: 0.36, use: 'peak state: center bloom reaches hot color sooner and fills the cube harder' },
+      capillaryEdge: { label: 'Halo Edge Bloom', widthMul: 1.0, hotBoost: 0.92, rim: true, poster: false, tinyTiles: false, bloomMin: 0.07, bloomMax: 1.06, bloomEdge: 0.10, radiusCurve: 0.88, heatMul: 0.78, coreHeat: 0.12, coreBoost: 0.18, rimHeat: 0.18, use: 'center bloom with a brighter ring marking the current scalar boundary' },
+      tinyBold: { label: 'Block Center Bloom', widthMul: 1.0, hotBoost: 1.02, rim: false, poster: true, tinyTiles: true, bloomMin: 0.10, bloomMax: 1.08, bloomEdge: 0.07, radiusCurve: 0.82, heatMul: 0.84, coreHeat: 0.14, coreBoost: 0.20, use: 'posterized center bloom for tiny render size' }
+    };
+
+    const state = {
+      paletteName: 'Tech Rainbow', repeat: true, period: 0.85, amplitude: 0.78, swing: 0.12,
+      bandWidth: 4.2, vuDrive: 1.7, attack: 0.42, speed: 0.43, damping: 0.32, softness: 0.55,
+      hotFill: 0.86, hotThreshold: 0.68, memory: 0.64, tiles: 9, idleTint: 0.25, faceDelay: 0.04, checker: 0.08,
+      exportVariant: 'packetXL', driveMode: 'music', drops: [], nextImpulseAt: 0, energy: 0, serial: 0,
+      audioActive: false, audioMode: 'idle', audioRms: 0, audioPeak: 0, audioBass: 0,
+      vuScalar: 0
+    };
+
+    const ids = ['meterCanvas','meterSourceLabel','paletteSelect','swatches','vuStrip','vuScalarValue','captureAudioButton','stopAudioButton','audioFileInput','localAudio','audioStatus','audioRmsValue','audioPeakValue','audioBassValue','impulseButton','clearButton','repeat','period','amplitude','swing','bandWidth','vuDrive','attack','speed','damping','softness','hotFill','hotThreshold','memory','tiles','idleTint','faceDelay','checker','exportVariant','copyExport','downloadExport','exportText','exportStatus','paletteJson','loadPalette','resetPalette','paletteStatus','impulseModeHint','periodValue','amplitudeValue','swingValue','bandWidthValue','vuDriveValue','attackValue','speedValue','dampingValue','softnessValue','hotFillValue','hotThresholdValue','memoryValue','tilesValue','idleValue','faceDelayValue','checkerValue'];
+    const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+    const canvases = [
+      { canvas: document.getElementById('canvasPacketXL'), variant: 'packetXL' },
+      { canvas: document.getElementById('canvasHotFlood'), variant: 'hotFlood' },
+      { canvas: document.getElementById('canvasCapillaryEdge'), variant: 'capillaryEdge' },
+      { canvas: document.getElementById('canvasTinyBold'), variant: 'tinyBold' }
+    ];
+
+    const audioState = {
+      context: null,
+      analyser: null,
+      sourceNode: null,
+      localSourceNode: null,
+      outputNode: null,
+      stream: null,
+      localObjectUrl: null,
+      timeData: null,
+      freqData: null,
+      lastRms: 0,
+      lastBass: 0,
+      noAudioSince: 0,
+      nextDropAt: 0,
+      status: 'idle',
+      statusDetail: 'use tab capture for YouTube or load a local audio file',
+      lastUiAt: 0
+    };
+
+    const rgbCache = new Map();
+    const stopsCache = new WeakMap();
+    const cubeGeometryCache = new Map();
+
+    function hexToRgb(hex) {
+      const h = String(hex).replace('#', '').trim();
+      if (rgbCache.has(h)) return rgbCache.get(h);
+      const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+      const rgb = { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+      rgbCache.set(h, rgb);
+      return rgb;
+    }
+    function rgbToCss(c, a = 1) { return `rgba(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)},${a})`; }
+    function mix(a, b, t) { t = clamp01(t); return { r: lerp(a.r, b.r, t), g: lerp(a.g, b.g, t), b: lerp(a.b, b.b, t) }; }
+    function shade(c, f) { return { r: c.r * f, g: c.g * f, b: c.b * f }; }
+    function colorWithMin(c, lift) { return { r: lerp(c.r, 255, lift), g: lerp(c.g, 255, lift), b: lerp(c.b, 255, lift) }; }
+    function getPalette() { return PALETTES[state.paletteName] || PALETTES['Tech Rainbow']; }
+    function normalizedStops(p) {
+      if (stopsCache.has(p)) return stopsCache.get(p);
+      const stops = Array.isArray(p.vuStops)
+        ? p.vuStops.map(s => ({ stop: s.stop, color: s.color, role: s.role || '' }))
+        : [{ stop: 0, color: p.success, role: 'success' }, { stop: 0.55, color: p.warning, role: 'warning' }, { stop: 1, color: p.danger, role: 'danger / hot' }];
+      stopsCache.set(p, stops);
+      return stops;
+    }
+    function sampleStops(stops, t) {
+      t = clamp01(t);
+      for (let i = 0; i < stops.length - 1; i++) {
+        const a = stops[i], b = stops[i + 1];
+        if (t <= b.stop) return mix(hexToRgb(a.color), hexToRgb(b.color), (t - a.stop) / Math.max(1e-6, b.stop - a.stop));
+      }
+      return hexToRgb(stops[stops.length - 1].color);
+    }
+    function rampColor(p, t) { return sampleStops(normalizedStops(p), t); }
+    function hotColor(p) { const s = normalizedStops(p); return hexToRgb(s[s.length - 1].color); }
+    function compressVu(v) { return 1 - Math.pow(1 - clamp01(v), state.vuDrive); }
+    function variantConfig(id) { return VARIANT_DEFINITIONS[id] || VARIANT_DEFINITIONS.packetXL; }
+
+    function applyPalette() {
+      const p = getPalette();
+      const root = document.documentElement;
+      root.style.setProperty('--bg0', p.chassis[0]);
+      root.style.setProperty('--bg1', p.chassis[1]);
+      root.style.setProperty('--panel', p.panel);
+      root.style.setProperty('--card', p.card || p.panel);
+      root.style.setProperty('--line', p.line || 'rgba(255,255,255,0.13)');
+      root.style.setProperty('--text', p.text || '#F6FAFA');
+      root.style.setProperty('--muted', p.muted || '#A7B2B1');
+      root.style.setProperty('--accent', p.accent);
+      root.style.setProperty('--accent2', p.accentSecondary);
+      root.style.setProperty('--success', normalizedStops(p)[0].color);
+      root.style.setProperty('--warning', normalizedStops(p)[Math.floor((normalizedStops(p).length - 1) / 2)].color);
+      root.style.setProperty('--danger', normalizedStops(p)[normalizedStops(p).length - 1].color);
+      const stops = normalizedStops(p);
+      els.swatches.innerHTML = '';
+      [p.panel, p.accent, p.accentSecondary, ...stops.map(s => s.color)].slice(0, 8).forEach(color => {
+        const sw = document.createElement('div');
+        sw.className = 'swatch';
+        sw.style.background = color;
+        els.swatches.appendChild(sw);
+      });
+      els.vuStrip.style.background = `linear-gradient(90deg, ${stops.map(s => `${s.color} ${Math.round(s.stop * 100)}%`).join(', ')})`;
+      els.paletteStatus.textContent = p.cycleAllStops ? 'Tech Rainbow cycles through every stop on normal repeated impulses.' : 'Palette uses success → warning → danger VU heat.';
+      updateExport();
+    }
+
+    function refreshControls() {
+      els.vuScalarValue.textContent = `${Math.round(state.vuScalar * 100)}%`;
+      els.periodValue.textContent = state.period <= 0.01 ? 'rapid' : `${state.period.toFixed(2)}s`;
+      els.amplitudeValue.textContent = `${Math.round(state.amplitude * 100)}%`;
+      els.swingValue.textContent = `${Math.round(state.swing * 100)}%`;
+      els.bandWidthValue.textContent = `${state.bandWidth.toFixed(1)} tiles`;
+      els.vuDriveValue.textContent = `${state.vuDrive.toFixed(2)}×`;
+      els.attackValue.textContent = `${Math.round(state.attack * 100)}%`;
+      els.speedValue.textContent = state.speed.toFixed(2);
+      els.dampingValue.textContent = `${Math.round(state.damping * 100)}%`;
+      els.softnessValue.textContent = `${Math.round(state.softness * 100)}%`;
+      els.hotFillValue.textContent = `${Math.round(state.hotFill * 100)}%`;
+      els.hotThresholdValue.textContent = `${Math.round(state.hotThreshold * 100)}%`;
+      els.memoryValue.textContent = `${Math.round(state.memory * 100)}%`;
+      els.tilesValue.textContent = `${state.tiles} × ${state.tiles}`;
+      els.idleValue.textContent = `${Math.round(state.idleTint * 100)}%`;
+      els.faceDelayValue.textContent = `${Math.round(state.faceDelay * 100)}%`;
+      els.checkerValue.textContent = `${Math.round(state.checker * 100)}%`;
+      updateExport();
+    }
+
+    function setAudioStatus(status, detail = '') {
+      audioState.status = status;
+      audioState.statusDetail = detail;
+      if (els.audioStatus) els.audioStatus.textContent = detail ? `${status} - ${detail}` : status;
+    }
+
+    function setActiveTab(targetId) {
+      document.querySelectorAll('.control-tab').forEach(item => {
+        const active = item.dataset.tabTarget === targetId;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('.tab-page').forEach(page => {
+        page.classList.toggle('active', page.id === targetId);
+      });
+    }
+
+    function updateDriveModeUi() {
+      const musicMode = state.driveMode === 'music';
+      document.querySelectorAll('[data-drive-mode]').forEach(button => {
+        const active = button.dataset.driveMode === state.driveMode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      [els.captureAudioButton, els.stopAudioButton, els.audioFileInput].forEach(control => {
+        if (control) control.disabled = !musicMode;
+      });
+      if (els.localAudio) els.localAudio.controls = musicMode;
+      [els.impulseButton, els.clearButton, els.repeat, els.period, els.amplitude, els.swing].forEach(control => {
+        if (control) control.disabled = musicMode;
+      });
+      if (els.impulseModeHint) els.impulseModeHint.textContent = musicMode ? 'off in music mode' : 'active';
+      if (!musicMode && els.meterSourceLabel) els.meterSourceLabel.textContent = 'impulse test mode';
+    }
+
+    function setDriveMode(mode, { showTab = false } = {}) {
+      if (mode !== 'music' && mode !== 'impulse') return;
+      const changed = state.driveMode !== mode;
+      state.driveMode = mode;
+      if (changed) {
+        state.drops = [];
+        state.energy = 0;
+        state.nextImpulseAt = mode === 'impulse' ? performance.now() / 1000 : 0;
+      }
+      if (mode === 'impulse') {
+        if (state.audioActive || state.audioMode !== 'idle') stopAudioSource('impulse test selected');
+        resetAudioMeters();
+        if (showTab) setActiveTab('impulsePanel');
+      } else {
+        if (audioState.status === 'idle' || audioState.status === 'no audio') setAudioStatus('idle', 'use tab capture for YouTube or load a local audio file');
+        if (showTab) setActiveTab('tunePanel');
+      }
+      updateDriveModeUi();
+      updateExport();
+    }
+
+    function updateAudioUi(now = performance.now() / 1000, force = false) {
+      if (!force && now - audioState.lastUiAt < 0.12) return;
+      audioState.lastUiAt = now;
+      if (els.audioRmsValue) els.audioRmsValue.textContent = `${Math.round(state.audioRms * 100)}%`;
+      if (els.audioPeakValue) els.audioPeakValue.textContent = `${Math.round(state.audioPeak * 100)}%`;
+      if (els.audioBassValue) els.audioBassValue.textContent = `${Math.round(state.audioBass * 100)}%`;
+      if (els.vuScalarValue) els.vuScalarValue.textContent = `${Math.round(state.vuScalar * 100)}%`;
+      if (els.meterSourceLabel) {
+        els.meterSourceLabel.textContent = state.driveMode === 'impulse'
+          ? 'impulse test mode'
+          : state.audioActive
+          ? (state.audioMode === 'tab' ? 'YouTube / shared tab audio' : 'local audio file')
+          : 'waiting for tab capture or local file';
+      }
+    }
+
+    async function ensureAudioContext() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error('Web Audio is not available in this browser');
+      if (!audioState.context) {
+        audioState.context = new AudioContextClass();
+        audioState.analyser = audioState.context.createAnalyser();
+        audioState.analyser.fftSize = 1024;
+        audioState.analyser.smoothingTimeConstant = 0.72;
+        audioState.timeData = new Uint8Array(audioState.analyser.fftSize);
+        audioState.freqData = new Uint8Array(audioState.analyser.frequencyBinCount);
+      }
+      if (audioState.context.state === 'suspended') await audioState.context.resume();
+      return audioState.context;
+    }
+
+    function disconnectAudioGraph() {
+      if (audioState.sourceNode) {
+        try { audioState.sourceNode.disconnect(); } catch (_) {}
+      }
+      if (audioState.analyser) {
+        try { audioState.analyser.disconnect(); } catch (_) {}
+      }
+      if (audioState.outputNode) {
+        try { audioState.outputNode.disconnect(); } catch (_) {}
+      }
+      audioState.sourceNode = null;
+      audioState.outputNode = null;
+    }
+
+    function resetAudioMeters() {
+      state.audioRms = 0;
+      state.audioPeak = 0;
+      state.audioBass = 0;
+      state.vuScalar = 0;
+      audioState.lastRms = 0;
+      audioState.lastBass = 0;
+      audioState.noAudioSince = 0;
+      updateAudioUi(performance.now() / 1000, true);
+    }
+
+    function configureAudioSource(sourceNode, { audible, mode, detail }) {
+      disconnectAudioGraph();
+      audioState.sourceNode = sourceNode;
+      audioState.sourceNode.connect(audioState.analyser);
+      if (audible) {
+        audioState.analyser.connect(audioState.context.destination);
+      } else {
+        audioState.outputNode = audioState.context.createGain();
+        audioState.outputNode.gain.value = 0;
+        audioState.analyser.connect(audioState.outputNode);
+        audioState.outputNode.connect(audioState.context.destination);
+      }
+      state.audioActive = true;
+      state.audioMode = mode;
+      audioState.nextDropAt = performance.now() / 1000;
+      setAudioStatus('capturing', detail);
+      updateExport();
+    }
+
+    function stopAudioSource(detail = 'use tab capture for YouTube or load a local audio file') {
+      if (audioState.stream) {
+        audioState.stream.getTracks().forEach(track => track.stop());
+        audioState.stream = null;
+      }
+      if (els.localAudio && !els.localAudio.paused) els.localAudio.pause();
+      disconnectAudioGraph();
+      state.audioActive = false;
+      state.audioMode = 'idle';
+      resetAudioMeters();
+      setAudioStatus('idle', detail);
+      updateExport();
+    }
+
+    async function startTabCapture() {
+      try {
+        setDriveMode('music', { showTab: true });
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+          setAudioStatus('no audio', 'tab audio capture is not available in this browser; use local file playback');
+          return;
+        }
+        const context = await ensureAudioContext();
+        if (audioState.stream) audioState.stream.getTracks().forEach(track => track.stop());
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        const audioTracks = stream.getAudioTracks();
+        if (!audioTracks.length) {
+          stream.getTracks().forEach(track => track.stop());
+          setAudioStatus('no audio', 'the selected tab/window did not share audio');
+          return;
+        }
+        if (els.localAudio && !els.localAudio.paused) els.localAudio.pause();
+        audioState.stream = stream;
+        const source = context.createMediaStreamSource(stream);
+        configureAudioSource(source, { audible: false, mode: 'tab', detail: 'analyzing selected tab audio' });
+        stream.getTracks().forEach(track => track.addEventListener('ended', () => {
+          if (audioState.stream === stream) stopAudioSource('tab capture ended');
+        }));
+      } catch (err) {
+        const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+        setAudioStatus(denied ? 'permission denied' : 'no audio', denied ? 'tab capture was blocked or canceled' : (err.message || 'could not start tab audio capture'));
+      }
+    }
+
+    async function startLocalAudioAnalysis() {
+      try {
+        setDriveMode('music', { showTab: true });
+        const context = await ensureAudioContext();
+        if (audioState.stream) {
+          audioState.stream.getTracks().forEach(track => track.stop());
+          audioState.stream = null;
+        }
+        if (!audioState.localSourceNode) audioState.localSourceNode = context.createMediaElementSource(els.localAudio);
+        configureAudioSource(audioState.localSourceNode, { audible: true, mode: 'local-file', detail: 'playing and analyzing local file' });
+      } catch (err) {
+        setAudioStatus('no audio', err.message || 'could not analyze local file');
+      }
+    }
+
+    function handleLocalFileChange(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      setDriveMode('music', { showTab: true });
+      if (audioState.localObjectUrl) URL.revokeObjectURL(audioState.localObjectUrl);
+      audioState.localObjectUrl = URL.createObjectURL(file);
+      els.localAudio.src = audioState.localObjectUrl;
+      els.localAudio.load();
+      setAudioStatus('idle', 'press play to hear and analyze the local file');
+      updateExport();
+    }
+
+    function analyzeAudio(now, dt) {
+      if (state.driveMode !== 'music' || !state.audioActive || !audioState.analyser || !audioState.timeData || !audioState.freqData) {
+        state.audioRms += (0 - state.audioRms) * (1 - Math.pow(0.0001, dt));
+        state.audioPeak += (0 - state.audioPeak) * (1 - Math.pow(0.0001, dt));
+        state.audioBass += (0 - state.audioBass) * (1 - Math.pow(0.0001, dt));
+        state.vuScalar = state.audioRms;
+        updateAudioUi(now);
+        return 0;
+      }
+
+      audioState.analyser.getByteTimeDomainData(audioState.timeData);
+      audioState.analyser.getByteFrequencyData(audioState.freqData);
+
+      let sumSquares = 0;
+      let peak = 0;
+      for (const value of audioState.timeData) {
+        const sample = (value - 128) / 128;
+        sumSquares += sample * sample;
+        peak = Math.max(peak, Math.abs(sample));
+      }
+      const rmsRaw = Math.sqrt(sumSquares / audioState.timeData.length);
+
+      const nyquist = audioState.context.sampleRate / 2;
+      const binHz = nyquist / Math.max(1, audioState.freqData.length);
+      const bassEnd = Math.max(2, Math.min(audioState.freqData.length, Math.ceil(180 / binHz)));
+      let bassSum = 0;
+      for (let i = 1; i < bassEnd; i++) bassSum += audioState.freqData[i] / 255;
+      const bassRaw = bassSum / Math.max(1, bassEnd - 1);
+
+      const rms = clamp01(rmsRaw * 3.6);
+      const scaledPeak = clamp01(peak * 1.15);
+      const bass = clamp01(bassRaw * 1.65);
+
+      audioState.lastRms = lerp(audioState.lastRms, rms, 0.34);
+      audioState.lastBass = lerp(audioState.lastBass, bass, 0.30);
+      state.audioRms = rms;
+      state.audioPeak = scaledPeak;
+      state.audioBass = bass;
+      state.vuScalar = rms;
+      const loudEnough = Math.max(rms, bass, scaledPeak) > 0.035;
+      if (!loudEnough) {
+        if (!audioState.noAudioSince) audioState.noAudioSince = now;
+        if (now - audioState.noAudioSince > 1.7 && state.audioActive && audioState.status !== 'no audio') {
+          setAudioStatus('no audio', 'capture is active, but the selected source is silent');
+        }
+      } else {
+        audioState.noAudioSince = 0;
+        if (audioState.status === 'no audio') {
+          setAudioStatus('capturing', state.audioMode === 'tab' ? 'analyzing selected tab audio' : 'playing and analyzing local file');
+        }
+      }
+
+      updateAudioUi(now);
+      return state.vuScalar;
+    }
+
+    function impulseVuT(p, amp, attack) {
+      if (p.cycleAllStops && Array.isArray(p.vuStops)) return p.vuStops[state.serial % p.vuStops.length].stop;
+      return compressVu(amp * lerp(0.92, 1.08, attack));
+    }
+    function triggerImpulse(now, opts = {}) {
+      const p = getPalette();
+      const swing = opts.swing === false ? 0 : state.swing;
+      const period = Math.max(0.05, state.period);
+      const tempo = 1 - clamp01((period - 0.05) / 1.95);
+      const amp = clamp01((opts.amplitude ?? state.amplitude) * (1 + (hash(state.serial + 5.12) * 2 - 1) * swing));
+      const attack = clamp01(opts.attack ?? state.attack);
+      const widthTiles = Math.max(1.15, state.bandWidth * lerp(1.18, 0.88, attack));
+      const edgeSharpness = clamp01(attack * 0.7 + tempo * 0.3);
+      const groupSpeed = state.speed * lerp(0.92, 1.12, edgeSharpness);
+      const vuT = impulseVuT(p, amp, attack);
+      state.drops.push({ t: now, amp, vuT, attack, tempo, widthTiles, edgeSharpness, groupSpeed, source: opts.source || state.driveMode, seed: state.serial++ });
+      if (state.drops.length > 30) state.drops.splice(0, state.drops.length - 30);
+    }
+    function cleanupDrops(now) {
+      const life = 4.8 + state.bandWidth * 0.08;
+      state.drops = state.drops.filter(d => now - d.t < life);
+    }
+
+    function resizeCanvas(canvas) {
+      const stageScale = Number(document.getElementById('fitStage')?.dataset.scale) || 1;
+      const dpr = Math.max(0.72, Math.min((window.devicePixelRatio || 1) * stageScale, 1.35));
+      const host = canvas.parentElement || canvas;
+      const rect = host.getBoundingClientRect();
+      const cssWidth = Math.max(1, Math.floor(host.clientWidth || rect.width));
+      const cssHeight = Math.max(1, Math.floor(host.clientHeight || rect.height));
+      const w = Math.max(1, Math.floor(cssWidth * dpr));
+      const h = Math.max(1, Math.floor(cssHeight * dpr));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, width: cssWidth, height: cssHeight };
+    }
+
+    function clearCanvas(ctx, w, h) {
+      const p = getPalette();
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, p.chassis[0]);
+      g.addColorStop(1, p.chassis[1]);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const rg = ctx.createRadialGradient(w * 0.55, h * 0.34, 0, w * 0.55, h * 0.34, Math.min(w, h) * 0.78);
+      rg.addColorStop(0, rgbToCss(hexToRgb(p.accent), 0.11));
+      rg.addColorStop(0.72, rgbToCss(hexToRgb(p.accentSecondary), 0.035));
+      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+    function quadPoint(q, u, v) {
+      const a = q[0], b = q[1], c = q[2], d = q[3];
+      return [(1 - u) * (1 - v) * a[0] + u * (1 - v) * b[0] + u * v * c[0] + (1 - u) * v * d[0], (1 - u) * (1 - v) * a[1] + u * (1 - v) * b[1] + u * v * c[1] + (1 - u) * v * d[1]];
+    }
+    function drawCachedTile(ctx, tile) {
+      ctx.beginPath();
+      ctx.moveTo(tile.x0, tile.y0);
+      ctx.lineTo(tile.x1, tile.y1);
+      ctx.lineTo(tile.x2, tile.y2);
+      ctx.lineTo(tile.x3, tile.y3);
+      ctx.closePath();
+    }
+    function drawFaceOutline(ctx, quad) { ctx.beginPath(); ctx.moveTo(quad[0][0], quad[0][1]); for (let i = 1; i < quad.length; i++) ctx.lineTo(quad[i][0], quad[i][1]); ctx.closePath(); }
+    function makeCube(cx, cy, s) {
+      const top = [[cx - s * 0.80, cy - s * 0.40], [cx, cy - s * 0.84], [cx + s * 0.80, cy - s * 0.40], [cx, cy + s * 0.04]];
+      const left = [[cx - s * 0.80, cy - s * 0.40], [cx, cy + s * 0.04], [cx, cy + s * 0.96], [cx - s * 0.80, cy + s * 0.54]];
+      const right = [[cx, cy + s * 0.04], [cx + s * 0.80, cy - s * 0.40], [cx + s * 0.80, cy + s * 0.54], [cx, cy + s * 0.96]];
+      return [{ name: 'top', quad: top, shade: 1.09, index: 0 }, { name: 'left', quad: left, shade: 0.84, index: 1 }, { name: 'right', quad: right, shade: 0.96, index: 2 }];
+    }
+    function getCachedCubeGeometry(cx, cy, s, n) {
+      const key = `${cx.toFixed(2)}:${cy.toFixed(2)}:${s.toFixed(2)}:${n}`;
+      if (cubeGeometryCache.has(key)) return cubeGeometryCache.get(key);
+      if (cubeGeometryCache.size > 40) cubeGeometryCache.clear();
+      const geometry = makeCube(cx, cy, s).map(face => {
+        const tiles = [];
+        for (let y = 0; y < n; y++) {
+          for (let x = 0; x < n; x++) {
+            const u0 = x / n, v0 = y / n, u1 = (x + 1) / n, v1 = (y + 1) / n;
+            const p0 = quadPoint(face.quad, u0, v0);
+            const p1 = quadPoint(face.quad, u1, v0);
+            const p2 = quadPoint(face.quad, u1, v1);
+            const p3 = quadPoint(face.quad, u0, v1);
+            tiles.push({
+              u: (x + 0.5) / n,
+              v: (y + 0.5) / n,
+              parity: ((x + y + face.index) & 1) ? -1 : 1,
+              x0: p0[0], y0: p0[1], x1: p1[0], y1: p1[1],
+              x2: p2[0], y2: p2[1], x3: p3[0], y3: p3[1]
+            });
+          }
+        }
+        return { ...face, tiles };
+      });
+      cubeGeometryCache.set(key, geometry);
+      return geometry;
+    }
+    function smoothAnnulus(absDist, halfWidth, edgeWidth) { return 1 - smoothstep(halfWidth, halfWidth + edgeWidth, absDist); }
+    function rippleSignal(u, v, faceIndex, variant, now, tileCount) {
+      const cfg = variantConfig(variant);
+      const cu = u - 0.5, cv = v - 0.5;
+      let r = Math.hypot(cu, cv) * SQRT2;
+      r *= 1 + 0.018 * Math.sin(Math.atan2(cv, cu) * 4 + faceIndex * 1.7);
+      let alpha = 0, rimAlpha = 0, signed = 0, bestVuT = 0, hotPressure = 0;
+      for (const drop of state.drops) {
+        const facePhase = faceIndex * state.faceDelay * lerp(0.25, 1.0, drop.attack);
+        const age = now - drop.t - facePhase;
+        if (age <= 0) continue;
+        const radius = drop.groupSpeed * age;
+        const outwardFade = 1 / Math.sqrt(1 + Math.max(0, radius) * 2.4);
+        const damping = Math.exp(-state.damping * age) * outwardFade;
+        const fullWidth = Math.max(1.0, drop.widthTiles * cfg.widthMul) / Math.max(5, tileCount);
+        const halfWidth = fullWidth * 0.54;
+        const edgeWidth = Math.max(0.012, fullWidth * lerp(0.08, 0.36, state.softness));
+        const dist = r - radius;
+        let band = smoothAnnulus(Math.abs(dist), halfWidth, edgeWidth) * damping * lerp(0.88, 1.18, drop.amp);
+        if (cfg.poster) band = band > 0.30 ? lerp(0.72, 1.0, clamp01(band)) : 0;
+        if (band > alpha) { alpha = band; bestVuT = drop.vuT; }
+        if (cfg.rim) {
+          const rimCenter = radius + halfWidth * 0.82;
+          const rimWidth = Math.max(0.008, edgeWidth * 0.72);
+          const rim = smoothAnnulus(Math.abs(r - rimCenter), rimWidth, rimWidth * 1.35) * damping * drop.attack * drop.amp;
+          if (rim > rimAlpha) { rimAlpha = rim; bestVuT = drop.vuT; }
+        }
+        signed += Math.sign(-dist) * band * 0.04;
+        hotPressure += drop.amp * Math.exp(-state.memory * age) * cfg.hotBoost;
+      }
+      return { alpha: clamp01(alpha * 1.7), rimAlpha: clamp01(rimAlpha * 1.2), vuT: clamp01(bestVuT), signed: Math.max(-1, Math.min(1, signed)), hotPressure: clamp01(hotPressure) };
+    }
+    function scalarVuSignal(u, v, faceIndex, variant) {
+      const cfg = variantConfig(variant);
+      const level = clamp01(state.energy);
+      const cu = u - 0.5, cv = v - 0.5;
+      const r = Math.hypot(cu, cv) * SQRT2;
+      const radius = lerp(cfg.bloomMin || 0.08, cfg.bloomMax || 1.06, Math.pow(level, cfg.radiusCurve || 0.82));
+      const edge = cfg.bloomEdge || 0.14;
+      const fill = 1 - smoothstep(radius, radius + edge, r);
+      const core = 1 - smoothstep(radius * 0.34, radius * 0.34 + edge * 0.9, r);
+      const rimAlpha = cfg.rim ? smoothAnnulus(Math.abs(r - radius), edge * 0.34, edge * 0.68) * level : 0;
+      const active = fill * smoothstep(0.015, 0.18, level) * lerp(0.36, 1.0, level);
+      const poster = cfg.poster && active > 0.18 ? 1 : active;
+      const vuT = clamp01(compressVu(level) * (cfg.heatMul || 0.8) + core * level * (cfg.coreHeat || 0.16) + rimAlpha * (cfg.rimHeat || 0.08));
+      const signed = Math.max(-1, Math.min(1, poster * 0.08 + core * level * 0.035 + faceIndex * 0.008));
+      return { alpha: clamp01(poster + core * level * (cfg.coreBoost || 0.2) * 0.18), rimAlpha, vuT, signed, hotPressure: clamp01(level * cfg.hotBoost + core * level * 0.12) };
+    }
+    function drawCube(ctx, cx, cy, s, variant, now, opts = {}) {
+      const p = getPalette(), cfg = variantConfig(variant);
+      const panel = hexToRgb(p.panel), accent = hexToRgb(p.accent), accent2 = hexToRgb(p.accentSecondary), hot = hotColor(p);
+      const idleBase = mix(panel, accent, state.idleTint), idleLit = mix(idleBase, accent2, 0.045);
+      const baseN = Math.max(5, Math.floor(opts.tiles || state.tiles));
+      const N = cfg.tinyTiles ? Math.max(5, Math.min(8, baseN - 1)) : baseN;
+      const faces = getCachedCubeGeometry(cx, cy, s, N);
+      const strokeAlpha = state.driveMode === 'music' ? (cfg.poster ? 0.052 : 0.032) : (cfg.poster ? 0.075 : 0.055);
+      const globalHot = state.hotFill * smoothstep(state.hotThreshold, 1.0, compressVu(state.energy));
+      const scalarMode = state.driveMode === 'music';
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.56)'; ctx.shadowBlur = opts.small ? 8 : 28; ctx.shadowOffsetY = opts.small ? 3 : 16;
+      drawFaceOutline(ctx, faces[1].quad); ctx.fillStyle = rgbToCss(idleBase, 1); ctx.fill(); ctx.restore();
+      for (const face of faces) {
+        for (const tile of face.tiles) {
+          const sig = scalarMode ? scalarVuSignal(tile.u, tile.v, face.index, variant) : rippleSignal(tile.u, tile.v, face.index, variant, now, N);
+          const localHot = state.hotFill * smoothstep(state.hotThreshold, 1.0, compressVu(sig.hotPressure));
+          const hotMix = clamp01(Math.max(globalHot * (variant === 'packetXL' ? 0.65 : 1), localHot));
+          const hotBase = mix(idleLit, hot, hotMix);
+          const vuColor = rampColor(p, sig.vuT);
+          const litBand = colorWithMin(vuColor, 0.03 + sig.alpha * 0.03);
+          let col = mix(hotBase, litBand, smoothstep(0.02, 0.92, sig.alpha));
+          if (sig.rimAlpha > 0) col = mix(col, colorWithMin(mix(vuColor, hexToRgb(p.accentSecondary), 0.12), 0.12), smoothstep(0.05, 0.9, sig.rimAlpha));
+          const checker = 1 + tile.parity * state.checker * (cfg.poster ? 0.18 : 0.28);
+          col = shade(col, Math.max(0.36, face.shade * checker + sig.signed + sig.alpha * 0.08 + hotMix * 0.08));
+          drawCachedTile(ctx, tile);
+          ctx.fillStyle = rgbToCss(col, 1); ctx.fill();
+          if (strokeAlpha > 0.01) {
+            ctx.strokeStyle = `rgba(255,255,255,${strokeAlpha})`; ctx.lineWidth = opts.small ? 0.45 : 0.72; ctx.stroke();
+          }
+        }
+      }
+      ctx.save(); ctx.lineWidth = opts.small ? 1 : 1.6;
+      for (const face of faces) {
+        drawFaceOutline(ctx, face.quad);
+        const rim = ctx.createLinearGradient(cx - s, cy - s, cx + s, cy + s);
+        rim.addColorStop(0, 'rgba(255,255,255,0.28)'); rim.addColorStop(0.52, 'rgba(255,255,255,0.07)'); rim.addColorStop(1, 'rgba(0,0,0,0.40)');
+        ctx.strokeStyle = rim; ctx.stroke();
+      }
+      ctx.restore();
+    }
+    function drawGridBackplate(ctx, w, h) {
+      ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.025)'; ctx.lineWidth = 1;
+      const gap = 40; for (let x = -w; x < w * 2; x += gap) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + h, h); ctx.stroke(); }
+      ctx.restore();
+    }
+    function roundRect(ctx, x, y, w, h, r) { const rr = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + rr, y); ctx.arcTo(x + w, y, x + w, y + h, rr); ctx.arcTo(x + w, y + h, x, y + h, rr); ctx.arcTo(x, y + h, x, y, rr); ctx.arcTo(x, y, x + w, y, rr); ctx.closePath(); }
+    function drawLabels(ctx, w, h, variant) {
+      const p = getPalette();
+      const live = state.driveMode === 'music' && state.audioActive ? Math.max(state.audioRms, state.audioPeak * 0.72, state.energy) : state.energy;
+      const db = live <= 0.001 ? '-∞' : `${(-50 + clamp01(live) * 50).toFixed(1)}`;
+      const sourceLabel = state.driveMode === 'impulse' ? 'impulse dB' : state.audioActive ? (state.audioMode === 'tab' ? 'tab dB' : 'file dB') : 'music dB';
+      const copy = variant === 'packetXL' ? 'soft center bloom' : variant === 'hotFlood' ? 'hot core bloom' : variant === 'capillaryEdge' ? 'halo edge bloom' : 'block center bloom';
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 1;
+      roundRect(ctx, w - 118, h - 54, 94, 34, 11); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = p.text || '#fff'; ctx.font = '850 15px ui-monospace, SFMono-Regular, Menlo, monospace'; ctx.textAlign = 'right'; ctx.fillText(db, w - 34, h - 33);
+      ctx.fillStyle = p.muted || 'rgba(255,255,255,0.55)'; ctx.font = '800 8px ui-sans-serif, system-ui, sans-serif'; ctx.fillText(sourceLabel, w - 34, h - 22);
+      ctx.textAlign = 'left'; ctx.font = '760 9px ui-monospace, SFMono-Regular, Menlo, monospace'; ctx.fillText(copy, 14, h - 15);
+      ctx.restore();
+    }
+    function drawPanel(canvas, variant, now) {
+      const { ctx, width: w, height: h } = resizeCanvas(canvas);
+      clearCanvas(ctx, w, h); drawGridBackplate(ctx, w, h);
+      const bigS = Math.min(w, h) * 0.40;
+      drawCube(ctx, w * 0.52, h * 0.45, bigS, variant, now);
+      drawLabels(ctx, w, h, variant);
+    }
+
+    function drawMeterBar(ctx, x, y, w, h, label, value, colorA, colorB) {
+      value = clamp01(value);
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      roundRect(ctx, x, y, w, h, 8); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.stroke();
+      const fillW = Math.max(2, w * value);
+      const g = ctx.createLinearGradient(x, 0, x + w, 0);
+      g.addColorStop(0, colorA);
+      g.addColorStop(0.72, colorB);
+      g.addColorStop(1, getPalette().danger || '#EF4444');
+      ctx.fillStyle = g;
+      roundRect(ctx, x, y, fillW, h, 8); ctx.fill();
+      ctx.fillStyle = getPalette().text || '#fff';
+      ctx.font = '850 11px ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, x + 10, y + h * 0.64);
+      ctx.font = '850 12px ui-monospace, SFMono-Regular, Menlo, monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(value * 100)}%`, x + w - 10, y + h * 0.64);
+      ctx.restore();
+    }
+
+    function drawNormalMeters(now) {
+      if (!els.meterCanvas) return;
+      const { ctx, width: w, height: h } = resizeCanvas(els.meterCanvas);
+      const p = getPalette();
+      const panel = hexToRgb(p.panel), accent = hexToRgb(p.accent), accent2 = hexToRgb(p.accentSecondary);
+      clearCanvas(ctx, w, h);
+      drawGridBackplate(ctx, w, h);
+
+      const pad = 18;
+      const leftW = Math.max(250, w * 0.38);
+      const meterX = pad;
+      const meterW = leftW - pad;
+      const barH = Math.max(20, h * 0.12);
+      drawMeterBar(ctx, meterX, 22, meterW, barH, 'RMS', state.audioRms, p.success || p.accent, p.warning || p.accentSecondary);
+      drawMeterBar(ctx, meterX, 22 + barH + 10, meterW, barH, 'PEAK', state.audioPeak, p.warning || p.accentSecondary, p.danger || p.accent);
+      drawMeterBar(ctx, meterX, 22 + (barH + 10) * 2, meterW, barH, 'BASS', state.audioBass, p.accentSecondary, p.success || p.accent);
+      drawMeterBar(ctx, meterX, 22 + (barH + 10) * 3, meterW, barH, 'CUBE', state.vuScalar, p.accent || p.success, p.danger || p.accentSecondary);
+
+      const dbValue = state.vuScalar;
+      const db = dbValue <= 0.001 ? '-inf' : `${(-54 + clamp01(dbValue) * 54).toFixed(1)} dB`;
+      ctx.save();
+      ctx.fillStyle = rgbToCss(mix(panel, accent, 0.18), 0.78);
+      roundRect(ctx, meterX, h - 48, meterW, 30, 9); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.stroke();
+      ctx.fillStyle = p.text || '#fff';
+      ctx.font = '900 18px ui-monospace, SFMono-Regular, Menlo, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(db, meterX + meterW / 2, h - 28);
+      ctx.restore();
+
+      const spectrumX = leftW + pad;
+      const spectrumY = 20;
+      const spectrumW = Math.max(120, w - spectrumX - pad);
+      const spectrumH = Math.max(72, h * 0.45);
+      const barCount = 32;
+      const barGap = 3;
+      const barW = (spectrumW - barGap * (barCount - 1)) / barCount;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      roundRect(ctx, spectrumX, spectrumY, spectrumW, spectrumH, 10); ctx.fill();
+      for (let i = 0; i < barCount; i++) {
+        const bin = audioState.freqData && state.audioActive
+          ? Math.min(audioState.freqData.length - 1, Math.floor(Math.pow(i / barCount, 1.55) * audioState.freqData.length))
+          : i;
+        const raw = audioState.freqData && state.audioActive ? audioState.freqData[bin] / 255 : 0;
+        const level = clamp01(raw * 1.35);
+        const x = spectrumX + i * (barW + barGap);
+        const bh = Math.max(2, spectrumH * level);
+        const cg = ctx.createLinearGradient(0, spectrumY + spectrumH, 0, spectrumY);
+        cg.addColorStop(0, rgbToCss(accent2, 0.55));
+        cg.addColorStop(0.58, rgbToCss(accent, 0.88));
+        cg.addColorStop(1, p.danger || '#EF4444');
+        ctx.fillStyle = cg;
+        roundRect(ctx, x, spectrumY + spectrumH - bh, barW, bh, 4); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.stroke();
+      ctx.restore();
+
+      const waveY = spectrumY + spectrumH + 18;
+      const waveH = Math.max(46, h - waveY - 18);
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      roundRect(ctx, spectrumX, waveY, spectrumW, waveH, 10); ctx.fill();
+      ctx.strokeStyle = rgbToCss(accent, state.audioActive ? 0.95 : 0.25);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const data = audioState.timeData;
+      const sourceLength = data && state.audioActive ? data.length : 128;
+      const n = Math.min(160, sourceLength);
+      for (let i = 0; i < n; i++) {
+        const t = i / Math.max(1, n - 1);
+        const sourceIndex = Math.min(sourceLength - 1, Math.floor(t * (sourceLength - 1)));
+        const value = data && state.audioActive ? (data[sourceIndex] - 128) / 128 : Math.sin(t * Math.PI * 8 + now * 0.8) * 0.04;
+        const x = spectrumX + t * spectrumW;
+        const y = waveY + waveH * (0.5 + value * 0.42);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.strokeRect(spectrumX, waveY, spectrumW, waveH);
+      ctx.restore();
+    }
+
+    function currentSettings() {
+      return { paletteName: state.paletteName, exportVariant: state.exportVariant, driveMode: state.driveMode, audioSourceMode: state.audioMode, vuScalar: state.vuScalar, rmsPercent: state.audioRms, repeat: state.repeat, periodSeconds: state.period, impulseAmplitude: state.amplitude, amplitudeSwing: state.swing, bandWidthTiles: state.bandWidth, vuPaletteDrive: state.vuDrive, attackSharpness: state.attack, outwardSpeedFaceRadiusPerSecond: state.speed, dampingPerSecond: state.damping, edgeSoftness: state.softness, hotFillStrength: state.hotFill, hotThreshold: state.hotThreshold, wholeCubeMemory: state.memory, facePixels: state.tiles, idleTint: state.idleTint, facePhaseStagger: state.faceDelay, checkerContrast: state.checker };
+    }
+    function controlExportDefinitions() {
+      return {
+        paletteName: { type: 'select', current: state.paletteName, description: 'ODL palette used for chassis, controls, and VU ramp. Includes Tech Rainbow.' },
+        exportVariant: { type: 'select', current: state.exportVariant, values: Object.keys(VARIANT_DEFINITIONS), description: 'Which visual version should be implemented.' },
+        driveMode: { type: 'exclusive-toggle', current: state.driveMode, values: ['music', 'impulse'], description: 'Exactly one VU drive source is active: browser music analysis or impulse test.' },
+        audioSourceMode: { type: 'runtime', current: state.audioMode, description: 'Browser-only mockup input: idle, tab capture, or local file analysis. Production Swift remains a meter consumer.' },
+        vuScalar: { type: 'runtime', current: state.vuScalar, description: 'The single scalar sent to cube rendering in Music mode. It is exactly equal to the RMS meter value.' },
+        rmsPercent: { type: 'runtime', current: state.audioRms, description: 'The RMS percent from the normal meter; this is the cube VU scalar.' },
+        repeat: { type: 'boolean', current: state.repeat, description: 'Schedules repeated impulse drops only while driveMode is impulse.' },
+        periodSeconds: { type: 'seconds', min: 0, max: 2, step: 0.01, current: state.period, description: 'Time between repeated impulses; runtime clamps 0 to 0.05s for safety.' },
+        impulseAmplitude: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.amplitude, description: 'Base impulse amplitude; drives band strength and hot-fill pressure.' },
+        amplitudeSwing: { type: 'unit', min: 0, max: 0.65, step: 0.01, current: state.swing, description: 'Random plus/minus amplitude variation for repeated impulses.' },
+        bandWidthTiles: { type: 'tiles', min: 1, max: 9, step: 0.1, current: state.bandWidth, description: 'Impulse Test only: width of the artificial expanding annular band in cube-face pixels.' },
+        vuPaletteDrive: { type: 'curve', min: 0.5, max: 4, step: 0.05, current: state.vuDrive, description: 'Low-to-hot range compression. 1 is linear; higher values make ordinary hits traverse more of the palette.' },
+        attackSharpness: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.attack, description: 'Controls edge definition and a small speed lift for sharper hits.' },
+        outwardSpeedFaceRadiusPerSecond: { type: 'faceRadiusPerSecond', min: 0.15, max: 0.95, step: 0.01, current: state.speed, description: 'Outward motion speed of the ripple radius across each face.' },
+        dampingPerSecond: { type: 'perSecond', min: 0.05, max: 1.1, step: 0.01, current: state.damping, description: 'Exponential decay of each band over time.' },
+        edgeSoftness: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.softness, description: 'Soft edge width around each fat band.' },
+        hotFillStrength: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.hotFill, description: 'Strength of whole-cube hot-color takeover.' },
+        hotThreshold: { type: 'unit', min: 0.35, max: 0.98, step: 0.01, current: state.hotThreshold, description: 'Accumulated energy level where whole-cube hot fill begins.' },
+        wholeCubeMemory: { type: 'perSecond', min: 0.08, max: 0.95, step: 0.01, current: state.memory, description: 'Decay rate for accumulated cube energy / peak memory.' },
+        facePixels: { type: 'integer', min: 6, max: 14, step: 1, current: state.tiles, description: 'Pixel grid resolution per cube face. Kept modest to reduce canvas CPU cost.' },
+        idleTint: { type: 'unit', min: 0, max: 0.62, step: 0.01, current: state.idleTint, description: 'How much accent color mixes into the idle speaker surface.' },
+        facePhaseStagger: { type: 'seconds-ish', min: 0, max: 0.18, step: 0.005, current: state.faceDelay, description: 'Small per-face stagger so the cube feels dimensional.' },
+        checkerContrast: { type: 'unit', min: 0, max: 0.4, step: 0.01, current: state.checker, description: 'Subtle tile contrast; keep low to avoid random-noise readout.' }
+      };
+    }
+    function paletteExportDefinitions() {
+      const out = {};
+      for (const [name, p] of Object.entries(PALETTES)) out[name] = { chassis: p.chassis, panel: p.panel, card: p.card || p.panel, accent: p.accent, accentSecondary: p.accentSecondary, sourceGradient: p.sourceGradient || null, controlMapping: { sliderGradient: [p.accent, p.accentSecondary], sliderThumb: p.accent }, vuMapping: { stops: normalizedStops(p), cycleAllStops: !!p.cycleAllStops, rule: p.cycleAllStops ? 'Normal repeated impulses cycle through every explicit VU stop in order.' : 'Each impulse samples one VU color at birth from heat; the expanding band keeps that color.' }, idleSurface: 'mix(panel, accent, idleTint)', hotSurface: 'mix(idleSurface, final VU stop / danger, hotFill * smoothstep(hotThreshold, 1.0, accumulatedEnergy))' };
+      return out;
+    }
+    function exportPayload() {
+      const p = getPalette();
+      return {
+        id: 'sonicsphere-cube-scalar-vu', version: '2026-05-20-center-bloom-variants',
+        concept: { geometry: 'cube speakers only; each visible face is a low-resolution pixel/tile grid', visualLanguage: 'Music mode behaves like a normal VU: the RMS percent is the scalar and the cube faces bloom outward from the face center', audioSource: 'browser mockup can analyze shared tab audio for YouTube or a local audio file through Web Audio; production OrbitalViewKit remains a meter consumer', scalarFramework: 'meterScalar = RMS percent, rendered as one of four center-bloom variants', driveMode: 'exclusive Music or Impulse Test mode; never both at once', performanceRule: 'Music-mode drawing uses cached cube geometry, lower default face resolution, a capped canvas DPR, and a 24 fps render throttle.', smallScreenRule: 'wide monitor layout: left music meter plus 2×2 cube rail and right tabbed control rail fit inside a 1512×850 CSS-pixel stage that scales to the browser viewport; page scrolling is disabled', recommendedVariant: 'packetXL', selectedVariant: state.exportVariant },
+        settings: currentSettings(), controlDefinitions: controlExportDefinitions(),
+        activePalette: { name: state.paletteName, chassis: p.chassis, panel: p.panel, accent: p.accent, accentSecondary: p.accentSecondary, vuStops: normalizedStops(p), sourceGradient: p.sourceGradient || null, success: p.success, warning: p.warning, danger: p.danger, cycleAllStops: !!p.cycleAllStops, vuRule: p.cycleAllStops ? 'Normal repeated impulses cycle through every Tech Rainbow stop: violet, blue, cyan, green, yellow, orange, red. Amplitude controls band alpha and hot-fill pressure.' : 'Impulse heat is sampled once at birth using vuPaletteDrive, then the expanding band keeps that color.' },
+        paletteDefinitions: paletteExportDefinitions(), selectedVariantDefinition: VARIANT_DEFINITIONS[state.exportVariant], allVariantDefinitions: VARIANT_DEFINITIONS,
+        mathDefinition: { audioAnalysis: ['time-domain RMS and peak come from an AnalyserNode only in Music mode', 'bass energy averages FFT bins up to 180 Hz', 'vuScalar = rms; peak and bass remain visible only as meter diagnostics', 'silence decays RMS and therefore the scalar naturally'], scalarVu: ['vuScalar = rms', 'state.energy = vuScalar in Music mode', 'radius = lerp(bloomMin, bloomMax, pow(vuScalar, radiusCurve))', 'fill = 1 - smoothstep(radius, radius + bloomEdge, distanceFromFaceCenter)'], driveMode: ['Music mode clears impulse-test drops and uses browser audio analysis as a scalar meter', 'Impulse Test mode stops music capture/playback, clears music state, and allows Drop one / Repeat impulse only'], faceCoordinate: 'u = (x + 0.5) / facePixels; v = (y + 0.5) / facePixels; r = hypot(u - 0.5, v - 0.5) * sqrt(2).', vuPaletteDrive: 'heat = 1 - pow(1 - clamp01(value), vuPaletteDrive).', techRainbowException: 'When palette.cycleAllStops is true in Impulse Test mode, bandColorT = palette.vuStops[impulseIndex % stopCount].stop, guaranteeing all colors are hit in a normal cycle.', impulseBirth: ['amp = clamp01(impulseAmplitude plus optional swing)', 'attack = attackSharpness', 'widthTiles = max(1.15, bandWidthTiles * lerp(1.18, 0.88, attackSharpness))', 'edgeSharpness = clamp01(attackSharpness * 0.7 + tempo * 0.3)', 'groupSpeed = outwardSpeedFaceRadiusPerSecond * lerp(0.92, 1.12, edgeSharpness)'], perTileSignal: ['Music mode: fill is based on the tile distance from face center and the RMS-derived bloom radius', 'Halo Edge Bloom adds a brighter rim at the current radius boundary', 'Impulse Test mode keeps the older annular ripple signal for artificial testing only'], color: ['idleBase = mix(panel, accent, idleTint)', 'vuColor = sampleVuStops(activePalette.vuStops, scalar and center-core heat)', 'hotColor = final activePalette.vuStops color', 'hot = hotFillStrength * smoothstep(hotThreshold, 1.0, vuScalar)', 'tileColor = mix(mix(idleBase, hotColor, hot), vuColor, centerBloomFill)'], performanceNote: 'Music mode draws one large cube per panel at a 24 fps cap, with cached geometry, default 9 x 9 faces, 1024-point FFT, down-sampled waveform, and canvas DPR capped at 1.35.' }
+      };
+    }
+    function updateExport() { if (els.exportText) els.exportText.value = JSON.stringify(exportPayload(), null, 2); }
+    function copyExport() {
+      updateExport();
+      const text = els.exportText.value;
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { els.exportStatus.textContent = 'Copied export JSON.'; }).catch(() => { els.exportText.focus(); els.exportText.select(); els.exportStatus.textContent = 'Copy failed; JSON selected manually.'; });
+      else { els.exportText.focus(); els.exportText.select(); try { document.execCommand('copy'); } catch (_) {} els.exportStatus.textContent = 'JSON selected for copying.'; }
+    }
+    function downloadExport() {
+      updateExport();
+      const blob = new Blob([els.exportText.value], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `sonicsphere-cube-scalar-vu-${state.exportVariant}-${state.paletteName.replace(/\s+/g, '-').toLowerCase()}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      els.exportStatus.textContent = 'Downloaded export JSON.';
+    }
+    function registerPalette(name, palette) {
+      const required = ['chassis', 'panel', 'accent', 'accentSecondary', 'success', 'warning', 'danger'];
+      for (const key of required) if (!(key in palette)) throw new Error(`Missing palette field: ${key}`);
+      if (!Array.isArray(palette.chassis) || palette.chassis.length < 2) throw new Error('chassis must be an array of at least two colors');
+      PALETTES[name] = { ...palette, card: palette.card || palette.panel, line: palette.line || 'rgba(255,255,255,0.13)', text: palette.text || '#F6FAFA', muted: palette.muted || '#A7B2B1' };
+      if (![...els.paletteSelect.options].some(o => o.value === name)) { const opt = document.createElement('option'); opt.value = name; opt.textContent = name; els.paletteSelect.appendChild(opt); }
+      state.paletteName = name; els.paletteSelect.value = name; applyPalette();
+    }
+    function bindControls() {
+      Object.keys(PALETTES).forEach(name => { const option = document.createElement('option'); option.value = name; option.textContent = name; els.paletteSelect.appendChild(option); });
+      els.paletteSelect.value = state.paletteName; els.repeat.checked = state.repeat; els.exportVariant.value = state.exportVariant;
+      document.querySelectorAll('.control-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const targetId = tab.dataset.tabTarget;
+          if (targetId === 'impulsePanel') setDriveMode('impulse');
+          else if (targetId === 'tunePanel') setDriveMode('music');
+          setActiveTab(targetId);
+        });
+      });
+      document.querySelectorAll('[data-drive-mode]').forEach(button => {
+        button.addEventListener('click', () => setDriveMode(button.dataset.driveMode, { showTab: true }));
+      });
+      els.paletteSelect.addEventListener('change', e => { state.paletteName = e.target.value; applyPalette(); });
+      els.captureAudioButton.addEventListener('click', startTabCapture);
+      els.stopAudioButton.addEventListener('click', () => stopAudioSource());
+      els.audioFileInput.addEventListener('change', handleLocalFileChange);
+      els.localAudio.addEventListener('play', startLocalAudioAnalysis);
+      els.localAudio.addEventListener('pause', () => {
+        if (state.audioMode === 'local-file' && state.audioActive) {
+          disconnectAudioGraph();
+          state.audioActive = false;
+          state.audioMode = 'idle';
+          resetAudioMeters();
+          setAudioStatus('idle', 'local file paused');
+          updateExport();
+        }
+      });
+      els.localAudio.addEventListener('ended', () => {
+        if (state.audioMode === 'local-file') stopAudioSource('local file ended');
+      });
+      els.impulseButton.addEventListener('click', () => { setDriveMode('impulse'); triggerImpulse(performance.now() / 1000, { swing: false }); });
+      els.clearButton.addEventListener('click', () => { state.drops = []; state.energy = 0; state.nextImpulseAt = performance.now() / 1000 + Math.max(0.05, state.period); updateExport(); });
+      els.repeat.addEventListener('change', e => { state.repeat = e.target.checked; state.nextImpulseAt = performance.now() / 1000; updateExport(); });
+      const mappings = [['period','period'], ['amplitude','amplitude'], ['swing','swing'], ['bandWidth','bandWidth'], ['vuDrive','vuDrive'], ['attack','attack'], ['speed','speed'], ['damping','damping'], ['softness','softness'], ['hotFill','hotFill'], ['hotThreshold','hotThreshold'], ['memory','memory'], ['tiles','tiles'], ['idleTint','idleTint'], ['faceDelay','faceDelay'], ['checker','checker']];
+      for (const [id, key] of mappings) els[id].addEventListener('input', e => { state[key] = Number(e.target.value); refreshControls(); });
+      els.exportVariant.addEventListener('change', e => { state.exportVariant = e.target.value; updateExport(); });
+      els.copyExport.addEventListener('click', copyExport); els.downloadExport.addEventListener('click', downloadExport);
+      els.loadPalette.addEventListener('click', () => { try { const parsed = JSON.parse(els.paletteJson.value || '{}'); const name = parsed.name || `Custom ${Object.keys(PALETTES).length + 1}`; delete parsed.name; registerPalette(name, parsed); els.paletteStatus.textContent = `Loaded ${name}.`; updateExport(); } catch (err) { els.paletteStatus.textContent = `Palette error: ${err.message}`; } });
+      els.resetPalette.addEventListener('click', () => { state.paletteName = 'Tech Rainbow'; els.paletteSelect.value = state.paletteName; els.paletteJson.value = ''; applyPalette(); });
+      applyPalette(); refreshControls(); updateDriveModeUi();
+    }
+
+    let last = performance.now() / 1000;
+    let lastDrawMs = 0;
+    const renderIntervalMs = 1000 / 24;
+    function frame(ms) {
+      const now = ms / 1000;
+      const dt = Math.min(0.05, now - last);
+      last = now;
+      const audioEnergy = analyzeAudio(now, dt);
+      if (state.driveMode === 'impulse' && state.repeat) {
+        const interval = Math.max(0.05, state.period);
+        if (state.nextImpulseAt <= 0) state.nextImpulseAt = now;
+        let guard = 0;
+        while (now >= state.nextImpulseAt && guard < 8) { triggerImpulse(state.nextImpulseAt); state.nextImpulseAt += interval; guard++; }
+      }
+      cleanupDrops(now);
+      const instantaneous = state.drops.reduce((sum, d) => sum + d.amp * Math.exp(-state.memory * Math.max(0, now - d.t)), 0);
+      const targetEnergy = state.driveMode === 'music' ? audioEnergy : compressVu(clamp01(instantaneous / 1.42));
+      if (state.driveMode === 'music') {
+        state.energy = targetEnergy;
+      } else {
+        const energyRate = targetEnergy > state.energy ? 0.48 : 0.18;
+        state.energy += (targetEnergy - state.energy) * energyRate;
+      }
+      if (ms - lastDrawMs >= renderIntervalMs) {
+        lastDrawMs = ms;
+        drawNormalMeters(now);
+        for (const item of canvases) drawPanel(item.canvas, item.variant, now);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    bindControls();
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>

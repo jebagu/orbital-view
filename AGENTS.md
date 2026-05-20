@@ -8,21 +8,33 @@ The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalVie
 
 ## Local Hosting
 
-This project is not currently a locally hosted web project.
+This project has a pinned static mockup server for browser preview work.
 
 Permanent local URL:
 
 ```text
-not applicable yet
+http://127.0.0.1:8765/OrbitalViewKit/
 ```
 
-If a future mockup or local web tool is hosted, use a stable project path:
+Pinned port:
 
 ```text
-http://127.0.0.1:<port>/OrbitalViewKit/
+8765
 ```
 
-Pin the port in this file before treating that URL as permanent.
+Server command:
+
+```text
+python3 -m http.server 8765 --bind 127.0.0.1
+```
+
+The `OrbitalViewKit` root entrypoint is a local symlink to the active single-screen Sonicsphere cube VU mockup:
+
+```text
+OrbitalViewKit -> mockups/sonicsphere-cube-vu-single-screen
+```
+
+If port 8765 is occupied, stop the stale server or report the conflict; do not silently move the project to a new URL unless the user approves the new permanent URL.
 
 ## Read First
 

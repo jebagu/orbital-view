@@ -103,6 +103,25 @@ Disposable browser mockups should stay separate from production Swift code. For 
 - mockup text does not claim real audio, real meters, or production renderer behavior
 - static browser review confirms the DomeLab-style left control panel headings, no Projection picker, always-axonometric projection, full-surface Color palettes, Purple/Prism defaults, remapped speaker size/fog sliders, Speaker numbers switch defaulted off, Hidden Lines switch defaulted off, consistent shell/speaker fog behavior, prism face clipping, PNG export, and inspector are usable
 
+For `mockups/sonicsphere-cube-vu-single-screen/`, verify:
+
+- `index.html` and `notes.md` exist
+- inline JavaScript parses with Node extraction
+- body/page scrolling is disabled
+- the fixed 1512 x 850 artboard scales to the live viewport
+- the Music Meter panel is present above the cube grid and exposes a normal RMS/Peak/Bass, spectrum, and waveform view
+- four cube VU variant canvases are present
+- the Tune tab remains visible with audio source, Cube VU scalar, palette, and surface groups
+- the Impulse tab exposes artificial Drop/Repeat controls
+- the Advanced tab exposes custom palette JSON and implementation export controls without crowding the Tune tab
+- the VU drive toggle enforces exclusive Music vs Impulse Test behavior
+- the audio source group exposes tab capture, stop capture, local file input/playback, live RMS/Peak/Bass readouts, and idle/capturing/no-audio/permission-denied statuses
+- browser-only Web Audio analysis uses captured tab audio or local file playback to drive both the normal meter and cube VU only in Music mode, with `vuScalar` equal to RMS percent, without altering Swift package audio, routing, or renderer contracts
+- switching to Impulse Test stops music capture/playback, disables music controls, clears existing drops/energy, and enables impulse controls
+- switching to Music disables impulse controls and clears existing impulse drops/energy
+- browser measurement confirms the document fits within the viewport without scrollbars
+- center-bloom performance guardrails remain present: cached cube geometry, cached palette/RGB conversion, 1024-point analyser FFT, <= 160 waveform points, 32 spectrum bars, and a 24 fps canvas redraw cap
+
 ## Required Checks
 
 Current package:
@@ -115,7 +134,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 Current mockup:
 
 ```text
-node -e 'const fs=require("fs"); const html=fs.readFileSync("mockups/orbital-view-viewport/index.html","utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n"); new Function(scripts); console.log("inline JS parses");'
+node -e 'const fs=require("fs"); for (const file of ["mockups/orbital-view-viewport/index.html", "mockups/sonicsphere-cube-vu-single-screen/index.html"]) { const html=fs.readFileSync(file,"utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n"); new Function(scripts); } console.log("inline JS parses");'
 ```
 
 The plain Command Line Tools environment on this machine can build but cannot currently run XCTest:

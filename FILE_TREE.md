@@ -10,6 +10,7 @@ META_AGENTS.md
 .gitignore
 Package.swift
 Open Orbital View Kit.command
+OrbitalViewKit -> mockups/sonicsphere-cube-vu-single-screen
 
 docs/
   architect-control.md
@@ -90,6 +91,10 @@ mockups/
   orbital-view-viewport/
     index.html
     notes.md
+  sonicsphere-cube-vu-single-screen/
+    index.html
+    notes.md
+    sonicsphere-cube-vu-design.md
   _template/
 
 .agents/

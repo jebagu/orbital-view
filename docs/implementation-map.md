@@ -83,6 +83,30 @@ mockups/orbital-view-viewport/notes.md
 
 This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It now mirrors DomeLab's 3D Model control panel on the left side of the viewport, grouped under Camera, Color, Speaker Shape, and View Detail headings. The shell structure is generated as a Fey 3V class-I icosahedron geodesic from the DomeLab project config values in `fey sphere - domelab-configuration.json`, normalized to the viewport sphere. Purple, Flamingo, Green, and B&W color palettes theme the full mockup surface, with Purple as the default. Projection is always axonometric, speaker numbers and hidden lines use switch controls defaulted off, speaker size is centered at 1.95x with half/double range mapping, fog density remaps the prior 30-density look to the slider midpoint, and prism mode is the default shape using true 8-vertex rectangular-prism speaker cabinets with hidden-line face clipping. It is not production renderer source.
 
+### Sonicsphere Cube VU Single-Screen Mockup
+
+Purpose:
+
+```text
+Preview a cube-only low-resolution center-bloom scalar VU style with all variants and controls visible in one browser viewport.
+```
+
+Implementation locations:
+
+```text
+mockups/sonicsphere-cube-vu-single-screen/index.html
+mockups/sonicsphere-cube-vu-single-screen/notes.md
+OrbitalViewKit -> mockups/sonicsphere-cube-vu-single-screen
+```
+
+Local server URL:
+
+```text
+http://127.0.0.1:8765/OrbitalViewKit/
+```
+
+This is a disposable imported HTML/CSS/JS mockup. It uses a fixed 1512 x 850 CSS-pixel artboard that scales uniformly to the viewport, keeps body scrolling disabled, and lays out a normal Music Meter above four cube VU variants on the left with a tabbed tuning rail on the right. The Tune tab keeps live audio, one Cube VU scalar, palette, and surface controls readable; the Impulse tab holds artificial Drop/Repeat testing; the Advanced tab holds custom palette JSON and implementation export. It includes an exclusive VU drive toggle: Music mode uses tab-audio capture through `getDisplayMedia` or local MP3/M4A/WAV playback through the page's `<audio>` element, while Impulse Test mode stops browser audio capture/playback and enables only artificial impulses. Web Audio analysis shows RMS/peak/bass, but the cube `vuScalar` is exactly the RMS percent and drives four center-bloom cube-face variants in Music mode. The mockup keeps CPU cost down by using one large cube per panel, cached tile geometry, a 9 x 9 default face grid, capped canvas DPR, down-sampled meter drawing, and a 24 fps render throttle. This mockup audio path is not production renderer source and does not change the Swift package contract.
+
 ### OrbitalViewRender Seam
 
 Purpose:
@@ -224,4 +248,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-19 VU meter plumbing and settings tray
+2026-05-20 Center-bloom cube VU mockup

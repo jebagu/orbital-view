@@ -2,11 +2,11 @@
 
 Orbital View VU Kit is the project-control scaffold for `OrbitalViewKit`, a reusable 3D spherical speaker viewport planned for Wavefield, Orbisonic, and Splat.
 
-The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, display-only VU settings, and Wavefield layout adaptation tests. A disposable viewport mockup previews the intended monitor interaction, and the native renderer now has its first offscreen smoke-tested Metal draw path with static draw-input invariant coverage, 30-channel VU mapping, and the default checker pulse/ring/diagonal wave style.
+The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, display-only VU settings, and Wavefield layout adaptation tests. Disposable browser mockups preview viewport and cube-VU directions, and the native renderer now has its first offscreen smoke-tested Metal draw path with static draw-input invariant coverage, 30-channel VU mapping, and the default checker pulse/ring/diagonal wave style.
 
 ## Current State
 
-This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the `OrbitalViewRender` MetalKit renderer seam with an offscreen smoke-tested draw path, static draw-input invariant tests, and checker VU visual settings, the `OrbitalViewSwiftUI` wrapper with an opt-in settings tray, a static browser mockup for the spherical monitor viewport, and an accepted MetalKit renderer-backend decision.
+This repository contains docs, tasks, OpenSpec templates, reviewer guidance, the initial work package, the pure Swift `OrbitalViewCore` target, the local `OrbitalViewWavefield` adapter target, the `OrbitalViewRender` MetalKit renderer seam with an offscreen smoke-tested draw path, static draw-input invariant tests, and checker VU visual settings, the `OrbitalViewSwiftUI` wrapper with an opt-in settings tray, static browser mockups for the spherical monitor viewport and single-screen cube VU tuner, and an accepted MetalKit renderer-backend decision.
 
 ## Main References
 
@@ -23,6 +23,8 @@ work-packages/orbital-view-kit/MV.md
 work-packages/orbital-view-kit/orbital-view-kit-codex-work-package.md
 mockups/orbital-view-viewport/index.html
 mockups/orbital-view-viewport/notes.md
+mockups/sonicsphere-cube-vu-single-screen/index.html
+mockups/sonicsphere-cube-vu-single-screen/notes.md
 ```
 
 ## Implemented Targets
@@ -46,9 +48,16 @@ OrbitalViewSwiftUI
 
 ```text
 mockups/orbital-view-viewport/index.html
+mockups/sonicsphere-cube-vu-single-screen/index.html
 ```
 
-This is a disposable static mockup with fake speaker positions and fake meter animation. It is not production renderer source.
+These are disposable static mockups. The cube VU mockup can optionally analyze browser audio from a shared YouTube/tab capture or local audio file playback, but that path is still prototype-only and is not production renderer or Swift package source.
+
+The pinned local server URL for the active single-screen cube VU mockup is:
+
+```text
+http://127.0.0.1:8765/OrbitalViewKit/
+```
 
 Double-click the launcher to open the live mockup file with a cache-busting URL:
 
@@ -80,4 +89,10 @@ Use the full Xcode toolchain when this shell's Command Line Tools install cannot
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
+
+Current static mockup JavaScript parse checks:
+
+```text
+node -e 'const fs=require("fs"); for (const file of ["mockups/orbital-view-viewport/index.html", "mockups/sonicsphere-cube-vu-single-screen/index.html"]) { const html=fs.readFileSync(file,"utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n"); new Function(scripts); } console.log("inline JS parses");'
 ```
