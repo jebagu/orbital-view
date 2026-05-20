@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-VU meter plumbing and settings tray
+initialization and baseline slices complete; no active implementation task
 ```
 
 ## Current Milestone
 
 ```text
-Checker pulse/ring/diagonal wave VU settings and 30-channel renderer mapping verified
+Slices 000-011 are complete; bootstrap complete and active task is awaiting explicit open
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and settings updates. The project also has a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and settings updates. The project also has a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -73,7 +73,7 @@ none
 
 ## Pending
 
-- Decide whether the next renderer slice should implement production checker facet animation/materials, pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
+- No active implementation task. The next renderer/work-package slice must be explicitly opened before starting.
 
 ## Blocked
 

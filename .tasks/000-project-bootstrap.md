@@ -8,7 +8,7 @@ complete
 
 ## Goal
 
-Set up the initial Orbital View Kit project-control scaffold without implementing Swift source code.
+Set up the initial Orbital View VU Kit project-control scaffold without implementing Swift source code.
 
 ## Scope Completed
 

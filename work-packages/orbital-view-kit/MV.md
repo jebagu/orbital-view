@@ -1,4 +1,4 @@
-# Work Package: Orbital View Kit Foundation
+# Work Package: Orbital View VU Kit Foundation
 
 ## Goal
 

@@ -2,7 +2,7 @@
 
 ## Project Name
 
-Orbital View Kit
+Orbital View VU Kit
 
 ## One-Sentence Description
 

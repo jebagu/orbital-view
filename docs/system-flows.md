@@ -114,4 +114,4 @@ flowchart TD
   Selection --> HostUI["Host UI diagnostics"]
 ```
 
-Orbital View Kit consumes measured state and emits UI-facing events. It does not own audio timing, playback, routing, MIDI, OSC, or output behavior.
+Orbital View VU Kit consumes measured state and emits UI-facing events. It does not own audio timing, playback, routing, MIDI, OSC, or output behavior.

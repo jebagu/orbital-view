@@ -2,7 +2,7 @@
 
 ## Overview
 
-Orbital View Kit will become a layered Swift module family for spherical speaker visualization. The first layer is `OrbitalViewCore`, a pure data and validation target. Rendering, SwiftUI wrapping, and downstream app adapters are future layers.
+Orbital View VU Kit will become a layered Swift module family for spherical speaker visualization. The first layer is `OrbitalViewCore`, a pure data and validation target. Rendering, SwiftUI wrapping, and downstream app adapters are future layers.
 
 ## Planned Module Layers
 
@@ -62,7 +62,7 @@ Long-term renderer source should not be SceneKit-first, RealityKit-first, WebVie
 
 ## Audio Architecture
 
-Orbital View Kit does not own audio behavior.
+Orbital View VU Kit does not own audio behavior.
 
 It may consume already-computed meter frames:
 

@@ -1,6 +1,6 @@
 # Start Here
 
-Orbital View Kit starts as a docs-first project-control repository.
+Orbital View VU Kit starts as a docs-first project-control repository.
 
 ## First Read
 
