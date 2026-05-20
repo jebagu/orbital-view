@@ -31,6 +31,10 @@ public final class OrbitalViewMetalRenderer: NSObject, OrbitalViewRendering {
         renderState = renderState.updating(meters: frame)
     }
 
+    public func updateMeterVisualSettings(_ settings: SpeakerMeterVisualSettings) {
+        renderState = renderState.updating(meterVisualSettings: settings)
+    }
+
     public func updateCamera(_ camera: OrbitalViewCameraState) {
         renderState = renderState.updating(camera: camera)
         pendingEvents.append(.cameraChanged(camera))

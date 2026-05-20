@@ -40,6 +40,7 @@ docs/
   008-renderer-test-harness-plan.md
   009-offscreen-renderer-smoke-test.md
   010-renderer-invariant-tests.md
+  011-vu-meter-plumbing-tray.md
   _template-task.md
 
 Sources/
@@ -73,6 +74,7 @@ work-packages/
       008-renderer-test-harness-plan.md
       009-offscreen-renderer-smoke-test.md
       010-renderer-invariant-tests.md
+      011-vu-meter-plumbing-tray.md
   _template/
     MV.md
     slices/

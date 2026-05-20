@@ -70,6 +70,7 @@ MetalKit / MTKView renderer with SwiftUI wrapper
 ### Invariants
 
 - Meter updates must not rebuild static geometry every frame.
+- Meter visual setting updates must not rebuild static geometry.
 - Speaker geometry must not resize for VU behavior.
 - Camera target must remain center-locked in monitor mode.
 - Rendering must preserve physical speaker channel identity.

@@ -42,13 +42,15 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 - Local `OrbitalViewWavefield` JSON layout and meter-frame adapters.
 - Native `OrbitalViewRender` MetalKit seam with an initial offscreen smoke-tested draw path.
 - Renderer invariant tests for stable static draw inputs under meter and camera updates.
-- Compile-only `OrbitalViewSwiftUI` wrapper skeleton.
+- Display-only VU visual settings for gain, checker pulse/ring/diagonal wave style, color scheme, and 30-channel renderer meter mapping.
+- `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray.
 - Disposable browser mockup for toolbar and camera interaction.
 
 ## Nice-To-Have Later
 
 - Full production MetalKit visuals.
-- SwiftUI controls, gestures, toolbar, and inspector UI.
+- Production checker facet animation/materials.
+- SwiftUI controls, gestures, toolbar, and inspector UI beyond the current VU settings tray.
 - DomeLab neutral geometry import.
 - Splat editing mode and renderer-kernel overlays.
 - Snapshot export.
@@ -70,10 +72,11 @@ The first usable implementation already:
 - Represent a scene with coordinate system, shell geometry, 30 physical speakers, meter levels by channel, and center-locked camera presets.
 - Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder.
 - Render a minimal offscreen Metal frame for deterministic renderer smoke coverage.
+- Apply display-only checker pulse/ring/diagonal wave visual settings to renderer color state without changing speaker geometry.
 
 ## Constraints
 
-- Tech stack: Swift package first; current renderer is native MetalKit with a compile-only SwiftUI wrapper skeleton.
+- Tech stack: Swift package first; current renderer is native MetalKit with a SwiftUI wrapper and optional VU settings tray.
 - App type: reusable module consumed by local native apps.
 - Audio domain: visualizes measured levels only; does not own audio timing or routing.
 - Persistence: none in `OrbitalViewCore`.

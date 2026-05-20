@@ -1,3 +1,4 @@
+import Foundation
 import Metal
 import OrbitalViewCore
 import simd
@@ -35,6 +36,7 @@ struct OrbitalViewSpeakerStaticDrawInput: Equatable {
 
 struct OrbitalViewSpeakerDrawInput: Equatable {
     let staticInput: OrbitalViewSpeakerStaticDrawInput
+    let meterLevel: SpeakerMeterLevel?
     let color: SIMD4<Float>
 
     var position: SIMD4<Float> {
@@ -223,7 +225,12 @@ final class OrbitalViewMetalDrawPipeline {
             )
             return OrbitalViewSpeakerDrawInput(
                 staticInput: staticInput,
-                color: meterColor(for: speaker, meters: state.meters)
+                meterLevel: state.meters?.levelsByChannel[speaker.channel],
+                color: meterColor(
+                    for: speaker,
+                    meters: state.meters,
+                    settings: state.meterVisualSettings
+                )
             )
         }
 
@@ -239,22 +246,193 @@ final class OrbitalViewMetalDrawPipeline {
         }
     }
 
-    private static func meterColor(for speaker: OrbitalViewSpeaker, meters: SpeakerMeterFrame?) -> SIMD4<Float> {
+    private static func meterColor(
+        for speaker: OrbitalViewSpeaker,
+        meters: SpeakerMeterFrame?,
+        settings: SpeakerMeterVisualSettings
+    ) -> SIMD4<Float> {
         guard let level = meters?.levelsByChannel[speaker.channel] else {
-            return SIMD4<Float>(0.12, 0.58, 0.88, 1)
+            return styleColor(
+                value: 0,
+                style: settings.style,
+                settings: settings,
+                speaker: speaker,
+                meters: meters
+            )
         }
 
         if level.clip {
             return SIMD4<Float>(1, 0.1, 0.04, 1)
         }
 
-        let peak = min(max(level.peak, 0), 1)
-        return SIMD4<Float>(
-            0.12 + (0.18 * peak),
-            0.46 + (0.42 * peak),
-            0.72 + (0.18 * peak),
-            1
+        let gain = pow(10.0, Double(settings.visualGainDB) / 20.0)
+        let peak = min(max(Double(level.peak) * gain, 0), 1)
+        return styleColor(
+            value: Float(peak),
+            style: settings.style,
+            settings: settings,
+            speaker: speaker,
+            meters: meters
         )
+    }
+
+    private static func styleColor(
+        value: Float,
+        style: SpeakerMeterVisualStyle,
+        settings: SpeakerMeterVisualSettings,
+        speaker: OrbitalViewSpeaker,
+        meters: SpeakerMeterFrame?
+    ) -> SIMD4<Float> {
+        switch style {
+        case .checkerPulseRingAndDiagonalWave, .customTBD:
+            return checkerPulseColor(
+                value: value,
+                settings: settings,
+                speaker: speaker,
+                timestamp: meters?.timestamp ?? 0
+            )
+        case .prismGlow:
+            return SIMD4<Float>(
+                0.12 + (0.18 * value),
+                0.46 + (0.42 * value),
+                0.72 + (0.18 * value),
+                1
+            )
+        case .warmPulse:
+            return SIMD4<Float>(
+                0.38 + (0.54 * value),
+                0.18 + (0.36 * value),
+                0.12 + (0.08 * value),
+                1
+            )
+        case .coolPulse:
+            return SIMD4<Float>(
+                0.08 + (0.22 * value),
+                0.32 + (0.46 * value),
+                0.42 + (0.52 * value),
+                1
+            )
+        }
+    }
+
+    private static func checkerPulseColor(
+        value: Float,
+        settings: SpeakerMeterVisualSettings,
+        speaker: OrbitalViewSpeaker,
+        timestamp: TimeInterval
+    ) -> SIMD4<Float> {
+        let objectIndex = Float(max(speaker.channel - 1, 0))
+        let bandPhase = Float(timestamp.truncatingRemainder(dividingBy: 10_000))
+            * settings.checkerBandVelocity
+            * 3.9
+        let u = fract(objectIndex * 0.37 + 0.13)
+        let v = fract(objectIndex * 0.61 + 0.29)
+        let checkerSize = Float(max(4, settings.tileDetail - 1))
+        let qx = floor(u * checkerSize)
+        let qy = floor(v * checkerSize)
+        let parity: Float = Int(qx + qy + objectIndex).isMultiple(of: 2) ? 1.06 : 0.82
+        let localBandWidth = min(max(settings.checkerBandWidth, 0.22), 0.96)
+        let softness = max(0.1, settings.bandSoftness)
+
+        let radial = hypot(u - 0.5, v - 0.5) * 1.42
+        let ringPhase = radial * settings.ringFrontDensity - bandPhase + objectIndex * 0.043
+        let ring = bandWave(phase: ringPhase, softness: softness, lift: value * 0.035, width: localBandWidth)
+
+        let qu = qx / checkerSize
+        let qv = qy / checkerSize
+        let diagonal = (qu * 0.92 + qv * 1.18) * settings.ringFrontDensity
+        let diagonalPhase = diagonal - bandPhase + objectIndex * 0.051
+        let front = bandWave(
+            phase: diagonalPhase,
+            softness: max(0.45, softness * 0.82),
+            lift: 0,
+            width: localBandWidth
+        )
+        let carry = bandWave(
+            phase: diagonalPhase + 0.38,
+            softness: 1.65,
+            lift: 0,
+            width: localBandWidth * 0.72
+        ) * settings.memoryCarryover
+
+        let hit = max(ring, max(front, carry * 0.68)) * parity
+        let quietGate = smoothstep(edge0: 0.045, edge1: 0.16, x: value)
+        let alpha = quietGate * min(max(0.11 + hit * (0.41 + value * 0.65), 0), 1)
+        let vu = min(max(value * 0.19 + hit * value * 1.21 + carry * 0.16, 0), 1)
+
+        let palette = checkerPalette(for: settings.colorScheme)
+        let idle = mix(
+            palette.panel,
+            mix(palette.accent, palette.accent2, 0.12),
+            min(max(settings.idleTint, 0), 1)
+        )
+        let ramp = rampColor(value: vu, palette: palette)
+        let rgb = mix(idle, ramp, alpha)
+        return SIMD4<Float>(rgb.x, rgb.y, rgb.z, 1)
+    }
+
+    private static func bandWave(phase: Float, softness: Float, lift: Float, width: Float) -> Float {
+        let distance = abs(fract(phase) - 0.5) * 2
+        let band = pow(min(max(1 - distance / max(width, 0.001), 0), 1), softness)
+        return min(max(band + lift, 0), 1)
+    }
+
+    private static func rampColor(value: Float, palette: CheckerPalette) -> SIMD3<Float> {
+        let clamped = min(max(value, 0), 1)
+        if clamped < 0.5 {
+            return mix(palette.muted, palette.accent, clamped * 2)
+        }
+        return mix(palette.accent, palette.accent2, (clamped - 0.5) * 2)
+    }
+
+    private static func checkerPalette(for colorScheme: SpeakerMeterColorScheme) -> CheckerPalette {
+        switch colorScheme {
+        case .kimiPurple:
+            return CheckerPalette(
+                panel: rgb(0x14, 0x18, 0x1C),
+                muted: rgb(0xA7, 0xA0, 0xB8),
+                accent: rgb(0xAA, 0x88, 0xFF),
+                accent2: rgb(0x32, 0xD6, 0xBF)
+            )
+        case .orbisonicGreen:
+            return CheckerPalette(
+                panel: rgb(0x07, 0x10, 0x0E),
+                muted: rgb(0x85, 0xA4, 0x9A),
+                accent: rgb(0x42, 0xD8, 0x8A),
+                accent2: rgb(0xD1, 0xF7, 0x7A)
+            )
+        case .monochrome:
+            return CheckerPalette(
+                panel: rgb(0x12, 0x12, 0x12),
+                muted: rgb(0x8A, 0x8A, 0x8A),
+                accent: rgb(0xD8, 0xD8, 0xD8),
+                accent2: rgb(0xFF, 0xFF, 0xFF)
+            )
+        }
+    }
+
+    private static func smoothstep(edge0: Float, edge1: Float, x: Float) -> Float {
+        let t = min(max((x - edge0) / (edge1 - edge0), 0), 1)
+        return t * t * (3 - 2 * t)
+    }
+
+    private static func fract(_ value: Float) -> Float {
+        value - floor(value)
+    }
+
+    private static func mix(_ a: SIMD3<Float>, _ b: SIMD3<Float>, _ t: Float) -> SIMD3<Float> {
+        a + ((b - a) * min(max(t, 0), 1))
+    }
+
+    private static func rgb(_ red: Int, _ green: Int, _ blue: Int) -> SIMD3<Float> {
+        SIMD3<Float>(Float(red) / 255, Float(green) / 255, Float(blue) / 255)
+    }
+
+    private struct CheckerPalette {
+        let panel: SIMD3<Float>
+        let muted: SIMD3<Float>
+        let accent: SIMD3<Float>
+        let accent2: SIMD3<Float>
     }
 }
 

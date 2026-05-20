@@ -139,6 +139,78 @@ final class OrbitalViewCoreTests: XCTestCase {
         }
     }
 
+    func testSpeakerMeterVisualSettingsValidateDisplayGainAndStyle() throws {
+        let defaults = SpeakerMeterVisualSettings.default
+        XCTAssertEqual(defaults.visualGainDB, 0)
+        XCTAssertEqual(defaults.style, .checkerPulseRingAndDiagonalWave)
+        XCTAssertEqual(defaults.colorScheme, .kimiPurple)
+        XCTAssertEqual(defaults.ringFrontDensity, 3.3)
+        XCTAssertEqual(defaults.tileDetail, 10)
+        XCTAssertEqual(defaults.idleTint, 0.36)
+        XCTAssertEqual(defaults.memoryCarryover, 0.58)
+        XCTAssertEqual(defaults.checkerBandVelocity, 0.826)
+        XCTAssertEqual(defaults.checkerBandWidth, 0.831)
+        XCTAssertEqual(
+            SpeakerMeterVisualStyle.builtInStyles,
+            [.checkerPulseRingAndDiagonalWave, .prismGlow, .warmPulse, .coolPulse]
+        )
+
+        let hot = try SpeakerMeterVisualSettings(visualGainDB: 24, style: .warmPulse)
+        XCTAssertEqual(hot.visualGainDB, 24)
+        XCTAssertEqual(hot.style.displayName, "Warm Pulse")
+        XCTAssertEqual(hot.colorScheme, .kimiPurple)
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(visualGainDB: .nan)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .nonFiniteValue(field: "meterVisual.visualGainDB")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(visualGainDB: 24.5)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "meterVisual.visualGainDB", value: 24.5, validRange: "-24...24")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(tileDetail: 2)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "meterVisual.tileDetail", value: 2, validRange: "4...32")
+            )
+        }
+    }
+
+    func testSpeakerMeterVisualStyleCodableRoundTrip() throws {
+        let settings = try SpeakerMeterVisualSettings(visualGainDB: -6, style: .customTBD)
+        let encoded = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(SpeakerMeterVisualSettings.self, from: encoded)
+
+        XCTAssertEqual(decoded, settings)
+
+        let invalidJSON = """
+        {
+            "visualGainDB": 99,
+            "style": "checkerPulseRingAndDiagonalWave",
+            "colorScheme": "kimiPurple",
+            "ringFrontDensity": 3.3,
+            "bandSoftness": 0.85,
+            "tileDetail": 10,
+            "idleTint": 0.36,
+            "memoryCarryover": 0.58,
+            "checkerBandVelocity": 0.826,
+            "checkerBandWidth": 0.831
+        }
+        """.data(using: .utf8)!
+        XCTAssertThrowsError(try JSONDecoder().decode(SpeakerMeterVisualSettings.self, from: invalidJSON)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "meterVisual.visualGainDB", value: 99, validRange: "-24...24")
+            )
+        }
+    }
+
     func testCameraPresetsAreCenterLocked() throws {
         for mode in [OrbitalViewMode.plan, .frontElevation, .sideElevation, .isometric] {
             let camera = try OrbitalViewCameraState.preset(mode)
@@ -264,4 +336,3 @@ final class OrbitalViewCoreTests: XCTestCase {
         )
     }
 }
-
