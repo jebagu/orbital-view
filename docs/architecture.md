@@ -26,7 +26,7 @@ OrbitalViewWavefield
   Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
-`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` are implemented. `OrbitalViewRender` now has a minimal Metal draw path verified by an offscreen smoke test, invariant tests for static draw inputs, and display-only VU visual settings. The default VU style is checker pulse/ring/diagonal wave with Kimi Purple colors. `OrbitalViewSwiftUI` exposes an optional collapsible VU settings tray. Full production facet animation, broad SwiftUI controls/gestures, and downstream app source integration remain deferred.
+`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` are implemented. `OrbitalViewRender` now has a minimal Metal draw path verified by an offscreen smoke test, invariant tests for static draw inputs, display-only VU visual settings, native display settings, and imported-shell node-anchor projection. The default VU style is checker pulse/ring/diagonal wave with Kimi Purple colors. `OrbitalViewSwiftUI` includes the required viewport control surface by default and exposes an optional collapsible VU settings tray. Full production facet animation, gestures, inspector UI, and downstream app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -34,10 +34,10 @@ Current package:
 
 ```text
 OrbitalViewCore tests and validates core scene contracts.
-OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
+OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes backed by the imported Fey geodesic shell and node anchors by default.
 OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
-OrbitalViewRender stores scene, meter, meter visual settings, camera, and selection state behind a MetalKit renderer seam and can render fixed-size speaker quads for an offscreen smoke test. Internal draw-input snapshots separate static speaker geometry from meter color inputs for invariant testing.
-OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge and can opt into a bottom collapsible VU settings tray.
+OrbitalViewRender stores scene, meter, meter visual settings, display settings, camera, and selection state behind a MetalKit renderer seam and can render fixed-size speaker quads for an offscreen smoke test. Internal draw-input snapshots separate static speaker geometry from meter color inputs for invariant testing.
+OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge, includes the required viewport control surface, and can opt into a bottom collapsible VU settings tray.
 ```
 
 Future runtime shape:
@@ -56,7 +56,7 @@ The viewport receives scene and meter state from the host app. It does not parse
 
 Production rendering uses the custom MetalKit / MTKView direction in `OrbitalViewRender`, wrapped by `OrbitalViewSwiftUI` for host-app binding.
 
-Current renderer drawing is intentionally minimal: scene speaker anchors are projected into fixed-size Metal quads, and meter values plus display-only visual settings affect color/intensity only. The checker pulse/ring/diagonal wave style is wired as the default color transform for every speaker, while true per-facet checker cells remain future production drawing work. Shell geometry, labels, hit testing, production camera projection, animation, and visual polish are deferred.
+Current renderer drawing is intentionally minimal: scene speaker anchors are projected into fixed-size Metal quads, including imported-shell node, edge, and face anchors, and meter values plus display-only visual settings affect color/intensity only. Display settings are tracked separately for required controls such as speaker shape, speaker size, fog, speaker numbers, and hidden lines. The checker pulse/ring/diagonal wave style is wired as the default color transform for every speaker, while true per-facet checker cells remain future production drawing work. Shell line drawing, labels, hit testing, production camera projection, animation, and visual polish are deferred.
 
 Long-term renderer source should not be SceneKit-first, RealityKit-first, WebView-based, or DomeLab-code-based. SceneKit or HTML mockups may be used only as disposable prototypes if a future task explicitly allows that scope.
 
@@ -80,16 +80,17 @@ It must not:
 
 ## UI Architecture
 
-Broad UI work is deferred, but a first optional VU settings tray exists in `OrbitalViewSwiftUI`.
+The required viewport control surface exists in `OrbitalViewSwiftUI` and must be included in normal kit use. It provides:
 
-Future UI should provide:
+- Plan, Elevation, and Isometric camera preset buttons
+- Export PNG callback hook
+- speaker shape mode
+- speaker size
+- speaker numbers
+- hidden lines
+- fog density
 
-- collapsible display settings for meter visual gain, style, color scheme, and checker controls
-- center-locked orbit camera
-- plan, front, side, and isometric presets
-- perspective/orthographic toggle
-- structure, speakers, labels, and cutaway toggles
-- speaker selection events
+The optional VU settings tray remains separate and controls meter visual gain, style, color scheme, and checker controls. Future UI work should add gestures, inspector UI, hit testing, and broader host integration without removing the required control surface.
 
 Wavefield and Orbisonic use monitor mode. Splat may enable edit modes later.
 
@@ -105,6 +106,7 @@ Wavefield and Orbisonic use monitor mode. Splat may enable edit modes later.
 - meter frames by channel
 - meter visual settings
 - meter color schemes and checker visual controls
+- viewport display settings for speaker shape, speaker size, fog density, speaker numbers, and hidden lines
 - camera state
 - selection and events
 

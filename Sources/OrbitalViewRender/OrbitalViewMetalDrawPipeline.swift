@@ -31,6 +31,7 @@ struct OrbitalViewSpeakerStaticDrawInput: Equatable {
     let channel: Int
     let projectedX: Float
     let projectedY: Float
+    let projectedDepth: Float
     let quadRadius: Float
 }
 
@@ -67,7 +68,16 @@ struct OrbitalViewSpeakerDrawInputs: Equatable {
 
 final class OrbitalViewMetalDrawPipeline {
     private static let verticesPerSpeaker = 6
-    private static let speakerQuadRadius: Float = 0.045
+    private static let defaultSpeakerQuadRadius: Float = 0.045
+    private static let worldToUnitSphere = 1 / Float(OrbitalViewSceneBuilder.feySphereRadiusM)
+    private static let cameraNearEpsilon: Float = 0.0005
+    private static let fogDensityFalloff: Float = 1.12
+    private static let fallbackCameraState: OrbitalViewCameraState = {
+        guard let fallback = try? OrbitalViewCameraState.preset(.isometric) else {
+            fatalError("Unable to create fallback camera state")
+        }
+        return fallback
+    }()
 
     private let deviceID: ObjectIdentifier
     private let device: MTLDevice
@@ -213,23 +223,33 @@ final class OrbitalViewMetalDrawPipeline {
         guard let scene = state.scene else {
             return OrbitalViewSpeakerDrawInputs(speakers: [])
         }
+        let camera = state.camera ?? fallbackCameraState
 
         let speakers = scene.speakers.map { speaker -> OrbitalViewSpeakerDrawInput in
-            let position = projectedPosition(for: speaker)
+            let worldPosition = basePosition(for: speaker, in: scene)
+            let projected = project(worldPosition, with: camera)
             let staticInput = OrbitalViewSpeakerStaticDrawInput(
                 id: speaker.id,
                 channel: speaker.channel,
-                projectedX: position.x,
-                projectedY: position.y,
-                quadRadius: speakerQuadRadius
+                projectedX: projected.x,
+                projectedY: projected.y,
+                projectedDepth: projected.z,
+                quadRadius: speakerQuadRadius(for: state.displaySettings)
+            )
+
+            let fogAlpha = fogAlpha(
+                viewSpaceDepth: projected.z,
+                camera: camera,
+                settings: state.displaySettings
             )
             return OrbitalViewSpeakerDrawInput(
                 staticInput: staticInput,
                 meterLevel: state.meters?.levelsByChannel[speaker.channel],
-                color: meterColor(
+                color: mutedColor(
                     for: speaker,
                     meters: state.meters,
-                    settings: state.meterVisualSettings
+                    settings: state.meterVisualSettings,
+                    alpha: fogAlpha
                 )
             )
         }
@@ -237,43 +257,160 @@ final class OrbitalViewMetalDrawPipeline {
         return OrbitalViewSpeakerDrawInputs(speakers: speakers)
     }
 
-    private static func projectedPosition(for speaker: OrbitalViewSpeaker) -> SIMD2<Float> {
+    private static func basePosition(for speaker: OrbitalViewSpeaker, in scene: OrbitalViewSceneSpec) -> SIMD3<Float> {
         switch speaker.anchor {
         case .direction(let direction, _):
-            return SIMD2<Float>(Float(direction.x) * 0.72, Float(direction.y) * 0.72)
-        case .node, .edge, .face:
-            return SIMD2<Float>(0, 0)
+            return SIMD3<Float>(
+                Float(direction.x) * worldToUnitSphere,
+                Float(direction.y) * worldToUnitSphere,
+                Float(direction.z) * worldToUnitSphere
+            )
+        case .node(let nodeID, _):
+            guard case .imported(let geometry) = scene.shell,
+                  let node = geometry.nodes.first(where: { $0.id == nodeID })
+            else {
+                return SIMD3<Float>(0, 0, 0)
+            }
+            return SIMD3<Float>(Float(node.position.x / geometry.radiusM), Float(node.position.y / geometry.radiusM), Float(node.position.z / geometry.radiusM))
+        case .edge(let edgeID, let t, _):
+            guard case .imported(let geometry) = scene.shell,
+                  let edge = geometry.edges.first(where: { $0.id == edgeID }),
+                  let a = geometry.nodes.first(where: { $0.id == edge.a }),
+                  let b = geometry.nodes.first(where: { $0.id == edge.b })
+            else {
+                return SIMD3<Float>(0, 0, 0)
+            }
+            let position = interpolate(a.position, b.position, t: t)
+            return SIMD3<Float>(
+                Float(position.x / geometry.radiusM),
+                Float(position.y / geometry.radiusM),
+                Float(position.z / geometry.radiusM)
+            )
+        case .face(let faceID, let barycentric, _):
+            guard case .imported(let geometry) = scene.shell,
+                  let face = geometry.faces.first(where: { $0.id == faceID }),
+                  face.nodes.count >= 3,
+                  let a = geometry.nodes.first(where: { $0.id == face.nodes[0] }),
+                  let b = geometry.nodes.first(where: { $0.id == face.nodes[1] }),
+                  let c = geometry.nodes.first(where: { $0.id == face.nodes[2] })
+            else {
+                return SIMD3<Float>(0, 0, 0)
+            }
+            let position = weighted(a.position, b.position, c.position, weights: barycentric)
+            return SIMD3<Float>(
+                Float(position.x / geometry.radiusM),
+                Float(position.y / geometry.radiusM),
+                Float(position.z / geometry.radiusM)
+            )
         }
     }
 
-    private static func meterColor(
+    private static func speakerQuadRadius(for displaySettings: OrbitalViewDisplaySettings) -> Float {
+        let scale = displaySettings.speakerScale / OrbitalViewDisplaySettings.defaultSpeakerScale
+        return defaultSpeakerQuadRadius * max(scale, 0.01)
+    }
+
+    private static func project(_ position: SIMD3<Float>, with camera: OrbitalViewCameraState) -> SIMD3<Float> {
+        let cameraPosition = simdOrbitCameraPosition(orbit: camera.orbit)
+        let worldUp = SIMD3<Float>(0, 1, 0)
+
+        let forward = normalize(-cameraPosition)
+        let crossUp = cross(worldUp, forward)
+        let right = normalize(length(crossUp) > 0.000_1 ? crossUp : SIMD3<Float>(0, 0, 1))
+        let up = cross(forward, right)
+        let relative = position - cameraPosition
+
+        let x = dot(relative, right)
+        let y = dot(relative, up)
+        let z = dot(relative, forward)
+
+        let clampedZ = max(z, cameraNearEpsilon)
+        let perspective = 0.72 / clampedZ
+        return SIMD3<Float>(x * perspective, y * perspective, z)
+    }
+
+    private static func simdOrbitCameraPosition(orbit: OrbitalViewOrbit) -> SIMD3<Float> {
+        let pitch = Float(orbit.pitchRadians)
+        let yaw = Float(orbit.yawRadians)
+        let distance = Float(orbit.distanceM)
+
+        let x = distance * cos(pitch) * sin(yaw)
+        let y = distance * sin(pitch)
+        let z = distance * cos(pitch) * cos(yaw)
+        return SIMD3<Float>(x, y, z)
+    }
+
+    private static func fogAlpha(viewSpaceDepth: Float, camera: OrbitalViewCameraState, settings: OrbitalViewDisplaySettings) -> Float {
+        guard settings.isFogEnabled else {
+            return 1
+        }
+
+        let minDepth = Float(camera.orbit.distanceM) - 1
+        let maxDepth = Float(camera.orbit.distanceM) + 1
+        let normalizedDepth = (viewSpaceDepth - minDepth) / max(0.000_1, maxDepth - minDepth)
+        let depthRatio = min(max(normalizedDepth, 0), 1)
+        let density = settings.normalizedFogDensity
+        return 1 - min(1, depthRatio * density * fogDensityFalloff)
+    }
+
+    private static func interpolate(
+        _ a: OrbitalViewVector3,
+        _ b: OrbitalViewVector3,
+        t: Double
+    ) -> SIMD3<Double> {
+        SIMD3<Double>(
+            a.x + ((b.x - a.x) * t),
+            a.y + ((b.y - a.y) * t),
+            a.z + ((b.z - a.z) * t)
+        )
+    }
+
+    private static func weighted(
+        _ a: OrbitalViewVector3,
+        _ b: OrbitalViewVector3,
+        _ c: OrbitalViewVector3,
+        weights: OrbitalViewVector3
+    ) -> SIMD3<Double> {
+        SIMD3<Double>(
+            (a.x * weights.x) + (b.x * weights.y) + (c.x * weights.z),
+            (a.y * weights.x) + (b.y * weights.y) + (c.y * weights.z),
+            (a.z * weights.x) + (b.z * weights.y) + (c.z * weights.z)
+        )
+    }
+
+    private static func mutedColor(
         for speaker: OrbitalViewSpeaker,
         meters: SpeakerMeterFrame?,
-        settings: SpeakerMeterVisualSettings
+        settings: SpeakerMeterVisualSettings,
+        alpha: Float
     ) -> SIMD4<Float> {
         guard let level = meters?.levelsByChannel[speaker.channel] else {
-            return styleColor(
+            var color = styleColor(
                 value: 0,
                 style: settings.style,
                 settings: settings,
                 speaker: speaker,
                 meters: meters
             )
+            color.w = alpha
+            return color
         }
 
         if level.clip {
-            return SIMD4<Float>(1, 0.1, 0.04, 1)
+            return SIMD4<Float>(1, 0.1, 0.04, alpha)
         }
 
         let gain = pow(10.0, Double(settings.visualGainDB) / 20.0)
         let peak = min(max(Double(level.peak) * gain, 0), 1)
-        return styleColor(
+        var color = styleColor(
             value: Float(peak),
             style: settings.style,
             settings: settings,
             speaker: speaker,
             meters: meters
         )
+        color.w = alpha
+        return color
     }
 
     private static func styleColor(

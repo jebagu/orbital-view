@@ -43,14 +43,16 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 - Native `OrbitalViewRender` MetalKit seam with an initial offscreen smoke-tested draw path.
 - Renderer invariant tests for stable static draw inputs under meter and camera updates.
 - Display-only VU visual settings for gain, checker pulse/ring/diagonal wave style, color scheme, and 30-channel renderer meter mapping.
-- `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray.
+- Native display settings for speaker shape, speaker size, fog density, speaker numbers, and hidden lines.
+- Imported Fey 3V geodesic shell generation from the accepted DomeLab/Fey config values, with default Wavefield/Fey scenes anchored to shell nodes.
+- `OrbitalViewSwiftUI` wrapper with a required viewport control surface and an opt-in collapsed VU settings tray.
 - Disposable browser mockup for toolbar and camera interaction.
 
 ## Nice-To-Have Later
 
 - Full production MetalKit visuals.
 - Production checker facet animation/materials.
-- SwiftUI controls, gestures, toolbar, and inspector UI beyond the current VU settings tray.
+- SwiftUI gestures and inspector UI beyond the current required control surface and VU settings tray.
 - DomeLab neutral geometry import.
 - Splat editing mode and renderer-kernel overlays.
 - Snapshot export.
@@ -70,9 +72,10 @@ The first usable implementation already:
 
 - Build and test a pure Swift `OrbitalViewCore` package target.
 - Represent a scene with coordinate system, shell geometry, 30 physical speakers, meter levels by channel, and center-locked camera presets.
-- Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder.
+- Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder, defaulting to imported Fey geodesic node anchors.
 - Render a minimal offscreen Metal frame for deterministic renderer smoke coverage.
 - Apply display-only checker pulse/ring/diagonal wave visual settings to renderer color state without changing speaker geometry.
+- Expose native Plan / Elevation / Isometric / Export PNG / speaker shape / speaker size / speaker numbers / hidden lines / fog controls through `OrbitalView`.
 
 ## Constraints
 

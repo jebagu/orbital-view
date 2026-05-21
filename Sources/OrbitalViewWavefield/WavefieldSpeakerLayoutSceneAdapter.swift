@@ -61,7 +61,7 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
 
         try validate(raw)
 
-        let speakers = try raw.speakers
+        let directionalSpeakers = try raw.speakers
             .sorted { $0.channel < $1.channel }
             .map { rawSpeaker in
                 try OrbitalViewSpeaker(
@@ -81,10 +81,16 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
                 )
             }
 
+        let resolvedShell = try shell ?? OrbitalViewSceneBuilder.makeFeyGeodesicShell()
+        let speakers = try OrbitalViewSceneBuilder.anchoringSpeakersToNearestShellNodes(
+            directionalSpeakers,
+            in: resolvedShell
+        )
+
         return try OrbitalViewSceneBuilder.makeMonitorScene(
             id: sceneID ?? raw.id,
             coordinateSystem: .wavefield,
-            shell: shell ?? .parametric(try OrbitalViewParametricShell(kind: .geodesic, radiusM: 1.0)),
+            shell: resolvedShell,
             speakers: speakers
         )
     }
@@ -177,4 +183,3 @@ private struct RawWavefieldSpeakerPosition: Decodable {
     let y: Double
     let z: Double
 }
-

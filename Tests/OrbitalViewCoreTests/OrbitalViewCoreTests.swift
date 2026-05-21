@@ -182,6 +182,42 @@ final class OrbitalViewCoreTests: XCTestCase {
         }
     }
 
+    func testDisplaySettingsValidateRequiredControlDefaults() throws {
+        let defaults = OrbitalViewDisplaySettings.default
+        XCTAssertEqual(defaults.speakerShape, .prism)
+        XCTAssertEqual(defaults.speakerScale, 1.95)
+        XCTAssertEqual(defaults.fogDensity, 30)
+        XCTAssertFalse(defaults.showsSpeakerNumbers)
+        XCTAssertFalse(defaults.showsHiddenLines)
+
+        let detailed = try OrbitalViewDisplaySettings(
+            speakerShape: .sphere,
+            speakerScale: 3.9,
+            fogDensity: 100,
+            showsSpeakerNumbers: true,
+            showsHiddenLines: true
+        )
+        let decoded = try JSONDecoder().decode(
+            OrbitalViewDisplaySettings.self,
+            from: JSONEncoder().encode(detailed)
+        )
+        XCTAssertEqual(decoded, detailed)
+
+        XCTAssertThrowsError(try OrbitalViewDisplaySettings(speakerScale: 0.5)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "display.speakerScale", value: 0.5, validRange: "0.975...3.9")
+            )
+        }
+
+        XCTAssertThrowsError(try OrbitalViewDisplaySettings(fogDensity: 101)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "display.fogDensity", value: 101, validRange: "0.0...100.0")
+            )
+        }
+    }
+
     func testSpeakerMeterVisualStyleCodableRoundTrip() throws {
         let settings = try SpeakerMeterVisualSettings(visualGainDB: -6, style: .customTBD)
         let encoded = try JSONEncoder().encode(settings)
@@ -317,6 +353,46 @@ final class OrbitalViewCoreTests: XCTestCase {
                 .invalidAnchorReference("node anchor top requires imported shell geometry")
             )
         }
+    }
+
+    func testFeyGeodesicShellUsesImportedFullSphereNodeStructure() throws {
+        guard case .imported(let geometry) = try OrbitalViewSceneBuilder.makeFeyGeodesicShell() else {
+            return XCTFail("Expected imported Fey geodesic geometry")
+        }
+
+        XCTAssertEqual(geometry.radiusM, OrbitalViewSceneBuilder.feySphereRadiusM, accuracy: 1.0e-12)
+        XCTAssertEqual(geometry.nodes.count, 92)
+        XCTAssertEqual(geometry.edges.count, 270)
+        XCTAssertEqual(geometry.faces.count, 0)
+        XCTAssertTrue(geometry.nodes.allSatisfy { $0.id.hasPrefix("fey-node-") })
+        XCTAssertTrue(geometry.edges.allSatisfy { $0.role == .strut })
+    }
+
+    func testAnchoringSpeakersToNearestImportedShellNodesPreservesChannelOrder() throws {
+        guard case .imported(let geometry) = try OrbitalViewSceneBuilder.makeFeyGeodesicShell() else {
+            return XCTFail("Expected imported Fey geodesic geometry")
+        }
+
+        let speakers = try (1...3).map { channel in
+            try makeSpeaker(channel: channel)
+        }
+        let anchored = try OrbitalViewSceneBuilder.anchoringSpeakersToNearestShellNodes(speakers, in: geometry)
+
+        XCTAssertEqual(anchored.map(\.channel), [1, 2, 3])
+        XCTAssertTrue(anchored.allSatisfy { speaker in
+            guard case .node(let nodeID, let offsetM) = speaker.anchor else {
+                return false
+            }
+            return offsetM == 0.05 && geometry.nodes.contains(where: { $0.id == nodeID })
+        })
+
+        XCTAssertNoThrow(
+            try OrbitalViewSceneBuilder.makeMonitorScene(
+                id: "anchored",
+                shell: .imported(geometry),
+                speakers: anchored
+            )
+        )
     }
 
     private func makeSpeaker(channel: Int, id: String? = nil) throws -> OrbitalViewSpeaker {

@@ -4,7 +4,7 @@
 
 Orbital View Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
 
-The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI`. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU settings. `OrbitalViewSwiftUI` now has an opt-in collapsed VU settings tray with color-scheme and checker controls. Production visual rendering, production checker facet animation, broader SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI`. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path, static draw-input invariant tests, display-only checker pulse/ring/diagonal wave VU settings, native display settings, and imported-shell node-anchor projection. `OrbitalViewSwiftUI` now includes the required viewport control surface by default, with Plan / Elevation / Isometric, Export PNG callback, speaker shape, speaker size, speaker numbers, hidden lines, and fog controls, plus an opt-in collapsed VU settings tray with color-scheme and checker controls. Production visual rendering, production checker facet animation, gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
 
 ## Local Hosting
 
@@ -55,6 +55,8 @@ This repository contains project-control docs, the pure Swift source target `Orb
 
 Current renderer source must stay within the active renderer task scope, and it must not touch downstream app audio, playback, MIDI, OSC, routing, or render pipelines.
 
+Future uses of the kit must include the native `OrbitalView` control surface and must default physical Fey/Wavefield scenes to the imported Fey 3V geodesic shell with speakers anchored to shell nodes. Do not replace that default with a generic parametric direction shell unless a future task explicitly changes the visual contract and documents the reason.
+
 ## Operating Rules
 
 - Work only on the requested task or slice.
@@ -66,6 +68,8 @@ Current renderer source must stay within the active renderer task scope, and it 
 - Do not reorder physical speaker channels.
 - Do not flatten canonical 3D coordinates into permanent screen coordinates.
 - Do not add major dependencies without an explicit task decision.
+- Do not integrate the kit without the required native control surface: Plan, Elevation, Isometric, Export PNG, speaker shape, speaker size, speaker numbers, hidden lines, and fog.
+- Do not default physical speaker scenes to a generic direction shell when the imported Fey geodesic shell and node anchors are available.
 - Update docs when project structure, contracts, protected paths, tests, or status changes.
 
 ## Protected Path Rule

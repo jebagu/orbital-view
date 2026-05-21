@@ -17,6 +17,8 @@ Once implementation starts, the test suite should prove:
 - local Wavefield JSON adapter rejects invalid layout shape explicitly
 - local Wavefield meter adapter rejects duplicate channels and invalid levels explicitly
 - meter visual settings validate display gain, style, color scheme, and checker controls without touching audio behavior
+- native display settings validate required viewport controls without touching audio behavior
+- default Wavefield/Fey scene adaptation uses imported Fey geodesic shell nodes
 
 ## Unit Tests
 
@@ -27,6 +29,8 @@ Use for:
 - speaker ID/channel/shape validation
 - meter frame identity
 - meter visual settings validation plus style/color-scheme codability
+- viewport display settings validation plus codability
+- imported Fey geodesic shell counts and nearest-node anchoring
 - camera preset state
 - scene builder behavior
 
@@ -39,7 +43,8 @@ Use when a downstream adapter is added:
 - assert 30 physical speaker records
 - assert channels remain `1...30`
 - assert labels remain stable
-- assert directions match the source layout
+- assert the default scene uses the imported Fey geodesic shell with 92 nodes and 270 edges
+- assert speakers anchor to imported shell nodes while preserving source channel order
 - reject unsupported axes and invalid speaker counts
 - map channel/rms/peak records into `SpeakerMeterFrame`
 - preserve missing meter channels as absent values
@@ -67,6 +72,8 @@ Current renderer seam tests cover:
 - 30 channel-keyed meter levels map to scene speakers by physical channel
 - checker color-scheme/settings changes affect every speaker color without changing geometry
 - meter visual gain/style updates affect color state without changing static geometry or raw meter revision
+- imported shell node anchors project from shell node positions
+- viewport display settings update separately from scene, meter, and meter visual settings
 
 Future renderer drawing checks should cover:
 
@@ -84,7 +91,9 @@ Current wrapper skeleton tests cover:
 - identical configuration updates do not repeatedly increment structural renderer revision
 - changed meter frames update meter revision without rebuilding scene state
 - changed meter visual settings update only meter visual settings state
+- changed viewport display settings update only display settings state
 - the settings-bound initializer opts into the collapsed VU settings tray with color-scheme/settings controls
+- `OrbitalView` includes the required control surface by default
 - camera and selection configuration emits renderer events
 
 Future wrapper tests should cover:
@@ -92,6 +101,7 @@ Future wrapper tests should cover:
 - gesture updates bind camera state without breaking center lock
 - selection bindings round-trip from renderer picking to host UI
 - toolbar toggles do not mutate audio, playback, routing, or metering state
+- Export PNG callback integration once production snapshot capture exists
 
 ## Mockup Checks
 

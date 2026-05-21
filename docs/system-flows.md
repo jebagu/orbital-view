@@ -14,10 +14,12 @@ flowchart TD
 ```mermaid
 flowchart LR
   HostLayout["Host speaker layout"] --> Adapter["App adapter"]
+  FeyShell["Imported Fey geodesic shell"] --> Adapter
   HostMeters["Host meter frames"] --> Adapter
   Adapter --> Core["OrbitalViewCore scene + meters"]
   Core --> Renderer["OrbitalViewRender MetalKit renderer"]
-  Renderer --> UI["Host app viewport"]
+  Controls["Required control surface"] --> UI["Host app viewport"]
+  Renderer --> UI
 ```
 
 ## Future Camera Flow
@@ -52,6 +54,7 @@ flowchart TD
   Scene["OrbitalViewSceneSpec"] --> State["OrbitalViewRenderState"]
   Meters["SpeakerMeterFrame"] --> State
   MeterSettings["SpeakerMeterVisualSettings"] --> State
+  DisplaySettings["OrbitalViewDisplaySettings"] --> State
   Camera["OrbitalViewCameraState"] --> State
   Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
   State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
@@ -60,7 +63,7 @@ flowchart TD
   Pipeline --> Frame["MTKView frame or offscreen texture"]
 ```
 
-The current renderer seam stores validated state, emits camera/selection events, applies display-only meter visual settings, and issues a minimal Metal draw command for fixed-size speaker quads.
+The current renderer seam stores validated state, emits camera/selection events, applies display-only meter visual settings, tracks viewport display settings, resolves imported-shell node anchors, and issues a minimal Metal draw command for speaker quads.
 
 ## Current Renderer Invariant Flow
 
@@ -69,19 +72,21 @@ flowchart LR
   Scene["Scene speakers"] --> StaticInputs["ID, channel, position, quad radius"]
   Meter["Meter frame"] --> ColorInputs["speaker color/intensity"]
   Settings["Visual gain + style"] --> ColorInputs
+  Display["Display settings"] --> StaticInputs
   Camera["Camera state"] --> State["renderer state"]
   StaticInputs --> Tests["invariant tests"]
   ColorInputs --> Tests
   State --> Tests
 ```
 
-Meter, meter visual setting, and camera updates must not change the static speaker draw inputs. Meter and display-setting changes affect color/intensity only in the current renderer baseline.
+Meter, meter visual setting, and camera updates must not change the static speaker draw inputs. Meter and VU visual setting changes affect color/intensity only in the current renderer baseline. View display settings are tracked separately because speaker size, labels, hidden lines, and fog are viewport controls, not audio or meter data.
 
 ## Current SwiftUI Wrapper Flow
 
 ```mermaid
 flowchart TD
   HostView["Host SwiftUI view"] --> OrbitalView["OrbitalView"]
+  Controls["Required control surface"] --> OrbitalView
   Tray["Optional VU settings tray"] --> OrbitalView
   OrbitalView --> Bridge["NSViewRepresentable"]
   Bridge --> MTKView["MTKView"]
@@ -90,7 +95,20 @@ flowchart TD
   Events --> HostView
 ```
 
-The current wrapper bridges state into the renderer seam and can show an optional collapsed VU settings tray. It does not implement toolbar controls, gestures, hit testing, or inspector UI yet.
+The current wrapper bridges state into the renderer seam, includes the required Plan / Elevation / Isometric / Export PNG / speaker shape / speaker size / speaker numbers / hidden lines / fog control surface, and can show an optional collapsed VU settings tray. It does not implement gestures, hit testing, or inspector UI yet.
+
+## Current Geodesic Anchor Flow
+
+```mermaid
+flowchart LR
+  FeyConfig["Accepted Fey/DomeLab config values"] --> Shell["Imported Fey 3V shell"]
+  Layout["Fey 30 speaker directions"] --> Anchor["Nearest shell-node anchoring"]
+  Shell --> Anchor
+  Anchor --> Scene["OrbitalViewSceneSpec"]
+  Scene --> Renderer["Node-anchor projection"]
+```
+
+Default Wavefield/Fey scenes use the imported full-sphere 3V geodesic shell with 92 nodes and 270 edges. Speakers preserve channel order while anchoring to shell nodes instead of floating on a generic direction shell.
 
 ## Current Offscreen Harness Flow
 

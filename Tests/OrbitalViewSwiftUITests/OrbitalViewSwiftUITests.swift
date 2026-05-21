@@ -16,6 +16,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(view.scene, scene)
         XCTAssertNil(view.meters)
+        XCTAssertTrue(view.showsControlSurface)
         XCTAssertFalse(view.showsMeterSettingsTray)
     }
 
@@ -32,11 +33,16 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
 
         XCTAssertEqual(view.scene, scene)
+        XCTAssertTrue(view.showsControlSurface)
         XCTAssertTrue(view.showsMeterSettingsTray)
     }
 
     func testCoordinatorAppliesConfigurationWithoutRepeatedStructuralUpdates() throws {
-        let coordinator = OrbitalViewMetalView.Coordinator(renderer: OrbitalViewMetalRenderer())
+        var emitted: [OrbitalViewEvent] = []
+        let coordinator = OrbitalViewMetalView.Coordinator(
+            renderer: OrbitalViewMetalRenderer(),
+            onEvents: { emitted.append(contentsOf: $0) }
+        )
         let scene = try makeScene()
         let camera = try OrbitalViewCameraState.preset(.isometric)
         let firstFrame = try SpeakerMeterFrame(
@@ -49,6 +55,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             scene: scene,
             meters: firstFrame,
             meterVisualSettings: .default,
+            displaySettings: .default,
             camera: camera,
             selection: nil
         )
@@ -72,6 +79,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: secondFrame,
                 meterVisualSettings: .default,
+                displaySettings: .default,
                 camera: camera,
                 selection: nil
             )
@@ -82,7 +90,11 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     }
 
     func testCoordinatorAppliesMeterVisualSettingsWithoutReloadingScene() throws {
-        let coordinator = OrbitalViewMetalView.Coordinator(renderer: OrbitalViewMetalRenderer())
+        var emitted: [OrbitalViewEvent] = []
+        let coordinator = OrbitalViewMetalView.Coordinator(
+            renderer: OrbitalViewMetalRenderer(),
+            onEvents: { emitted.append(contentsOf: $0) }
+        )
         let scene = try makeScene()
         let camera = try OrbitalViewCameraState.preset(.isometric)
         let initialSettings = SpeakerMeterVisualSettings.default
@@ -93,6 +105,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: initialSettings,
+                displaySettings: .default,
                 camera: camera,
                 selection: nil
             )
@@ -106,6 +119,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: boostedSettings,
+                displaySettings: .default,
                 camera: camera,
                 selection: nil
             )
@@ -118,32 +132,88 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettingsRevision, 1)
     }
 
-    func testCoordinatorEmitsCameraAndSelectionEvents() throws {
-        let coordinator = OrbitalViewMetalView.Coordinator(renderer: OrbitalViewMetalRenderer())
+    func testCoordinatorAppliesDisplaySettingsWithoutReloadingSceneOrMeters() throws {
+        var emitted: [OrbitalViewEvent] = []
+        let coordinator = OrbitalViewMetalView.Coordinator(
+            renderer: OrbitalViewMetalRenderer(),
+            onEvents: { emitted.append(contentsOf: $0) }
+        )
         let scene = try makeScene()
-        let camera = try OrbitalViewCameraState.preset(.frontElevation)
-        let selection = OrbitalViewSelection(id: .speaker("speaker-1"))
+        let camera = try OrbitalViewCameraState.preset(.isometric)
+        let detailed = try OrbitalViewDisplaySettings(
+            speakerShape: .sphere,
+            speakerScale: 2.25,
+            fogDensity: 70,
+            showsSpeakerNumbers: true,
+            showsHiddenLines: true
+        )
 
-        let events = coordinator.apply(
+        _ = coordinator.apply(
             OrbitalViewRenderConfiguration(
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: .default,
+                displaySettings: .default,
+                camera: camera,
+                selection: nil
+            )
+        )
+
+        XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.displaySettingsRevision, 0)
+
+        _ = coordinator.apply(
+            OrbitalViewRenderConfiguration(
+                scene: scene,
+                meters: nil,
+                meterVisualSettings: .default,
+                displaySettings: detailed,
+                camera: camera,
+                selection: nil
+            )
+        )
+
+        XCTAssertEqual(coordinator.renderer.renderState.scene, scene)
+        XCTAssertEqual(coordinator.renderer.renderState.meterRevision, 0)
+        XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.displaySettings, detailed)
+        XCTAssertEqual(coordinator.renderer.renderState.displaySettingsRevision, 1)
+    }
+
+    func testCoordinatorEmitsCameraAndSelectionEvents() throws {
+        var emitted: [OrbitalViewEvent] = []
+        let coordinator = OrbitalViewMetalView.Coordinator(
+            renderer: OrbitalViewMetalRenderer(),
+            onEvents: { emitted.append(contentsOf: $0) }
+        )
+        let scene = try makeScene()
+        let camera = try OrbitalViewCameraState.preset(.frontElevation)
+        let selection = OrbitalViewSelection(id: .speaker("speaker-1"))
+
+        _ = coordinator.apply(
+            OrbitalViewRenderConfiguration(
+                scene: scene,
+                meters: nil,
+                meterVisualSettings: .default,
+                displaySettings: .default,
                 camera: camera,
                 selection: selection
             )
         )
 
-        XCTAssertEqual(events, [.cameraChanged(camera), .selected(selection)])
-        XCTAssertEqual(coordinator.apply(
+        XCTAssertEqual(emitted, [.cameraChanged(camera), .selected(selection)])
+        emitted.removeAll(keepingCapacity: false)
+        _ = coordinator.apply(
             OrbitalViewRenderConfiguration(
                 scene: scene,
                 meters: nil,
                 meterVisualSettings: .default,
+                displaySettings: .default,
                 camera: camera,
                 selection: selection
             )
-        ), [])
+        )
+        XCTAssertTrue(emitted.isEmpty)
     }
 
     private func makeScene() throws -> OrbitalViewSceneSpec {

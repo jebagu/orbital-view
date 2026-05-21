@@ -15,13 +15,18 @@ final class WavefieldSpeakerLayoutSceneAdapterTests: XCTestCase {
         XCTAssertEqual(scene.speakers.last?.id, "fey-30-channel-30")
         XCTAssertEqual(scene.speakers.last?.label, "Fey 30")
 
-        guard case .direction(let direction, let offsetM) = scene.speakers[0].anchor else {
-            return XCTFail("Expected direction anchor")
+        guard case .imported(let geometry) = scene.shell else {
+            return XCTFail("Expected imported Fey geodesic shell")
         }
 
-        XCTAssertEqual(direction.x, 0, accuracy: 1.0e-12)
-        XCTAssertEqual(direction.y, 0.554700196225229, accuracy: 1.0e-12)
-        XCTAssertEqual(direction.z, -0.832050294337844, accuracy: 1.0e-12)
+        XCTAssertEqual(geometry.nodes.count, 92)
+        XCTAssertEqual(geometry.edges.count, 270)
+
+        guard case .node(let nodeID, let offsetM) = scene.speakers[0].anchor else {
+            return XCTFail("Expected geodesic node anchor")
+        }
+
+        XCTAssertTrue(geometry.nodes.contains(where: { $0.id == nodeID }))
         XCTAssertEqual(offsetM, 0.05)
     }
 

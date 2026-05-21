@@ -3,18 +3,18 @@
 ## Current Phase
 
 ```text
-VU meter plumbing and settings tray
+Required native control surface and imported Fey geodesic shell
 ```
 
 ## Current Milestone
 
 ```text
-Checker pulse/ring/diagonal wave VU settings and 30-channel renderer mapping verified
+Native viewport controls and geodesic node anchoring verified
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and settings updates. The project also has a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Full production checker facet animation/materials, broader SwiftUI controls/gestures, and downstream app source integration remain deferred.
+Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path, static draw-input invariant tests, display-only checker pulse/ring/diagonal wave VU visual settings, native viewport display settings, imported-shell node-anchor projection, and an `OrbitalViewSwiftUI` wrapper with the required control surface plus an opt-in collapsed bottom VU settings tray. The required control surface includes Plan, Elevation, Isometric, Export PNG callback, speaker shape, speaker size, speaker numbers, hidden lines, and fog controls. The default Wavefield/Fey scene path now uses the imported Fey 3V geodesic shell with 92 nodes and 270 edges and anchors speakers to shell nodes while preserving physical channel order. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies visual gain/style/color-scheme/checker settings to color state only, and keeps static geometry stable under meter and VU setting updates. Full production checker facet animation/materials, shell-line drawing, labels, fog rendering, gestures, and downstream app source integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -64,6 +64,12 @@ codex/vu-meter-plumbing-tray branch
 - Added renderer meter visual settings state and revision separation.
 - Added 30-channel renderer draw-input mapping by physical speaker channel.
 - Added an opt-in SwiftUI collapsible VU settings tray for Visual Gain, Style, Color Scheme, and checker controls.
+- Added `OrbitalViewDisplaySettings` for speaker shape, speaker size, fog density, speaker numbers, and hidden lines.
+- Added the required native `OrbitalViewControlSurface` to normal `OrbitalView` use.
+- Added the imported Fey 3V geodesic shell builder and nearest-node speaker anchoring.
+- Changed the default Wavefield/Fey scene adapter path to imported shell node anchors.
+- Added renderer display-settings state and imported node-anchor projection.
+- Added task and work-package slice docs for slice 012.
 
 ## In Progress
 
@@ -73,7 +79,7 @@ none
 
 ## Pending
 
-- Decide whether the next renderer slice should implement production checker facet animation/materials, pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
+- Decide whether the next renderer slice should implement production shell/hidden-line/fog drawing, PNG snapshot capture, production checker facet animation/materials, pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI gesture binding.
 
 ## Blocked
 
@@ -82,6 +88,123 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-20 Required Control Surface And Geodesic Shell
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added pure core `OrbitalViewDisplaySettings` and `OrbitalViewSpeakerDisplayShape`.
+- Added the required native `OrbitalViewControlSurface` to `OrbitalView` by default.
+- Added Plan, Elevation, Isometric, Export PNG callback, speaker shape, speaker size, speaker numbers, hidden lines, and fog controls.
+- Added renderer display-settings state and revision separation.
+- Added imported-shell node, edge, and face anchor projection in renderer draw inputs.
+- Added a reusable imported Fey 3V geodesic shell builder matching 92 nodes and 270 edges.
+- Changed the default Wavefield/Fey scene adapter path from a parametric direction shell to imported geodesic shell node anchors.
+- Added task and work-package slice docs for slice 012.
+
+Files changed:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewDisplaySettings.swift
+Sources/OrbitalViewCore/OrbitalViewSceneBuilder.swift
+Sources/OrbitalViewWavefield/WavefieldSpeakerLayoutSceneAdapter.swift
+Sources/OrbitalViewRender/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewWavefieldTests/
+Tests/OrbitalViewRenderTests/
+Tests/OrbitalViewSwiftUITests/
+.tasks/012-required-control-surface-and-geodesic-shell.md
+work-packages/orbital-view-kit/slices/012-required-control-surface-and-geodesic-shell.md
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/product-brief.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+Tests/OrbitalViewWavefieldTests/WavefieldSpeakerLayoutSceneAdapterTests.swift
+Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 41 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/product-brief.md
+docs/protected-paths.md
+docs/system-flows.md
+docs/implementation-map.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/MV.md
+.tasks/012-required-control-surface-and-geodesic-shell.md
+work-packages/orbital-view-kit/slices/012-required-control-surface-and-geodesic-shell.md
+AGENTS.md
+README.md
+START_HERE.md
+FILE_TREE.md
+manifest.json
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/ allowed by slice 012
+Tests/OrbitalViewRenderTests/ allowed by slice 012
+Sources/OrbitalViewSwiftUI/ allowed by slice 012
+Tests/OrbitalViewSwiftUITests/ allowed by slice 012
+```
+
+Result:
+
+```text
+The reusable native kit now includes the required viewport control surface and defaults Wavefield/Fey scenes to imported geodesic shell node anchors.
+```
+
+Risks:
+
+- Export PNG is currently a host callback hook; production snapshot capture remains a renderer task.
+- Speaker numbers, hidden lines, and fog are now represented in display settings, but production label/line/fog drawing remains deferred.
+
+Next recommended task:
+
+```text
+Production shell/hidden-line/fog drawing or PNG snapshot capture.
+```
 
 ### Update: 2026-05-19 VU Meter Plumbing And Settings Tray
 

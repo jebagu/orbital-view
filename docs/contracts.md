@@ -43,6 +43,8 @@ SpeakerMeterLevel
 SpeakerMeterVisualSettings
 SpeakerMeterVisualStyle
 SpeakerMeterColorScheme
+OrbitalViewDisplaySettings
+OrbitalViewSpeakerDisplayShape
 OrbitalViewCameraState
 OrbitalViewMode
 OrbitalViewProjection
@@ -64,6 +66,7 @@ Inputs are host-provided scene and meter data:
 - optional virtual objects later
 - meter levels keyed by physical channel
 - display-only meter visual settings
+- viewport display settings for the required native control surface
 - color scheme and checker pulse/ring/diagonal wave controls
 - camera state
 
@@ -93,6 +96,8 @@ Core must not output audio, routing changes, playback state mutations, or UI nav
 - Monitor camera presets must target the origin.
 - Meter visual gain must be finite and in `-24...24` dB.
 - Checker visual controls must stay in documented finite ranges, including tile detail `4...32`.
+- Speaker display scale must be finite and in `0.975...3.9`.
+- Fog density must be finite and in `0...100`.
 
 ### Side Effects
 
@@ -129,6 +134,7 @@ Splat app targets
 - meter visual settings validation
 - meter visual style codability
 - meter color scheme and checker setting codability
+- viewport display settings validation and codability
 - center-locked camera presets
 - scene validation
 
@@ -183,7 +189,7 @@ OrbitalViewSpeakerStaticDrawInput
 
 ### Status
 
-Initial seam, minimal smoke-test draw path, static draw-input invariants, and meter visual setting plumbing implemented. Full production drawing, shell rendering, materials, animation, hit testing, and broad SwiftUI controls remain deferred.
+Initial seam, minimal smoke-test draw path, static draw-input invariants, meter visual setting plumbing, display setting state, and imported-shell node-anchor projection implemented. Full production drawing, shell rendering, labels, materials, animation, hit testing, and gestures remain deferred.
 
 ### Tests Required
 
@@ -199,6 +205,8 @@ Initial seam, minimal smoke-test draw path, static draw-input invariants, and me
 - meter-only updates leave static speaker draw inputs unchanged
 - camera-only updates leave static speaker draw inputs unchanged
 - draw inputs preserve physical speaker ID/channel order and stable dimensions
+- imported shell node anchors project from shell node positions instead of collapsing to the scene center
+- display setting updates increment only display-setting state and do not mutate scene or raw meters
 
 ## Module: OrbitalViewSwiftUI
 
@@ -212,9 +220,10 @@ Current wrapper skeleton:
 
 ```text
 OrbitalView
+OrbitalViewControlSurface
 ```
 
-`OrbitalView` accepts a scene, optional meter frame, camera binding, selection binding, and event callback. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with display gain, style, color scheme, and checker controls.
+`OrbitalView` accepts a scene, optional meter frame, display settings binding, camera binding, selection binding, event callback, and Export PNG callback. The native viewport control surface is included by default and exposes Plan, Elevation, Isometric, Export PNG, speaker shape, speaker size, speaker numbers, hidden lines, and fog controls. A second initializer accepts `Binding<SpeakerMeterVisualSettings>` and shows a bottom collapsible VU settings tray with display gain, style, color scheme, and checker controls.
 
 ### Non-Responsibilities
 
@@ -227,7 +236,7 @@ The wrapper must not:
 - parse downstream app file formats
 - import DomeLab code
 - embed a WebView as the main renderer path
-- implement production controls or gestures before an explicit task
+- remove or bypass the required viewport control surface in normal kit use
 
 ### Dependencies
 
@@ -252,12 +261,13 @@ Splat app targets
 
 ### Status
 
-Wrapper skeleton plus optional VU settings tray implemented. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
+Wrapper skeleton plus required viewport control surface and optional VU settings tray implemented. Gestures, inspector UI, hit testing, and production host integration remain deferred.
 
 ### Tests Required
 
 - wrapper initializes with camera and selection bindings
 - coordinator does not repeat structural updates for identical configuration
+- coordinator applies display settings without reloading scene or raw meter state
 - coordinator emits camera and selection events
 - existing initializer remains tray-free
 - settings-bound initializer opts into the tray
@@ -316,7 +326,7 @@ speakers[] channel, label, position
 
 ### Outputs
 
-`OrbitalViewSceneSpec` with 30 physical speakers, Wavefield coordinate system, and direction anchors preserving channel order and labels.
+`OrbitalViewSceneSpec` with 30 physical speakers, Wavefield coordinate system, imported Fey geodesic shell geometry, and node anchors preserving channel order and labels.
 
 `SpeakerMeterFrame` with levels keyed by physical channel, preserving missing channels as absent values.
 
@@ -345,7 +355,8 @@ CoreMIDI
 - Fey 30 fixture maps to 30 speakers.
 - Channels remain `1...30`.
 - Labels remain `Fey 01...Fey 30`.
-- Direction coordinates match the fixture.
+- The default scene uses the imported Fey geodesic shell with 92 nodes and 270 edges.
+- Speaker anchors reference imported shell nodes while channel order remains `1...30`.
 - Unsupported axes, invalid speaker count, and invalid unit directions fail explicitly.
 - Meter channel records preserve channel identity.
 - Duplicate or invalid channels fail explicitly.

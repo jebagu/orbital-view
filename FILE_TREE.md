@@ -41,10 +41,12 @@ docs/
   009-offscreen-renderer-smoke-test.md
   010-renderer-invariant-tests.md
   011-vu-meter-plumbing-tray.md
+  012-required-control-surface-and-geodesic-shell.md
   _template-task.md
 
 Sources/
   OrbitalViewCore/
+    OrbitalViewDisplaySettings.swift
   OrbitalViewRender/
     OrbitalViewMetalDrawPipeline.swift
     OrbitalViewMetalRenderer.swift
@@ -75,6 +77,7 @@ work-packages/
       009-offscreen-renderer-smoke-test.md
       010-renderer-invariant-tests.md
       011-vu-meter-plumbing-tray.md
+      012-required-control-surface-and-geodesic-shell.md
   _template/
     MV.md
     slices/

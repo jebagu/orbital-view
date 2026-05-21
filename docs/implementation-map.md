@@ -66,6 +66,8 @@ Tests/OrbitalViewWavefieldTests/
 
 The current adapter reads speaker-layout JSON and local channel/rms/peak meter DTOs. Direct Wavefield package type integration is not implemented.
 
+Default scene adaptation now uses `OrbitalViewSceneBuilder.makeFeyGeodesicShell()` and anchors the Fey/Wavefield speakers to nearest imported shell nodes. This preserves channel order while avoiding the older generic parametric direction-shell default.
+
 ### Orbital Viewport Visual Mockup
 
 Purpose:
@@ -82,6 +84,49 @@ mockups/orbital-view-viewport/notes.md
 ```
 
 This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It now mirrors DomeLab's 3D Model control panel on the left side of the viewport, grouped under Camera, Color, Speaker Shape, and View Detail headings. The shell structure is generated as a Fey 3V class-I icosahedron geodesic from the DomeLab project config values in `fey sphere - domelab-configuration.json`, normalized to the viewport sphere. Purple, Flamingo, Green, and B&W color palettes theme the full mockup surface, with Purple as the default. Projection is always axonometric, speaker numbers and hidden lines use switch controls defaulted off, speaker size is centered at 1.95x with half/double range mapping, fog density remaps the prior 30-density look to the slider midpoint, and prism mode is the default shape using true 8-vertex rectangular-prism speaker cabinets with hidden-line face clipping. It is not production renderer source.
+
+### Required Native Control Surface And Display Settings
+
+Purpose:
+
+```text
+Make every normal native OrbitalView use include the Plan / Elevation / Isometric / Export PNG / speaker shape / speaker size / speaker numbers / hidden lines / fog control surface.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewDisplaySettings.swift
+Sources/OrbitalViewSwiftUI/OrbitalView.swift
+Sources/OrbitalViewSwiftUI/OrbitalViewMetalView.swift
+Sources/OrbitalViewRender/
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewRenderTests/
+Tests/OrbitalViewSwiftUITests/
+```
+
+`OrbitalViewDisplaySettings` keeps speaker shape, speaker scale, fog density, speaker number visibility, and hidden-line visibility separate from VU meter visual settings. `OrbitalView` includes `OrbitalViewControlSurface` by default. The Export PNG control is currently a callback hook for the host app; production image capture remains a later renderer task.
+
+### Imported Fey Geodesic Shell
+
+Purpose:
+
+```text
+Provide a reusable imported-shell geometry path so physical speakers anchor to Fey geodesic nodes.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewSceneBuilder.swift
+Sources/OrbitalViewWavefield/WavefieldSpeakerLayoutSceneAdapter.swift
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewWavefieldTests/
+Tests/OrbitalViewRenderTests/
+```
+
+The native shell builder generates the accepted full-sphere Fey 3V class-I icosahedron shell with 92 nodes and 270 edges. The Wavefield adapter uses it by default and converts direction speakers to nearest node anchors. The renderer resolves node anchors to imported shell node positions for draw input projection.
 
 ### OrbitalViewRender Seam
 
@@ -110,7 +155,7 @@ Decision record:
 docs/decisions/0002-renderer-backend.md
 ```
 
-The current renderer stores scene, meter, meter visual settings, camera, and selection state separately, exposes an `MTKViewDelegate` path, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. Full production visuals, animation, hit testing, and broad SwiftUI controls are deferred.
+The current renderer stores scene, meter, meter visual settings, display settings, camera, and selection state separately, exposes an `MTKViewDelegate` path, resolves imported node anchors, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. Full production visuals, animation, hit testing, labels, hidden-line drawing, fog rendering, and gestures are deferred.
 
 ### OrbitalViewSwiftUI Wrapper Skeleton
 
@@ -127,7 +172,7 @@ Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, optional bottom VU settings tray, and coordinator tests. SwiftUI gestures, toolbar controls, and inspector UI are deferred.
+The current wrapper provides `OrbitalView`, `OrbitalViewControlSurface`, an `NSViewRepresentable` bridge, optional bottom VU settings tray, and coordinator tests. The control surface is no longer mockup-only; it is part of normal native use. SwiftUI gestures and inspector UI are deferred.
 
 ### VU Meter Visual Settings And Tray
 
@@ -214,9 +259,10 @@ Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMet
 renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 offscreen renderer smoke output -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 renderer static draw-input invariants -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
-renderer 30-channel VU mapping, checker color-scheme settings, and visual settings revisions -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
-SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+renderer 30-channel VU mapping, checker color-scheme settings, visual settings revisions, display settings revisions, and imported node-anchor projection -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+SwiftUI wrapper configuration, required control surface default, display settings coordinator behavior, and VU tray behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 SwiftUI VU settings tray opt-in and settings-only coordinator updates -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+Fey geodesic imported shell counts and nearest-node anchoring -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
 renderer test harness plan -> docs/renderer-test-harness.md
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
 renderer backend decision -> docs/decisions/0002-renderer-backend.md
@@ -224,4 +270,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-19 VU meter plumbing and settings tray
+2026-05-20 required native control surface and imported Fey geodesic shell

@@ -28,7 +28,7 @@ OrbitalViewKit should eventually render a beautiful, center-locked, orbitable 3D
 
 ## Architecture Summary
 
-Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam, offscreen smoke-tested draw path, static draw-input invariant tests, and display-only checker pulse/ring/diagonal wave VU visual settings. Full production checker facet animation, broader SwiftUI controls, DomeLab import, Splat overlays, and downstream app adapters are later slices.
+Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam, offscreen smoke-tested draw path, static draw-input invariant tests, display-only checker pulse/ring/diagonal wave VU visual settings, native display settings, and imported-shell node-anchor projection. `OrbitalViewSwiftUI` includes the required native viewport control surface by default. Full production checker facet animation, shell-line/fog/label drawing, gestures, DomeLab import, Splat overlays, and downstream app adapters are later slices.
 
 ## Related OpenSpec Change
 
@@ -504,6 +504,44 @@ Protected path touch:
 Sources/OrbitalViewRender/, Tests/OrbitalViewRenderTests/, Sources/OrbitalViewSwiftUI/, and Tests/OrbitalViewSwiftUITests/ allowed by this slice
 ```
 
+### Slice 012: Required Control Surface And Geodesic Shell
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Make the reusable native kit include the viewport control surface by default and use the imported Fey 3V geodesic shell as the default physical speaker anchor surface.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 011
+```
+
+Review required:
+
+```text
+protected-path, architecture, performance, and reliability review useful before production shell/fog/PNG work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewRender/, Tests/OrbitalViewRenderTests/, Sources/OrbitalViewSwiftUI/, and Tests/OrbitalViewSwiftUITests/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -514,8 +552,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 011 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
+Slice 012 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; the required native viewport control surface is included in `OrbitalView`; the default Wavefield/Fey scene path uses imported Fey geodesic shell node anchors; the first viewport interaction mockup exists; and the production renderer backend is accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for production checker facet animation/materials, pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
+Open a new bounded task for production shell/hidden-line/fog drawing, PNG snapshot capture, production checker facet animation/materials, pixel-probe renderer tests, renderer static buffer/cache plan, or SwiftUI gesture binding.

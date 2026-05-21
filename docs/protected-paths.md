@@ -77,6 +77,7 @@ MetalKit / MTKView renderer with SwiftUI wrapper
 - Renderer source must not own audio callbacks or host app meter timing.
 - Renderer source changes are allowed only when the active task explicitly permits `Sources/OrbitalViewRender/`.
 - SwiftUI wrapper changes are allowed only when the active task explicitly permits `Sources/OrbitalViewSwiftUI/`.
+- Normal native kit use must preserve the required `OrbitalView` control surface and imported-shell node-anchor path unless a future task explicitly changes that contract.
 
 ### Review Required
 

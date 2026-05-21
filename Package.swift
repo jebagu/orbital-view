@@ -22,6 +22,10 @@ let package = Package(
         .library(
             name: "OrbitalViewSwiftUI",
             targets: ["OrbitalViewSwiftUI"]
+        ),
+        .executable(
+            name: "OrbitalViewVUKit",
+            targets: ["OrbitalViewVUKit"]
         )
     ],
     targets: [
@@ -41,6 +45,14 @@ let package = Package(
             dependencies: [
                 "OrbitalViewCore",
                 "OrbitalViewRender"
+            ]
+        ),
+        .executableTarget(
+            name: "OrbitalViewVUKit",
+            dependencies: [
+                "OrbitalViewCore",
+                "OrbitalViewRender",
+                "OrbitalViewSwiftUI"
             ]
         ),
         .testTarget(

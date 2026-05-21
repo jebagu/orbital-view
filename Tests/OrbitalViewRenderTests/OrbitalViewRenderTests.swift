@@ -19,6 +19,7 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertEqual(renderer.renderState.structuralRevision, 1)
         XCTAssertEqual(renderer.renderState.meterRevision, 0)
         XCTAssertEqual(renderer.renderState.meterVisualSettingsRevision, 0)
+        XCTAssertEqual(renderer.renderState.displaySettingsRevision, 0)
 
         renderer.updateMeters(frame)
         XCTAssertEqual(renderer.renderState.scene, scene)
@@ -26,6 +27,7 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertEqual(renderer.renderState.structuralRevision, 1)
         XCTAssertEqual(renderer.renderState.meterRevision, 1)
         XCTAssertEqual(renderer.renderState.meterVisualSettingsRevision, 0)
+        XCTAssertEqual(renderer.renderState.displaySettingsRevision, 0)
     }
 
     func testCameraAndSelectionEmitEventsWithoutTouchingMeters() throws {
@@ -125,6 +127,9 @@ final class OrbitalViewRenderTests: XCTestCase {
     func testCheckerColorSchemeSettingsAffectEverySpeakerColorWithoutChangingGeometry() throws {
         let renderer = OrbitalViewMetalRenderer()
         renderer.loadScene(try makeThreeSpeakerScene())
+        renderer.updateDisplaySettings(
+            try OrbitalViewDisplaySettings(fogDensity: 0)
+        )
         renderer.updateMeters(
             try SpeakerMeterFrame(
                 timestamp: 1.25,
@@ -153,6 +158,107 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertEqual(greenInputs.speakers.count, 3)
         XCTAssertNotEqual(kimiInputs.colors, greenInputs.colors)
         XCTAssertTrue(greenInputs.colors.allSatisfy { $0.w == 1 })
+    }
+
+    func testDisplaySettingsChangeViewDetailWithoutChangingMetersOrScene() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        let scene = try makeThreeSpeakerScene()
+        let frame = try SpeakerMeterFrame(
+            timestamp: 1,
+            levelsByChannel: [
+                1: SpeakerMeterLevel(rms: 0.1, peak: 0.25, clip: false)
+            ]
+        )
+
+        renderer.loadScene(scene)
+        renderer.updateMeters(frame)
+        let baselineInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        renderer.updateDisplaySettings(
+            try OrbitalViewDisplaySettings(
+                speakerShape: .sphere,
+                speakerScale: 3.9,
+                fogDensity: 60,
+                showsSpeakerNumbers: true,
+                showsHiddenLines: true
+            )
+        )
+        let detailedInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(renderer.renderState.scene, scene)
+        XCTAssertEqual(renderer.renderState.meters, frame)
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(renderer.renderState.meterRevision, 1)
+        XCTAssertEqual(renderer.renderState.displaySettingsRevision, 1)
+        XCTAssertEqual(detailedInputs.staticGeometry.map(\.id), baselineInputs.staticGeometry.map(\.id))
+        XCTAssertEqual(detailedInputs.staticGeometry.map(\.channel), baselineInputs.staticGeometry.map(\.channel))
+        XCTAssertEqual(detailedInputs.staticGeometry.map(\.quadRadius), baselineInputs.staticGeometry.map { $0.quadRadius * 2 })
+    }
+
+    func testNodeAnchoredSpeakersProjectFromImportedShellNodes() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        let shell = try OrbitalViewSceneBuilder.makeDefaultOctahedronShell(radiusM: 2)
+        let speaker = try OrbitalViewSpeaker(
+            id: "speaker-top",
+            channel: 1,
+            label: "Top",
+            anchor: .node(nodeID: "top", offsetM: 0.05),
+            shape: .sphere(radiusM: 0.03)
+        )
+        let scene = try OrbitalViewSceneBuilder.makeMonitorScene(
+            id: "node-render",
+            shell: shell,
+            speakers: [speaker]
+        )
+
+        renderer.loadScene(scene)
+        let inputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(inputs.staticGeometry.count, 1)
+        XCTAssertEqual(inputs.staticGeometry[0].projectedX, 0, accuracy: 1.0e-6)
+        XCTAssertGreaterThan(inputs.staticGeometry[0].projectedY, 0)
+    }
+
+    func testFogDensityZeroDisablesFogingInSpeakerColorAlpha() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        let direction = try UnitSphereDirection.normalized(x: 1, y: 1, z: 1)
+        let speaker = try OrbitalViewSpeaker(
+            id: "speaker-1",
+            channel: 1,
+            label: "Fey 01",
+            anchor: .direction(direction, offsetM: 0.05),
+            shape: .sphere(radiusM: 0.03)
+        )
+
+        let scene = try OrbitalViewSceneBuilder.makeMonitorScene(
+            id: "render-fog-test",
+            shell: .parametric(try OrbitalViewParametricShell(kind: .geodesic, radiusM: 1)),
+            speakers: [speaker]
+        )
+        renderer.loadScene(scene)
+
+        renderer.updateDisplaySettings(
+            try OrbitalViewDisplaySettings(fogDensity: 0)
+        )
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1,
+                levelsByChannel: [1: SpeakerMeterLevel(rms: 0.2, peak: 0.4, clip: false)]
+            )
+        )
+
+        let noFog = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        XCTAssertEqual(noFog.speakers[0].color.w, 1.0, accuracy: 1e-6)
+
+        renderer.updateDisplaySettings(
+            try OrbitalViewDisplaySettings(fogDensity: 100)
+        )
+        let fullFog = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        XCTAssertLessThan(fullFog.speakers[0].color.w, 1.0)
+
+        renderer.updateDisplaySettings(OrbitalViewDisplaySettings.default)
+        let defaultFog = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        XCTAssertLessThan(defaultFog.speakers[0].color.w, noFog.speakers[0].color.w)
     }
 
     func testMetalRendererProvidesMTKViewDelegateSeam() {
