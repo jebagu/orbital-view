@@ -52,6 +52,7 @@ public struct OrbitalView: View {
         objectVisualSettings: ObjectVisualSettings = .default,
         inputDiagnostics: OrbitalViewInputDiagnostics = .empty,
         visualPresetStore: (any OrbitalViewVisualPresetStore)? = nil,
+        showsMeterSettingsTray: Bool = true,
         meterVisualSettings: Binding<SpeakerMeterVisualSettings>,
         camera: Binding<OrbitalViewCameraState>,
         selection: Binding<OrbitalViewSelection?> = .constant(nil),
@@ -63,7 +64,7 @@ public struct OrbitalView: View {
         self.objectMeters = objectMeters
         self.objectVisualSettings = objectVisualSettings
         self.inputDiagnostics = inputDiagnostics
-        self.showsMeterSettingsTray = true
+        self.showsMeterSettingsTray = showsMeterSettingsTray
         self.visualPresetStore = visualPresetStore
         self._camera = camera
         self._selection = selection
