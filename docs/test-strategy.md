@@ -91,14 +91,18 @@ Current wrapper skeleton tests cover:
 - SceneKit review-app audio source uses native transport icon buttons for Play and Pause
 - SceneKit review-app right panel includes the Orbisonic Theme tray and keeps theme controls out of the left rail tuning stack
 - SceneKit review-app Orbisonic Theme tray uses full-width custom theme buttons, includes the Orbisonic family palette list from `orbisonic-palette-brief`, and does not use a native segmented picker
+- SceneKit review-app startup defaults are pinned to the exported settings JSON values without mutating the Core cube settings default contract
 - SceneKit review-app meter-only ticks update material cadence without rebuilding shell or speaker geometry
 - SceneKit review-app Cube VU controls preserve Core scalar defaults, default to 9x9 face pixels, default Cube Outline to invisible, keep outline constants delicate, and separate material-only theme/outline tuning from speaker-height geometry tuning
 - SceneKit review-app Cube VU retained face-texture support exposes the face-pixel quantization and center-fill contract on the actual cube faces without replacing the approved SceneKit surface
+- SceneKit review-app Cube VU idle face textures have edge-to-edge pixels with no generated tile gaps and preserve an unlit checkerboard surface
+- SceneKit review-app Cube VU Surface + Bloom controls expose Pixel Fill and Surface Checker Opacity, can recover the older separated-pixel face mode, and can mute the forced idle checkerboard without changing geometry
 - SceneKit review-app speaker type options include `Prism`, `Sphere`, and `Cube VU`, with full-width tray header hit targets for collapsible tuning sections
+- SceneKit review-app Orbisonic Theme controls expose Geodesic Saturation, update only the shell/geodesic material key, and leave speaker/Cube VU material keys unchanged
 - SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state
 - SceneKit review-app VU Drive exposes Music and Impulse Test, with Impulse Test producing a deterministic spatial sphere-ripple meter pattern instead of random or uniform channel values
 - SceneKit review-app Cube VU presets expose Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without adding a four-up preview
-- SceneKit review-app settings JSON export includes theme, speaker type, VU drive, Cube VU preset/settings, and performance cadence values
+- SceneKit review-app settings JSON export includes theme, speaker type, VU drive, Cube VU preset/settings, performance cadence values, and the full left-panel audio/camera/view-detail state
 - SceneKit review-app hidden diagnostics expose raw RMS, raw peak, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source
 - SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
 - SceneKit review-app object/trail/glow/bounds trays are inactive while the review surface focuses on speakers

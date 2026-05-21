@@ -36,6 +36,11 @@ public struct OrbitalViewportMockup: View {
     ]
     static let themeControlPattern = "full-width-orbisonic-theme-buttons"
     static let themePaletteSource = "orbisonic-palette-brief"
+    static let themeTrayControlTitles = [
+        "Geodesic Saturation",
+        "Shell",
+        "Cube VU Ramp"
+    ]
     static let tuningTrayTitles = [
         "Orbisonic Theme",
         "VU Drive",
@@ -45,6 +50,18 @@ public struct OrbitalViewportMockup: View {
         "Presets",
         "Graphical Performance vs CPU Load",
         "Debug + Diagnostics"
+    ]
+    static let surfaceBloomControlTitles = [
+        "Bloom Min",
+        "Bloom Max",
+        "Bloom Edge",
+        "Rim Halo Edge",
+        "Response Curve",
+        "Face Pixels",
+        "Pixel Fill",
+        "Idle Tint",
+        "Surface Checker Opacity",
+        "Checker Contrast"
     ]
     static let inactiveObjectTrayTitles = [
         "Object Overlay",
@@ -62,16 +79,31 @@ public struct OrbitalViewportMockup: View {
         "30-channel VU list"
     ]
     static let rightPanelPurpose = "tuning-debug-panel"
+    static let defaultSettingsSourceFileName = "Orbital View VU Kit Settings 2026-05-21-171537.json"
+    static let defaultRenderStyle: OrbitalViewportRenderStyle = .purple
+    static let defaultGeodesicSaturation = 0.0
+    static let defaultSpeakerShape: OrbitalViewportSpeakerShape = .cubeVU
+    static let defaultViewportFrameRate: OrbitalViewportFrameRate = .sixty
+    static let defaultCubeVUPreset: OrbitalViewportCubeVUPreset = .hotCoreBloom
+    static let defaultVUDriveMode: OrbitalViewportVUDriveMode = .impulseTest
+    static let defaultCubeVUSettings: OrbitalViewportCubeVUSettings = {
+        var settings = OrbitalViewportCubeVUPreset.hotCoreBloom.settings
+        settings.cubeOutlineStrength = 0.64
+        settings.pixelFill = 0.86
+        settings.surfaceCheckerOpacity = 0
+        return settings
+    }()
 
     @State private var yaw = 0.0
     @State private var pitch = 0.0
     @State private var zoom = 1.0
     @State private var cameraView: OrbitalViewportCameraView = .isometric
-    @State private var renderStyle: OrbitalViewportRenderStyle = .purple
-    @State private var speakerShape: OrbitalViewportSpeakerShape = .prism
+    @State private var renderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultRenderStyle
+    @State private var geodesicSaturation = OrbitalViewportMockup.defaultGeodesicSaturation
+    @State private var speakerShape: OrbitalViewportSpeakerShape = OrbitalViewportMockup.defaultSpeakerShape
     @State private var speakerSizeSlider = 50.0
     @State private var fogDensitySlider = 50.0
-    @State private var viewportFrameRate: OrbitalViewportFrameRate = .sixty
+    @State private var viewportFrameRate: OrbitalViewportFrameRate = OrbitalViewportMockup.defaultViewportFrameRate
     @State private var spin = false
     @State private var showSpeakerNumbers = false
     @State private var showHiddenLines = false
@@ -86,9 +118,9 @@ public struct OrbitalViewportMockup: View {
     @State private var exportStatus: OrbitalViewportExportStatus?
     @State private var magnificationStartZoom: Double?
     @StateObject private var localAudio = OrbitalViewportLocalAudioController()
-    @State private var cubeVUSettings = OrbitalViewportCubeVUSettings.default
-    @State private var cubeVUPreset: OrbitalViewportCubeVUPreset = .softCenterBloom
-    @State private var vuDriveMode: OrbitalViewportVUDriveMode = .music
+    @State private var cubeVUSettings = OrbitalViewportMockup.defaultCubeVUSettings
+    @State private var cubeVUPreset: OrbitalViewportCubeVUPreset = OrbitalViewportMockup.defaultCubeVUPreset
+    @State private var vuDriveMode: OrbitalViewportVUDriveMode = OrbitalViewportMockup.defaultVUDriveMode
     @State private var objectTuning = OrbitalViewportObjectTuning.default
     @State private var themeExpanded = false
     @State private var vuDriveExpanded = false
@@ -146,6 +178,7 @@ public struct OrbitalViewportMockup: View {
             cameraView: cameraView,
             zoom: zoom,
             renderStyle: renderStyle,
+            geodesicSaturation: geodesicSaturation,
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
@@ -355,6 +388,13 @@ public struct OrbitalViewportMockup: View {
                     themeButton(style)
                 }
             }
+            tuningSliderRow(
+                "Geodesic Saturation",
+                value: $geodesicSaturation,
+                range: 0...1,
+                step: 0.01,
+                valueText: "\((geodesicSaturation * 100).formatted(.number.precision(.fractionLength(0))))%"
+            )
             tuningValueRow("Shell", value: renderStyle.title)
             tuningValueRow("Cube VU Ramp", value: renderStyle.title)
         }
@@ -489,11 +529,25 @@ public struct OrbitalViewportMockup: View {
             )
             tuningStepperRow("Face Pixels", value: $cubeVUSettings.facePixels, range: 6...14)
             tuningSliderRow(
+                "Pixel Fill",
+                value: $cubeVUSettings.pixelFill,
+                range: 0.5...1,
+                step: 0.01,
+                valueText: "\((cubeVUSettings.pixelFill * 100).formatted(.number.precision(.fractionLength(0))))%"
+            )
+            tuningSliderRow(
                 "Idle Tint",
                 value: $cubeVUSettings.idleTint,
                 range: 0...1,
                 step: 0.01,
                 valueText: cubeVUSettings.idleTint.formatted(.number.precision(.fractionLength(2)))
+            )
+            tuningSliderRow(
+                "Surface Checker Opacity",
+                value: $cubeVUSettings.surfaceCheckerOpacity,
+                range: 0...1,
+                step: 0.01,
+                valueText: "\((cubeVUSettings.surfaceCheckerOpacity * 100).formatted(.number.precision(.fractionLength(0))))%"
             )
             tuningSliderRow(
                 "Checker Contrast",
@@ -1211,7 +1265,36 @@ public struct OrbitalViewportMockup: View {
         DispatchQueue.main.async {
             let payload = OrbitalViewportSettingsExportPayload(
                 renderStyle: renderStyle,
+                geodesicSaturation: geodesicSaturation,
                 speakerShape: speakerShape,
+                leftPanel: OrbitalViewportLeftPanelSettings(
+                    audioSource: OrbitalViewportAudioSourceExportSettings(
+                        mode: localAudio.hasLoadedAudio ? .localAudioFile : .fakeMeterStream,
+                        hasLoadedAudio: localAudio.hasLoadedAudio,
+                        fileName: localAudio.fileDisplayName,
+                        filePath: localAudio.filePath,
+                        isPlaying: localAudio.isPlaying,
+                        statusText: localAudio.statusText
+                    ),
+                    camera: OrbitalViewportCameraExportSettings(
+                        cameraView: cameraView,
+                        yaw: yaw,
+                        pitch: pitch,
+                        zoom: zoom,
+                        spin: spin,
+                        cameraAdjusted: cameraAdjusted
+                    ),
+                    speakerType: speakerShape,
+                    viewDetail: OrbitalViewportViewDetailExportSettings(
+                        speakerSizeSlider: speakerSizeSlider,
+                        speakerSize: speakerSize,
+                        fogDensitySlider: fogDensitySlider,
+                        fogDensity: fogDensity,
+                        showSpeakerNumbers: showSpeakerNumbers,
+                        showHiddenLines: showHiddenLines
+                    ),
+                    selectedChannel: selectedChannel
+                ),
                 driveMode: vuDriveMode,
                 cubePreset: cubeVUPreset,
                 cubeSettings: cubeVUSettings,
@@ -1508,6 +1591,7 @@ struct OrbitalViewportMeterDiagnostics: Equatable {
 
 final class OrbitalViewportLocalAudioController: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published private(set) var fileDisplayName: String?
+    @Published private(set) var filePath: String?
     @Published private(set) var isPlaying = false
     @Published private(set) var statusText = "Fake meter stream"
     @Published private(set) var latestDiagnosticEvent: OrbitalViewportAudioDiagnosticEvent?
@@ -1613,6 +1697,7 @@ final class OrbitalViewportLocalAudioController: NSObject, ObservableObject, AVA
             player = nextPlayer
             sourceID = UUID()
             fileDisplayName = url.lastPathComponent
+            filePath = url.path
             isPlaying = false
             statusText = "Loaded"
             publish("Loaded audio file: \(url.lastPathComponent)")
@@ -1620,6 +1705,7 @@ final class OrbitalViewportLocalAudioController: NSObject, ObservableObject, AVA
             player = nil
             sourceID = UUID()
             fileDisplayName = nil
+            filePath = nil
             isPlaying = false
             statusText = "Audio load failed"
             publish("Audio load failed: \(url.lastPathComponent)")
@@ -1870,7 +1956,9 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
     let appName: String
     let exportedAt: String
     let renderStyle: OrbitalViewportRenderStyle
+    let geodesicSaturation: Double
     let speakerShape: OrbitalViewportSpeakerShape
+    let leftPanel: OrbitalViewportLeftPanelSettings
     let driveMode: OrbitalViewportVUDriveMode
     let cubePreset: OrbitalViewportCubeVUPreset
     let cubeSettings: OrbitalViewportCubeVUSettings
@@ -1881,7 +1969,9 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
 
     init(
         renderStyle: OrbitalViewportRenderStyle,
+        geodesicSaturation: Double = 1,
         speakerShape: OrbitalViewportSpeakerShape,
+        leftPanel: OrbitalViewportLeftPanelSettings = .default,
         driveMode: OrbitalViewportVUDriveMode,
         cubePreset: OrbitalViewportCubeVUPreset,
         cubeSettings: OrbitalViewportCubeVUSettings,
@@ -1891,11 +1981,13 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         drawsOnDemand: Bool,
         exportedAt date: Date = Date()
     ) {
-        self.schemaVersion = 1
+        self.schemaVersion = 2
         self.appName = OrbitalViewportMockup.correctReviewAppName
         self.exportedAt = OrbitalViewportSettingsJSONExporter.timestampString(date: date)
         self.renderStyle = renderStyle
+        self.geodesicSaturation = OrbitalViewportMath.clamp01(geodesicSaturation)
         self.speakerShape = speakerShape
+        self.leftPanel = leftPanel
         self.driveMode = driveMode
         self.cubePreset = cubePreset
         self.cubeSettings = cubeSettings
@@ -1904,6 +1996,81 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         self.inspectorRefreshFramesPerSecond = inspectorRefreshFramesPerSecond
         self.drawsOnDemand = drawsOnDemand
     }
+}
+
+struct OrbitalViewportLeftPanelSettings: Codable, Equatable {
+    static let `default` = OrbitalViewportLeftPanelSettings(
+        audioSource: .default,
+        camera: .default,
+        speakerType: .prism,
+        viewDetail: .default,
+        selectedChannel: nil
+    )
+
+    let audioSource: OrbitalViewportAudioSourceExportSettings
+    let camera: OrbitalViewportCameraExportSettings
+    let speakerType: OrbitalViewportSpeakerShape
+    let viewDetail: OrbitalViewportViewDetailExportSettings
+    let selectedChannel: Int?
+}
+
+enum OrbitalViewportAudioSourceMode: String, Codable, Equatable {
+    case fakeMeterStream
+    case localAudioFile
+}
+
+struct OrbitalViewportAudioSourceExportSettings: Codable, Equatable {
+    static let `default` = OrbitalViewportAudioSourceExportSettings(
+        mode: .fakeMeterStream,
+        hasLoadedAudio: false,
+        fileName: nil,
+        filePath: nil,
+        isPlaying: false,
+        statusText: "Fake meter stream"
+    )
+
+    let mode: OrbitalViewportAudioSourceMode
+    let hasLoadedAudio: Bool
+    let fileName: String?
+    let filePath: String?
+    let isPlaying: Bool
+    let statusText: String
+}
+
+struct OrbitalViewportCameraExportSettings: Codable, Equatable {
+    static let `default` = OrbitalViewportCameraExportSettings(
+        cameraView: .isometric,
+        yaw: 0,
+        pitch: 0,
+        zoom: 1,
+        spin: false,
+        cameraAdjusted: false
+    )
+
+    let cameraView: OrbitalViewportCameraView
+    let yaw: Double
+    let pitch: Double
+    let zoom: Double
+    let spin: Bool
+    let cameraAdjusted: Bool
+}
+
+struct OrbitalViewportViewDetailExportSettings: Codable, Equatable {
+    static let `default` = OrbitalViewportViewDetailExportSettings(
+        speakerSizeSlider: 50,
+        speakerSize: OrbitalViewportMath.speakerSize(fromSlider: 50),
+        fogDensitySlider: 50,
+        fogDensity: OrbitalViewportMath.fogDensity(fromSlider: 50),
+        showSpeakerNumbers: false,
+        showHiddenLines: false
+    )
+
+    let speakerSizeSlider: Double
+    let speakerSize: Double
+    let fogDensitySlider: Double
+    let fogDensity: Double
+    let showSpeakerNumbers: Bool
+    let showHiddenLines: Bool
 }
 
 enum OrbitalViewportSettingsJSONExporter {
@@ -1940,7 +2107,7 @@ enum OrbitalViewportSettingsJSONExporter {
     }
 }
 
-public enum OrbitalViewportCameraView: String, CaseIterable, Identifiable, Equatable {
+public enum OrbitalViewportCameraView: String, CaseIterable, Identifiable, Equatable, Codable {
     case plan
     case elevation
     case isometric
@@ -2427,6 +2594,8 @@ struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
     var responseCurve = 0.82
     var facePixels = 9
     var checkerContrast = 0.08
+    var pixelFill = 1.0
+    var surfaceCheckerOpacity = 1.0
     var cubeOutlineStrength = 0.0
     var speakerHeight = 1.0
 
@@ -2532,6 +2701,8 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     static let cubeOutlineSelectedAlphaMultiplier = 0.78
     static let cubeOutlineEmissionMultiplier = 0.18
     static let faceTexturePixelsPerFacePixel = 8
+    static let faceTextureTileGapPixels = 0
+    static let idleCheckerContrastFloor = 0.24
     static let faceTextureCacheLimit = 160
 
     private struct FaceTextureKey: Hashable {
@@ -2539,6 +2710,8 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         var display: Int
         var hot: Int
         var clip: Bool
+        var pixelFill: Int
+        var surfaceCheckerOpacity: Int
         var bloomMin: Int
         var bloomMax: Int
         var bloomEdge: Int
@@ -2715,6 +2888,8 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
             display: quantized(Double(scalars.displayVuScalar), scale: 96),
             hot: quantized(Double(scalars.hotScalar), scale: 96),
             clip: clip,
+            pixelFill: quantized(settings.pixelFill, scale: 128),
+            surfaceCheckerOpacity: quantized(settings.surfaceCheckerOpacity, scale: 128),
             bloomMin: quantized(settings.bloomMin, scale: 128),
             bloomMax: quantized(settings.bloomMax, scale: 128),
             bloomEdge: quantized(settings.bloomEdge, scale: 128),
@@ -2785,10 +2960,12 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
             amount: settings.idleTint
         )
         let gap = mix(base, resolvedColor(red: 0.005, green: 0.007, blue: 0.011), amount: 0.78)
-
         image.lockFocus()
         NSGraphicsContext.current?.imageInterpolation = .none
-        gap.setFill()
+        NSGraphicsContext.current?.shouldAntialias = false
+        let pixelFill = min(1, max(0.5, settings.pixelFill))
+        let surfaceCheckerOpacity = OrbitalViewportMath.clamp01(settings.surfaceCheckerOpacity)
+        (pixelFill < 0.999 ? gap : base).setFill()
         NSBezierPath(rect: NSRect(origin: .zero, size: imageSize)).fill()
 
         for y in 0..<facePixels {
@@ -2812,13 +2989,15 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
                 if clip {
                     tileColor = mix(tileColor, resolvedColor(red: 1, green: 0.08, blue: 0.02), amount: 0.86)
                 }
-                let visibleCheckerContrast = max(settings.checkerContrast, 0.24)
+                let visibleCheckerContrast = max(settings.checkerContrast, idleCheckerContrastFloor) *
+                    surfaceCheckerOpacity
                 let checker = ((x + y) % 2 == 0)
                     ? max(0, 1 - visibleCheckerContrast)
                     : 1 + visibleCheckerContrast
                 tileColor = multiply(tileColor, by: checker)
                 tileColor.setFill()
-                let tileInset = max(2, tilePixels / 4)
+                let fillInset = Int(((1 - pixelFill) * Double(tilePixels) / 2).rounded(.toNearestOrAwayFromZero))
+                let tileInset = max(faceTextureTileGapPixels, fillInset)
                 let rect = NSRect(
                     x: x * tilePixels + tileInset,
                     y: y * tilePixels + tileInset,
@@ -3108,6 +3287,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let cameraView: OrbitalViewportCameraView
     let zoom: Double
     let renderStyle: OrbitalViewportRenderStyle
+    let geodesicSaturation: Double
     let speakerShape: OrbitalViewportSpeakerShape
     let speakerSize: Double
     let fogDensity: Double
@@ -3129,6 +3309,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         cameraView: OrbitalViewportCameraView,
         zoom: Double,
         renderStyle: OrbitalViewportRenderStyle,
+        geodesicSaturation: Double = 1,
         speakerShape: OrbitalViewportSpeakerShape,
         speakerSize: Double,
         fogDensity: Double,
@@ -3149,6 +3330,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.cameraView = cameraView
         self.zoom = zoom
         self.renderStyle = renderStyle
+        self.geodesicSaturation = OrbitalViewportMath.clamp01(geodesicSaturation)
         self.speakerShape = speakerShape
         self.speakerSize = speakerSize
         self.fogDensity = fogDensity
@@ -3165,6 +3347,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
 
     var theme: OrbitalViewportTheme {
         OrbitalViewportTheme(style: renderStyle)
+    }
+
+    func geodesicColor(_ color: Color) -> Color {
+        OrbitalViewportColorTools.withSaturation(color, geodesicSaturation)
     }
 
     var frontClipPlane: Double {
@@ -3287,6 +3473,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             cameraView: cameraView,
             zoom: zoom,
             renderStyle: renderStyle,
+            geodesicSaturation: geodesicSaturation,
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
@@ -3322,6 +3509,7 @@ struct OrbitalViewportShellUpdateKey: Equatable {
     let pitch: Double
     let cameraView: OrbitalViewportCameraView
     let renderStyle: OrbitalViewportRenderStyle
+    let geodesicSaturation: Double
     let showHiddenLines: Bool
 
     init(configuration: OrbitalViewportRenderConfiguration) {
@@ -3329,6 +3517,7 @@ struct OrbitalViewportShellUpdateKey: Equatable {
         self.pitch = configuration.pitch
         self.cameraView = configuration.cameraView
         self.renderStyle = configuration.renderStyle
+        self.geodesicSaturation = configuration.geodesicSaturation
         self.showHiddenLines = configuration.showHiddenLines
     }
 }
@@ -3984,6 +4173,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private func updateShell(configuration: OrbitalViewportRenderConfiguration) {
             let theme = configuration.theme
+            let structureColor = configuration.geodesicColor(theme.structure)
+            let equatorColor = configuration.geodesicColor(theme.equator)
 
             for (index, edgeNode) in edgeNodes.enumerated() {
                 let edge = OrbitalViewportGeodesic.structure.edges[index]
@@ -3995,7 +4186,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 let baseAlpha = ([0.56, 0.74, 0.96][safe: edge.lengthGroup] ?? 0.72) * depthAlpha
                 setMaterial(
                     edgeNode.geometry?.firstMaterial,
-                    color: edge.lengthGroup == 2 ? theme.equator : theme.structure,
+                    color: edge.lengthGroup == 2 ? equatorColor : structureColor,
                     alpha: baseAlpha
                 )
             }
@@ -4004,7 +4195,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 let rotated = configuration.rotate(OrbitalViewportGeodesic.structure.nodes[index])
                 let alpha = configuration.shellNodeAlpha(depth: rotated.z)
                 node.isHidden = alpha <= 0.02
-                setMaterial(node.geometry?.firstMaterial, color: theme.structure, alpha: alpha)
+                setMaterial(node.geometry?.firstMaterial, color: structureColor, alpha: alpha)
             }
         }
 
@@ -4343,7 +4534,7 @@ private struct OrbitalViewportPainter {
             path.move(to: configuration.project(edgeView.start))
             path.addLine(to: configuration.project(edgeView.end))
             let alpha = ([0.58, 0.78, 0.96][safe: edgeView.edge.lengthGroup] ?? 0.72) * edgeView.fade
-            let strokeColor = edgeView.edge.lengthGroup == 2 ? theme.equator : theme.structure
+            let strokeColor = configuration.geodesicColor(edgeView.edge.lengthGroup == 2 ? theme.equator : theme.structure)
             context.stroke(
                 path,
                 with: .color(strokeColor.opacity(alpha)),
@@ -4363,7 +4554,7 @@ private struct OrbitalViewportPainter {
             let point = configuration.project(rotated)
             let alpha = 0.42 * configuration.hiddenDepthFade(rotated.z)
             let rect = CGRect(x: point.x - 1.45, y: point.y - 1.45, width: 2.9, height: 2.9)
-            context.fill(Path(ellipseIn: rect), with: .color(theme.structure.opacity(alpha)))
+            context.fill(Path(ellipseIn: rect), with: .color(configuration.geodesicColor(theme.structure).opacity(alpha)))
         }
     }
 
@@ -4374,7 +4565,7 @@ private struct OrbitalViewportPainter {
         let center = CGPoint(x: configuration.size.width * 0.5, y: configuration.size.height * 0.5)
         let radius = configuration.sphereRadius
         let rect = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
-        context.stroke(Path(ellipseIn: rect), with: .color(theme.structure), lineWidth: 1)
+        context.stroke(Path(ellipseIn: rect), with: .color(configuration.geodesicColor(theme.structure)), lineWidth: 1)
     }
 
     mutating private func drawFogVeil(size: CGSize) {
@@ -5026,6 +5217,35 @@ private struct OrbitalViewportPrismFace {
     let shade: Double
     let alpha: Double
     let depth: Double
+}
+
+enum OrbitalViewportColorTools {
+    static func withSaturation(_ color: Color, _ saturation: Double) -> Color {
+        let clamped = OrbitalViewportMath.clamp01(saturation)
+        guard clamped < 0.999 else {
+            return color
+        }
+
+        #if os(macOS)
+        let nsColor = NSColor(color)
+        guard let rgb = nsColor.usingColorSpace(.deviceRGB) ?? nsColor.usingColorSpace(.sRGB) else {
+            return color
+        }
+        let red = Double(rgb.redComponent)
+        let green = Double(rgb.greenComponent)
+        let blue = Double(rgb.blueComponent)
+        let luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722
+        return Color(
+            .sRGB,
+            red: luminance + (red - luminance) * clamped,
+            green: luminance + (green - luminance) * clamped,
+            blue: luminance + (blue - luminance) * clamped,
+            opacity: Double(rgb.alphaComponent)
+        )
+        #else
+        return color
+        #endif
+    }
 }
 
 enum OrbitalViewportMath {

@@ -31,6 +31,40 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.rightPanelPurpose, "tuning-debug-panel")
     }
 
+    func testCorrectViewerUsesExportedSettingsFileAsStartupDefaults() {
+        let settings = OrbitalViewportMockup.defaultCubeVUSettings
+
+        XCTAssertEqual(
+            OrbitalViewportMockup.defaultSettingsSourceFileName,
+            "Orbital View VU Kit Settings 2026-05-21-171537.json"
+        )
+        XCTAssertEqual(OrbitalViewportMockup.defaultRenderStyle, .purple)
+        XCTAssertEqual(OrbitalViewportMockup.defaultGeodesicSaturation, 0)
+        XCTAssertEqual(OrbitalViewportMockup.defaultSpeakerShape, .cubeVU)
+        XCTAssertEqual(OrbitalViewportMockup.defaultViewportFrameRate, .sixty)
+        XCTAssertEqual(OrbitalViewportMockup.defaultCubeVUPreset, .hotCoreBloom)
+        XCTAssertEqual(OrbitalViewportMockup.defaultVUDriveMode, .impulseTest)
+        XCTAssertEqual(settings.bloomEdge, 0.18, accuracy: 0.000_001)
+        XCTAssertEqual(settings.bloomMax, 0.98, accuracy: 0.000_001)
+        XCTAssertEqual(settings.bloomMin, 0.11, accuracy: 0.000_001)
+        XCTAssertEqual(settings.checkerContrast, 0.08, accuracy: 0.000_001)
+        XCTAssertEqual(settings.cubeOutlineStrength, 0.64, accuracy: 0.000_001)
+        XCTAssertEqual(settings.displayCeiling, 1, accuracy: 0.000_001)
+        XCTAssertEqual(settings.facePixels, 9)
+        XCTAssertEqual(settings.hotFillStrength, 0.94, accuracy: 0.000_001)
+        XCTAssertEqual(settings.hotResponse, 2.25, accuracy: 0.000_001)
+        XCTAssertEqual(settings.hotThreshold, 0.58, accuracy: 0.000_001)
+        XCTAssertEqual(settings.idleTint, 0.12, accuracy: 0.000_001)
+        XCTAssertEqual(settings.inputCalibration, 1, accuracy: 0.000_001)
+        XCTAssertEqual(settings.levelCompression, 1, accuracy: 0.000_001)
+        XCTAssertEqual(settings.paletteDrive, 2, accuracy: 0.000_001)
+        XCTAssertEqual(settings.pixelFill, 0.86, accuracy: 0.000_001)
+        XCTAssertEqual(settings.responseCurve, 0.72, accuracy: 0.000_001)
+        XCTAssertEqual(settings.rimHaloEdge, 0.12, accuracy: 0.000_001)
+        XCTAssertEqual(settings.speakerHeight, 1, accuracy: 0.000_001)
+        XCTAssertEqual(settings.surfaceCheckerOpacity, 0, accuracy: 0.000_001)
+    }
+
     func testCorrectViewerKeepsLeftRailFocusedAndMovesTuningTraysRight() {
         XCTAssertEqual(
             OrbitalViewportMockup.leftRailSectionTitles,
@@ -56,6 +90,10 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(OrbitalViewportMockup.themeControlPattern, "full-width-orbisonic-theme-buttons")
         XCTAssertEqual(OrbitalViewportMockup.themePaletteSource, "orbisonic-palette-brief")
+        XCTAssertEqual(
+            OrbitalViewportMockup.themeTrayControlTitles,
+            ["Geodesic Saturation", "Shell", "Cube VU Ramp"]
+        )
         XCTAssertEqual(OrbitalViewportSpeakerShape.allCases.map(\.title), ["Prism", "Sphere", "Cube VU"])
         XCTAssertEqual(OrbitalViewportFrameRate.allCases.map(\.title), ["30 FPS", "60 FPS"])
         XCTAssertEqual(
@@ -69,6 +107,21 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Presets",
                 "Graphical Performance vs CPU Load",
                 "Debug + Diagnostics"
+            ]
+        )
+        XCTAssertEqual(
+            OrbitalViewportMockup.surfaceBloomControlTitles,
+            [
+                "Bloom Min",
+                "Bloom Max",
+                "Bloom Edge",
+                "Rim Halo Edge",
+                "Response Curve",
+                "Face Pixels",
+                "Pixel Fill",
+                "Idle Tint",
+                "Surface Checker Opacity",
+                "Checker Contrast"
             ]
         )
         XCTAssertEqual(OrbitalViewportVUDriveMode.allCases.map(\.title), ["Music", "Impulse Test"])
@@ -105,6 +158,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(defaults.idleTint, 0.10, accuracy: 0.000_001)
         XCTAssertEqual(defaults.responseCurve, 0.82, accuracy: 0.000_001)
         XCTAssertEqual(defaults.rimHaloEdge, 0, accuracy: 0.000_001)
+        XCTAssertEqual(defaults.pixelFill, 1)
+        XCTAssertEqual(defaults.surfaceCheckerOpacity, 1)
         XCTAssertEqual(defaults.cubeOutlineStrength, 0)
 
         let scalars = SpeakerCubeVUScalars(rawRms: 0.5, settings: defaults.coreSettings, paletteValue: 0.75)
@@ -120,6 +175,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertGreaterThan(OrbitalViewportCubeVUSceneKitMaterial.cubeVUReadableFaceScale, 2)
         XCTAssertLessThan(OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineEdgeThicknessRatio, 0.03)
         XCTAssertLessThan(OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineNormalAlphaMultiplier, 0.6)
+        XCTAssertEqual(OrbitalViewportCubeVUSceneKitMaterial.faceTextureTileGapPixels, 0)
+        XCTAssertGreaterThan(OrbitalViewportCubeVUSceneKitMaterial.idleCheckerContrastFloor, defaults.checkerContrast)
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("floor(uv * pixels)"))
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("centerFill"))
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("gridLine"))
@@ -170,6 +227,62 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportCubeVUSceneKitMaterial.cachedFaceTextureCountForTests(),
             OrbitalViewportCubeVUSceneKitMaterial.faceTextureCacheLimit
         )
+    }
+
+    func testCorrectViewerCubeVUIdleTextureHasNoTileGapsAndCheckerSurface() throws {
+        var settings = OrbitalViewportCubeVUSettings.default
+        settings.checkerContrast = 0
+        settings.pixelFill = 1
+        settings.surfaceCheckerOpacity = 1
+        let scalars = SpeakerCubeVUScalars(rawRms: 0, settings: settings.coreSettings, paletteValue: 0)
+        let texture = OrbitalViewportCubeVUSceneKitMaterial.faceTexture(
+            settings: settings,
+            scalars: scalars,
+            clip: false,
+            vuColor: .systemPurple,
+            hotColor: .systemPink
+        )
+        let tilePixels = OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel
+        let backingScale = try bitmapScale(texture)
+        let firstTile = try pixelBrightness(texture, x: tilePixels / 2, y: tilePixels / 2, scale: backingScale)
+        let secondTile = try pixelBrightness(texture, x: tilePixels + tilePixels / 2, y: tilePixels / 2, scale: backingScale)
+        let sharedEdge = try pixelBrightness(texture, x: tilePixels, y: tilePixels / 2, scale: backingScale)
+
+        XCTAssertGreaterThan(abs(secondTile - firstTile), 0.01)
+        XCTAssertGreaterThan(sharedEdge, min(firstTile, secondTile) * 0.95)
+    }
+
+    func testCorrectViewerCubeVUTextureControlsRecoverSeparatedPixelsAndMuteChecker() throws {
+        var settings = OrbitalViewportCubeVUSettings.default
+        settings.checkerContrast = 0
+        settings.surfaceCheckerOpacity = 0
+        let scalars = SpeakerCubeVUScalars(rawRms: 0, settings: settings.coreSettings, paletteValue: 0)
+
+        let mutedCheckerTexture = OrbitalViewportCubeVUSceneKitMaterial.faceTexture(
+            settings: settings,
+            scalars: scalars,
+            clip: false,
+            vuColor: .systemPurple,
+            hotColor: .systemPink
+        )
+        let tilePixels = OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel
+        let mutedScale = try bitmapScale(mutedCheckerTexture)
+        let mutedFirstTile = try pixelBrightness(mutedCheckerTexture, x: tilePixels / 2, y: tilePixels / 2, scale: mutedScale)
+        let mutedSecondTile = try pixelBrightness(mutedCheckerTexture, x: tilePixels + tilePixels / 2, y: tilePixels / 2, scale: mutedScale)
+        XCTAssertLessThan(abs(mutedSecondTile - mutedFirstTile), 0.001)
+
+        settings.pixelFill = 0.5
+        let separatedTexture = OrbitalViewportCubeVUSceneKitMaterial.faceTexture(
+            settings: settings,
+            scalars: scalars,
+            clip: false,
+            vuColor: .systemPurple,
+            hotColor: .systemPink
+        )
+        let separatedScale = try bitmapScale(separatedTexture)
+        let filledTile = try pixelBrightness(separatedTexture, x: tilePixels / 2, y: tilePixels / 2, scale: separatedScale)
+        let tileGap = try pixelBrightness(separatedTexture, x: tilePixels, y: tilePixels / 2, scale: separatedScale)
+        XCTAssertLessThan(tileGap, filledTile * 0.8)
     }
 
     func testCorrectViewerDiagnosticLogIsCappedAndIndependentFromMeterTicks() {
@@ -235,7 +348,36 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     func testCorrectViewerSettingsJSONExportPayloadContainsPresetDriveAndTheme() throws {
         let payload = OrbitalViewportSettingsExportPayload(
             renderStyle: .daftPunkBow,
+            geodesicSaturation: 0.36,
             speakerShape: .cubeVU,
+            leftPanel: OrbitalViewportLeftPanelSettings(
+                audioSource: OrbitalViewportAudioSourceExportSettings(
+                    mode: .localAudioFile,
+                    hasLoadedAudio: true,
+                    fileName: "reference-track.wav",
+                    filePath: "/Users/example/Music/reference-track.wav",
+                    isPlaying: false,
+                    statusText: "Loaded"
+                ),
+                camera: OrbitalViewportCameraExportSettings(
+                    cameraView: .elevation,
+                    yaw: 0.42,
+                    pitch: -0.2,
+                    zoom: 1.24,
+                    spin: true,
+                    cameraAdjusted: true
+                ),
+                speakerType: .cubeVU,
+                viewDetail: OrbitalViewportViewDetailExportSettings(
+                    speakerSizeSlider: 64,
+                    speakerSize: 2.35,
+                    fogDensitySlider: 38,
+                    fogDensity: 24,
+                    showSpeakerNumbers: true,
+                    showHiddenLines: true
+                ),
+                selectedChannel: 12
+            ),
             driveMode: .impulseTest,
             cubePreset: .haloEdgeBloom,
             cubeSettings: OrbitalViewportCubeVUPreset.haloEdgeBloom.settings,
@@ -247,11 +389,44 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         let data = try OrbitalViewportSettingsJSONExporter.jsonData(payload: payload)
         let json = String(data: data, encoding: .utf8) ?? ""
+        let decoded = try JSONDecoder().decode(OrbitalViewportSettingsExportPayload.self, from: data)
 
+        XCTAssertTrue(json.contains("\"schemaVersion\" : 2"))
         XCTAssertTrue(json.contains("\"driveMode\" : \"impulseTest\""))
         XCTAssertTrue(json.contains("\"cubePreset\" : \"haloEdgeBloom\""))
         XCTAssertTrue(json.contains("\"renderStyle\" : \"daftPunkBow\""))
+        XCTAssertTrue(json.contains("\"geodesicSaturation\" : 0.36"))
+        XCTAssertTrue(json.contains("\"leftPanel\""))
+        XCTAssertTrue(json.contains("\"cameraView\" : \"elevation\""))
+        XCTAssertTrue(json.contains("\"speakerSizeSlider\" : 64"))
+        XCTAssertTrue(json.contains("\"fileName\" : \"reference-track.wav\""))
+        XCTAssertTrue(json.contains("\"selectedChannel\" : 12"))
         XCTAssertTrue(json.contains("\"rimHaloEdge\" : 1"))
+        XCTAssertTrue(json.contains("\"pixelFill\" : 1"))
+        XCTAssertTrue(json.contains("\"surfaceCheckerOpacity\" : 1"))
+        XCTAssertEqual(decoded.leftPanel.audioSource.mode, .localAudioFile)
+        XCTAssertEqual(decoded.leftPanel.audioSource.filePath, "/Users/example/Music/reference-track.wav")
+        XCTAssertEqual(decoded.leftPanel.camera.cameraView, .elevation)
+        XCTAssertEqual(decoded.leftPanel.camera.yaw, 0.42, accuracy: 0.000_001)
+        XCTAssertTrue(decoded.leftPanel.camera.spin)
+        XCTAssertEqual(decoded.leftPanel.speakerType, .cubeVU)
+        XCTAssertEqual(decoded.leftPanel.viewDetail.speakerSizeSlider, 64)
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showSpeakerNumbers)
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showHiddenLines)
+        XCTAssertEqual(decoded.leftPanel.selectedChannel, 12)
+    }
+
+    func testCorrectViewerGeodesicSaturationOnlyUpdatesShellColors() throws {
+        let saturated = makeViewportConfiguration(renderStyle: .daftPunkBow, geodesicSaturation: 1)
+        let desaturated = makeViewportConfiguration(renderStyle: .daftPunkBow, geodesicSaturation: 0)
+        let saturatedEquator = try rgbComponents(saturated.geodesicColor(saturated.theme.equator))
+        let desaturatedEquator = try rgbComponents(desaturated.geodesicColor(desaturated.theme.equator))
+
+        XCTAssertGreaterThan(max(saturatedEquator.red, saturatedEquator.green, saturatedEquator.blue) - min(saturatedEquator.red, saturatedEquator.green, saturatedEquator.blue), 0.01)
+        XCTAssertLessThan(max(desaturatedEquator.red, desaturatedEquator.green, desaturatedEquator.blue) - min(desaturatedEquator.red, desaturatedEquator.green, desaturatedEquator.blue), 0.001)
+        XCTAssertNotEqual(OrbitalViewportShellUpdateKey(configuration: saturated), OrbitalViewportShellUpdateKey(configuration: desaturated))
+        XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: saturated), OrbitalViewportSpeakerMaterialUpdateKey(configuration: desaturated))
+        XCTAssertEqual(saturated.theme.cubeVUHotColor, desaturated.theme.cubeVUHotColor)
     }
 
     func testCorrectViewerKeepsMeterOnlyTicksOutOfStaticGeometry() {
@@ -269,6 +444,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         var materialOnlySettings = OrbitalViewportCubeVUSettings.default
         materialOnlySettings.paletteDrive = 2.6
         materialOnlySettings.cubeOutlineStrength = 0.7
+        materialOnlySettings.pixelFill = 0.5
+        materialOnlySettings.surfaceCheckerOpacity = 0.35
         var heightSettings = OrbitalViewportCubeVUSettings.default
         heightSettings.speakerHeight = 1.35
 
@@ -570,6 +747,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         cameraView: OrbitalViewportCameraView = .isometric,
         zoom: Double = 1,
         renderStyle: OrbitalViewportRenderStyle = .purple,
+        geodesicSaturation: Double = 1,
         speakerShape: OrbitalViewportSpeakerShape = .prism,
         speakerSize: Double = 1.95,
         fogDensity: Double = 30,
@@ -591,6 +769,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             cameraView: cameraView,
             zoom: zoom,
             renderStyle: renderStyle,
+            geodesicSaturation: geodesicSaturation,
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
@@ -621,6 +800,28 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             shell: .parametric(try OrbitalViewParametricShell(kind: .geodesic, radiusM: 1)),
             speakers: [speaker]
         )
+    }
+
+    private func bitmapScale(_ image: NSImage) throws -> Double {
+        var rect = NSRect(origin: .zero, size: image.size)
+        let cgImage = try XCTUnwrap(image.cgImage(forProposedRect: &rect, context: nil, hints: nil))
+        return Double(cgImage.width) / max(1, Double(image.size.width))
+    }
+
+    private func pixelBrightness(_ image: NSImage, x: Int, y: Int, scale: Double) throws -> Double {
+        var rect = NSRect(origin: .zero, size: image.size)
+        let cgImage = try XCTUnwrap(image.cgImage(forProposedRect: &rect, context: nil, hints: nil))
+        let bitmap = NSBitmapImageRep(cgImage: cgImage)
+        let pixelX = min(bitmap.pixelsWide - 1, max(0, Int((Double(x) * scale).rounded(.down))))
+        let pixelY = min(bitmap.pixelsHigh - 1, max(0, Int((Double(y) * scale).rounded(.down))))
+        let color = try XCTUnwrap(bitmap.colorAt(x: pixelX, y: pixelY)?.usingColorSpace(.deviceRGB))
+        return (Double(color.redComponent) + Double(color.greenComponent) + Double(color.blueComponent)) / 3
+    }
+
+    private func rgbComponents(_ color: Color) throws -> (red: Double, green: Double, blue: Double) {
+        let nsColor = NSColor(color)
+        let rgb = try XCTUnwrap(nsColor.usingColorSpace(.deviceRGB) ?? nsColor.usingColorSpace(.sRGB))
+        return (Double(rgb.redComponent), Double(rgb.greenComponent), Double(rgb.blueComponent))
     }
 }
 

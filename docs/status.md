@@ -91,6 +91,246 @@ none
 
 ## Recent Changes
 
+### Update: 2026-05-21 Full Left Panel Settings JSON Export
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Expanded settings export to schema version 2.
+- Added a `leftPanel` export block covering audio source mode/file metadata/play state, camera view, yaw, pitch, zoom, spin, adjusted-camera state, speaker type, speaker size/fog sliders and resolved values, speaker numbers, hidden lines, and selected channel.
+- Kept existing top-level theme, Cube VU, drive, preset, and performance fields so the exported tuning state remains easy to inspect.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app settings JSON tests now assert schema version 2 and round-trip the full left-panel export block.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 24 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 84 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 35979
+git diff --check -> passed
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Exported Settings As Review App Defaults
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Made `Orbital View VU Kit Settings 2026-05-21-171537.json` the pinned startup default for the SceneKit review app.
+- Startup now defaults to Purple, Cube VU, Hot Core Bloom, impulse test drive, geodesic saturation `0`, 86% pixel fill, 0% surface checker opacity, cube outline strength `0.64`, and 60 fps active motion.
+- Kept the Core `OrbitalViewportCubeVUSettings.default` contract unchanged; the exported look is stored as explicit review-app defaults on `OrbitalViewportMockup`.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert every startup default value from the exported settings payload.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 24 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 84 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> passed
+plutil -lint Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist -> passed
+git diff --check -> passed
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> passed, relaunched as pid 31771
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Geodesic Saturation Theme Control
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `Geodesic Saturation` to the SceneKit review app's `Orbisonic Theme` tray.
+- The low end desaturates only the geodesic shell struts/nodes to grayscale; the high end restores the selected theme color.
+- Routed the control through the shell update key and settings JSON export so speaker and Cube VU material updates stay independent.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the theme tray control inventory, exported geodesic saturation value, grayscale desaturation behavior, shell-key invalidation, and unchanged speaker material key.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 23 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 83 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> passed
+plutil -lint Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist -> passed
+git diff --check -> passed
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> passed, relaunched as pid 23132
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Cube VU Pixel Fill And Checker Opacity Controls
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `Pixel Fill` to the SceneKit review app's `Surface + Bloom` tray so Cube VU face pixels can tune from the older separated-pixel look to the new edge-to-edge reference-like surface.
+- Added `Surface Checker Opacity` to fade the idle/unlit checkerboard without changing face pixel count, bloom, or meter response.
+- Kept both controls material/texture-only so slider changes do not rebuild speaker geometry.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the new Surface + Bloom control inventory, default Pixel Fill and Surface Checker Opacity values, separated-pixel recovery at 50% fill, and checkerboard muting at 0% opacity.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 22 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 82 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> passed
+plutil -lint Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist -> passed
+git diff --check -> passed
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> passed, relaunched as pid 16420
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Gapless Cube VU Face Checkerboard
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Removed the generated face-texture tile inset so Cube VU face pixels draw edge-to-edge without dark gaps between tiles.
+- Disabled antialiasing during face texture generation so the pixel grid stays crisp.
+- Made the idle/unlit Cube VU surface read as a pixel checkerboard by keeping an explicit checker contrast floor even when the user-facing checker slider is low.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now sample the generated idle face texture to assert adjacent tiles differ and the shared tile edge does not collapse into a dark gap.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 21 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 81 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> passed
+plutil -lint Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist -> passed
+git diff --check -> passed
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> passed, relaunched as pid 6201
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
 ### Update: 2026-05-21 Cube VU Presets, Sphere Impulse Drive, And Settings Export
 
 Status:
