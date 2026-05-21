@@ -91,6 +91,57 @@ none
 
 ## Recent Changes
 
+### Update: 2026-05-21 Cube VU Presets, Sphere Impulse Drive, And Settings Export
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Reorganized the SceneKit review app right panel into Orbisonic Theme, VU Drive, Speaker Geometry, Meter Calibration, Surface + Bloom, Presets, Graphical Performance versus CPU Load, and Debug + Diagnostics trays.
+- Added a `VU Drive` tray with mutually exclusive Music and Impulse Test modes. Music uses the existing local-audio/fake-meter source, while Impulse Test takes meter focus and drives all speakers with a deterministic sphere-ripple pattern across the Sonic Sphere surface.
+- Added Cube VU preset selection for Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without adding the old four-up preview.
+- Added a Rim Halo Edge control in Surface + Bloom, preserved no face-phase-stagger control, moved Idle Tint into Surface + Bloom, and limited the review-app face-pixel control to the visually useful 6...14 range.
+- Added `Export Settings JSON` to the Presets tray. The export records the active Orbisonic theme, speaker type, VU drive, Cube VU preset, Cube VU settings, and performance cadence settings.
+- Expanded the hidden-by-default Debug + Diagnostics tray with raw RMS, raw peak, calibrated RMS, display scalar, hot scalar, and the selected/peak diagnostic channel.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the new right-panel tray inventory, Cube VU preset names, deterministic spatial impulse pattern, raw/display diagnostic scalar separation, Rim Halo Edge material contract, and settings JSON payload contents.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 20 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 80 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> refreshed app executable
+plutil -lint Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist -> passed
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> launched refreshed native review app
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
 ### Update: 2026-05-21 Orbisonic Family Theme Tray Consolidation
 
 Status:

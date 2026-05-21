@@ -96,6 +96,10 @@ Current wrapper skeleton tests cover:
 - SceneKit review-app Cube VU retained face-texture support exposes the face-pixel quantization and center-fill contract on the actual cube faces without replacing the approved SceneKit surface
 - SceneKit review-app speaker type options include `Prism`, `Sphere`, and `Cube VU`, with full-width tray header hit targets for collapsible tuning sections
 - SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state
+- SceneKit review-app VU Drive exposes Music and Impulse Test, with Impulse Test producing a deterministic spatial sphere-ripple meter pattern instead of random or uniform channel values
+- SceneKit review-app Cube VU presets expose Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without adding a four-up preview
+- SceneKit review-app settings JSON export includes theme, speaker type, VU drive, Cube VU preset/settings, and performance cadence values
+- SceneKit review-app hidden diagnostics expose raw RMS, raw peak, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source
 - SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
 - SceneKit review-app object/trail/glow/bounds trays are inactive while the review surface focuses on speakers
 

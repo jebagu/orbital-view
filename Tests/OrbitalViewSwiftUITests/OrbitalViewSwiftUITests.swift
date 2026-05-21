@@ -62,13 +62,19 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMockup.tuningTrayTitles,
             [
                 "Orbisonic Theme",
-                "Speaker VU",
+                "VU Drive",
+                "Speaker Geometry",
                 "Meter Calibration",
                 "Surface + Bloom",
-                "Graphical Performance vs CPU Load",
                 "Presets",
+                "Graphical Performance vs CPU Load",
                 "Debug + Diagnostics"
             ]
+        )
+        XCTAssertEqual(OrbitalViewportVUDriveMode.allCases.map(\.title), ["Music", "Impulse Test"])
+        XCTAssertEqual(
+            OrbitalViewportCubeVUPreset.allCases.map(\.title),
+            ["Soft Center Bloom", "Hot Core Bloom", "Halo Edge Bloom", "Block Center Bloom"]
         )
         XCTAssertFalse(OrbitalViewportMockup.objectTuningTraysVisible)
         XCTAssertEqual(
@@ -96,6 +102,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(defaults.hotFillStrength, Double(core.hotFillStrength), accuracy: 0.000_001)
         XCTAssertEqual(defaults.paletteDrive, Double(core.vuPaletteDrive), accuracy: 0.000_001)
         XCTAssertEqual(defaults.facePixels, core.facePixels)
+        XCTAssertEqual(defaults.idleTint, 0.10, accuracy: 0.000_001)
+        XCTAssertEqual(defaults.responseCurve, 0.82, accuracy: 0.000_001)
+        XCTAssertEqual(defaults.rimHaloEdge, 0, accuracy: 0.000_001)
         XCTAssertEqual(defaults.cubeOutlineStrength, 0)
 
         let scalars = SpeakerCubeVUScalars(rawRms: 0.5, settings: defaults.coreSettings, paletteValue: 0.75)
@@ -114,6 +123,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("floor(uv * pixels)"))
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("centerFill"))
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("gridLine"))
+        XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("rimHaloEdge"))
     }
 
     func testCorrectViewerCubeVUUsesRetainedPixelFaceTextures() {
@@ -192,6 +202,56 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(sample.rms, expectedRMS, accuracy: 0.000_001)
         XCTAssertEqual(sample.peak, OrbitalViewportMeterSample.displayScalar(powerDB: -3), accuracy: 0.000_001)
+    }
+
+    func testCorrectViewerSphereImpulseTestIsDeterministicAndSpatial() {
+        let source = OrbitalViewportMeterSource.sphereImpulseTest
+        let sameA = source.meter(channel: 4, timeMS: 1_500)
+        let sameB = source.meter(channel: 4, timeMS: 1_500)
+        let channels = (1...30).map { source.meter(channel: $0, timeMS: 1_500).rms }
+        let changedTime = source.meter(channel: 4, timeMS: 2_250)
+
+        XCTAssertEqual(sameA, sameB)
+        XCTAssertNotEqual(sameA, changedTime)
+        XCTAssertGreaterThan(channels.max() ?? 0, 0.4)
+        XCTAssertLessThan(channels.min() ?? 1, 0.25)
+    }
+
+    func testCorrectViewerDiagnosticsSeparateRawAndDisplayScalars() {
+        let settings = OrbitalViewportCubeVUPreset.hotCoreBloom.settings
+        let diagnostics = OrbitalViewportMeterDiagnostics.make(
+            channel: 7,
+            source: .sphereImpulseTest,
+            settings: settings,
+            timeMS: 1_500
+        )
+
+        XCTAssertEqual(diagnostics.channel, 7)
+        XCTAssertGreaterThanOrEqual(diagnostics.rawPeak, diagnostics.rawRMS)
+        XCTAssertGreaterThanOrEqual(diagnostics.displayScalar, 0)
+        XCTAssertGreaterThanOrEqual(diagnostics.hotScalar, 0)
+    }
+
+    func testCorrectViewerSettingsJSONExportPayloadContainsPresetDriveAndTheme() throws {
+        let payload = OrbitalViewportSettingsExportPayload(
+            renderStyle: .daftPunkBow,
+            speakerShape: .cubeVU,
+            driveMode: .impulseTest,
+            cubePreset: .haloEdgeBloom,
+            cubeSettings: OrbitalViewportCubeVUPreset.haloEdgeBloom.settings,
+            activeViewportFramesPerSecond: 60,
+            meterOnlyViewportFramesPerSecond: 10,
+            inspectorRefreshFramesPerSecond: 10,
+            drawsOnDemand: true,
+            exportedAt: Date(timeIntervalSince1970: 0)
+        )
+        let data = try OrbitalViewportSettingsJSONExporter.jsonData(payload: payload)
+        let json = String(data: data, encoding: .utf8) ?? ""
+
+        XCTAssertTrue(json.contains("\"driveMode\" : \"impulseTest\""))
+        XCTAssertTrue(json.contains("\"cubePreset\" : \"haloEdgeBloom\""))
+        XCTAssertTrue(json.contains("\"renderStyle\" : \"daftPunkBow\""))
+        XCTAssertTrue(json.contains("\"rimHaloEdge\" : 1"))
     }
 
     func testCorrectViewerKeepsMeterOnlyTicksOutOfStaticGeometry() {
@@ -515,6 +575,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         fogDensity: Double = 30,
         cubeVUSettings: OrbitalViewportCubeVUSettings = .default,
         activeViewportFramesPerSecond: Int = OrbitalViewportMockup.viewportAnimationFramesPerSecond,
+        meterSource: OrbitalViewportMeterSource = .fake,
         showSpeakerNumbers: Bool = false,
         showHiddenLines: Bool = false,
         selectedChannel: Int? = nil,
@@ -533,6 +594,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
+            meterSource: meterSource,
             cubeVUSettings: cubeVUSettings,
             activeViewportFramesPerSecond: activeViewportFramesPerSecond,
             showSpeakerNumbers: showSpeakerNumbers,

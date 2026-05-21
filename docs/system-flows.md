@@ -109,7 +109,7 @@ flowchart LR
   PerfSettings --> MTKView["MTKView FPS and draw-on-demand config"]
 ```
 
-Speaker VU, calibration, surface/bloom, object overlay, trails, bounds, performance, presets, and diagnostics are host-facing controls. They tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing.
+Orbisonic theme, VU drive, speaker geometry, calibration, surface/bloom, presets, performance, and diagnostics are host-facing controls in the current SceneKit review surface. They tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing. The review-only Impulse Test drive is a deterministic synthetic meter source for visual stress testing and does not change production host meter contracts.
 
 ## Current Offscreen Harness Flow
 

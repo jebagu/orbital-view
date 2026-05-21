@@ -38,11 +38,12 @@ public struct OrbitalViewportMockup: View {
     static let themePaletteSource = "orbisonic-palette-brief"
     static let tuningTrayTitles = [
         "Orbisonic Theme",
-        "Speaker VU",
+        "VU Drive",
+        "Speaker Geometry",
         "Meter Calibration",
         "Surface + Bloom",
-        "Graphical Performance vs CPU Load",
         "Presets",
+        "Graphical Performance vs CPU Load",
         "Debug + Diagnostics"
     ]
     static let inactiveObjectTrayTitles = [
@@ -86,9 +87,12 @@ public struct OrbitalViewportMockup: View {
     @State private var magnificationStartZoom: Double?
     @StateObject private var localAudio = OrbitalViewportLocalAudioController()
     @State private var cubeVUSettings = OrbitalViewportCubeVUSettings.default
+    @State private var cubeVUPreset: OrbitalViewportCubeVUPreset = .softCenterBloom
+    @State private var vuDriveMode: OrbitalViewportVUDriveMode = .music
     @State private var objectTuning = OrbitalViewportObjectTuning.default
     @State private var themeExpanded = false
-    @State private var speakerVUExpanded = false
+    @State private var vuDriveExpanded = false
+    @State private var speakerGeometryExpanded = false
     @State private var meterCalibrationExpanded = false
     @State private var surfaceBloomExpanded = false
     @State private var objectOverlayExpanded = false
@@ -145,7 +149,7 @@ public struct OrbitalViewportMockup: View {
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
-            meterSource: localAudio.meterSource,
+            meterSource: activeMeterSource,
             cubeVUSettings: cubeVUSettings,
             activeViewportFramesPerSecond: viewportFrameRate.framesPerSecond,
             showSpeakerNumbers: showSpeakerNumbers,
@@ -155,6 +159,15 @@ public struct OrbitalViewportMockup: View {
             spinStartYaw: spinStartYaw,
             spinStartTimeMS: spinStartTimeMS
         )
+    }
+
+    private var activeMeterSource: OrbitalViewportMeterSource {
+        switch vuDriveMode {
+        case .music:
+            return localAudio.meterSource
+        case .impulseTest:
+            return .sphereImpulseTest
+        }
     }
 
     private func desktopLayout(totalSize: CGSize) -> some View {
@@ -347,9 +360,24 @@ public struct OrbitalViewportMockup: View {
         }
     }
 
-    private var speakerVUTray: some View {
-        tuningTray("Speaker VU", isExpanded: $speakerVUExpanded) {
-            tuningValueRow("Speaker Surface", value: "Cube VU on \(speakerShape.title)")
+    private var vuDriveTray: some View {
+        tuningTray("VU Drive", isExpanded: $vuDriveExpanded) {
+            controlButtonGroup(
+                OrbitalViewportVUDriveMode.allCases,
+                selection: vuDriveMode,
+                title: \.title
+            ) { mode in
+                setVUDriveMode(mode)
+            }
+            tuningValueRow("Active Meter", value: vuDriveMode.statusTitle)
+            tuningValueRow("Music Source", value: localAudio.hasLoadedAudio ? "local mono file" : "fake review stream")
+        }
+    }
+
+    private var speakerGeometryTray: some View {
+        tuningTray("Speaker Geometry", isExpanded: $speakerGeometryExpanded) {
+            tuningValueRow("Speaker Type", value: speakerShape.title)
+            tuningValueRow("VU Skin", value: speakerShape == .cubeVU ? "9x9 cube faces" : "simple meter tint")
             tuningValueRow("Channels", value: "30 physical")
             tuningSliderRow(
                 "Cube Outline",
@@ -364,13 +392,6 @@ public struct OrbitalViewportMockup: View {
                 range: 1...2,
                 step: 0.01,
                 valueText: cubeVUSettings.speakerHeight.formatted(.number.precision(.fractionLength(2)))
-            )
-            tuningSliderRow(
-                "Idle Tint",
-                value: $cubeVUSettings.idleTint,
-                range: 0...1,
-                step: 0.01,
-                valueText: cubeVUSettings.idleTint.formatted(.number.precision(.fractionLength(2)))
             )
         }
     }
@@ -453,13 +474,27 @@ public struct OrbitalViewportMockup: View {
                 valueText: cubeVUSettings.bloomEdge.formatted(.number.precision(.fractionLength(3)))
             )
             tuningSliderRow(
+                "Rim Halo Edge",
+                value: $cubeVUSettings.rimHaloEdge,
+                range: 0...1,
+                step: 0.01,
+                valueText: cubeVUSettings.rimHaloEdge.formatted(.number.precision(.fractionLength(2)))
+            )
+            tuningSliderRow(
                 "Response Curve",
                 value: $cubeVUSettings.responseCurve,
                 range: 0.2...4,
                 step: 0.01,
                 valueText: cubeVUSettings.responseCurve.formatted(.number.precision(.fractionLength(2)))
             )
-            tuningStepperRow("Face Pixels", value: $cubeVUSettings.facePixels, range: 4...64)
+            tuningStepperRow("Face Pixels", value: $cubeVUSettings.facePixels, range: 6...14)
+            tuningSliderRow(
+                "Idle Tint",
+                value: $cubeVUSettings.idleTint,
+                range: 0...1,
+                step: 0.01,
+                valueText: cubeVUSettings.idleTint.formatted(.number.precision(.fractionLength(2)))
+            )
             tuningSliderRow(
                 "Checker Contrast",
                 value: $cubeVUSettings.checkerContrast,
@@ -535,26 +570,44 @@ public struct OrbitalViewportMockup: View {
             tuningValueRow("Meter-only FPS", value: "\(Self.meterOnlyViewportFramesPerSecond)")
             tuningValueRow("Inspector FPS", value: "\(Self.inspectorRefreshFramesPerSecond)")
             tuningValueRow("Draw Mode", value: OrbitalViewport3DSceneView.rendersContinuously ? "continuous" : "on demand")
-            tuningStepperRow("Face Pixels Cost", value: $cubeVUSettings.facePixels, range: 4...64)
+            tuningStepperRow("Face Pixels Cost", value: $cubeVUSettings.facePixels, range: 6...14)
         }
     }
 
     private var presetsTray: some View {
         tuningTray("Presets", isExpanded: $presetsExpanded) {
+            tuningValueRow("Cube VU Preset", value: cubeVUPreset.title)
+            VStack(spacing: 6) {
+                ForEach(OrbitalViewportCubeVUPreset.allCases) { preset in
+                    controlButton(preset.title, active: cubeVUPreset == preset) {
+                        applyCubeVUPreset(preset)
+                    }
+                }
+            }
             controlButton("Reset Cube VU", active: false) {
-                cubeVUSettings = .default
+                applyCubeVUPreset(.softCenterBloom)
                 recordDiagnostic("Cube VU settings reset to default")
+            }
+            controlButton("Export Settings JSON", active: false) {
+                exportSettingsJSON()
             }
         }
     }
 
     private var diagnosticsTray: some View {
         tuningTray("Debug + Diagnostics", isExpanded: $diagnosticsExpanded) {
+            let diagnostics = currentMeterDiagnostics()
             tuningValueRow("Correct Surface", value: "SceneKit geodesic")
             tuningValueRow("Geodesic Nodes", value: "\(Self.feyGeodesicNodeCount)")
             tuningValueRow("Geodesic Edges", value: "\(Self.feyGeodesicEdgeCount)")
             tuningValueRow("Static Speaker Rebuilds", value: "shape/size only")
-            tuningValueRow("Meter Source", value: localAudio.hasLoadedAudio ? "local mono file" : "fake review stream")
+            tuningValueRow("Meter Source", value: vuDriveMode.statusTitle)
+            tuningValueRow("Diagnostic Channel", value: String(format: "%02d", diagnostics.channel))
+            tuningValueRow("Raw RMS", value: diagnostics.rawRMS.percentText)
+            tuningValueRow("Raw Peak", value: diagnostics.rawPeak.percentText)
+            tuningValueRow("Calibrated RMS", value: diagnostics.calibratedRMS.percentText)
+            tuningValueRow("Display Scalar", value: diagnostics.displayScalar.percentText)
+            tuningValueRow("Hot Scalar", value: diagnostics.hotScalar.percentText)
             tuningValueRow("Log Cap", value: "\(OrbitalViewportDiagnosticLog.maximumEntries)")
             controlButton("Clear Log", active: false) {
                 diagnosticLogEntries.removeAll()
@@ -593,6 +646,29 @@ public struct OrbitalViewportMockup: View {
                     recordDiagnostic("Orbisonic theme set to \(style.title)")
                 }
             }
+        )
+    }
+
+    private func setVUDriveMode(_ mode: OrbitalViewportVUDriveMode) {
+        guard vuDriveMode != mode else {
+            return
+        }
+        vuDriveMode = mode
+        recordDiagnostic("VU drive set to \(mode.title)")
+    }
+
+    private func applyCubeVUPreset(_ preset: OrbitalViewportCubeVUPreset) {
+        cubeVUPreset = preset
+        cubeVUSettings = preset.settings
+        recordDiagnostic("Cube VU preset set to \(preset.title)")
+    }
+
+    private func currentMeterDiagnostics() -> OrbitalViewportMeterDiagnostics {
+        OrbitalViewportMeterDiagnostics.make(
+            channel: selectedChannel,
+            source: activeMeterSource,
+            settings: cubeVUSettings,
+            timeMS: currentTimeMS()
         )
     }
 
@@ -914,11 +990,12 @@ public struct OrbitalViewportMockup: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 orbisonicThemeTray
-                speakerVUTray
+                vuDriveTray
+                speakerGeometryTray
                 meterCalibrationTray
                 surfaceBloomTray
-                performanceTray
                 presetsTray
+                performanceTray
                 diagnosticsTray
             }
             .padding(12)
@@ -948,7 +1025,7 @@ public struct OrbitalViewportMockup: View {
                     .fill(theme.dot)
                     .shadow(color: theme.dot.opacity(0.72), radius: renderStyle == .bw ? 0 : 6)
                     .frame(width: 8, height: 8)
-                Text(localAudio.footerLabel)
+                Text(vuDriveMode == .impulseTest ? "Impulse test: sphere ripple" : localAudio.footerLabel)
             }
             chip {
                 Text("Zoom \(zoom.formatted(.number.precision(.fractionLength(2))))x")
@@ -1127,6 +1204,32 @@ public struct OrbitalViewportMockup: View {
         #endif
     }
 
+    private func exportSettingsJSON() {
+        exportStatus = OrbitalViewportExportStatus(message: "Exporting JSON...", isError: false)
+        recordDiagnostic("Settings JSON export started")
+
+        DispatchQueue.main.async {
+            let payload = OrbitalViewportSettingsExportPayload(
+                renderStyle: renderStyle,
+                speakerShape: speakerShape,
+                driveMode: vuDriveMode,
+                cubePreset: cubeVUPreset,
+                cubeSettings: cubeVUSettings,
+                activeViewportFramesPerSecond: viewportFrameRate.framesPerSecond,
+                meterOnlyViewportFramesPerSecond: Self.meterOnlyViewportFramesPerSecond,
+                inspectorRefreshFramesPerSecond: Self.inspectorRefreshFramesPerSecond,
+                drawsOnDemand: !OrbitalViewport3DSceneView.rendersContinuously
+            )
+            let result: Result<URL, Error>
+            do {
+                result = .success(try OrbitalViewportSettingsJSONExporter.writeSettings(payload: payload))
+            } catch {
+                result = .failure(error)
+            }
+            handleSettingsExportResult(result)
+        }
+    }
+
     private func handleExportResult(_ result: Result<URL, Error>) {
         exportInProgress = false
         let status: OrbitalViewportExportStatus
@@ -1140,6 +1243,27 @@ public struct OrbitalViewportMockup: View {
                 isError: true
             )
             recordDiagnostic("PNG export failed: \(error.localizedDescription)")
+        }
+        exportStatus = status
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            if exportStatus?.id == status.id {
+                exportStatus = nil
+            }
+        }
+    }
+
+    private func handleSettingsExportResult(_ result: Result<URL, Error>) {
+        let status: OrbitalViewportExportStatus
+        switch result {
+        case .success:
+            status = OrbitalViewportExportStatus(message: "Saved JSON to Desktop", isError: false)
+            recordDiagnostic("Settings JSON saved to Desktop")
+        case .failure(let error):
+            status = OrbitalViewportExportStatus(
+                message: "JSON export failed: \(error.localizedDescription)",
+                isError: true
+            )
+            recordDiagnostic("Settings JSON export failed: \(error.localizedDescription)")
         }
         exportStatus = status
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -1245,12 +1369,14 @@ struct OrbitalViewportMeterSource: Equatable {
     enum Mode: Equatable {
         case fake
         case localAudio(UUID)
+        case impulseTest
     }
 
     let mode: Mode
     private let localAudio: OrbitalViewportLocalAudioController?
 
     static let fake = OrbitalViewportMeterSource(mode: .fake, localAudio: nil)
+    static let sphereImpulseTest = OrbitalViewportMeterSource(mode: .impulseTest, localAudio: nil)
 
     static func localAudio(_ controller: OrbitalViewportLocalAudioController) -> OrbitalViewportMeterSource {
         OrbitalViewportMeterSource(mode: .localAudio(controller.sourceID), localAudio: controller)
@@ -1267,7 +1393,116 @@ struct OrbitalViewportMeterSource: Equatable {
             return OrbitalViewportMeterSample(rms: meter.rms, peak: meter.peak)
         case .localAudio:
             return localAudio?.currentMeterSample() ?? .silent
+        case .impulseTest:
+            return OrbitalViewportImpulsePattern.meter(channel: channel, timeMS: timeMS)
         }
+    }
+}
+
+enum OrbitalViewportImpulsePattern {
+    static let patternName = "sphere-ripple-impulse"
+
+    static func meter(channel: Int, timeMS: Double) -> OrbitalViewportMeterSample {
+        let speaker = OrbitalViewportSpeaker.referenceSpeakers[safe: channel - 1]
+        let position = speaker.map { OVVector3($0).normalized() } ?? OVVector3(x: 0, y: 0, z: 1)
+        let seconds = timeMS / 1000
+        let primaryOrigin = movingOrigin(seconds: seconds, phase: 0)
+        let secondaryOrigin = movingOrigin(seconds: seconds * 0.73, phase: 1.7)
+        let primary = expandingRing(
+            angle: angularDistance(position, primaryOrigin),
+            seconds: seconds,
+            period: 1.65,
+            speedBias: 0
+        )
+        let secondary = expandingRing(
+            angle: angularDistance(position, secondaryOrigin),
+            seconds: seconds + 0.54,
+            period: 2.25,
+            speedBias: 0.42
+        ) * 0.62
+        let sweep = pow(max(0, 0.5 + 0.5 * sin(seconds * 2.3 + position.y * 3.7 + position.x * 1.4)), 3) * 0.14
+        let meridian = pow(max(0, 0.5 + 0.5 * cos(seconds * 2.1 + atan2(position.z, position.x) * 2.0)), 4) * 0.18
+        let coreFlash = gaussian(angularDistance(position, primaryOrigin), width: 0.22) * 0.34
+        let rms = OrbitalViewportMath.clamp01(0.03 + primary * 1.05 + secondary * 0.62 + sweep + meridian + coreFlash)
+        let peak = OrbitalViewportMath.clamp01(rms + max(primary, secondary) * 0.22)
+        return OrbitalViewportMeterSample(rms: rms, peak: peak)
+    }
+
+    private static func movingOrigin(seconds: Double, phase: Double) -> OVVector3 {
+        let latitude = sin(seconds * 0.41 + phase) * 0.72
+        let longitude = seconds * 0.77 + sin(seconds * 0.19 + phase) * 0.65 + phase
+        let horizontal = sqrt(max(0.0001, 1 - latitude * latitude))
+        return OVVector3(
+            x: cos(longitude) * horizontal,
+            y: latitude,
+            z: sin(longitude) * horizontal
+        ).normalized()
+    }
+
+    private static func expandingRing(
+        angle: Double,
+        seconds: Double,
+        period: Double,
+        speedBias: Double
+    ) -> Double {
+        let phase = positiveRemainder(seconds + speedBias, period) / period
+        let radius = phase * Double.pi
+        let fade = pow(max(0, 1 - phase), 0.45)
+        return gaussian(abs(angle - radius), width: 0.16 + phase * 0.05) * fade
+    }
+
+    private static func angularDistance(_ lhs: OVVector3, _ rhs: OVVector3) -> Double {
+        acos(min(1, max(-1, lhs.normalized().dot(rhs.normalized()))))
+    }
+
+    private static func gaussian(_ distance: Double, width: Double) -> Double {
+        exp(-pow(distance / max(0.001, width), 2))
+    }
+
+    private static func positiveRemainder(_ value: Double, _ divisor: Double) -> Double {
+        let remainder = value.truncatingRemainder(dividingBy: divisor)
+        return remainder >= 0 ? remainder : remainder + divisor
+    }
+}
+
+struct OrbitalViewportMeterDiagnostics: Equatable {
+    let channel: Int
+    let rawRMS: Double
+    let rawPeak: Double
+    let calibratedRMS: Double
+    let displayScalar: Double
+    let hotScalar: Double
+    let paletteHeat: Double
+
+    static func make(
+        channel requestedChannel: Int?,
+        source: OrbitalViewportMeterSource,
+        settings: OrbitalViewportCubeVUSettings,
+        timeMS: Double
+    ) -> OrbitalViewportMeterDiagnostics {
+        let channel = requestedChannel ?? peakChannel(source: source, timeMS: timeMS)
+        let sample = source.meter(channel: channel, timeMS: timeMS)
+        let scalars = SpeakerCubeVUScalars(
+            rawRms: Float(sample.rms),
+            settings: settings.coreSettings,
+            paletteValue: Float(sample.peak)
+        )
+        return OrbitalViewportMeterDiagnostics(
+            channel: channel,
+            rawRMS: sample.rms,
+            rawPeak: sample.peak,
+            calibratedRMS: Double(scalars.calibratedRms),
+            displayScalar: Double(scalars.displayVuScalar),
+            hotScalar: Double(scalars.hotScalar),
+            paletteHeat: Double(scalars.paletteHeat)
+        )
+    }
+
+    private static func peakChannel(source: OrbitalViewportMeterSource, timeMS: Double) -> Int {
+        OrbitalViewportSpeaker.referenceSpeakers.max {
+            source.meter(channel: $0.channel, timeMS: timeMS).peak <
+            source.meter(channel: $1.channel, timeMS: timeMS).peak
+        }?.channel ?? 1
     }
 }
 
@@ -1630,6 +1865,81 @@ enum OrbitalViewportPNGExporter {
     #endif
 }
 
+struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
+    let schemaVersion: Int
+    let appName: String
+    let exportedAt: String
+    let renderStyle: OrbitalViewportRenderStyle
+    let speakerShape: OrbitalViewportSpeakerShape
+    let driveMode: OrbitalViewportVUDriveMode
+    let cubePreset: OrbitalViewportCubeVUPreset
+    let cubeSettings: OrbitalViewportCubeVUSettings
+    let activeViewportFramesPerSecond: Int
+    let meterOnlyViewportFramesPerSecond: Int
+    let inspectorRefreshFramesPerSecond: Int
+    let drawsOnDemand: Bool
+
+    init(
+        renderStyle: OrbitalViewportRenderStyle,
+        speakerShape: OrbitalViewportSpeakerShape,
+        driveMode: OrbitalViewportVUDriveMode,
+        cubePreset: OrbitalViewportCubeVUPreset,
+        cubeSettings: OrbitalViewportCubeVUSettings,
+        activeViewportFramesPerSecond: Int,
+        meterOnlyViewportFramesPerSecond: Int,
+        inspectorRefreshFramesPerSecond: Int,
+        drawsOnDemand: Bool,
+        exportedAt date: Date = Date()
+    ) {
+        self.schemaVersion = 1
+        self.appName = OrbitalViewportMockup.correctReviewAppName
+        self.exportedAt = OrbitalViewportSettingsJSONExporter.timestampString(date: date)
+        self.renderStyle = renderStyle
+        self.speakerShape = speakerShape
+        self.driveMode = driveMode
+        self.cubePreset = cubePreset
+        self.cubeSettings = cubeSettings
+        self.activeViewportFramesPerSecond = activeViewportFramesPerSecond
+        self.meterOnlyViewportFramesPerSecond = meterOnlyViewportFramesPerSecond
+        self.inspectorRefreshFramesPerSecond = inspectorRefreshFramesPerSecond
+        self.drawsOnDemand = drawsOnDemand
+    }
+}
+
+enum OrbitalViewportSettingsJSONExporter {
+    static let filePrefix = "Orbital View VU Kit Settings"
+
+    static func timestampString(date: Date) -> String {
+        ISO8601DateFormatter().string(from: date)
+    }
+
+    static func fileName(date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        return "\(filePrefix) \(formatter.string(from: date)).json"
+    }
+
+    static func jsonData(payload: OrbitalViewportSettingsExportPayload) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(payload)
+    }
+
+    static func writeSettings(
+        payload: OrbitalViewportSettingsExportPayload,
+        date: Date = Date(),
+        fileManager: FileManager = .default
+    ) throws -> URL {
+        guard let desktop = fileManager.urls(for: .desktopDirectory, in: .userDomainMask).first else {
+            throw OrbitalViewportExportError.missingDesktopDirectory
+        }
+        let url = desktop.appendingPathComponent(fileName(date: date))
+        try jsonData(payload: payload).write(to: url, options: .atomic)
+        return url
+    }
+}
+
 public enum OrbitalViewportCameraView: String, CaseIterable, Identifiable, Equatable {
     case plan
     case elevation
@@ -1685,7 +1995,7 @@ public enum OrbitalViewportCameraView: String, CaseIterable, Identifiable, Equat
     }
 }
 
-public enum OrbitalViewportRenderStyle: String, CaseIterable, Identifiable, Equatable {
+public enum OrbitalViewportRenderStyle: String, CaseIterable, Identifiable, Equatable, Codable {
     case purple
     case flamingo
     case green
@@ -2021,14 +2331,41 @@ struct OrbitalViewportPalette {
 
     func vuColor(for level: Double) -> Color {
         let normalized = OrbitalViewportMath.clamp01(level)
-        return vuRamp
-            .sorted { $0.position < $1.position }
-            .last { normalized >= $0.position }?
-            .color ?? success
+        let stops = vuRamp.sorted { $0.position < $1.position }
+        guard let first = stops.first else {
+            return success
+        }
+
+        var lower = first
+        var upper = first
+        for stop in stops {
+            if stop.position <= normalized {
+                lower = stop
+            }
+            if stop.position >= normalized {
+                upper = stop
+                break
+            }
+        }
+
+        #if os(macOS)
+        let span = max(upper.position - lower.position, 0.000_001)
+        let t = (normalized - lower.position) / span
+        let lowerColor = (NSColor(lower.color).usingColorSpace(.deviceRGB) ?? NSColor(lower.color))
+        let upperColor = (NSColor(upper.color).usingColorSpace(.deviceRGB) ?? NSColor(upper.color))
+        return Color(
+            .sRGB,
+            red: Double(lowerColor.redComponent + (upperColor.redComponent - lowerColor.redComponent) * CGFloat(t)),
+            green: Double(lowerColor.greenComponent + (upperColor.greenComponent - lowerColor.greenComponent) * CGFloat(t)),
+            blue: Double(lowerColor.blueComponent + (upperColor.blueComponent - lowerColor.blueComponent) * CGFloat(t))
+        )
+        #else
+        return lower.color
+        #endif
     }
 }
 
-public enum OrbitalViewportSpeakerShape: String, CaseIterable, Identifiable, Equatable {
+public enum OrbitalViewportSpeakerShape: String, CaseIterable, Identifiable, Equatable, Codable {
     case prism
     case sphere
     case cubeVU
@@ -2047,7 +2384,32 @@ public enum OrbitalViewportSpeakerShape: String, CaseIterable, Identifiable, Equ
     }
 }
 
-struct OrbitalViewportCubeVUSettings: Equatable, Sendable {
+enum OrbitalViewportVUDriveMode: String, CaseIterable, Identifiable, Equatable, Codable {
+    case music
+    case impulseTest
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .music:
+            return "Music"
+        case .impulseTest:
+            return "Impulse Test"
+        }
+    }
+
+    var statusTitle: String {
+        switch self {
+        case .music:
+            return "Music source"
+        case .impulseTest:
+            return "Sphere ripple impulse"
+        }
+    }
+}
+
+struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
     static let `default` = OrbitalViewportCubeVUSettings()
 
     var inputCalibration = 1.0
@@ -2057,11 +2419,12 @@ struct OrbitalViewportCubeVUSettings: Equatable, Sendable {
     var hotThreshold = 0.68
     var hotFillStrength = 0.86
     var paletteDrive = 1.7
-    var idleTint = 0.25
+    var idleTint = 0.10
     var bloomMin = 0.08
     var bloomMax = 0.92
     var bloomEdge = 0.16
-    var responseCurve = 0.72
+    var rimHaloEdge = 0.0
+    var responseCurve = 0.82
     var facePixels = 9
     var checkerContrast = 0.08
     var cubeOutlineStrength = 0.0
@@ -2089,6 +2452,72 @@ struct OrbitalViewportCubeVUSettings: Equatable, Sendable {
     }
 }
 
+enum OrbitalViewportCubeVUPreset: String, CaseIterable, Identifiable, Equatable, Codable {
+    case softCenterBloom
+    case hotCoreBloom
+    case haloEdgeBloom
+    case blockCenterBloom
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .softCenterBloom:
+            return "Soft Center Bloom"
+        case .hotCoreBloom:
+            return "Hot Core Bloom"
+        case .haloEdgeBloom:
+            return "Halo Edge Bloom"
+        case .blockCenterBloom:
+            return "Block Center Bloom"
+        }
+    }
+
+    var settings: OrbitalViewportCubeVUSettings {
+        var settings = OrbitalViewportCubeVUSettings.default
+        switch self {
+        case .softCenterBloom:
+            break
+        case .hotCoreBloom:
+            settings.hotResponse = 2.25
+            settings.hotThreshold = 0.58
+            settings.hotFillStrength = 0.94
+            settings.paletteDrive = 2.0
+            settings.idleTint = 0.12
+            settings.bloomMin = 0.11
+            settings.bloomMax = 0.98
+            settings.bloomEdge = 0.18
+            settings.rimHaloEdge = 0.12
+            settings.responseCurve = 0.72
+        case .haloEdgeBloom:
+            settings.hotResponse = 1.85
+            settings.hotThreshold = 0.64
+            settings.hotFillStrength = 0.82
+            settings.paletteDrive = 1.8
+            settings.idleTint = 0.10
+            settings.bloomMin = 0.07
+            settings.bloomMax = 0.94
+            settings.bloomEdge = 0.10
+            settings.rimHaloEdge = 1.0
+            settings.responseCurve = 0.88
+        case .blockCenterBloom:
+            settings.hotResponse = 1.95
+            settings.hotThreshold = 0.62
+            settings.hotFillStrength = 0.88
+            settings.paletteDrive = 1.85
+            settings.idleTint = 0.08
+            settings.bloomMin = 0.10
+            settings.bloomMax = 0.90
+            settings.bloomEdge = 0.07
+            settings.rimHaloEdge = 0.0
+            settings.responseCurve = 0.82
+            settings.facePixels = 6
+            settings.checkerContrast = 0.14
+        }
+        return settings
+    }
+}
+
 enum OrbitalViewportCubeVUSceneKitMaterial {
     static let defaultFacePixels = SpeakerMeterVisualSettings.default.facePixels
     static let shaderQuantizesFacePixels = true
@@ -2113,6 +2542,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         var bloomMin: Int
         var bloomMax: Int
         var bloomEdge: Int
+        var rimHaloEdge: Int
         var responseCurve: Int
         var idleTint: Int
         var checkerContrast: Int
@@ -2133,6 +2563,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     float bloomMin;
     float bloomMax;
     float bloomEdge;
+    float rimHaloEdge;
     float responseCurve;
     float idleTint;
     float checkerContrast;
@@ -2149,6 +2580,8 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     float centerDistance = length(cell - vec2(0.5)) * 1.41421356;
     float bloomRadius = mix(bloomMin, bloomMax, pow(max(displayVuScalar, 0.0), max(responseCurve, 0.001)));
     float centerFill = 1.0 - smoothstep(bloomRadius, bloomRadius + max(bloomEdge, 0.001), centerDistance);
+    float rimDistance = abs(centerDistance - bloomRadius);
+    float rimFill = rimHaloEdge * displayVuScalar * (1.0 - smoothstep(bloomEdge * 0.32, bloomEdge * 0.74, rimDistance));
     float hotFill = hotFillStrength * smoothstep(hotThreshold, 1.0, hotScalar);
     float parity = mod(floor(cell.x * pixels) + floor(cell.y * pixels), 2.0);
     float checker = mix(1.0 - checkerContrast, 1.0 + checkerContrast, parity);
@@ -2158,6 +2591,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     float body = clamp((displayVuScalar * 0.22) + (centerFill * displayVuScalar * 1.08), 0.0, 1.0);
     vec3 rgb = mix(idleColor, vuColor, body) * checker;
     rgb += vuColor * centerFill * displayVuScalar * 0.38;
+    rgb = mix(rgb, mix(vuColor, hotColor, 0.18), clamp(rimFill, 0.0, 1.0));
     rgb = mix(rgb, hotColor, clamp(hotFill, 0.0, 1.0));
     if (clipState > 0.5) {
         rgb = mix(rgb, vec3(1.0, 0.08, 0.02), 0.86);
@@ -2178,14 +2612,15 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         material.setValue(NSNumber(value: 0), forKey: "displayVuScalar")
         material.setValue(NSNumber(value: 0), forKey: "hotScalar")
         material.setValue(NSNumber(value: 0), forKey: "clipState")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.bloomMin)), forKey: "bloomMin")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.bloomMax)), forKey: "bloomMax")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.bloomEdge)), forKey: "bloomEdge")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.responseCurve)), forKey: "responseCurve")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.idleTint)), forKey: "idleTint")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.checkerContrast)), forKey: "checkerContrast")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.hotFillStrength)), forKey: "hotFillStrength")
-        material.setValue(NSNumber(value: Float(SpeakerMeterVisualSettings.default.hotThreshold)), forKey: "hotThreshold")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.bloomMin)), forKey: "bloomMin")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.bloomMax)), forKey: "bloomMax")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.bloomEdge)), forKey: "bloomEdge")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.rimHaloEdge)), forKey: "rimHaloEdge")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.responseCurve)), forKey: "responseCurve")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.idleTint)), forKey: "idleTint")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.checkerContrast)), forKey: "checkerContrast")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.hotFillStrength)), forKey: "hotFillStrength")
+        material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.hotThreshold)), forKey: "hotThreshold")
         material.setValue(NSNumber(value: Float(defaultFacePixels)), forKey: "facePixels")
         material.setValue(NSNumber(value: 1), forKey: "alphaValue")
         return material
@@ -2229,6 +2664,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         material.setValue(NSNumber(value: settings.bloomMin), forKey: "bloomMin")
         material.setValue(NSNumber(value: settings.bloomMax), forKey: "bloomMax")
         material.setValue(NSNumber(value: settings.bloomEdge), forKey: "bloomEdge")
+        material.setValue(NSNumber(value: settings.rimHaloEdge), forKey: "rimHaloEdge")
         material.setValue(NSNumber(value: settings.responseCurve), forKey: "responseCurve")
         material.setValue(NSNumber(value: settings.idleTint), forKey: "idleTint")
         material.setValue(NSNumber(value: settings.checkerContrast), forKey: "checkerContrast")
@@ -2282,6 +2718,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
             bloomMin: quantized(settings.bloomMin, scale: 128),
             bloomMax: quantized(settings.bloomMax, scale: 128),
             bloomEdge: quantized(settings.bloomEdge, scale: 128),
+            rimHaloEdge: quantized(settings.rimHaloEdge, scale: 128),
             responseCurve: quantized(settings.responseCurve / 4, scale: 128),
             idleTint: quantized(settings.idleTint, scale: 96),
             checkerContrast: quantized(settings.checkerContrast, scale: 128),
@@ -2361,12 +2798,17 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
                 let centerDistance = hypot(u - 0.5, v - 0.5) * 1.414_213_562_37
                 let fill = 1 - smoothstep(radius, radius + edge, centerDistance)
                 let core = 1 - smoothstep(radius * 0.34, radius * 0.34 + edge * 0.9, centerDistance)
+                let rimDistance = abs(centerDistance - radius)
+                let rim = settings.rimHaloEdge *
+                    display *
+                    (1 - smoothstep(edge * 0.32, edge * 0.74, rimDistance))
                 let active = fill *
                     smoothstep(0.015, 0.18, display) *
                     (0.36 + (1 - 0.36) * display)
                 let bloomMix = OrbitalViewportMath.clamp01(active + core * display * 0.22)
                 let hotBase = mix(base, hotColor, amount: hotMix)
                 var tileColor = mix(hotBase, vuColor, amount: smoothstep(0.02, 0.92, bloomMix))
+                tileColor = mix(tileColor, mix(vuColor, hotColor, amount: 0.18), amount: rim)
                 if clip {
                     tileColor = mix(tileColor, resolvedColor(red: 1, green: 0.08, blue: 0.02), amount: 0.86)
                 }
@@ -4716,5 +5158,11 @@ private extension Color {
 private extension Array {
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
+    }
+}
+
+private extension Double {
+    var percentText: String {
+        "\((OrbitalViewportMath.clamp01(self) * 100).formatted(.number.precision(.fractionLength(0))))%"
     }
 }
