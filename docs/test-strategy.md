@@ -136,7 +136,8 @@ Current wrapper skeleton tests cover:
 - native viewport performance tests prove the root SwiftUI animation timeline is disabled, SceneKit uses draw-on-demand with a 30 fps active-motion cap and a 10 fps meter-only idle cadence, and the inspector/meter-list cadence is separately capped at 10 fps inside the inspector subtree
 - native viewport cache-key tests prove meter-only ticks do not rebuild shell or speaker geometry, and the SceneKit coordinator only rebuilds speaker nodes for shape or size changes
 - native viewport fog tests prove density `0` is a hard disabled state and hidden-line visibility is not gated by fog
-- native viewport PNG export tests prove Desktop destination and `.png` naming
+- native viewport PNG export tests prove Desktop destination, `.png` naming, and application-window export scope rather than transparent viewport-only export
+- native viewport scene tuning tests prove speaker-label sizing tracks the control-button font contract, shell struts are 1.5x thicker, and rear-depth fog/material balance keeps rear speakers attenuated while preserving faint rear shell structure under fog
 - native viewport snapshots preserve 30 channel-keyed Fey speakers and deterministic fake meter levels
 
 Future wrapper tests should cover:

@@ -43,7 +43,6 @@ public struct OrbitalViewportMockup: View {
     @State private var cameraAdjusted = false
     @State private var exportInProgress = false
     @State private var exportStatus: OrbitalViewportExportStatus?
-    @State private var exportToken = 0
     @State private var magnificationStartZoom: Double?
 
     public init() {}
@@ -263,7 +262,7 @@ public struct OrbitalViewportMockup: View {
     ) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: OrbitalViewportLabTheme.controlFontSize, weight: .semibold))
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, minHeight: OrbitalViewportLabTheme.controlHeight)
                 .padding(.horizontal, 9)
@@ -339,8 +338,6 @@ public struct OrbitalViewportMockup: View {
         OrbitalViewport3DSceneView(
             configuration: renderConfiguration,
             snapshot: snapshot,
-            exportToken: exportToken,
-            onExportFinished: handleExportResult,
             onDragStarted: {
                 beginViewportDrag()
             },
@@ -553,13 +550,23 @@ public struct OrbitalViewportMockup: View {
     private func exportCurrentPNG() {
         exportInProgress = true
         exportStatus = OrbitalViewportExportStatus(message: "Exporting PNG...", isError: false)
-        exportToken += 1
-        let requestedToken = exportToken
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            if exportInProgress && exportToken == requestedToken {
-                handleExportResult(.failure(OrbitalViewportExportError.timedOut))
+
+        #if os(macOS)
+        DispatchQueue.main.async {
+            let result: Result<URL, Error>
+            do {
+                let url = try OrbitalViewportPNGExporter.writeApplicationWindowSnapshot(style: renderStyle)
+                result = .success(url)
+            } catch {
+                result = .failure(error)
             }
+            handleExportResult(result)
         }
+        #else
+        DispatchQueue.main.async {
+            handleExportResult(.failure(OrbitalViewportExportError.missingView))
+        }
+        #endif
     }
 
     private func handleExportResult(_ result: Result<URL, Error>) {
@@ -568,8 +575,11 @@ public struct OrbitalViewportMockup: View {
         switch result {
         case .success:
             status = OrbitalViewportExportStatus(message: "Saved PNG to Desktop", isError: false)
-        case .failure:
-            status = OrbitalViewportExportStatus(message: "PNG export failed", isError: true)
+        case .failure(let error):
+            status = OrbitalViewportExportStatus(
+                message: "PNG export failed: \(error.localizedDescription)",
+                isError: true
+            )
         }
         exportStatus = status
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -708,7 +718,7 @@ private struct OrbitalViewportInspectorView: View {
                 .monospacedDigit()
                 .frame(width: 42, alignment: .trailing)
         }
-        .font(.system(size: 12))
+        .font(.system(size: OrbitalViewportLabTheme.controlFontSize))
         .foregroundStyle(theme.text)
         .frame(minHeight: 30)
         .overlay(alignment: .bottom) {
@@ -829,7 +839,25 @@ enum OrbitalViewportExportError: Error, Equatable {
     case timedOut
 }
 
+extension OrbitalViewportExportError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .missingView:
+            return "missing app window"
+        case .missingPNGData:
+            return "missing PNG data"
+        case .missingDesktopDirectory:
+            return "missing Desktop folder"
+        case .timedOut:
+            return "timed out"
+        }
+    }
+}
+
 enum OrbitalViewportPNGExporter {
+    static let exportScope = "application-window"
+    static let exportsTransparentViewportOnly = false
+
     static func fileName(style: OrbitalViewportRenderStyle, date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -846,16 +874,64 @@ enum OrbitalViewportPNGExporter {
     }
 
     #if os(macOS)
+    static func writeApplicationWindowSnapshot(
+        style: OrbitalViewportRenderStyle,
+        date: Date = Date(),
+        fileManager: FileManager = .default,
+        windowProvider: () -> NSWindow? = { activeApplicationWindow() }
+    ) throws -> URL {
+        guard let window = windowProvider() else {
+            throw OrbitalViewportExportError.missingView
+        }
+        guard let image = applicationWindowSnapshot(window: window) else {
+            throw OrbitalViewportExportError.missingPNGData
+        }
+        return try writeSnapshot(image: image, style: style, date: date, fileManager: fileManager)
+    }
+
+    static func activeApplicationWindow() -> NSWindow? {
+        NSApp.keyWindow
+            ?? NSApp.mainWindow
+            ?? NSApp.windows.first { $0.isVisible && $0.title == "Orbital View VU Kit" }
+            ?? NSApp.windows.first { $0.isVisible }
+    }
+
+    static func applicationWindowSnapshot(window: NSWindow) -> NSImage? {
+        window.displayIfNeeded()
+
+        let windowID = CGWindowID(window.windowNumber)
+        if let cgImage = CGWindowListCreateImage(
+            .null,
+            .optionIncludingWindow,
+            windowID,
+            [.bestResolution]
+        ) {
+            return NSImage(
+                cgImage: cgImage,
+                size: NSSize(width: cgImage.width, height: cgImage.height)
+            )
+        }
+
+        guard let contentView = window.contentView else {
+            return nil
+        }
+        let bounds = contentView.bounds
+        guard let bitmap = contentView.bitmapImageRepForCachingDisplay(in: bounds) else {
+            return nil
+        }
+        contentView.cacheDisplay(in: bounds, to: bitmap)
+        let image = NSImage(size: bounds.size)
+        image.addRepresentation(bitmap)
+        return image
+    }
+
     static func writeSnapshot(
         image: NSImage,
         style: OrbitalViewportRenderStyle,
         date: Date = Date(),
         fileManager: FileManager = .default
     ) throws -> URL {
-        guard let data = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: data),
-              let png = bitmap.representation(using: .png, properties: [:])
-        else {
+        guard let png = pngData(from: image) else {
             throw OrbitalViewportExportError.missingPNGData
         }
         guard let desktop = fileManager.urls(for: .desktopDirectory, in: .userDomainMask).first else {
@@ -864,6 +940,47 @@ enum OrbitalViewportPNGExporter {
         let url = destinationURL(style: style, date: date, desktopDirectory: desktop)
         try png.write(to: url, options: .atomic)
         return url
+    }
+
+    static func pngData(from image: NSImage) -> Data? {
+        var rect = NSRect(origin: .zero, size: image.size)
+        if let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) {
+            return opaquePNGData(from: cgImage)
+        }
+
+        guard let data = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: data),
+              let cgImage = bitmap.cgImage
+        else {
+            return nil
+        }
+        return opaquePNGData(from: cgImage)
+    }
+
+    static func opaquePNGData(from image: CGImage) -> Data? {
+        let width = image.width
+        let height = image.height
+        guard width > 0, height > 0,
+              let context = CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+              )
+        else {
+            return nil
+        }
+
+        context.setFillColor(NSColor(red: 2 / 255, green: 7 / 255, blue: 10 / 255, alpha: 1).cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let flattened = context.makeImage() else {
+            return nil
+        }
+        return NSBitmapImageRep(cgImage: flattened).representation(using: .png, properties: [:])
     }
     #endif
 }
@@ -1183,6 +1300,67 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         baseAlpha
     }
 
+    func rearDepthAmount(_ depth: Double) -> Double {
+        guard depth < frontClipPlane else {
+            return 0
+        }
+        return OrbitalViewportMath.clamp01((frontClipPlane - depth) / 1.15)
+    }
+
+    func speakerAlpha(depth: Double, selected: Bool) -> Double {
+        guard !selected else {
+            return 1
+        }
+        guard depth < frontClipPlane else {
+            return 0.94
+        }
+
+        let rear = rearDepthAmount(depth)
+        let fogStrength = fogConfiguration.normalizedDensity
+        let attenuation = max(0.2, 1 - rear * (0.38 + fogStrength * 0.42))
+        return max(0.14, 0.42 * attenuation)
+    }
+
+    func speakerEmissionScale(depth: Double) -> Double {
+        guard depth < frontClipPlane else {
+            return 1
+        }
+
+        let rear = rearDepthAmount(depth)
+        let fogStrength = fogConfiguration.normalizedDensity
+        return max(0.12, 1 - rear * (0.58 + fogStrength * 0.34))
+    }
+
+    func shellEdgeVisible(startDepth: Double, endDepth: Double) -> Bool {
+        if hiddenLinesVisible || startDepth >= frontClipPlane || endDepth >= frontClipPlane {
+            return true
+        }
+        return fogConfiguration.isEnabled && shellDepthAlpha(startDepth: startDepth, endDepth: endDepth) > 0.04
+    }
+
+    func shellDepthAlpha(startDepth: Double, endDepth: Double) -> Double {
+        let averageDepth = (startDepth + endDepth) * 0.5
+        guard averageDepth < frontClipPlane else {
+            return 1
+        }
+
+        let rear = rearDepthAmount(averageDepth)
+        if hiddenLinesVisible {
+            return max(0.18, 0.42 - rear * 0.12)
+        }
+        guard fogConfiguration.isEnabled else {
+            return 0
+        }
+        return max(0.13, 0.32 - rear * (0.1 + fogConfiguration.normalizedDensity * 0.08))
+    }
+
+    func shellNodeAlpha(depth: Double) -> Double {
+        guard depth < frontClipPlane else {
+            return 0.42
+        }
+        return fogConfiguration.isEnabled || hiddenLinesVisible ? 0.16 : 0
+    }
+
     func frameConfiguration(timeMS frameTimeMS: Double) -> OrbitalViewportRenderConfiguration {
         let frameYaw: Double
         if spin {
@@ -1383,8 +1561,6 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
     let configuration: OrbitalViewportRenderConfiguration
     let snapshot: OrbitalViewportSnapshot
-    let exportToken: Int
-    let onExportFinished: (Result<URL, Error>) -> Void
     let onDragStarted: () -> Void
     let onDrag: (CGSize) -> Void
     let onDragEnded: () -> Void
@@ -1413,9 +1589,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         context.coordinator.attach(to: view)
         context.coordinator.update(
             configuration: configuration,
-            snapshot: snapshot,
-            exportToken: exportToken,
-            onExportFinished: onExportFinished
+            snapshot: snapshot
         )
         return view
     }
@@ -1429,9 +1603,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         context.coordinator.attach(to: nsView)
         context.coordinator.update(
             configuration: configuration,
-            snapshot: snapshot,
-            exportToken: exportToken,
-            onExportFinished: onExportFinished
+            snapshot: snapshot
         )
     }
 
@@ -1457,7 +1629,6 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastSpeakerMaterialKey: OrbitalViewportSpeakerMaterialUpdateKey?
         private var lastFogKey: OrbitalViewportFogUpdateKey?
         private var lastRenderedAnimationTimeMS: Double?
-        private var lastExportToken = 0
 
         private(set) var shellBuildCount = 0
         private(set) var speakerRebuildCount = 0
@@ -1484,9 +1655,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         func update(
             configuration: OrbitalViewportRenderConfiguration,
-            snapshot: OrbitalViewportSnapshot,
-            exportToken: Int,
-            onExportFinished: @escaping (Result<URL, Error>) -> Void
+            snapshot: OrbitalViewportSnapshot
         ) {
             _ = snapshot
             latestConfiguration = configuration
@@ -1497,11 +1666,6 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             }
 
             renderScene(configuration: configuration)
-
-            if exportToken != lastExportToken {
-                lastExportToken = exportToken
-                exportSnapshot(configuration: configuration.frameConfiguration(timeMS: currentTimeMS()), onExportFinished: onExportFinished)
-            }
         }
 
         private func startAnimationTimerIfNeeded() {
@@ -1638,14 +1802,20 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             for edge in OrbitalViewportGeodesic.structure.edges {
                 let start = OrbitalViewportGeodesic.structure.nodes[edge.a]
                 let end = OrbitalViewportGeodesic.structure.nodes[edge.b]
-                let node = cylinderNode(from: start, to: end, radius: edge.lengthGroup == 2 ? 0.0032 : 0.0024)
+                let node = cylinderNode(
+                    from: start,
+                    to: end,
+                    radius: edge.lengthGroup == 2
+                        ? OrbitalViewportSceneMetrics.shellEquatorStrutRadius
+                        : OrbitalViewportSceneMetrics.shellStrutRadius
+                )
                 node.name = "shell-edge-\(edge.a)-\(edge.b)"
                 shellNode.addChildNode(node)
                 edgeNodes.append(node)
             }
 
             for point in OrbitalViewportGeodesic.structure.nodes {
-                let marker = SCNNode(geometry: SCNSphere(radius: 0.005))
+                let marker = SCNNode(geometry: SCNSphere(radius: OrbitalViewportSceneMetrics.shellNodeRadius))
                 marker.position = point.scn
                 marker.name = "shell-node"
                 shellNode.addChildNode(marker)
@@ -1710,7 +1880,10 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private func makeLabelNode(channel: Int) -> SCNNode {
             let text = SCNText(string: String(format: "%02d", channel), extrusionDepth: 0.0008)
-            text.font = NSFont.systemFont(ofSize: 0.14, weight: .semibold)
+            text.font = NSFont.systemFont(
+                ofSize: OrbitalViewportSceneMetrics.speakerLabelFontPointSize,
+                weight: .semibold
+            )
             text.flatness = 0.18
             let material = SCNMaterial()
             material.isDoubleSided = true
@@ -1724,7 +1897,11 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 (bounds.min.y + bounds.max.y) * 0.5,
                 0
             )
-            node.scale = SCNVector3(0.22, 0.22, 0.22)
+            node.scale = SCNVector3(
+                OrbitalViewportSceneMetrics.speakerLabelScale,
+                OrbitalViewportSceneMetrics.speakerLabelScale,
+                OrbitalViewportSceneMetrics.speakerLabelScale
+            )
             node.renderingOrder = 1000
             node.constraints = [SCNBillboardConstraint()]
             return node
@@ -1732,16 +1909,15 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private func updateShell(configuration: OrbitalViewportRenderConfiguration) {
             let theme = configuration.theme
-            let hiddenVisible = configuration.hiddenLinesVisible
 
             for (index, edgeNode) in edgeNodes.enumerated() {
                 let edge = OrbitalViewportGeodesic.structure.edges[index]
                 let start = configuration.rotate(OrbitalViewportGeodesic.structure.nodes[edge.a])
                 let end = configuration.rotate(OrbitalViewportGeodesic.structure.nodes[edge.b])
-                let visible = hiddenVisible || start.z >= configuration.frontClipPlane || end.z >= configuration.frontClipPlane
+                let visible = configuration.shellEdgeVisible(startDepth: start.z, endDepth: end.z)
                 edgeNode.isHidden = !visible
-                let depthAlpha = start.z < configuration.frontClipPlane && end.z < configuration.frontClipPlane ? 0.28 : 1
-                let baseAlpha = ([0.48, 0.64, 0.82][safe: edge.lengthGroup] ?? 0.62) * depthAlpha
+                let depthAlpha = configuration.shellDepthAlpha(startDepth: start.z, endDepth: end.z)
+                let baseAlpha = ([0.56, 0.74, 0.96][safe: edge.lengthGroup] ?? 0.72) * depthAlpha
                 setMaterial(
                     edgeNode.geometry?.firstMaterial,
                     color: edge.lengthGroup == 2 ? theme.equator : theme.structure,
@@ -1751,8 +1927,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
             for (index, node) in nodeMarkers.enumerated() {
                 let rotated = configuration.rotate(OrbitalViewportGeodesic.structure.nodes[index])
-                node.isHidden = !configuration.isVisibleDepth(rotated.z)
-                let alpha = rotated.z < configuration.frontClipPlane ? 0.18 : 0.34
+                let alpha = configuration.shellNodeAlpha(depth: rotated.z)
+                node.isHidden = alpha <= 0.02
                 setMaterial(node.geometry?.firstMaterial, color: theme.structure, alpha: alpha)
             }
         }
@@ -1775,13 +1951,14 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 }
 
                 if updateMaterial {
-                    let alpha = speaker.depth < configuration.frontClipPlane ? 0.34 : 0.94
+                    let alpha = configuration.speakerAlpha(depth: speaker.depth, selected: selected)
+                    let emissionScale = configuration.speakerEmissionScale(depth: speaker.depth)
                     let color = configuration.theme.colorForPeak(speaker.peak)
                     setMaterial(
                         node.geometry?.firstMaterial,
                         color: color,
-                        alpha: selected ? 1 : alpha,
-                        emission: color.opacity(0.18 + speaker.peak * 0.52)
+                        alpha: alpha,
+                        emission: color.opacity((0.18 + speaker.peak * 0.52) * emissionScale)
                     )
                 }
 
@@ -1809,31 +1986,6 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             scene.fogStartDistance = fog.startDistance
             scene.fogEndDistance = fog.endDistance
             scene.fogDensityExponent = fog.densityExponent
-        }
-
-        private func exportSnapshot(
-            configuration: OrbitalViewportRenderConfiguration,
-            onExportFinished: @escaping (Result<URL, Error>) -> Void
-        ) {
-            guard let view else {
-                DispatchQueue.main.async {
-                    onExportFinished(.failure(OrbitalViewportExportError.missingView))
-                }
-                return
-            }
-            let result: Result<URL, Error>
-            do {
-                let url = try OrbitalViewportPNGExporter.writeSnapshot(
-                    image: view.snapshot(),
-                    style: configuration.renderStyle
-                )
-                result = .success(url)
-            } catch {
-                result = .failure(error)
-            }
-            DispatchQueue.main.async {
-                onExportFinished(result)
-            }
         }
 
         private func cylinderNode(from start: OVVector3, to end: OVVector3, radius: Double) -> SCNNode {
@@ -1958,8 +2110,6 @@ final class OrbitalViewportSceneNSView: SCNView {
 struct OrbitalViewport3DSceneView: View {
     let configuration: OrbitalViewportRenderConfiguration
     let snapshot: OrbitalViewportSnapshot
-    let exportToken: Int
-    let onExportFinished: (Result<URL, Error>) -> Void
     let onDragStarted: () -> Void
     let onDrag: (CGSize) -> Void
     let onDragEnded: () -> Void
@@ -2409,8 +2559,18 @@ struct OrbitalViewportLabTheme {
     static let panelRadius: CGFloat = 8
     static let controlRadius: CGFloat = 7
     static let controlHeight: CGFloat = 34
+    static let controlFontSize: CGFloat = 12
     static let switchColumnWidth: CGFloat = 54
     static let toggleRowHeight: CGFloat = 30
+}
+
+struct OrbitalViewportSceneMetrics {
+    static let shellStrutScale = 1.5
+    static let shellStrutRadius = 0.0024 * shellStrutScale
+    static let shellEquatorStrutRadius = 0.0032 * shellStrutScale
+    static let shellNodeRadius = 0.005 * shellStrutScale
+    static let speakerLabelFontPointSize = OrbitalViewportLabTheme.controlFontSize
+    static let speakerLabelScale: Float = 0.0032
 }
 
 struct OrbitalViewportTheme: Equatable {

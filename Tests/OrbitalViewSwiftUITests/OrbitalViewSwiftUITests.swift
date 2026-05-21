@@ -47,10 +47,20 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportLabTheme.panelRadius, 8)
         XCTAssertEqual(OrbitalViewportLabTheme.controlRadius, 7)
         XCTAssertEqual(OrbitalViewportLabTheme.controlHeight, 34)
+        XCTAssertEqual(OrbitalViewportLabTheme.controlFontSize, 12)
         XCTAssertEqual(OrbitalViewportLabTheme.switchColumnWidth, 54)
         XCTAssertEqual(OrbitalViewportLabTheme.toggleRowHeight, 30)
         XCTAssertTrue(OrbitalViewportLabSlider.rendersSingleTrack)
         XCTAssertFalse(OrbitalViewportLabSlider.showsInlineValue)
+    }
+
+    func testOrbitalViewportWindowExportAndSceneTuningConstants() {
+        XCTAssertEqual(OrbitalViewportPNGExporter.exportScope, "application-window")
+        XCTAssertFalse(OrbitalViewportPNGExporter.exportsTransparentViewportOnly)
+        XCTAssertEqual(OrbitalViewportSceneMetrics.speakerLabelFontPointSize, OrbitalViewportLabTheme.controlFontSize)
+        XCTAssertEqual(OrbitalViewportSceneMetrics.shellStrutScale, 1.5, accuracy: 0.000_001)
+        XCTAssertEqual(OrbitalViewportSceneMetrics.shellStrutRadius, 0.0036, accuracy: 0.000_001)
+        XCTAssertEqual(OrbitalViewportSceneMetrics.shellEquatorStrutRadius, 0.0048, accuracy: 0.000_001)
     }
 
     func testOrbitalViewportOrbitStateUsesCameraOrbitAndStableSpin() {
@@ -114,9 +124,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         coordinator.update(
             configuration: base,
-            snapshot: OrbitalViewportSnapshot(configuration: base),
-            exportToken: 0,
-            onExportFinished: { _ in }
+            snapshot: OrbitalViewportSnapshot(configuration: base)
         )
         XCTAssertEqual(coordinator.shellBuildCount, initialShellBuilds)
         XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds)
@@ -124,9 +132,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let meterOnly = base.frameConfiguration(timeMS: 1_200)
         coordinator.update(
             configuration: meterOnly,
-            snapshot: OrbitalViewportSnapshot(configuration: meterOnly),
-            exportToken: 0,
-            onExportFinished: { _ in }
+            snapshot: OrbitalViewportSnapshot(configuration: meterOnly)
         )
         XCTAssertEqual(coordinator.shellBuildCount, initialShellBuilds)
         XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds)
@@ -134,18 +140,14 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let shapeChange = makeRenderConfiguration(timeMS: 1_200, speakerShape: .sphere, speakerSize: defaultSize)
         coordinator.update(
             configuration: shapeChange,
-            snapshot: OrbitalViewportSnapshot(configuration: shapeChange),
-            exportToken: 0,
-            onExportFinished: { _ in }
+            snapshot: OrbitalViewportSnapshot(configuration: shapeChange)
         )
         XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds + 1)
 
         let sizeChange = makeRenderConfiguration(timeMS: 1_200, speakerShape: .sphere, speakerSize: defaultSize * 1.1)
         coordinator.update(
             configuration: sizeChange,
-            snapshot: OrbitalViewportSnapshot(configuration: sizeChange),
-            exportToken: 0,
-            onExportFinished: { _ in }
+            snapshot: OrbitalViewportSnapshot(configuration: sizeChange)
         )
         XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds + 2)
     }
@@ -203,6 +205,23 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertTrue(configuration.hiddenLinesVisible)
         XCTAssertEqual(configuration.foggedAlpha(depth: -1, baseAlpha: 0.42), 0.42)
 
+        let unfoggedDefault = OrbitalViewportRenderConfiguration(
+            size: configuration.size,
+            timeMS: configuration.timeMS,
+            yaw: configuration.yaw,
+            pitch: configuration.pitch,
+            cameraView: configuration.cameraView,
+            zoom: configuration.zoom,
+            renderStyle: configuration.renderStyle,
+            speakerShape: configuration.speakerShape,
+            speakerSize: configuration.speakerSize,
+            fogDensity: 0,
+            showSpeakerNumbers: configuration.showSpeakerNumbers,
+            showHiddenLines: false,
+            selectedChannel: configuration.selectedChannel
+        )
+        XCTAssertFalse(unfoggedDefault.shellEdgeVisible(startDepth: -0.9, endDepth: -0.8))
+
         configuration = OrbitalViewportRenderConfiguration(
             size: configuration.size,
             timeMS: configuration.timeMS,
@@ -220,6 +239,32 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertTrue(configuration.fogConfiguration.isEnabled)
         XCTAssertTrue(configuration.hiddenLinesVisible)
+
+        let foggedDefault = OrbitalViewportRenderConfiguration(
+            size: configuration.size,
+            timeMS: configuration.timeMS,
+            yaw: configuration.yaw,
+            pitch: configuration.pitch,
+            cameraView: configuration.cameraView,
+            zoom: configuration.zoom,
+            renderStyle: configuration.renderStyle,
+            speakerShape: configuration.speakerShape,
+            speakerSize: configuration.speakerSize,
+            fogDensity: 30,
+            showSpeakerNumbers: configuration.showSpeakerNumbers,
+            showHiddenLines: false,
+            selectedChannel: configuration.selectedChannel
+        )
+        XCTAssertTrue(foggedDefault.shellEdgeVisible(startDepth: -0.9, endDepth: -0.8))
+        XCTAssertGreaterThan(foggedDefault.shellDepthAlpha(startDepth: -0.9, endDepth: -0.8), 0)
+        XCTAssertLessThan(
+            foggedDefault.speakerAlpha(depth: -0.9, selected: false),
+            foggedDefault.speakerAlpha(depth: 0.6, selected: false)
+        )
+        XCTAssertLessThan(
+            foggedDefault.speakerEmissionScale(depth: -0.9),
+            foggedDefault.speakerEmissionScale(depth: 0.6)
+        )
     }
 
     func testOrbitalViewportPNGExportTargetsDesktopWithPNGName() {
@@ -236,6 +281,21 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertTrue(url.lastPathComponent.hasPrefix("Orbital View VU Kit "))
         XCTAssertTrue(url.lastPathComponent.contains("Purple"))
     }
+
+    #if os(macOS)
+    func testOrbitalViewportPNGExporterEncodesCGBackedImages() throws {
+        let image = NSImage(size: NSSize(width: 12, height: 12))
+        image.lockFocus()
+        NSColor.black.setFill()
+        NSRect(x: 0, y: 0, width: 12, height: 12).fill()
+        image.unlockFocus()
+
+        let png = try XCTUnwrap(OrbitalViewportPNGExporter.pngData(from: image))
+        XCTAssertGreaterThan(png.count, 0)
+        let bitmap = try XCTUnwrap(NSBitmapImageRep(data: png))
+        XCTAssertFalse(bitmap.hasAlpha)
+    }
+    #endif
 
     func testOrbitalViewportSnapshotUsesThirtyFeySpeakersAndMeterStream() {
         let configuration = OrbitalViewportRenderConfiguration(
