@@ -1,6 +1,22 @@
-# Orbital View Kit
+# Orbital View VU
 
-Orbital View Kit is the project-control scaffold for `OrbitalViewKit`, a reusable 3D spherical speaker viewport planned for Wavefield, Orbisonic, and Splat.
+Orbital View VU is a high-performance, three-dimensional spatial VU meter for monitoring and authoring spatial music. It renders a spherical 30-channel speaker field with native macOS graphics so it can drop into native OS X/macOS apps rather than living as a browser mockup or standalone web visualizer.
+
+I wrote it for my own spatial music workflow, but the original target was SonicSphere: a clear, reactive orbital view of a sonic sphere that can make spatial playback, routing, and composition easier to see while it is happening.
+
+The underlying package is `OrbitalViewKit`, a reusable 3D spherical speaker viewport planned for Wavefield, Orbisonic, and Splat.
+
+## Visuals
+
+![Orbital View VU 1.0 with Cube VU speakers and purple geodesic shell](docs/media/orbital-view-vu-1.0/orbital-view-vu-purple-cube-vu.png)
+
+![Orbital View VU early reference UI with spherical speaker monitor and channel meters](docs/media/orbital-view-vu-1.0/orbital-view-vu-reference-ui.png)
+
+<video src="docs/media/orbital-view-vu-1.0/orbital-view-vu-1.0-demo.mp4" controls width="100%">
+  Watch the Orbital View VU 1.0 demo recording.
+</video>
+
+[Open the Orbital View VU 1.0 demo recording directly](docs/media/orbital-view-vu-1.0/orbital-view-vu-1.0-demo.mp4)
 
 The first implementation milestone is deliberately small: create `OrbitalViewCore`, a pure Swift foundation for scene contracts, shell geometry, speaker identity, meter frames, camera state, validation, and Wavefield layout adaptation tests. A disposable viewport mockup previews the intended monitor interaction, and the native renderer now has its first offscreen smoke-tested Metal draw path with static draw-input invariant coverage.
 

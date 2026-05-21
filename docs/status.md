@@ -91,6 +91,75 @@ none
 
 ## Recent Changes
 
+### Update: 2026-05-21 README Media Gallery
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added the two desktop PNG captures to `docs/media/orbital-view-vu-1.0/`.
+- Added a repo-friendly H.264 MP4 demo derived from the desktop screen recording because the original MOV is 176 MB.
+- Added a README `Visuals` section with inline screenshots, an embedded demo video element for GitHub rendering, and a direct fallback demo-video link.
+
+Tests added or updated:
+
+```text
+none; documentation/media-only change
+```
+
+Commands run:
+
+```text
+cp "/Users/jeremyguillory/Desktop/Screenshot 2026-05-21 at 4.29.49 PM.png" docs/media/orbital-view-vu-1.0/orbital-view-vu-reference-ui.png -> passed
+cp "/Users/jeremyguillory/Desktop/Orbital View VU Kit 2026-05-21-110651 Purple copy.png" docs/media/orbital-view-vu-1.0/orbital-view-vu-purple-cube-vu.png -> passed
+ffmpeg -y -i "/Users/jeremyguillory/Desktop/Screen Recording 2026-05-21 at 5.12.52 PM.mov" -vf "scale=1920:-2" -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -movflags +faststart -an docs/media/orbital-view-vu-1.0/orbital-view-vu-1.0-demo.mp4 -> passed
+ffprobe docs/media/orbital-view-vu-1.0/orbital-view-vu-1.0-demo.mp4 -> passed
+git diff --check -> passed
+```
+
+Documentation updated:
+
+```text
+README.md
+docs/status.md
+```
+
+### Update: 2026-05-21 README 1.0 Positioning
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Updated the README opening to position Orbital View VU as a high-performance native macOS 3D spatial VU meter for monitoring and authoring spatial music.
+- Documented that it was written for the author's own workflow while originally targeting SonicSphere.
+
+Tests added or updated:
+
+```text
+none; documentation-only change
+```
+
+Commands run:
+
+```text
+not run; documentation-only change
+```
+
+Documentation updated:
+
+```text
+README.md
+docs/status.md
+```
+
 ### Update: 2026-05-21 Full Left Panel Settings JSON Export
 
 Status:
