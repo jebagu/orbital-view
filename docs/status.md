@@ -3,24 +3,91 @@
 ## Current Phase
 
 ```text
-native Orbisonic control skin and SceneKit camera-fog cleanup Slice 014 complete
+snappier native SwiftUI/SceneKit viewer Slice 015 complete
 ```
 
 ## Current Milestone
 
 ```text
-Native continuation through Slice 014 is complete; the standalone SwiftPM app opens an Orbisonic-design-language native 3D Orbital View VU Kit screen
+Native continuation through Slice 015 is complete; the standalone SwiftPM app opens the approved Orbisonic-design-language native 3D Orbital View VU Kit screen with throttled inspector-only SwiftUI refresh, adaptive draw-on-demand SceneKit, cached SceneKit update paths, and a release-built app bundle by default
 ```
 
 ## Summary
 
-Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, an `OrbitalViewRender` MetalKit renderer seam with an offscreen-tested instanced cube/prism speaker draw path, static draw-input invariant tests, static geometry cache-key tests, channel-to-instance mapping tests, retained speaker/object buffer reuse checks, shader-side cube scalar center-bloom speaker materials, legacy checker pulse/ring/diagonal wave VU settings, platform-neutral theme tokens, Daft Punk Bow VU palette/color-scheme migration through renderer ramp uniforms, runtime meter input sanitizing and diagnostics, Codable visual presets, Sonic Sphere cube/prism speaker shape contracts, face-center VU bloom distance contracts, and host source-object overlay contracts, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The tray has Basic, Advanced, Presets, and Diagnostics sections, including speaker height, optional preset-store actions, and sanitizer diagnostics display without making persistence mandatory for hosts. `OrbitalViewSwiftUI` also includes `OrbitalViewportMockup`, a native SwiftUI/SceneKit 3D review screen with Orbisonic-design-language native controls, fixed left/right rails, Fey 30 speaker list, fake meter stream, camera controls, color schemes, speaker shape, speaker size, fog density, speaker numbers, hidden lines, selection, spin, zoom, drag orbit, and PNG export. The standalone screen keeps the browser mockup only as a loose behavior/control-inventory reference, not as a pixel-for-pixel skin target. `OrbitalViewViewer` launches that native 3D screen as `Orbital View VU Kit.app`. `OrbitalViewWavefield` exposes a runtime-safe sanitized Wavefield meter adapter. `OrbitalViewOrbisonic` defines the package-level Orbisonic seam from `renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView`, exposes Daft Punk Bow through `OrbisonicOrbitalColorScheme`, and avoids importing the Orbisonic app. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, accepts active object frames and object meter frames keyed by source-object ID, and keeps static geometry stable under meter, settings, camera, object meter, and trail updates. The project also has renderer test harness and cache-plan docs, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Production Metal parity for this standalone SceneKit screen, downstream host wiring, live object smoothing/interpolation beyond static viewer snapshots, and Splat host integration remain deferred.
+Orbital View VU Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, an `OrbitalViewRender` MetalKit renderer seam with an offscreen-tested instanced cube/prism speaker draw path, static draw-input invariant tests, static geometry cache-key tests, channel-to-instance mapping tests, retained speaker/object buffer reuse checks, shader-side cube scalar center-bloom speaker materials, legacy checker pulse/ring/diagonal wave VU settings, platform-neutral theme tokens, Daft Punk Bow VU palette/color-scheme migration through renderer ramp uniforms, runtime meter input sanitizing and diagnostics, Codable visual presets, Sonic Sphere cube/prism speaker shape contracts, face-center VU bloom distance contracts, and host source-object overlay contracts, plus an `OrbitalViewSwiftUI` wrapper with an opt-in collapsed bottom VU settings tray. The tray has Basic, Advanced, Presets, and Diagnostics sections, including speaker height, optional preset-store actions, and sanitizer diagnostics display without making persistence mandatory for hosts. `OrbitalViewSwiftUI` also includes `OrbitalViewportMockup`, a native SwiftUI/SceneKit 3D review screen with Orbisonic-design-language native controls, fixed left/right rails, Fey 30 speaker list, fake meter stream, camera controls, color schemes, speaker shape, speaker size, fog density, speaker numbers, hidden lines, selection, spin, zoom, drag orbit, and PNG export. The standalone screen keeps the browser mockup only as a loose behavior/control-inventory reference, not as a pixel-for-pixel skin target. Its SwiftUI shell no longer uses a root animation timeline; the inspector/meter list owns its own 10 fps refresh subview, while SceneKit owns fake meter/spin animation with draw-on-demand rendering, a 30 fps cap for spin/active motion, and a 10 fps meter-only idle cadence. SceneKit shell geometry is built once, speaker nodes rebuild only on shape/size changes, and camera, shell, speaker visibility/material, and fog updates are keyed separately. The app-bundle builder now defaults to a release configuration for local review. `OrbitalViewViewer` launches that native 3D screen as `Orbital View VU Kit.app`. `OrbitalViewWavefield` exposes a runtime-safe sanitized Wavefield meter adapter. `OrbitalViewOrbisonic` defines the package-level Orbisonic seam from `renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView`, exposes Daft Punk Bow through `OrbisonicOrbitalColorScheme`, and avoids importing the Orbisonic app. The renderer maps 30 physical speaker channels from `SpeakerMeterFrame.levelsByChannel` without channel reorder, applies RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, accepts active object frames and object meter frames keyed by source-object ID, and keeps static geometry stable under meter, settings, camera, object meter, and trail updates. The project also has renderer test harness and cache-plan docs, disposable browser mockups for the orbitable spherical monitor viewport and a single-screen Sonicsphere cube scalar VU tuner with browser-only tab/local-file audio analysis, a separate normal music meter, and tabbed tuning/export controls, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. Production Metal parity for this standalone SceneKit screen, downstream host wiring, live object smoothing/interpolation beyond static viewer snapshots, and Splat host integration remain deferred.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
 The root launcher `Open Native Orbital View VU Kit.command` builds a local `Orbital View VU Kit.app` bundle and opens it.
 
 The older root launcher `Open Orbital View Viewer.command` now opens the same `Orbital View VU Kit.app` bundle for compatibility.
+
+### Update: 2026-05-21 Snappier Native SwiftUI SceneKit Viewer
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added Slice 015 task/slice docs to explicitly permit the standalone SwiftUI/SceneKit performance follow-up.
+- Removed the root `TimelineView(.animation)` driver from `OrbitalViewportMockup`.
+- Added explicit cadence constants: 30 fps for active SceneKit viewport animation, 10 fps for meter-only SceneKit idle drawing, and 10 fps for SwiftUI inspector/meter-list refresh.
+- Moved the 10 fps inspector/meter-list timer into an inspector-only subview so the root control rail, footer, and viewport wrapper are not invalidated by meter-list ticks.
+- Moved spin and fake-meter frame progression into `OrbitalViewport3DSceneView.Coordinator` through `frameConfiguration(timeMS:)`.
+- Changed the SceneKit view to draw on demand with `rendersContinuously = false`, `isPlaying = false`, and `preferredFramesPerSecond = 30`.
+- Added a coordinator-owned capped timer that requests SceneKit renders directly while fake meters/spin are active in the review screen, with meter-only idle frames throttled below the 30 fps active-motion cap.
+- Wrapped SceneKit camera/material/fog updates in disabled implicit transactions so per-frame changes do not queue SceneKit animations.
+- Added retained SceneKit update keys for camera, shell, speaker geometry, speaker visibility, speaker material, and fog.
+- Kept shell geometry built once and speaker nodes rebuilt only when speaker shape or speaker size changes.
+- Changed `scripts/build-orbital-viewer-app.sh` to build the local review app bundle from a release binary by default, with `BUILD_CONFIGURATION` still available as an override.
+- Added tests proving the root animation timeline is disabled, SceneKit defaults to draw-on-demand at 30 fps, inspector cadence is separate at 10 fps, meter-only ticks do not change static geometry keys, and coordinator speaker rebuilds occur only for shape/size changes.
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer CLANG_MODULE_CACHE_PATH=.build/clang-module-cache SWIFTPM_CACHE_DIR=.build/swiftpm-cache swift build -c release --disable-sandbox --product OrbitalViewViewer
+zsh -n scripts/build-orbital-viewer-app.sh
+pkill -f OrbitalViewViewer
+scripts/build-orbital-viewer-app.sh
+plutil -lint Orbital\ View\ VU\ Kit.app/Contents/Info.plist
+open -n Orbital\ View\ VU\ Kit.app
+ps -p 13128 -o pid,%cpu,%mem,command
+git diff --check
+```
+
+Results:
+
+```text
+swift build passed.
+Focused SwiftUI tests passed: 22 tests, 0 failures.
+Full swift test passed: 83 tests, 0 failures.
+Closed the prior viewer process before rebuilding the app bundle.
+App bundle build passed and produced Orbital View VU Kit.app; SwiftPM emitted user-cache permission warnings but completed successfully.
+The local app-bundle builder now uses release configuration by default.
+App bundle Info.plist passed plutil lint.
+Live app opened through LaunchServices.
+Computer Use verified the fresh app window opens with the approved left rail, 3D viewport, inspector, footer, and animated fake meter list visible.
+git diff --check passed.
+```
+
+Bugs found or fixed:
+
+```text
+Fixed the slow native review screen path caused by a root SwiftUI animation timeline rebuilding the full shell, control rail, footer, inspector, and speaker rows every animation frame.
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
 
 ### Update: 2026-05-21 Native Orbisonic Control Skin And Camera Fog
 

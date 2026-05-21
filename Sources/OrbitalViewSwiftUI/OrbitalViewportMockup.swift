@@ -15,6 +15,10 @@ public struct OrbitalViewportMockup: View {
     public static let inspectorWidth: CGFloat = 300
     public static let footerHeight: CGFloat = 46
     public static let controlSkinSource = "orbisonic-design-language"
+    static let usesRootAnimationTimeline = false
+    static let viewportAnimationFramesPerSecond = 30
+    static let meterOnlyViewportFramesPerSecond = 10
+    static let inspectorRefreshFramesPerSecond = 10
     public static let speakerCount = OrbitalViewportSpeaker.referenceSpeakers.count
     public static let feyGeodesicNodeCount = OrbitalViewportGeodesic.structure.nodes.count
     public static let feyGeodesicEdgeCount = OrbitalViewportGeodesic.structure.edges.count
@@ -46,12 +50,10 @@ public struct OrbitalViewportMockup: View {
 
     public var body: some View {
         GeometryReader { proxy in
-            TimelineView(.animation) { timeline in
-                if proxy.size.width < 900 {
-                    compactLayout(totalSize: proxy.size, date: timeline.date)
-                } else {
-                    desktopLayout(totalSize: proxy.size, date: timeline.date)
-                }
+            if proxy.size.width < 900 {
+                compactLayout(totalSize: proxy.size)
+            } else {
+                desktopLayout(totalSize: proxy.size)
             }
         }
         .background(theme.pageBackground)
@@ -70,9 +72,8 @@ public struct OrbitalViewportMockup: View {
         OrbitalViewportMath.fogDensity(fromSlider: fogDensitySlider)
     }
 
-    private func configuration(size: CGSize, date: Date) -> OrbitalViewportRenderConfiguration {
-        let timeMS = date.timeIntervalSinceReferenceDate * 1000
-        let effectiveYaw = displayedYaw(at: date)
+    private func configuration(size: CGSize, timeMS: Double) -> OrbitalViewportRenderConfiguration {
+        let effectiveYaw = displayedYaw(timeMS: timeMS)
         return OrbitalViewportRenderConfiguration(
             size: size,
             timeMS: timeMS,
@@ -86,17 +87,21 @@ public struct OrbitalViewportMockup: View {
             fogDensity: fogDensity,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
-            selectedChannel: selectedChannel
+            selectedChannel: selectedChannel,
+            spin: spin && !isDragging,
+            spinStartYaw: spinStartYaw,
+            spinStartTimeMS: spinStartTimeMS
         )
     }
 
-    private func desktopLayout(totalSize: CGSize, date: Date) -> some View {
+    private func desktopLayout(totalSize: CGSize) -> some View {
         let footerHeight = Self.footerHeight
         let viewportSize = CGSize(
             width: max(1, totalSize.width - Self.leftRailWidth - Self.inspectorWidth),
             height: max(1, totalSize.height - footerHeight)
         )
-        let renderConfiguration = configuration(size: viewportSize, date: date)
+        let timeMS = currentTimeMS()
+        let renderConfiguration = configuration(size: viewportSize, timeMS: timeMS)
         let snapshot = OrbitalViewportSnapshot(configuration: renderConfiguration)
 
         return HStack(spacing: 0) {
@@ -106,21 +111,22 @@ public struct OrbitalViewportMockup: View {
             VStack(spacing: 0) {
                 viewport(renderConfiguration: renderConfiguration, snapshot: snapshot)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                footer(snapshot: snapshot)
+                footer()
                     .frame(height: footerHeight)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            inspector(snapshot: snapshot)
+            inspector(configuration: renderConfiguration)
                 .frame(width: Self.inspectorWidth)
         }
         .frame(width: totalSize.width, height: totalSize.height)
         .clipped()
     }
 
-    private func compactLayout(totalSize: CGSize, date: Date) -> some View {
+    private func compactLayout(totalSize: CGSize) -> some View {
         let viewportSize = CGSize(width: totalSize.width, height: max(360, totalSize.height * 0.62))
-        let renderConfiguration = configuration(size: viewportSize, date: date)
+        let timeMS = currentTimeMS()
+        let renderConfiguration = configuration(size: viewportSize, timeMS: timeMS)
         let snapshot = OrbitalViewportSnapshot(configuration: renderConfiguration)
 
         return ScrollView {
@@ -129,9 +135,9 @@ public struct OrbitalViewportMockup: View {
                     .frame(minHeight: 620)
                 viewport(renderConfiguration: renderConfiguration, snapshot: snapshot)
                     .frame(height: viewportSize.height)
-                inspector(snapshot: snapshot)
+                inspector(configuration: renderConfiguration)
                     .frame(minHeight: 420)
-                footer(snapshot: snapshot)
+                footer()
                     .frame(height: Self.footerHeight)
             }
         }
@@ -365,134 +371,14 @@ public struct OrbitalViewportMockup: View {
             .simultaneousGesture(magnificationGesture())
     }
 
-    private func inspector(snapshot: OrbitalViewportSnapshot) -> some View {
-        VStack(spacing: 12) {
-            panel {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Scene")
-                        .font(.system(size: 12, weight: .bold))
-                    HStack(spacing: 8) {
-                        metric("Active", value: "\(snapshot.activeCount)/30")
-                        metric("Peak", value: snapshot.peakSpeaker.label.replacingOccurrences(of: "Fey ", with: ""))
-                    }
-                }
-            }
-
-            panel {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(selectedTitle(snapshot: snapshot))
-                        .font(.system(size: 12, weight: .bold))
-                    Text(selectedBody(snapshot: snapshot))
-                        .font(.system(size: 12))
-                        .lineSpacing(2)
-                        .foregroundStyle(theme.muted)
-                }
-            }
-
-            panel {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(snapshot.speakers) { speaker in
-                            speakerRow(speaker)
-                        }
-                    }
-                }
-                .scrollIndicators(.hidden)
-            }
-        }
-        .padding(12)
-        .background(theme.panelBackground)
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(theme.line)
-                .frame(width: 1)
-        }
-    }
-
-    private func panel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.panelSecondaryBackground)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(theme.line, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-
-    private func metric(_ title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title)
-                .font(.system(size: 11))
-                .foregroundStyle(theme.muted)
-            Text(value)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(theme.text)
-        }
-        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
-        .padding(8)
-        .background(theme.metricBackground)
-        .overlay(
-            RoundedRectangle(cornerRadius: 7)
-                .stroke(theme.metricBorder, lineWidth: 1)
+    private func inspector(configuration: OrbitalViewportRenderConfiguration) -> some View {
+        OrbitalViewportInspectorView(
+            configuration: configuration,
+            selectedChannel: selectedChannel
         )
-        .clipShape(RoundedRectangle(cornerRadius: 7))
     }
 
-    private func speakerRow(_ speaker: OrbitalViewportProjectedSpeaker) -> some View {
-        HStack(spacing: 8) {
-            Text(speaker.label)
-                .frame(width: 58, alignment: .leading)
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(theme.barTrack)
-                        .frame(height: 6)
-                    Capsule()
-                        .fill(theme.meterBar)
-                        .frame(
-                            width: max(0, min(proxy.size.width, CGFloat(speaker.peak) * proxy.size.width)),
-                            height: 6
-                        )
-                }
-                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .center)
-            }
-            .frame(maxWidth: .infinity, minHeight: 6, maxHeight: 6)
-            Text(speaker.peak.formatted(.number.precision(.fractionLength(2))))
-                .monospacedDigit()
-                .frame(width: 42, alignment: .trailing)
-        }
-        .font(.system(size: 12))
-        .foregroundStyle(theme.text)
-        .frame(minHeight: 30)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(theme.rowLine)
-                .frame(height: 1)
-        }
-    }
-
-    private func selectedTitle(snapshot: OrbitalViewportSnapshot) -> String {
-        guard let selectedChannel,
-              let speaker = snapshot.speakers.first(where: { $0.channel == selectedChannel })
-        else {
-            return "No speaker selected"
-        }
-        return speaker.label
-    }
-
-    private func selectedBody(snapshot: OrbitalViewportSnapshot) -> String {
-        guard let selectedChannel,
-              let speaker = snapshot.speakers.first(where: { $0.channel == selectedChannel })
-        else {
-            return "Click a speaker in the viewport to inspect channel identity, coordinates, and level state."
-        }
-
-        return "Channel \(speaker.channel) / RMS \(speaker.rms.formatted(.number.precision(.fractionLength(2)))) / Peak \(speaker.peak.formatted(.number.precision(.fractionLength(2)))) / xyz \(speaker.source.x.formatted(.number.precision(.fractionLength(3)))), \(speaker.source.y.formatted(.number.precision(.fractionLength(3)))), \(speaker.source.z.formatted(.number.precision(.fractionLength(3))))"
-    }
-
-    private func footer(snapshot: OrbitalViewportSnapshot) -> some View {
+    private func footer() -> some View {
         HStack(spacing: 16) {
             HStack(spacing: 0) {
                 Text(cameraText)
@@ -537,11 +423,18 @@ public struct OrbitalViewportMockup: View {
     }
 
     private func displayedYaw(at date: Date) -> Double {
+        displayedYaw(timeMS: date.timeIntervalSinceReferenceDate * 1000)
+    }
+
+    private func displayedYaw(timeMS: Double) -> Double {
         guard spin && !isDragging else {
             return yaw
         }
-        let timeMS = date.timeIntervalSinceReferenceDate * 1000
         return spinStartYaw - ((timeMS - spinStartTimeMS) * OrbitalViewportOrbitState.spinRadiansPerMS)
+    }
+
+    private func currentTimeMS() -> Double {
+        Date.timeIntervalSinceReferenceDate * 1000
     }
 
     private func anchorSpin(to currentYaw: Double, at date: Date = Date()) {
@@ -691,6 +584,161 @@ struct OrbitalViewportExportStatus: Equatable {
     let id = UUID()
     let message: String
     let isError: Bool
+}
+
+private struct OrbitalViewportInspectorView: View {
+    let configuration: OrbitalViewportRenderConfiguration
+    let selectedChannel: Int?
+
+    @State private var timeMS = Date.timeIntervalSinceReferenceDate * 1000
+
+    private var frameConfiguration: OrbitalViewportRenderConfiguration {
+        configuration.frameConfiguration(timeMS: timeMS)
+    }
+
+    private var snapshot: OrbitalViewportSnapshot {
+        OrbitalViewportSnapshot(configuration: frameConfiguration)
+    }
+
+    private var theme: OrbitalViewportTheme {
+        configuration.theme
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            panel {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Scene")
+                        .font(.system(size: 12, weight: .bold))
+                    HStack(spacing: 8) {
+                        metric("Active", value: "\(snapshot.activeCount)/30")
+                        metric("Peak", value: snapshot.peakSpeaker.label.replacingOccurrences(of: "Fey ", with: ""))
+                    }
+                }
+            }
+
+            panel {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(selectedTitle)
+                        .font(.system(size: 12, weight: .bold))
+                    Text(selectedBody)
+                        .font(.system(size: 12))
+                        .lineSpacing(2)
+                        .foregroundStyle(theme.muted)
+                }
+            }
+
+            panel {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(snapshot.speakers) { speaker in
+                            speakerRow(speaker)
+                        }
+                    }
+                }
+                .scrollIndicators(.hidden)
+            }
+        }
+        .padding(12)
+        .background(theme.panelBackground)
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(theme.line)
+                .frame(width: 1)
+        }
+        .onReceive(
+            Timer.publish(
+                every: 1 / Double(OrbitalViewportMockup.inspectorRefreshFramesPerSecond),
+                on: .main,
+                in: .common
+            )
+            .autoconnect()
+        ) { date in
+            timeMS = date.timeIntervalSinceReferenceDate * 1000
+        }
+    }
+
+    private func panel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.panelSecondaryBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(theme.line, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func metric(_ title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.system(size: 11))
+                .foregroundStyle(theme.muted)
+            Text(value)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(theme.text)
+        }
+        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+        .padding(8)
+        .background(theme.metricBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 7)
+                .stroke(theme.metricBorder, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+    }
+
+    private func speakerRow(_ speaker: OrbitalViewportProjectedSpeaker) -> some View {
+        HStack(spacing: 8) {
+            Text(speaker.label)
+                .frame(width: 58, alignment: .leading)
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(theme.barTrack)
+                    .frame(height: 6)
+                Capsule()
+                    .fill(theme.meterBar)
+                    .frame(height: 6)
+                    .scaleEffect(x: max(0, min(1, CGFloat(speaker.peak))), y: 1, anchor: .leading)
+            }
+            .frame(maxWidth: .infinity, minHeight: 6, maxHeight: 6)
+            .clipped()
+            Text(speaker.peak.formatted(.number.precision(.fractionLength(2))))
+                .monospacedDigit()
+                .frame(width: 42, alignment: .trailing)
+        }
+        .font(.system(size: 12))
+        .foregroundStyle(theme.text)
+        .frame(minHeight: 30)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(theme.rowLine)
+                .frame(height: 1)
+        }
+    }
+
+    private var selectedTitle: String {
+        guard let selectedSpeaker else {
+            return "No speaker selected"
+        }
+        return selectedSpeaker.label
+    }
+
+    private var selectedBody: String {
+        guard let speaker = selectedSpeaker else {
+            return "Click a speaker in the viewport to inspect channel identity, coordinates, and level state."
+        }
+
+        return "Channel \(speaker.channel) / RMS \(speaker.rms.formatted(.number.precision(.fractionLength(2)))) / Peak \(speaker.peak.formatted(.number.precision(.fractionLength(2)))) / xyz \(speaker.source.x.formatted(.number.precision(.fractionLength(3)))), \(speaker.source.y.formatted(.number.precision(.fractionLength(3)))), \(speaker.source.z.formatted(.number.precision(.fractionLength(3))))"
+    }
+
+    private var selectedSpeaker: OrbitalViewportProjectedSpeaker? {
+        guard let selectedChannel else {
+            return nil
+        }
+        return snapshot.speakers.first(where: { $0.channel == selectedChannel })
+    }
 }
 
 struct OrbitalViewportLabSlider: View {
@@ -1048,6 +1096,45 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let showSpeakerNumbers: Bool
     let showHiddenLines: Bool
     let selectedChannel: Int?
+    let spin: Bool
+    let spinStartYaw: Double
+    let spinStartTimeMS: Double
+
+    init(
+        size: CGSize,
+        timeMS: Double,
+        yaw: Double,
+        pitch: Double,
+        cameraView: OrbitalViewportCameraView,
+        zoom: Double,
+        renderStyle: OrbitalViewportRenderStyle,
+        speakerShape: OrbitalViewportSpeakerShape,
+        speakerSize: Double,
+        fogDensity: Double,
+        showSpeakerNumbers: Bool,
+        showHiddenLines: Bool,
+        selectedChannel: Int?,
+        spin: Bool = false,
+        spinStartYaw: Double = 0,
+        spinStartTimeMS: Double = 0
+    ) {
+        self.size = size
+        self.timeMS = timeMS
+        self.yaw = yaw
+        self.pitch = pitch
+        self.cameraView = cameraView
+        self.zoom = zoom
+        self.renderStyle = renderStyle
+        self.speakerShape = speakerShape
+        self.speakerSize = speakerSize
+        self.fogDensity = fogDensity
+        self.showSpeakerNumbers = showSpeakerNumbers
+        self.showHiddenLines = showHiddenLines
+        self.selectedChannel = selectedChannel
+        self.spin = spin
+        self.spinStartYaw = spinStartYaw
+        self.spinStartTimeMS = spinStartTimeMS
+    }
 
     var theme: OrbitalViewportTheme {
         OrbitalViewportTheme(style: renderStyle)
@@ -1094,6 +1181,120 @@ struct OrbitalViewportRenderConfiguration: Equatable {
 
     func foggedAlpha(depth: Double, baseAlpha: Double) -> Double {
         baseAlpha
+    }
+
+    func frameConfiguration(timeMS frameTimeMS: Double) -> OrbitalViewportRenderConfiguration {
+        let frameYaw: Double
+        if spin {
+            frameYaw = spinStartYaw - ((frameTimeMS - spinStartTimeMS) * OrbitalViewportOrbitState.spinRadiansPerMS)
+        } else {
+            frameYaw = yaw
+        }
+
+        return OrbitalViewportRenderConfiguration(
+            size: size,
+            timeMS: frameTimeMS,
+            yaw: frameYaw,
+            pitch: pitch,
+            cameraView: cameraView,
+            zoom: zoom,
+            renderStyle: renderStyle,
+            speakerShape: speakerShape,
+            speakerSize: speakerSize,
+            fogDensity: fogDensity,
+            showSpeakerNumbers: showSpeakerNumbers,
+            showHiddenLines: showHiddenLines,
+            selectedChannel: selectedChannel,
+            spin: spin,
+            spinStartYaw: spinStartYaw,
+            spinStartTimeMS: spinStartTimeMS
+        )
+    }
+}
+
+struct OrbitalViewportCameraUpdateKey: Equatable {
+    let yaw: Double
+    let pitch: Double
+    let cameraView: OrbitalViewportCameraView
+    let zoom: Double
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.yaw = configuration.yaw
+        self.pitch = configuration.pitch
+        self.cameraView = configuration.cameraView
+        self.zoom = configuration.zoom
+    }
+}
+
+struct OrbitalViewportShellUpdateKey: Equatable {
+    let yaw: Double
+    let pitch: Double
+    let cameraView: OrbitalViewportCameraView
+    let renderStyle: OrbitalViewportRenderStyle
+    let showHiddenLines: Bool
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.yaw = configuration.yaw
+        self.pitch = configuration.pitch
+        self.cameraView = configuration.cameraView
+        self.renderStyle = configuration.renderStyle
+        self.showHiddenLines = configuration.showHiddenLines
+    }
+}
+
+struct OrbitalViewportSpeakerGeometryUpdateKey: Equatable {
+    let speakerShape: OrbitalViewportSpeakerShape
+    let speakerSize: Double
+
+    init(speakerShape: OrbitalViewportSpeakerShape, speakerSize: Double) {
+        self.speakerShape = speakerShape
+        self.speakerSize = speakerSize
+    }
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.init(speakerShape: configuration.speakerShape, speakerSize: configuration.speakerSize)
+    }
+}
+
+struct OrbitalViewportSpeakerVisibilityUpdateKey: Equatable {
+    let yaw: Double
+    let pitch: Double
+    let cameraView: OrbitalViewportCameraView
+    let showHiddenLines: Bool
+    let showSpeakerNumbers: Bool
+    let selectedChannel: Int?
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.yaw = configuration.yaw
+        self.pitch = configuration.pitch
+        self.cameraView = configuration.cameraView
+        self.showHiddenLines = configuration.showHiddenLines
+        self.showSpeakerNumbers = configuration.showSpeakerNumbers
+        self.selectedChannel = configuration.selectedChannel
+    }
+}
+
+struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
+    let meterFrame: Int
+    let renderStyle: OrbitalViewportRenderStyle
+    let selectedChannel: Int?
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.meterFrame = Int(configuration.timeMS / (1000 / Double(OrbitalViewportMockup.viewportAnimationFramesPerSecond)))
+        self.renderStyle = configuration.renderStyle
+        self.selectedChannel = configuration.selectedChannel
+    }
+}
+
+struct OrbitalViewportFogUpdateKey: Equatable {
+    let fogDensity: Double
+    let zoom: Double
+    let cameraView: OrbitalViewportCameraView
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.fogDensity = configuration.fogDensity
+        self.zoom = configuration.zoom
+        self.cameraView = configuration.cameraView
     }
 }
 
@@ -1177,6 +1378,9 @@ struct OrbitalViewportProjectedSpeaker: Identifiable, Equatable {
 
 #if os(macOS)
 struct OrbitalViewport3DSceneView: NSViewRepresentable {
+    static let sceneFramesPerSecond = OrbitalViewportMockup.viewportAnimationFramesPerSecond
+    static let rendersContinuously = false
+
     let configuration: OrbitalViewportRenderConfiguration
     let snapshot: OrbitalViewportSnapshot
     let exportToken: Int
@@ -1196,8 +1400,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         view.allowsCameraControl = false
         view.antialiasingMode = .multisampling4X
         view.backgroundColor = .clear
-        view.rendersContinuously = true
-        view.preferredFramesPerSecond = 60
+        view.rendersContinuously = Self.rendersContinuously
+        view.isPlaying = false
+        view.preferredFramesPerSecond = Self.sceneFramesPerSecond
         view.scene = context.coordinator.scene
         view.pointOfView = context.coordinator.cameraNode
         view.onDragStarted = onDragStarted
@@ -1243,9 +1448,19 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var nodeMarkers: [SCNNode] = []
         private var speakerNodes: [Int: SCNNode] = [:]
         private var labelNodes: [Int: SCNNode] = [:]
-        private var lastShape: OrbitalViewportSpeakerShape?
-        private var lastSpeakerSize: Double?
+        private var animationTimer: Timer?
+        private var latestConfiguration: OrbitalViewportRenderConfiguration?
+        private var lastCameraKey: OrbitalViewportCameraUpdateKey?
+        private var lastShellKey: OrbitalViewportShellUpdateKey?
+        private var lastSpeakerGeometryKey: OrbitalViewportSpeakerGeometryUpdateKey?
+        private var lastSpeakerVisibilityKey: OrbitalViewportSpeakerVisibilityUpdateKey?
+        private var lastSpeakerMaterialKey: OrbitalViewportSpeakerMaterialUpdateKey?
+        private var lastFogKey: OrbitalViewportFogUpdateKey?
+        private var lastRenderedAnimationTimeMS: Double?
         private var lastExportToken = 0
+
+        private(set) var shellBuildCount = 0
+        private(set) var speakerRebuildCount = 0
 
         init() {
             scene.rootNode.addChildNode(rootNode)
@@ -1258,8 +1473,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             rebuildSpeakers(shape: .prism, speakerSize: OrbitalViewportMath.speakerSize(fromSlider: 50))
         }
 
+        deinit {
+            animationTimer?.invalidate()
+        }
+
         func attach(to view: OrbitalViewportSceneNSView) {
             self.view = view
+            startAnimationTimerIfNeeded()
         }
 
         func update(
@@ -1268,19 +1488,100 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             exportToken: Int,
             onExportFinished: @escaping (Result<URL, Error>) -> Void
         ) {
-            if lastShape != configuration.speakerShape || lastSpeakerSize != configuration.speakerSize {
+            _ = snapshot
+            latestConfiguration = configuration
+
+            let geometryKey = OrbitalViewportSpeakerGeometryUpdateKey(configuration: configuration)
+            if lastSpeakerGeometryKey != geometryKey {
                 rebuildSpeakers(shape: configuration.speakerShape, speakerSize: configuration.speakerSize)
             }
 
-            updateCamera(configuration: configuration)
-            updateShell(configuration: configuration)
-            updateSpeakers(configuration: configuration, snapshot: snapshot)
-            updateFog(configuration: configuration)
+            renderScene(configuration: configuration)
 
             if exportToken != lastExportToken {
                 lastExportToken = exportToken
-                exportSnapshot(configuration: configuration, onExportFinished: onExportFinished)
+                exportSnapshot(configuration: configuration.frameConfiguration(timeMS: currentTimeMS()), onExportFinished: onExportFinished)
             }
+        }
+
+        private func startAnimationTimerIfNeeded() {
+            guard animationTimer == nil else {
+                return
+            }
+
+            let interval = 1 / Double(OrbitalViewport3DSceneView.sceneFramesPerSecond)
+            let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+                self?.renderAnimationFrame()
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            animationTimer = timer
+        }
+
+        private func renderAnimationFrame() {
+            guard let latestConfiguration else {
+                return
+            }
+            let frameTimeMS = currentTimeMS()
+            let framesPerSecond = latestConfiguration.spin
+                ? OrbitalViewport3DSceneView.sceneFramesPerSecond
+                : OrbitalViewportMockup.meterOnlyViewportFramesPerSecond
+            let minimumFrameIntervalMS = 1000 / Double(framesPerSecond)
+            if let lastRenderedAnimationTimeMS,
+               frameTimeMS - lastRenderedAnimationTimeMS < minimumFrameIntervalMS {
+                return
+            }
+
+            lastRenderedAnimationTimeMS = frameTimeMS
+            renderScene(configuration: latestConfiguration.frameConfiguration(timeMS: frameTimeMS))
+        }
+
+        private func renderScene(configuration: OrbitalViewportRenderConfiguration) {
+            let snapshot = OrbitalViewportSnapshot(configuration: configuration)
+            let cameraKey = OrbitalViewportCameraUpdateKey(configuration: configuration)
+            let shellKey = OrbitalViewportShellUpdateKey(configuration: configuration)
+            let visibilityKey = OrbitalViewportSpeakerVisibilityUpdateKey(configuration: configuration)
+            let materialKey = OrbitalViewportSpeakerMaterialUpdateKey(configuration: configuration)
+            let fogKey = OrbitalViewportFogUpdateKey(configuration: configuration)
+
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0
+            SCNTransaction.disableActions = true
+            defer {
+                SCNTransaction.commit()
+            }
+
+            if lastCameraKey != cameraKey {
+                updateCamera(configuration: configuration)
+                lastCameraKey = cameraKey
+            }
+            if lastShellKey != shellKey {
+                updateShell(configuration: configuration)
+                lastShellKey = shellKey
+            }
+
+            let shouldUpdateSpeakerVisibility = lastSpeakerVisibilityKey != visibilityKey
+            let shouldUpdateSpeakerMaterial = lastSpeakerMaterialKey != materialKey
+            if shouldUpdateSpeakerVisibility || shouldUpdateSpeakerMaterial {
+                updateSpeakers(
+                    configuration: configuration,
+                    snapshot: snapshot,
+                    updateVisibility: shouldUpdateSpeakerVisibility,
+                    updateMaterial: shouldUpdateSpeakerMaterial
+                )
+                lastSpeakerVisibilityKey = visibilityKey
+                lastSpeakerMaterialKey = materialKey
+            }
+
+            if lastFogKey != fogKey {
+                updateFog(configuration: configuration)
+                lastFogKey = fogKey
+            }
+
+            view?.needsDisplay = true
+        }
+
+        private func currentTimeMS() -> Double {
+            Date.timeIntervalSinceReferenceDate * 1000
         }
 
         private func configureCamera() {
@@ -1329,6 +1630,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func buildShell() {
+            shellBuildCount += 1
             shellNode.childNodes.forEach { $0.removeFromParentNode() }
             edgeNodes.removeAll()
             nodeMarkers.removeAll()
@@ -1352,12 +1654,14 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func rebuildSpeakers(shape: OrbitalViewportSpeakerShape, speakerSize: Double) {
+            speakerRebuildCount += 1
             speakerRoot.childNodes.forEach { $0.removeFromParentNode() }
             labelRoot.childNodes.forEach { $0.removeFromParentNode() }
             speakerNodes.removeAll()
             labelNodes.removeAll()
-            lastShape = shape
-            lastSpeakerSize = speakerSize
+            lastSpeakerGeometryKey = OrbitalViewportSpeakerGeometryUpdateKey(speakerShape: shape, speakerSize: speakerSize)
+            lastSpeakerVisibilityKey = nil
+            lastSpeakerMaterialKey = nil
 
             for speaker in OrbitalViewportSpeaker.referenceSpeakers {
                 let node = makeSpeakerNode(speaker: speaker, shape: shape, speakerSize: speakerSize)
@@ -1455,7 +1759,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private func updateSpeakers(
             configuration: OrbitalViewportRenderConfiguration,
-            snapshot: OrbitalViewportSnapshot
+            snapshot: OrbitalViewportSnapshot,
+            updateVisibility: Bool,
+            updateMaterial: Bool
         ) {
             for speaker in snapshot.speakers {
                 guard let node = speakerNodes[speaker.channel] else {
@@ -1463,22 +1769,29 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 }
                 let selected = configuration.selectedChannel == speaker.channel
                 let visible = configuration.isVisibleDepth(speaker.depth)
-                node.isHidden = !visible
-                let alpha = speaker.depth < configuration.frontClipPlane ? 0.34 : 0.94
-                let color = configuration.theme.colorForPeak(speaker.peak)
-                setMaterial(
-                    node.geometry?.firstMaterial,
-                    color: color,
-                    alpha: selected ? 1 : alpha,
-                    emission: color.opacity(0.18 + speaker.peak * 0.52)
-                )
 
-                if configuration.speakerShape == .sphere {
-                    node.position = (OVVector3(speaker.source) * 1.02).scn
+                if updateVisibility {
+                    node.isHidden = !visible
                 }
 
-                if let label = labelNodes[speaker.channel] {
+                if updateMaterial {
+                    let alpha = speaker.depth < configuration.frontClipPlane ? 0.34 : 0.94
+                    let color = configuration.theme.colorForPeak(speaker.peak)
+                    setMaterial(
+                        node.geometry?.firstMaterial,
+                        color: color,
+                        alpha: selected ? 1 : alpha,
+                        emission: color.opacity(0.18 + speaker.peak * 0.52)
+                    )
+                }
+
+                guard let label = labelNodes[speaker.channel] else {
+                    continue
+                }
+                if updateVisibility {
                     label.isHidden = !configuration.showSpeakerNumbers || (!visible && !selected)
+                }
+                if updateMaterial {
                     let labelColor = selected ? configuration.theme.selectedLabel : configuration.theme.text
                     setMaterial(
                         label.geometry?.firstMaterial,

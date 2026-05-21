@@ -582,6 +582,82 @@ Protected path touch:
 Sources/OrbitalViewSwiftUI/ and Tests/OrbitalViewSwiftUITests/ allowed by this slice
 ```
 
+### Slice 014: Native Orbisonic Control Skin And Camera Fog
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Tighten the standalone SwiftUI/SceneKit review app around Orbisonic design-language controls, fixed rails, camera-orbit behavior, SceneKit fog, drag/zoom, speaker labels, and PNG export.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 013
+```
+
+Review required:
+
+```text
+protected-path and visual/interaction review useful before downstream host integration
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewSwiftUI/ and Tests/OrbitalViewSwiftUITests/ allowed by this slice
+```
+
+### Slice 015: Snappier Native Viewer
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Make the approved standalone SwiftUI/SceneKit review app more responsive by removing the root SwiftUI animation clock, scoping the 10 fps SwiftUI inspector refresh to the inspector subview, moving fake meter/spin updates into the SceneKit coordinator with a 30 fps active-motion cap and 10 fps meter-only idle cadence, cache-keying SceneKit update work, and release-building the local review app bundle by default.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 014
+```
+
+Review required:
+
+```text
+performance and protected-path review useful before larger native/host integration work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewSwiftUI/ and Tests/OrbitalViewSwiftUITests/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -592,8 +668,8 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 014 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; Wavefield source-object frames/meters/settings flow through core, renderer, and SwiftUI; and the standalone native app now launches an Orbisonic-design-language SwiftUI/SceneKit 3D review screen with Fey 30 fake meter stream, camera orbit, native controls, and SceneKit camera-space fog. The browser viewport mockup is only a loose behavior/control-inventory reference. The production renderer backend remains accepted as MetalKit / MTKView.
+Slice 015 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; Wavefield source-object frames/meters/settings flow through core, renderer, and SwiftUI; and the standalone native app now launches an Orbisonic-design-language SwiftUI/SceneKit 3D review screen with Fey 30 fake meter stream, camera orbit, native controls, SceneKit camera-space fog, no root SwiftUI animation timeline, inspector-only 10 fps refresh, 30 fps SceneKit active-motion cap, 10 fps meter-only idle cadence, draw-on-demand SceneKit, cache-keyed SceneKit update work, and a release-built local app bundle by default. The browser viewport mockup is only a loose behavior/control-inventory reference. The production renderer backend remains accepted as MetalKit / MTKView.
 
 ## Next Action
 
-Open a new bounded task for native visual tightening against the Orbisonic design language, production live object smoothing/interpolation, production checker facet animation/materials, pixel-probe renderer tests, or downstream Wavefield/Orbisonic host integration.
+Open a new bounded task for production live object smoothing/interpolation, production checker facet animation/materials, pixel-probe renderer tests, lower-level native CPU profiling, or downstream Wavefield/Orbisonic host integration.

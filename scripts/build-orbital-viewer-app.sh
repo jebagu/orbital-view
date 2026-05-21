@@ -5,6 +5,7 @@ PROJECT_DIR="${0:A:h:h}"
 APP_NAME="Orbital View VU Kit"
 APP_BUNDLE="$PROJECT_DIR/$APP_NAME.app"
 EXECUTABLE_NAME="OrbitalViewViewer"
+BUILD_CONFIGURATION="${BUILD_CONFIGURATION:-release}"
 
 cd "$PROJECT_DIR"
 
@@ -15,10 +16,10 @@ export SWIFTPM_CACHE_DIR="$PROJECT_DIR/.build/swiftpm-cache"
 mkdir -p "$CLANG_MODULE_CACHE_PATH"
 mkdir -p "$SWIFTPM_CACHE_DIR"
 
-echo "Building $APP_NAME..."
-swift build --disable-sandbox --product "$EXECUTABLE_NAME"
+echo "Building $APP_NAME ($BUILD_CONFIGURATION)..."
+swift build --disable-sandbox --configuration "$BUILD_CONFIGURATION" --product "$EXECUTABLE_NAME"
 
-BIN_DIR="$(swift build --disable-sandbox --show-bin-path)"
+BIN_DIR="$(swift build --disable-sandbox --configuration "$BUILD_CONFIGURATION" --show-bin-path)"
 BINARY_PATH="$BIN_DIR/$EXECUTABLE_NAME"
 
 if [[ ! -x "$BINARY_PATH" ]]; then

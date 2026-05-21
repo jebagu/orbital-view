@@ -31,6 +31,15 @@ Tests/OrbitalViewSwiftUITests/
 
 for the standalone native SwiftUI/SceneKit control-skin, camera-orbit, SceneKit fog, drag/zoom, and Desktop PNG export cleanup. That screen remains a package-local review surface and does not change downstream audio, routing, production renderer, or host-app contracts.
 
+Slice 015 explicitly allowed:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+for the standalone native SwiftUI/SceneKit viewer responsiveness refactor: removing the root SwiftUI animation timeline, adding capped SceneKit and inspector cadences, and cache-keying SceneKit updates. That screen remains a package-local review surface and does not change browser mockups, downstream audio/routing, production renderer, or host-app contracts.
+
 ## Protected Path: Downstream Audio And Routing Integrations
 
 ### Applies When

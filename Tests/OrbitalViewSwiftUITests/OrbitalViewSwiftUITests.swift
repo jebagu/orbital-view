@@ -17,10 +17,25 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.leftRailWidth, 240)
         XCTAssertEqual(OrbitalViewportMockup.inspectorWidth, 300)
         XCTAssertEqual(OrbitalViewportMockup.footerHeight, 46)
+        XCTAssertFalse(OrbitalViewportMockup.usesRootAnimationTimeline)
+        XCTAssertEqual(OrbitalViewportMockup.viewportAnimationFramesPerSecond, 30)
+        XCTAssertEqual(OrbitalViewportMockup.meterOnlyViewportFramesPerSecond, 10)
+        XCTAssertLessThanOrEqual(
+            OrbitalViewportMockup.meterOnlyViewportFramesPerSecond,
+            OrbitalViewportMockup.viewportAnimationFramesPerSecond
+        )
+        XCTAssertEqual(OrbitalViewportMockup.inspectorRefreshFramesPerSecond, 10)
         XCTAssertEqual(OrbitalViewportMockup.speakerCount, 30)
         XCTAssertEqual(OrbitalViewportMockup.feyGeodesicNodeCount, 92)
         XCTAssertEqual(OrbitalViewportMockup.feyGeodesicEdgeCount, 270)
     }
+
+    #if os(macOS)
+    func testOrbitalViewportSceneKitDefaultsDrawOnDemandAtThirtyFPS() {
+        XCTAssertFalse(OrbitalViewport3DSceneView.rendersContinuously)
+        XCTAssertEqual(OrbitalViewport3DSceneView.sceneFramesPerSecond, 30)
+    }
+    #endif
 
     func testOrbitalViewportMockupKeepsNativeControlOptions() {
         XCTAssertEqual(OrbitalViewportCameraView.allCases.map(\.title), ["Plan", "Elevation", "Isometric"])
@@ -52,6 +67,89 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(spun.yaw, isometric.yaw - 0.075, accuracy: 0.000_001)
         XCTAssertEqual(spun.pitch, isometric.pitch, accuracy: 0.000_001)
     }
+
+    func testOrbitalViewportFrameConfigurationMovesSpinWithoutRootTimeline() {
+        let configuration = makeRenderConfiguration(
+            timeMS: 1_000,
+            yaw: 0.4,
+            spin: true,
+            spinStartYaw: 0.4,
+            spinStartTimeMS: 1_000
+        )
+        let frame = configuration.frameConfiguration(timeMS: 2_000)
+
+        XCTAssertEqual(frame.timeMS, 2_000)
+        XCTAssertEqual(frame.yaw, 0.4 - OrbitalViewportOrbitState.spinRadiansPerMS * 1_000, accuracy: 0.000_001)
+        XCTAssertEqual(frame.pitch, configuration.pitch)
+    }
+
+    func testOrbitalViewportUpdateKeysKeepMeterTicksOutOfStaticGeometry() {
+        let base = makeRenderConfiguration(timeMS: 1_000)
+        let meterOnly = base.frameConfiguration(timeMS: 1_200)
+
+        XCTAssertEqual(OrbitalViewportShellUpdateKey(configuration: base), OrbitalViewportShellUpdateKey(configuration: meterOnly))
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: base), OrbitalViewportSpeakerGeometryUpdateKey(configuration: meterOnly))
+        XCTAssertEqual(OrbitalViewportSpeakerVisibilityUpdateKey(configuration: base), OrbitalViewportSpeakerVisibilityUpdateKey(configuration: meterOnly))
+        XCTAssertNotEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: base), OrbitalViewportSpeakerMaterialUpdateKey(configuration: meterOnly))
+    }
+
+    func testOrbitalViewportGeometryKeyChangesOnlyForShapeOrSpeakerSize() {
+        let base = makeRenderConfiguration(timeMS: 1_000, speakerShape: .prism, speakerSize: 1.0)
+        let meterOnly = makeRenderConfiguration(timeMS: 1_200, speakerShape: .prism, speakerSize: 1.0)
+        let shapeChange = makeRenderConfiguration(timeMS: 1_000, speakerShape: .sphere, speakerSize: 1.0)
+        let sizeChange = makeRenderConfiguration(timeMS: 1_000, speakerShape: .prism, speakerSize: 1.2)
+
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: base), OrbitalViewportSpeakerGeometryUpdateKey(configuration: meterOnly))
+        XCTAssertNotEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: base), OrbitalViewportSpeakerGeometryUpdateKey(configuration: shapeChange))
+        XCTAssertNotEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: base), OrbitalViewportSpeakerGeometryUpdateKey(configuration: sizeChange))
+    }
+
+    #if os(macOS)
+    func testOrbitalViewportCoordinatorRebuildsSpeakersOnlyForShapeOrSize() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let initialShellBuilds = coordinator.shellBuildCount
+        let initialSpeakerRebuilds = coordinator.speakerRebuildCount
+        let defaultSize = OrbitalViewportMath.speakerSize(fromSlider: 50)
+        let base = makeRenderConfiguration(timeMS: 1_000, speakerShape: .prism, speakerSize: defaultSize)
+
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base),
+            exportToken: 0,
+            onExportFinished: { _ in }
+        )
+        XCTAssertEqual(coordinator.shellBuildCount, initialShellBuilds)
+        XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds)
+
+        let meterOnly = base.frameConfiguration(timeMS: 1_200)
+        coordinator.update(
+            configuration: meterOnly,
+            snapshot: OrbitalViewportSnapshot(configuration: meterOnly),
+            exportToken: 0,
+            onExportFinished: { _ in }
+        )
+        XCTAssertEqual(coordinator.shellBuildCount, initialShellBuilds)
+        XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds)
+
+        let shapeChange = makeRenderConfiguration(timeMS: 1_200, speakerShape: .sphere, speakerSize: defaultSize)
+        coordinator.update(
+            configuration: shapeChange,
+            snapshot: OrbitalViewportSnapshot(configuration: shapeChange),
+            exportToken: 0,
+            onExportFinished: { _ in }
+        )
+        XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds + 1)
+
+        let sizeChange = makeRenderConfiguration(timeMS: 1_200, speakerShape: .sphere, speakerSize: defaultSize * 1.1)
+        coordinator.update(
+            configuration: sizeChange,
+            snapshot: OrbitalViewportSnapshot(configuration: sizeChange),
+            exportToken: 0,
+            onExportFinished: { _ in }
+        )
+        XCTAssertEqual(coordinator.speakerRebuildCount, initialSpeakerRebuilds + 2)
+    }
+    #endif
 
     func testOrbitalViewportSpinMovesEveryPresetHorizontallyInScreenSpace() {
         for view in OrbitalViewportCameraView.allCases {
@@ -486,6 +584,44 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             id: "swiftui-test",
             shell: .parametric(try OrbitalViewParametricShell(kind: .geodesic, radiusM: 1)),
             speakers: [speaker]
+        )
+    }
+
+    private func makeRenderConfiguration(
+        size: CGSize = CGSize(width: 972, height: 804),
+        timeMS: Double = 1_200,
+        yaw: Double = 0,
+        pitch: Double = 0,
+        cameraView: OrbitalViewportCameraView = .isometric,
+        zoom: Double = 1,
+        renderStyle: OrbitalViewportRenderStyle = .purple,
+        speakerShape: OrbitalViewportSpeakerShape = .prism,
+        speakerSize: Double = 1.95,
+        fogDensity: Double = 30,
+        showSpeakerNumbers: Bool = false,
+        showHiddenLines: Bool = false,
+        selectedChannel: Int? = nil,
+        spin: Bool = false,
+        spinStartYaw: Double = 0,
+        spinStartTimeMS: Double = 0
+    ) -> OrbitalViewportRenderConfiguration {
+        OrbitalViewportRenderConfiguration(
+            size: size,
+            timeMS: timeMS,
+            yaw: yaw,
+            pitch: pitch,
+            cameraView: cameraView,
+            zoom: zoom,
+            renderStyle: renderStyle,
+            speakerShape: speakerShape,
+            speakerSize: speakerSize,
+            fogDensity: fogDensity,
+            showSpeakerNumbers: showSpeakerNumbers,
+            showHiddenLines: showHiddenLines,
+            selectedChannel: selectedChannel,
+            spin: spin,
+            spinStartYaw: spinStartYaw,
+            spinStartTimeMS: spinStartTimeMS
         )
     }
 }
