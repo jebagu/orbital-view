@@ -52,7 +52,7 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 - Renderer static cache plan and invariant tests for static speaker geometry keys, channel-to-instance mapping, cube/prism shape invalidation, and retained speaker buffer reuse.
 - Metal cube/prism center-bloom prototype that maps RMS to center fill/body glow, peak to halo/ring intensity, clip to hot flash, and Daft Punk Bow to retained ramp uniforms without resizing speaker geometry.
 - Host source-object frames, object meters keyed by `objectId`, capped trails/glow-trail settings, and `-5...+5` render/effect bounds.
-- `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray, optional preset store actions, speaker height control, and diagnostics display.
+- `OrbitalViewSwiftUI` wrapper with an opt-in collapsed VU settings tray, optional preset store actions, speaker height control, diagnostics display, and a dedicated graphical performance versus CPU load settings section.
 - Standalone `OrbitalViewViewer` SwiftPM executable that opens `Orbital View VU Kit.app`, a native SwiftUI/SceneKit 3D review surface with Orbisonic-design-language controls, inspector, footer, Fey 30 shell/speakers, fake meter stream, and local launcher.
 - Runtime-safe Wavefield meter adapter plus a guarded Wavefield app Orbital View tab that joins cached Fey speaker geometry to `PlayerSnapshot.meterSummary.multichannelLevels` by physical channel while preserving the existing Spherical VU tab.
 - Runtime-safe Orbisonic host adapter skeleton that defines `Orbisonic renderer/output monitor -> 30 channel VU records -> SpeakerMeterFrame -> OrbitalView` without importing the Orbisonic app.

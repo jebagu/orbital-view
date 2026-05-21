@@ -696,6 +696,44 @@ Protected path touch:
 Sources/OrbitalViewSwiftUI/ and Tests/OrbitalViewSwiftUITests/ allowed by this slice
 ```
 
+### Slice 017: Adaptive 30/60 FPS Native Viewer
+
+Status:
+
+```text
+complete
+```
+
+Goal:
+
+```text
+Add a 30/60 fps active-motion toggle to the approved standalone SwiftUI/SceneKit review app while keeping meter-only idle drawing and inspector refresh capped at 10 fps.
+```
+
+Agent:
+
+```text
+Codex
+```
+
+Depends on:
+
+```text
+Slice 016
+```
+
+Review required:
+
+```text
+performance and protected-path review useful before larger native/host integration work
+```
+
+Protected path touch:
+
+```text
+Sources/OrbitalViewSwiftUI/ and Tests/OrbitalViewSwiftUITests/ allowed by this slice
+```
+
 ## Bugs Found During Package
 
 Link:
@@ -706,7 +744,7 @@ docs/bugs.md
 
 ## Current Status
 
-Slice 016 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; Wavefield source-object frames/meters/settings flow through core, renderer, and SwiftUI; and the standalone native app now launches an Orbisonic-design-language SwiftUI/SceneKit 3D review screen with Fey 30 fake meter stream, camera orbit, native controls, SceneKit camera-space fog, no root SwiftUI animation timeline, inspector-only 10 fps refresh, 30 fps SceneKit active-motion cap, 10 fps meter-only idle cadence, draw-on-demand SceneKit, cache-keyed SceneKit update work, full-window PNG export, larger speaker labels, 1.5x thicker shell struts, rear-depth speaker material attenuation, and a release-built local app bundle by default. The browser viewport mockup is only a loose behavior/control-inventory reference. The production renderer backend remains accepted as MetalKit / MTKView.
+Slice 017 is complete. `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewOrbisonic`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer` exist with tests; the renderer test harness plan exists; the first offscreen Metal smoke test passes; renderer invariant tests prove static draw-input stability; checker pulse/ring/diagonal wave VU visual settings flow through renderer and optional SwiftUI tray state; Wavefield source-object frames/meters/settings flow through core, renderer, and SwiftUI; and the standalone native app now launches an Orbisonic-design-language SwiftUI/SceneKit 3D review screen with Fey 30 fake meter stream, camera orbit, native controls, SceneKit camera-space fog, no root SwiftUI animation timeline, inspector-only 10 fps refresh, selectable 30/60 fps SceneKit active-motion cap defaulting to 60 fps, 10 fps meter-only idle cadence, draw-on-demand SceneKit, cache-keyed SceneKit update work, full-window PNG export, larger speaker labels, 1.5x thicker shell struts, rear-depth speaker material attenuation, and a release-built local app bundle by default. The browser viewport mockup is only a loose behavior/control-inventory reference. The production renderer backend remains accepted as MetalKit / MTKView.
 
 ## Next Action
 

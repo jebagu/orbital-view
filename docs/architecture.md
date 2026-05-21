@@ -96,11 +96,11 @@ It must not:
 
 ## UI Architecture
 
-Broad production viewport UI work is deferred, but the optional VU settings tray in `OrbitalViewSwiftUI` now includes Basic, Advanced, Presets, and Diagnostics sections. The standalone `OrbitalViewportMockup` review screen uses Orbisonic design language native controls and keeps the browser mockup only as a loose behavior/control-inventory reference.
+Broad production viewport UI work is deferred, but the optional VU settings tray in `OrbitalViewSwiftUI` now includes Basic, Advanced, Presets, and Diagnostics sections. A future production settings pass should also include a dedicated Graphical Performance versus CPU Load section for controls such as active viewport FPS, draw cadence, trail/glow cost, and other quality/performance tradeoffs. The standalone `OrbitalViewportMockup` review screen uses Orbisonic design language native controls and keeps the browser mockup only as a loose behavior/control-inventory reference.
 
 Future UI should provide:
 
-- collapsible display settings for meter visual gain, style, color scheme, cube height, bloom controls, checker controls, preset actions, and diagnostics
+- collapsible display settings for meter visual gain, style, color scheme, cube height, bloom controls, checker controls, preset actions, graphical performance versus CPU load, and diagnostics
 - center-locked orbit camera
 - plan, front, side, and isometric presets
 - perspective/orthographic toggle

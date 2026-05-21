@@ -133,7 +133,7 @@ Current wrapper skeleton tests cover:
 - native viewport control enums preserve the needed camera, color, and speaker shape options
 - native viewport control metrics preserve Orbisonic-style 8px panel radius, 7px control radius, 34px control height, right-aligned switch columns, and single-track value-hidden slider rows
 - native viewport orbit state preserves camera-orbit distance, swapped vertical drag-start math, anchored spin delta math, horizontal screen-space spin across presets, and swapped mouse-wheel zoom direction
-- native viewport performance tests prove the root SwiftUI animation timeline is disabled, SceneKit uses draw-on-demand with a 30 fps active-motion cap and a 10 fps meter-only idle cadence, and the inspector/meter-list cadence is separately capped at 10 fps inside the inspector subtree
+- native viewport performance tests prove the root SwiftUI animation timeline is disabled, SceneKit uses draw-on-demand with a 30/60 fps active-motion toggle defaulting to 60 fps, a 10 fps meter-only idle cadence, and an inspector/meter-list cadence separately capped at 10 fps inside the inspector subtree
 - native viewport cache-key tests prove meter-only ticks do not rebuild shell or speaker geometry, and the SceneKit coordinator only rebuilds speaker nodes for shape or size changes
 - native viewport fog tests prove density `0` is a hard disabled state and hidden-line visibility is not gated by fog
 - native viewport PNG export tests prove Desktop destination, `.png` naming, and application-window export scope rather than transparent viewport-only export

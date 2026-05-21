@@ -16,7 +16,7 @@ public struct OrbitalViewportMockup: View {
     public static let footerHeight: CGFloat = 46
     public static let controlSkinSource = "orbisonic-design-language"
     static let usesRootAnimationTimeline = false
-    static let viewportAnimationFramesPerSecond = 30
+    static let viewportAnimationFramesPerSecond = OrbitalViewportFrameRate.sixty.framesPerSecond
     static let meterOnlyViewportFramesPerSecond = 10
     static let inspectorRefreshFramesPerSecond = 10
     public static let speakerCount = OrbitalViewportSpeaker.referenceSpeakers.count
@@ -31,6 +31,7 @@ public struct OrbitalViewportMockup: View {
     @State private var speakerShape: OrbitalViewportSpeakerShape = .prism
     @State private var speakerSizeSlider = 50.0
     @State private var fogDensitySlider = 50.0
+    @State private var viewportFrameRate: OrbitalViewportFrameRate = .sixty
     @State private var spin = false
     @State private var showSpeakerNumbers = false
     @State private var showHiddenLines = false
@@ -84,6 +85,7 @@ public struct OrbitalViewportMockup: View {
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
+            activeViewportFramesPerSecond: viewportFrameRate.framesPerSecond,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
             selectedChannel: selectedChannel,
@@ -241,6 +243,18 @@ public struct OrbitalViewportMockup: View {
                 value: $fogDensitySlider,
                 accessibilityValue: fogDensity.formatted(.number.precision(.fractionLength(0)))
             )
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Motion FPS")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(theme.text)
+                controlButtonGroup(
+                    OrbitalViewportFrameRate.allCases,
+                    selection: viewportFrameRate,
+                    title: \.title
+                ) { frameRate in
+                    viewportFrameRate = frameRate
+                }
+            }
             toggleRow("Speaker Numbers", isOn: $showSpeakerNumbers)
             toggleRow("Hidden Lines", isOn: $showHiddenLines)
         }
@@ -336,6 +350,7 @@ public struct OrbitalViewportMockup: View {
         snapshot: OrbitalViewportSnapshot
     ) -> some View {
         OrbitalViewport3DSceneView(
+            activeFramesPerSecond: renderConfiguration.activeViewportFramesPerSecond,
             configuration: renderConfiguration,
             snapshot: snapshot,
             onDragStarted: {
@@ -1078,6 +1093,23 @@ public enum OrbitalViewportSpeakerShape: String, CaseIterable, Identifiable, Equ
     }
 }
 
+enum OrbitalViewportFrameRate: Int, CaseIterable, Identifiable, Equatable {
+    case thirty = 30
+    case sixty = 60
+
+    var id: Int { rawValue }
+
+    var framesPerSecond: Int { rawValue }
+
+    var title: String {
+        "\(rawValue) FPS"
+    }
+
+    static func normalized(_ framesPerSecond: Int) -> Int {
+        allCases.first(where: { $0.framesPerSecond == framesPerSecond })?.framesPerSecond ?? sixty.framesPerSecond
+    }
+}
+
 public struct OrbitalViewportSpeaker: Identifiable, Equatable, Sendable {
     public let channel: Int
     public let label: String
@@ -1210,6 +1242,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let speakerShape: OrbitalViewportSpeakerShape
     let speakerSize: Double
     let fogDensity: Double
+    let activeViewportFramesPerSecond: Int
     let showSpeakerNumbers: Bool
     let showHiddenLines: Bool
     let selectedChannel: Int?
@@ -1228,6 +1261,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         speakerShape: OrbitalViewportSpeakerShape,
         speakerSize: Double,
         fogDensity: Double,
+        activeViewportFramesPerSecond: Int = OrbitalViewportMockup.viewportAnimationFramesPerSecond,
         showSpeakerNumbers: Bool,
         showHiddenLines: Bool,
         selectedChannel: Int?,
@@ -1245,6 +1279,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.speakerShape = speakerShape
         self.speakerSize = speakerSize
         self.fogDensity = fogDensity
+        self.activeViewportFramesPerSecond = OrbitalViewportFrameRate.normalized(activeViewportFramesPerSecond)
         self.showSpeakerNumbers = showSpeakerNumbers
         self.showHiddenLines = showHiddenLines
         self.selectedChannel = selectedChannel
@@ -1380,6 +1415,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
+            activeViewportFramesPerSecond: activeViewportFramesPerSecond,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
             selectedChannel: selectedChannel,
@@ -1454,11 +1490,13 @@ struct OrbitalViewportSpeakerVisibilityUpdateKey: Equatable {
 
 struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
     let meterFrame: Int
+    let activeFramesPerSecond: Int
     let renderStyle: OrbitalViewportRenderStyle
     let selectedChannel: Int?
 
     init(configuration: OrbitalViewportRenderConfiguration) {
-        self.meterFrame = Int(configuration.timeMS / (1000 / Double(OrbitalViewportMockup.viewportAnimationFramesPerSecond)))
+        self.activeFramesPerSecond = configuration.activeViewportFramesPerSecond
+        self.meterFrame = Int(configuration.timeMS / (1000 / Double(configuration.activeViewportFramesPerSecond)))
         self.renderStyle = configuration.renderStyle
         self.selectedChannel = configuration.selectedChannel
     }
@@ -1559,6 +1597,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
     static let sceneFramesPerSecond = OrbitalViewportMockup.viewportAnimationFramesPerSecond
     static let rendersContinuously = false
 
+    let activeFramesPerSecond: Int
     let configuration: OrbitalViewportRenderConfiguration
     let snapshot: OrbitalViewportSnapshot
     let onDragStarted: () -> Void
@@ -1578,7 +1617,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         view.backgroundColor = .clear
         view.rendersContinuously = Self.rendersContinuously
         view.isPlaying = false
-        view.preferredFramesPerSecond = Self.sceneFramesPerSecond
+        view.preferredFramesPerSecond = activeFramesPerSecond
         view.scene = context.coordinator.scene
         view.pointOfView = context.coordinator.cameraNode
         view.onDragStarted = onDragStarted
@@ -1586,6 +1625,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         view.onDragEnded = onDragEnded
         view.onZoom = onZoom
         view.onSelect = onSelect
+        context.coordinator.setActiveFramesPerSecond(activeFramesPerSecond)
         context.coordinator.attach(to: view)
         context.coordinator.update(
             configuration: configuration,
@@ -1600,6 +1640,10 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         nsView.onDragEnded = onDragEnded
         nsView.onZoom = onZoom
         nsView.onSelect = onSelect
+        if nsView.preferredFramesPerSecond != activeFramesPerSecond {
+            nsView.preferredFramesPerSecond = activeFramesPerSecond
+        }
+        context.coordinator.setActiveFramesPerSecond(activeFramesPerSecond)
         context.coordinator.attach(to: nsView)
         context.coordinator.update(
             configuration: configuration,
@@ -1629,6 +1673,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastSpeakerMaterialKey: OrbitalViewportSpeakerMaterialUpdateKey?
         private var lastFogKey: OrbitalViewportFogUpdateKey?
         private var lastRenderedAnimationTimeMS: Double?
+        private var activeFramesPerSecond = OrbitalViewport3DSceneView.sceneFramesPerSecond
 
         private(set) var shellBuildCount = 0
         private(set) var speakerRebuildCount = 0
@@ -1653,6 +1698,17 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             startAnimationTimerIfNeeded()
         }
 
+        func setActiveFramesPerSecond(_ framesPerSecond: Int) {
+            let normalizedFramesPerSecond = OrbitalViewportFrameRate.normalized(framesPerSecond)
+            guard activeFramesPerSecond != normalizedFramesPerSecond else {
+                return
+            }
+
+            activeFramesPerSecond = normalizedFramesPerSecond
+            lastRenderedAnimationTimeMS = nil
+            restartAnimationTimer()
+        }
+
         func update(
             configuration: OrbitalViewportRenderConfiguration,
             snapshot: OrbitalViewportSnapshot
@@ -1673,12 +1729,20 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 return
             }
 
-            let interval = 1 / Double(OrbitalViewport3DSceneView.sceneFramesPerSecond)
+            let interval = 1 / Double(activeFramesPerSecond)
             let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
                 self?.renderAnimationFrame()
             }
             RunLoop.main.add(timer, forMode: .common)
             animationTimer = timer
+        }
+
+        private func restartAnimationTimer() {
+            animationTimer?.invalidate()
+            animationTimer = nil
+            if view != nil {
+                startAnimationTimerIfNeeded()
+            }
         }
 
         private func renderAnimationFrame() {
@@ -1687,7 +1751,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             }
             let frameTimeMS = currentTimeMS()
             let framesPerSecond = latestConfiguration.spin
-                ? OrbitalViewport3DSceneView.sceneFramesPerSecond
+                ? activeFramesPerSecond
                 : OrbitalViewportMockup.meterOnlyViewportFramesPerSecond
             let minimumFrameIntervalMS = 1000 / Double(framesPerSecond)
             if let lastRenderedAnimationTimeMS,

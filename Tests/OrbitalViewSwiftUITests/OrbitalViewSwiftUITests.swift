@@ -18,7 +18,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.inspectorWidth, 300)
         XCTAssertEqual(OrbitalViewportMockup.footerHeight, 46)
         XCTAssertFalse(OrbitalViewportMockup.usesRootAnimationTimeline)
-        XCTAssertEqual(OrbitalViewportMockup.viewportAnimationFramesPerSecond, 30)
+        XCTAssertEqual(OrbitalViewportMockup.viewportAnimationFramesPerSecond, 60)
+        XCTAssertEqual(OrbitalViewportFrameRate.allCases.map(\.framesPerSecond), [30, 60])
+        XCTAssertEqual(OrbitalViewportFrameRate.allCases.map(\.title), ["30 FPS", "60 FPS"])
         XCTAssertEqual(OrbitalViewportMockup.meterOnlyViewportFramesPerSecond, 10)
         XCTAssertLessThanOrEqual(
             OrbitalViewportMockup.meterOnlyViewportFramesPerSecond,
@@ -31,9 +33,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     }
 
     #if os(macOS)
-    func testOrbitalViewportSceneKitDefaultsDrawOnDemandAtThirtyFPS() {
+    func testOrbitalViewportSceneKitDefaultsDrawOnDemandAtSixtyFPS() {
         XCTAssertFalse(OrbitalViewport3DSceneView.rendersContinuously)
-        XCTAssertEqual(OrbitalViewport3DSceneView.sceneFramesPerSecond, 30)
+        XCTAssertEqual(OrbitalViewport3DSceneView.sceneFramesPerSecond, 60)
     }
     #endif
 
@@ -101,6 +103,17 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: base), OrbitalViewportSpeakerGeometryUpdateKey(configuration: meterOnly))
         XCTAssertEqual(OrbitalViewportSpeakerVisibilityUpdateKey(configuration: base), OrbitalViewportSpeakerVisibilityUpdateKey(configuration: meterOnly))
         XCTAssertNotEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: base), OrbitalViewportSpeakerMaterialUpdateKey(configuration: meterOnly))
+    }
+
+    func testOrbitalViewportFrameRateToggleChangesMaterialCadenceOnly() {
+        let thirtyFPS = makeRenderConfiguration(timeMS: 1_250, activeViewportFramesPerSecond: 30)
+        let sixtyFPS = makeRenderConfiguration(timeMS: 1_250, activeViewportFramesPerSecond: 60)
+
+        XCTAssertEqual(thirtyFPS.activeViewportFramesPerSecond, 30)
+        XCTAssertEqual(sixtyFPS.activeViewportFramesPerSecond, 60)
+        XCTAssertEqual(OrbitalViewportShellUpdateKey(configuration: thirtyFPS), OrbitalViewportShellUpdateKey(configuration: sixtyFPS))
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: thirtyFPS), OrbitalViewportSpeakerGeometryUpdateKey(configuration: sixtyFPS))
+        XCTAssertNotEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: thirtyFPS), OrbitalViewportSpeakerMaterialUpdateKey(configuration: sixtyFPS))
     }
 
     func testOrbitalViewportGeometryKeyChangesOnlyForShapeOrSpeakerSize() {
@@ -658,6 +671,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         speakerShape: OrbitalViewportSpeakerShape = .prism,
         speakerSize: Double = 1.95,
         fogDensity: Double = 30,
+        activeViewportFramesPerSecond: Int = OrbitalViewportMockup.viewportAnimationFramesPerSecond,
         showSpeakerNumbers: Bool = false,
         showHiddenLines: Bool = false,
         selectedChannel: Int? = nil,
@@ -676,6 +690,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             speakerShape: speakerShape,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
+            activeViewportFramesPerSecond: activeViewportFramesPerSecond,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
             selectedChannel: selectedChannel,

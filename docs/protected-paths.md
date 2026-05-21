@@ -49,6 +49,15 @@ Tests/OrbitalViewSwiftUITests/
 
 for the standalone native SwiftUI/SceneKit export and depth polish follow-up: full-window PNG export, speaker label sizing, shell strut sizing, and rear-depth fog/material balance. That screen remains a package-local review surface and does not change browser mockups, downstream audio/routing, production renderer, or host-app contracts.
 
+Slice 017 explicitly allowed:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+for the standalone native SwiftUI/SceneKit adaptive smoothness follow-up: adding a 30/60 fps active-motion toggle while keeping meter-only idle drawing and inspector refresh at 10 fps. That screen remains a package-local review surface and does not change browser mockups, downstream audio/routing, production renderer, or host-app contracts.
+
 ## Protected Path: Downstream Audio And Routing Integrations
 
 ### Applies When
