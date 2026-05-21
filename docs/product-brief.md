@@ -40,14 +40,14 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 
 - Pure `OrbitalViewCore` data and validation target.
 - Local `OrbitalViewWavefield` JSON layout and meter-frame adapters.
-- Native `OrbitalViewRender` MetalKit seam with an initial offscreen smoke-tested draw path.
-- Renderer invariant tests for stable static draw inputs under meter and camera updates.
-- Compile-only `OrbitalViewSwiftUI` wrapper skeleton.
+- Native `OrbitalViewRender` MetalKit renderer with an offscreen-tested instanced cube/prism speaker draw path.
+- Renderer invariant tests for stable static draw inputs under meter, cube setting, camera, and object-meter updates.
+- `OrbitalViewSwiftUI` wrapper with opt-in collapsible Cube VU, object overlay, trails, bounds, performance, presets, and diagnostics tuning trays.
 - Disposable browser mockup for toolbar and camera interaction.
 
 ## Nice-To-Have Later
 
-- Full production MetalKit visuals.
+- Shell, label, hit-testing, and full production camera visuals.
 - SwiftUI controls, gestures, toolbar, and inspector UI.
 - DomeLab neutral geometry import.
 - Splat editing mode and renderer-kernel overlays.
@@ -55,7 +55,7 @@ Wavefield needs a real spherical Sonic Sphere monitor view, not a flat VU chart 
 
 ## Out Of Scope For Current Package
 
-- Full production renderer visuals.
+- Shell/label/hit-testing renderer visuals.
 - Downstream app integration.
 - WebView embedding.
 - DomeLab code import.
@@ -69,7 +69,7 @@ The first usable implementation already:
 - Build and test a pure Swift `OrbitalViewCore` package target.
 - Represent a scene with coordinate system, shell geometry, 30 physical speakers, meter levels by channel, and center-locked camera presets.
 - Adapt the existing Fey 30 Wavefield layout into stable `OrbitalViewSpeaker` values without channel reorder.
-- Render a minimal offscreen Metal frame for deterministic renderer smoke coverage.
+- Render deterministic offscreen Metal frames with one cube/prism speaker mesh per physical speaker and display-only cube VU material updates.
 
 ## Constraints
 

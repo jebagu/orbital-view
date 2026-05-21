@@ -40,6 +40,16 @@ SpeakerShape
 SpeakerVisualRole
 SpeakerMeterFrame
 SpeakerMeterLevel
+SpeakerMeterVisualSettings
+SpeakerCubeVUScalars
+SpeakerMeterFrameSanitizer
+OrbitalViewInputDiagnostics
+OrbitalViewObjectFrameSet
+OrbitalViewObjectFrame
+ObjectMeterFrame
+ObjectMeterLevel
+ObjectVisualSettings
+OrbitalViewPerformanceSettings
 OrbitalViewCameraState
 OrbitalViewMode
 OrbitalViewProjection
@@ -60,6 +70,7 @@ Inputs are host-provided scene and meter data:
 - physical speaker list
 - optional virtual objects later
 - meter levels keyed by physical channel
+- optional dynamic object frames and object meter levels keyed by source object ID
 - camera state
 
 ### Outputs
@@ -83,8 +94,12 @@ Core must not output audio, routing changes, playback state mutations, or UI nav
 - Physical speaker channels must be positive.
 - Physical channels should be unique unless a future contract explicitly allows duplicates for non-physical roles.
 - Speaker labels must not be empty after trimming.
-- Shape dimensions must be positive and finite.
+- Shape dimensions must be positive and finite. Sonic Sphere speaker defaults use cube geometry.
+- Cube VU control ranges must stay finite and within the browser-derived contract: input calibration `0.25...2`, level compression `1...4`, display ceiling `0.5...1`, hot response `0.5...3`, hot threshold `0.35...0.98`, hot fill strength `0...1`, palette drive `0.5...4`, idle tint `0...1`, checker contrast `0...0.4`, and face pixels `4...64`.
 - Edge anchor `t` must be in `0...1`.
+- Dynamic object IDs must be `1...128`, object trails must stay within frame/settings caps, and object render bounds must be positive.
+- Default object render/effect bounds are fixed at `-5...+5` on x, y, and z through `OrbitalViewObjectRenderBounds(halfExtent: 5)`.
+- Performance settings must keep active viewport FPS to `30` or `60`, meter-only viewport cadence in `1...30`, inspector refresh cadence in `1...30`, and draw-on-demand enabled by default.
 - Monitor camera presets must target the origin.
 
 ### Side Effects
@@ -169,11 +184,12 @@ OrbitalViewMetalDrawPipeline
 OrbitalViewOffscreenFrame
 OrbitalViewSpeakerDrawInputs
 OrbitalViewSpeakerStaticDrawInput
+OrbitalViewObjectDrawInputs
 ```
 
 ### Status
 
-Initial seam and minimal smoke-test draw path implemented. Full production drawing, shell rendering, materials, hit testing, and SwiftUI controls remain deferred.
+Instanced cube/prism speaker drawing, cube scalar center-bloom materials, retained speaker/object buffers, object overlay drawing, offscreen smoke/pixel-probe tests, and native SwiftUI tuning trays are implemented. Shell rendering, labels, hit testing, and live object smoothing remain deferred.
 
 ### Tests Required
 
@@ -186,6 +202,9 @@ Initial seam and minimal smoke-test draw path implemented. Full production drawi
 - meter-only updates leave static speaker draw inputs unchanged
 - camera-only updates leave static speaker draw inputs unchanged
 - draw inputs preserve physical speaker ID/channel order and stable dimensions
+- cube VU material payloads expose display VU scalar, hot scalar, palette heat, and clip without changing static geometry
+- object frame/meter/settings updates stay separate from speaker static geometry
+- repeated speaker/object renders reuse retained Metal buffer capacity
 
 ## Module: OrbitalViewSwiftUI
 
@@ -201,7 +220,7 @@ Current wrapper skeleton:
 OrbitalView
 ```
 
-`OrbitalView` accepts a scene, optional meter frame, camera binding, selection binding, and event callback.
+`OrbitalView` accepts a scene, optional speaker meter frame, optional object frames/meters/settings, optional performance settings, input diagnostics, camera binding, selection binding, and event callback. A value-based initializer keeps existing host call sites source-compatible. A binding initializer opts into native collapsible tuning trays with bindings to `SpeakerMeterVisualSettings`, `ObjectVisualSettings`, and `OrbitalViewPerformanceSettings`, plus an optional visual preset store.
 
 ### Non-Responsibilities
 
@@ -239,12 +258,14 @@ Splat app targets
 
 ### Status
 
-Compile-only wrapper skeleton implemented. Toolbar controls, gestures, inspector UI, hit testing, and production host integration remain deferred.
+SwiftUI wrapper and optional collapsible tuning trays are implemented. The trays expose speaker VU controls, meter calibration, surface/bloom/checker controls, object overlay controls, trails/glow trails, fixed bounds diagnostics, performance-versus-CPU controls, optional visual preset actions, selected speaker diagnostics, object/trail diagnostics, and input diagnostics. Gestures, hit testing, full inspector UI, and production host integration remain deferred.
 
 ### Tests Required
 
 - wrapper initializes with camera and selection bindings
 - coordinator does not repeat structural updates for identical configuration
+- coordinator forwards cube VU settings without reloading scene state
+- coordinator forwards object frames/meters/settings without reloading scene state
 - coordinator emits camera and selection events
 
 ## Module: Future Downstream Adapters

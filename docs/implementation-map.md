@@ -1,5 +1,7 @@
 # Implementation Map
 
+> Current note: the explicit Cube VU speaker merge task supersedes the earlier deprecation warning for the native Cube VU/object overlay work. The active direction is this package's SwiftUI + MetalKit wrapper with reusable cube/object/performance controls, not a new standalone app copied from Orbital View VU Kit. See `docs/deprecated/native-cube-vu-chat-work.md` for historical context only.
+
 ## Purpose
 
 This file maps project behavior to files and folders so the current system can be understood without reading every document.
@@ -18,7 +20,7 @@ reviewers/                    Human-readable review checklists
 prompts/                      Reusable project prompts
 ```
 
-Swift source directories are now present for `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI`.
+Swift source directories are now present for `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and the `OrbitalViewViewer` executable.
 
 ## Feature Map
 
@@ -110,7 +112,7 @@ Decision record:
 docs/decisions/0002-renderer-backend.md
 ```
 
-The current renderer stores scene, meter, camera, and selection state separately, exposes an `MTKViewDelegate` path, and includes a minimal Metal draw pipeline verified by offscreen smoke testing. Full production visuals, hit testing, and SwiftUI controls are deferred.
+The current renderer stores scene, speaker meters, cube VU settings, dynamic object frames, object meters, object visual settings, camera, and selection state separately. It exposes an `MTKViewDelegate` path and includes an offscreen-tested Metal draw pipeline with one instanced cube/prism mesh per speaker. Speaker meter updates change material/color payloads only; static speaker geometry and physical channel mapping stay stable. Dynamic object overlays render through a separate retained quad path.
 
 ### OrbitalViewSwiftUI Wrapper Skeleton
 
@@ -127,7 +129,40 @@ Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, and coordinator tests. SwiftUI controls, gestures, and inspector UI are deferred.
+The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, coordinator tests, and opt-in collapsible tuning trays. The trays expose Speaker VU, Meter Calibration, Surface + Bloom, Object Overlay, Trails, Bounds, Graphical Performance vs CPU Load, Presets, and Debug + Diagnostics sections. The binding initializer lets hosts tune `SpeakerMeterVisualSettings`, `ObjectVisualSettings`, and `OrbitalViewPerformanceSettings`; value-based initializers remain available for hosts that do not want the tuning surface. Gestures, hit testing, and production inspector UI remain deferred.
+
+### Native OrbitalViewViewer
+
+Purpose:
+
+```text
+Launch the confirmed VU Kit native SceneKit geodesic review surface from this package.
+```
+
+Implementation locations:
+
+```text
+Package.swift
+Sources/OrbitalViewViewer/
+Sources/OrbitalViewViewerSupport/
+Tests/OrbitalViewViewerTests/
+```
+
+The viewer executable now hosts `OrbitalViewportMockup`, the confirmed VU Kit SceneKit geodesic viewport review app. This preserves the original camera/color/speaker/view-detail controls, the Fey 3V geodesic shell, full-window PNG export, and adaptive SceneKit interaction loop. `Song Audio Source` sits at the top of the left rail, while active tuning trays live in the right panel. The speaker section is labeled `Speaker Type` and exposes `Prism`, `Sphere`, and `Cube VU`; Cube VU uses square cube geometry with the shared Cube VU scalar/material path.
+
+The right panel is now a tuning/debug surface instead of a large meter inspector. It contains Speaker VU, Meter Calibration, Surface + Bloom, Graphical Performance vs CPU Load, Presets, and Debug + Diagnostics. The old Scene summary, selected-speaker placeholder, and 30-channel VU list are removed. Object Overlay, Trails, Glow Trails, and Bounds are inactive in this review surface for now, while the reusable object contracts and renderer paths remain available for future Wavefield work.
+
+The SceneKit Cube VU review path uses one retained per-speaker material with a retained 9x9 pixelated face texture cache applied directly to the actual six `SCNBox` cube faces. It uses a Cube-VU-only readable face scale for visibility at small on-sphere speaker sizes, applies RMS-driven center bloom through `SpeakerCubeVUScalars`, uses Daft Punk Bow ramp colors, and applies peak/hot fill without adding separate halo geometry or overlay face planes. Prism and Sphere keep the simpler existing material tint behavior.
+
+The review app also has a local audio file input mode for quick visual testing. `Choose File` loads a local audio file, separate `Play` and `Pause` buttons control transport, and the current file meter is reduced to one mono RMS/peak sample that drives every speaker equally. This intentionally does not change the production contract: downstream hosts should continue to feed real `SpeakerMeterFrame` values keyed by physical channel.
+
+The production `OrbitalView` wrapper and MTKView bridge still exist for downstream hosts. The SceneKit review executable is the approved visual/tuning surface for this iteration; `OrbitalViewViewerSupport` remains as demo-content support for the production wrapper tests and future review paths.
+
+Launch command:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
+```
 
 ### Renderer Test Harness Plan
 
@@ -161,7 +196,53 @@ Sources/OrbitalViewRender/OrbitalViewMetalRenderer.swift
 Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 ```
 
-The current draw path renders fixed-size speaker quads from scene speaker anchors. Meter values affect color and intensity only, preserving the rule that VU behavior must not resize speaker geometry.
+The current draw path renders instanced cube/prism speakers from scene speaker anchors. Meter values affect material/color state only, preserving the rule that VU behavior must not resize or rebuild static speaker geometry.
+
+### Native Cube VU Renderer
+
+Purpose:
+
+```text
+Translate the browser cube VU behavior into native Metal speaker materials without porting browser runtime code.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewMeters.swift
+Sources/OrbitalViewCore/OrbitalViewSpeaker.swift
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Sources/OrbitalViewSwiftUI/OrbitalView.swift
+```
+
+The cube path uses `SpeakerCubeVUScalars`:
+
+```text
+rawRms -> calibratedRms -> displayVuScalar -> cube bloom
+rawRms -> calibratedRms -> hotScalar -> whole-cube hot fill
+meter value -> paletteHeat -> VU ramp color
+```
+
+The production renderer consumes host-provided `SpeakerMeterFrame` values keyed by physical channel. Browser Web Audio, tab capture, HTML controls, and JavaScript runtime behavior remain mockup-only references.
+
+### Dynamic Object Overlay
+
+Purpose:
+
+```text
+Keep source-object visualization and object meter state separate from physical speaker meters.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewObjects.swift
+Sources/OrbitalViewRender/OrbitalViewRenderState.swift
+Sources/OrbitalViewRender/OrbitalViewMetalDrawPipeline.swift
+Sources/OrbitalViewSwiftUI/OrbitalViewMetalView.swift
+```
+
+`OrbitalViewObjectFrameSet` and `ObjectMeterFrame` are keyed by source object ID and render beside speaker VU inputs. They do not collapse into `SpeakerMeterFrame` and do not affect speaker static geometry.
 
 ### Renderer Invariant Tests
 
@@ -193,6 +274,8 @@ Wavefield meter-frame adaptation -> Tests/OrbitalViewWavefieldTests/WavefieldMet
 renderer seam state separation and events -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 offscreen renderer smoke output -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 renderer static draw-input invariants -> Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
+cube VU scalar math and defaults -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+dynamic object frames/meters -> Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift, Tests/OrbitalViewRenderTests/OrbitalViewRenderTests.swift
 SwiftUI wrapper configuration and coordinator behavior -> Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
 renderer test harness plan -> docs/renderer-test-harness.md
 visual mockup inline script syntax -> node parse command in .tasks/004-orbital-viewport-visual-mockup.md
@@ -201,4 +284,4 @@ renderer backend decision -> docs/decisions/0002-renderer-backend.md
 
 ## Last Updated
 
-2026-05-19 Mockup Fey geodesic shell
+2026-05-21 Native Cube VU viewer target

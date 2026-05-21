@@ -3,18 +3,26 @@
 ## Current Phase
 
 ```text
-Mockup Fey geodesic shell update
+Corrected VU Kit SceneKit review app handoff
 ```
 
 ## Current Milestone
 
 ```text
-Static mockup Fey 3V geodesic shell verified
+Confirmed geodesic review app preserved with cube VU/object tuning trays
 ```
 
 ## Summary
 
-Orbital View Kit now has `OrbitalViewCore`, `OrbitalViewWavefield`, an `OrbitalViewRender` MetalKit renderer seam with a minimal offscreen smoke-tested draw path and static draw-input invariant tests, a compile-only `OrbitalViewSwiftUI` wrapper skeleton, a renderer test harness plan, a disposable browser mockup for the orbitable spherical monitor viewport with a DomeLab-style left control panel, an accepted MetalKit / MTKView production renderer backend decision, and an accepted canonical raw-coordinate basis for the Fey 30 sphere fixture. The browser mockup now uses always-axonometric projection with no projection picker, groups controls under Camera, Color, Speaker Shape, and View Detail headings, draws the shell as a Fey 3V class-I icosahedron geodesic derived from the DomeLab project config values, defaults to Purple and Prism, themes the full surface from Purple, Flamingo, Green, and B&W palettes, draws prism speakers as 8-vertex rectangular prisms, uses switch controls for speaker numbers and hidden lines defaulted off, applies fog depth fading consistently to hidden shell lines and hidden speaker faces, and remaps Speaker size and Fog density sliders around the requested visual midpoints. Full production visuals, SwiftUI controls/gestures, and downstream app source integration remain deferred.
+The active review app is the existing `OrbitalViewViewer` executable in this package, now hosting the confirmed VU Kit native SceneKit geodesic viewport surface through `OrbitalViewportMockup`. It is not the rejected bare MTKView demo surface and does not create a second standalone copied app.
+
+The confirmed review app preserves the original left control rail sections and defaults: Camera, Color Scheme, Speaker Type, and View Detail. `Song Audio Source` now sits at the top of the left rail with separate Play and Pause buttons. The right panel is now the tuning/debug panel for speaker VU, meter calibration, surface/bloom, graphical performance versus CPU load, presets, and diagnostics. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
+
+The SceneKit review app can load a local audio file for visual testing. Local file playback uses a simple choose-file plus separate play/pause transport and reduces the file meter to one mono RMS/peak sample applied equally to all speakers. This is a review-app input mode only; production hosts still provide real `SpeakerMeterFrame` values keyed by physical speaker channel.
+
+`Cube VU` speaker type now uses the VU Kit scalar center-bloom contract in the SceneKit surface with a retained 9x9 face-pixel material texture applied to the actual cube faces, Daft Punk Bow ramp color, RMS-driven center bloom, peak/hot fill, and clip flash. Prism and Sphere keep the existing simpler material tint behavior.
+
+The production SwiftUI wrapper still targets the MetalKit renderer seam for downstream hosts. The native review executable is intentionally a SceneKit visual-review surface because that is the UI the user confirmed as correct.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
@@ -58,6 +66,12 @@ main tree
 - Updated the mockup Color selector to Green, Flamingo, Purple, and B&W, with Green using Orbisonic Lab tokens and Purple using Kimi Purple tokens.
 - Reordered the mockup Color selector to Purple, Flamingo, Green, and B&W with Purple default; made Prism the default Speaker Shape; defaulted Speaker numbers and Hidden Lines off; centered the Speaker size slider at 1.95x; and remapped Fog density so the prior 30-density look sits at the slider midpoint.
 - Replaced the mockup's generic latitude/spoke shell structure with a generated Fey 3V class-I icosahedron geodesic shell from the DomeLab project config values.
+- Added `CHATGPT_PRO_ARCHITECTURE_BRIEF.md` and packaged `OrbitalViewKit-chatgpt-pro-architecture-context.zip` for a ChatGPT Pro production-renderer architecture brainstorm.
+- Merged the native Cube VU path from Orbital View VU Kit into the Metal production renderer while preserving physical speaker channel identity and adding dynamic object frame/meter support.
+- Added the native `OrbitalViewViewer` executable and testable demo-content support target for Cube VU and object overlay review outside XCTest.
+- Deprecated the native Cube VU merge, viewer target, object overlay merge, and related docs produced in this chat.
+- Re-activated the Cube VU/object overlay direction through an explicit merge plan, added collapsible tuning trays, and wired performance settings into the existing SwiftUI + MTKView wrapper.
+- Replaced the rejected viewer executable surface with the confirmed VU Kit SceneKit geodesic viewport mockup, preserving the exact left control rail and adding tuning trays beneath View Detail.
 
 ## In Progress
 
@@ -67,8 +81,7 @@ none
 
 ## Pending
 
-- Decide and open the next bounded task.
-- Decide whether the next renderer slice should be pixel-probe renderer tests, a renderer static buffer/cache plan, or SwiftUI control/gesture binding plan.
+- Decide the next bounded task for live host integration, camera/gesture controls, or production object smoothing.
 
 ## Blocked
 
@@ -77,6 +90,612 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-21 Cube VU Face Grid Visibility Fix
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Removed the separate oversized Cube VU halo `SCNBox` child nodes that created an unintended cubical fog aura around speakers.
+- Added a retained 9x9 pixelated face texture cache to the SceneKit Cube VU material path and applied the texture to the actual six `SCNBox` cube faces instead of overlaying a separate plane.
+- Increased only the Cube VU speaker visual scale relative to Prism/Sphere so the default 9x9 face has enough screen pixels to read.
+- Kept meter changes material-only: Cube VU meter updates swap retained texture/material state and do not rebuild speaker geometry.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert Cube VU uses retained face textures on actual cube faces, caps the texture cache, and does not use a separate halo node or front-face overlay plane.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 17 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 77 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> refreshed app executable
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> launched refreshed native review app
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/bugs.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 SceneKit Review Cleanup And Cube VU 9x9 Face Bloom
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Moved `Song Audio Source` to the top of the left rail and split the transport into side-by-side `Play` and `Pause` buttons.
+- Kept the left rail focused on Audio Source, Camera, Color Scheme, Speaker Type, and View Detail.
+- Moved active tuning trays to the right panel and removed the old Scene summary, selected-speaker copy, and 30-channel VU list from that panel.
+- Hid object overlay, trails, glow trails, and bounds trays for this review pass without deleting object contracts.
+- Kept the single visible Motion FPS selector in Graphical Performance vs CPU Load.
+- Added a capped diagnostic log in Debug + Diagnostics for discrete UI/audio/export events.
+- Added a SceneKit Cube VU material path that quantizes cube-face UVs into a 9x9 grid, uses the Core `SpeakerCubeVUScalars` display/hot/palette values, and drives a retained pixelated face texture cache so the cube faces remain visibly tiled at small speaker sizes.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now cover the left/right panel inventory, inactive object trays, top audio transport, removed right-panel cards, Cube VU shader/texture defaults, retained face texture cache, and diagnostic log cap.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 16 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 76 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> refreshed app executable
+plutil -lint Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist -> passed
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> launched refreshed native review app
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Corrected VU Kit SceneKit Geodesic Viewer
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Repointed `OrbitalViewViewer` at the confirmed native SceneKit `OrbitalViewportMockup` surface instead of the rejected bare MTKView demo.
+- Gave the window a deliberately verbose identity: `Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail, Right Inspector, Motion FPS Toggle, Full-Window PNG Export, and Cube VU Speaker Surface`.
+- Preserved the existing Camera, Color Scheme, Speaker Shape, and View Detail rail sections, then added matching collapsible tuning trays below View Detail.
+- Added local review controls for Cube VU calibration, bloom/surface, object overlay, trails, glow trails, fixed `-5...+5` bounds, performance-vs-CPU load, presets, and diagnostics.
+- Fed SceneKit speaker material updates through the shared `SpeakerCubeVUScalars` contract and kept speaker height as a geometry-only rebuild trigger.
+
+Files changed:
+
+```text
+.gitignore
+Sources/OrbitalViewSwiftUI/OrbitalViewportMockup.swift
+Sources/OrbitalViewViewer/OrbitalViewViewer.swift
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+Correct viewer identity and SceneKit/geodesic contract.
+Existing viewport controls remain intact.
+Tuning tray inventory.
+Cube VU defaults match the Core scalar contract.
+Meter-only ticks do not rebuild shell or speaker geometry.
+Material-only tuning and geometry tuning are separated.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 14 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 74 tests
+plutil -lint Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist -> passed
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> launched
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+Corrected the viewer identity mismatch that launched the rejected bare MTKView demo instead of the confirmed SceneKit geodesic app.
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+Risks:
+
+```text
+The SceneKit review app uses a fake meter stream and local tuning controls for visual review. Production hosts still own real meter and object frame input.
+```
+
+### Update: 2026-05-21 Speaker Type Cube VU Option And Tray Hit Targets
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Renamed the review-app rail section from `Speaker Shape` to `Speaker Type`.
+- Added `Cube VU` as a third speaker type beside `Prism` and `Sphere`.
+- Kept `Prism` as the default, while `Cube VU` uses square cube speaker geometry and the same Cube VU scalar/material path.
+- Replaced tiny disclosure-only tray activation with full-width tray header buttons, matching the OrbiSonic collapsible-tray interaction pattern.
+
+Tests added or updated:
+
+```text
+Updated SwiftUI review-app tests for the three speaker types, full-width tray hit-target pattern, and Cube VU geometry-key separation.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Local Audio File Meter Input For Review App
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added an `Audio Source` rail section to the confirmed SceneKit review app.
+- Added `Choose File` and `Play`/`Pause` controls using native macOS local audio file playback.
+- Added a local-audio meter source that reduces file metering to one mono RMS/peak sample and applies that sample equally to all speakers.
+- Kept fake meters as the fallback when no file is loaded; loaded-but-paused local audio reports silence.
+- Kept the meter read path pulled by the SceneKit render cadence rather than publishing per-frame SwiftUI state.
+
+Tests added or updated:
+
+```text
+Added equal-mono local audio meter conversion coverage for dB-to-display scalar, averaged RMS, and max peak.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 15 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Cube VU Speaker Merge With Collapsible Tuning Trays
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewPerformanceSettings` with adaptive 30/60 active-motion FPS, meter-only cadence, inspector cadence, and draw-on-demand controls.
+- Wired `OrbitalViewMetalView` to apply MTKView `preferredFramesPerSecond`, `enableSetNeedsDisplay`, and `isPaused` from performance settings.
+- Extended `OrbitalView` with host-bindable object visual settings and performance settings while preserving value-based compatibility initializers.
+- Replaced the single VU settings disclosure body with collapsible trays for Speaker VU, Meter Calibration, Surface + Bloom, Object Overlay, Trails, Bounds, Graphical Performance vs CPU Load, Presets, and Debug + Diagnostics.
+- Updated the demo viewer to pass live object/performance bindings into the existing wrapper rather than creating a new app surface.
+
+Files changed:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewPerformanceSettings.swift
+Sources/OrbitalViewSwiftUI/OrbitalView.swift
+Sources/OrbitalViewSwiftUI/OrbitalViewMetalView.swift
+Sources/OrbitalViewViewer/OrbitalViewViewer.swift
+Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+OrbitalViewPerformanceSettings defaults and validation.
+OrbitalView binding initializer for object/performance settings.
+MTKView adaptive FPS and draw-on-demand configuration.
+Updated SwiftUI renderer configuration tests for performance settings.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 68 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+Risks:
+
+```text
+The demo viewer still uses generated demo meter/object frames for review. Production hosts remain responsible for real meter/object timing and should drive updates without per-frame SwiftUI root animation.
+```
+
+### Update: 2026-05-21 Deprecate Native Cube VU Chat Work
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Killed the running `OrbitalViewViewer` process from this repository.
+- Marked all native Cube VU merge and viewer-target work produced in this chat as deprecated.
+- Added an explicit deprecation record so the next pass can start over without treating the current work as active direction.
+
+Files changed:
+
+```text
+docs/status.md
+docs/deprecated/native-cube-vu-chat-work.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+none
+```
+
+Commands run:
+
+```text
+pgrep -fl OrbitalViewViewer -> found PID 95449
+kill 95449 -> passed
+pgrep -fl OrbitalViewViewer -> no running viewer
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/deprecated/native-cube-vu-chat-work.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Risks:
+
+```text
+Deprecated implementation files still exist in the worktree until an explicit cleanup or revert task removes them.
+```
+
+### Update: 2026-05-21 Native Cube VU Viewer Target
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewViewer`, a small native SwiftUI executable that hosts the production `OrbitalView` MTKView path.
+- Added `OrbitalViewViewerSupport` with deterministic 30-speaker cube scene data, demo speaker meter frames keyed by physical channel, dynamic object frames, object meters, and viewer visual defaults.
+- Added an inspector side panel for selected speaker/channel diagnostics and demo data-source context while preserving the Cube VU settings tray below the viewport.
+
+Files changed:
+
+```text
+Package.swift
+Sources/OrbitalViewViewer/
+Sources/OrbitalViewViewerSupport/
+Tests/OrbitalViewViewerTests/
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+OrbitalViewViewerDemoContentTests cover one cube per speaker, physical channel order, demo meter coverage, object frame/meter identity, and viewer visual defaults.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 65 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none - the viewer consumes OrbitalViewSwiftUI but does not edit protected renderer/UI source
+```
+
+Risks:
+
+```text
+The viewer uses deterministic demo data only. It is a native review surface, not a host audio or downstream app integration.
+```
+
+### Update: 2026-05-21 Native Cube VU Merge
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Ported Sonic Sphere cube speaker shapes, cube/prism Metal instancing, Daft Punk Bow/palette settings, visual presets, sanitized meter diagnostics, dynamic object frames/meters, and retained renderer buffer paths from Orbital View VU Kit.
+- Added browser cube scalar settings to the native contract: input calibration, level compression, display ceiling, hot response, hot threshold, hot fill strength, palette drive, idle tint, checker contrast, and face pixels.
+- Updated the Metal speaker material payload so raw RMS remains raw while display VU scalar, hot scalar, and palette heat are display-only values.
+- Added a SwiftUI Cube VU settings and diagnostics tray with host meter/object source indicators and selected-speaker scalar readouts.
+
+Files changed:
+
+```text
+Sources/OrbitalViewCore/
+Sources/OrbitalViewRender/
+Sources/OrbitalViewSwiftUI/
+Sources/OrbitalViewWavefield/
+Tests/OrbitalViewCoreTests/
+Tests/OrbitalViewRenderTests/
+Tests/OrbitalViewSwiftUITests/
+Tests/OrbitalViewWavefieldTests/
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/contracts.md
+```
+
+Tests added or updated:
+
+```text
+cube VU scalar math, default/range validation, one cube/prism mesh per speaker, channel order preservation, material scalar payloads, meter-only geometry stability, dynamic object frame/meter rendering, SwiftUI settings forwarding, Wavefield sanitized meters
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 61 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/implementation-map.md
+docs/test-strategy.md
+docs/contracts.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewRender/
+Tests/OrbitalViewRenderTests/
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+Risks:
+
+```text
+The standalone SceneKit viewer from Orbital View VU Kit was intentionally not ported. No native app launcher exists in this destination package, so visual verification was limited to Metal offscreen smoke/pixel-probe tests.
+```
+
+### Update: 2026-05-21 ChatGPT Pro Architecture Context Bundle
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `CHATGPT_PRO_ARCHITECTURE_BRIEF.md` at the project root.
+- Created `OrbitalViewKit-chatgpt-pro-architecture-context.zip` as a compact ChatGPT Pro planning bundle.
+- Framed the next renderer architecture brainstorm around 30/52 physical speakers, per-speaker VU animation, up to 128 moving objects, fog, visual polish, and 60 FPS Metal performance.
+
+Files changed:
+
+```text
+CHATGPT_PRO_ARCHITECTURE_BRIEF.md
+docs/status.md
+OrbitalViewKit-chatgpt-pro-architecture-context.zip
+```
+
+Tests added or updated:
+
+```text
+none - planning brief and bundle only
+```
+
+Commands run:
+
+```text
+unzip -l OrbitalViewKit-chatgpt-pro-architecture-context.zip -> passed, 78 files listed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 27 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+CHATGPT_PRO_ARCHITECTURE_BRIEF.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Risks:
+
+```text
+The zip is a planning snapshot; regenerate it after any source or docs changes before giving it to another model.
+```
 
 ### Update: 2026-05-19 Project Initiation
 

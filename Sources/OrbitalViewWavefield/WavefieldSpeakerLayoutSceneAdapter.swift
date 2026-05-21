@@ -25,7 +25,8 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
         sceneID: String? = nil,
         shell: OrbitalViewShellSpec? = nil,
         speakerOffsetM: Double = 0.05,
-        speakerRadiusM: Double = 0.03
+        speakerRadiusM: Double = 0.03,
+        speakerShape: SpeakerShape? = nil
     ) throws -> OrbitalViewSceneSpec {
         guard FileManager.default.fileExists(atPath: layoutURL.path) else {
             throw WavefieldSpeakerLayoutSceneAdapterError.missingSpeakerLayout(layoutURL)
@@ -38,7 +39,8 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
             sceneID: sceneID,
             shell: shell,
             speakerOffsetM: speakerOffsetM,
-            speakerRadiusM: speakerRadiusM
+            speakerRadiusM: speakerRadiusM,
+            speakerShape: speakerShape
         )
     }
 
@@ -48,7 +50,8 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
         sceneID: String? = nil,
         shell: OrbitalViewShellSpec? = nil,
         speakerOffsetM: Double = 0.05,
-        speakerRadiusM: Double = 0.03
+        speakerRadiusM: Double = 0.03,
+        speakerShape: SpeakerShape? = nil
     ) throws -> OrbitalViewSceneSpec {
         let raw: RawWavefieldSpeakerLayout
         do {
@@ -60,6 +63,13 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
         }
 
         try validate(raw)
+        let resolvedSpeakerShape: SpeakerShape
+        if let speakerShape {
+            try speakerShape.validate()
+            resolvedSpeakerShape = speakerShape
+        } else {
+            resolvedSpeakerShape = try SpeakerShape.sonicSphereDefault(edgeM: speakerRadiusM * 2)
+        }
 
         let speakers = try raw.speakers
             .sorted { $0.channel < $1.channel }
@@ -76,7 +86,7 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
                         ),
                         offsetM: speakerOffsetM
                     ),
-                    shape: .sphere(radiusM: speakerRadiusM),
+                    shape: resolvedSpeakerShape,
                     visualRole: .physicalSpeaker
                 )
             }
@@ -177,4 +187,3 @@ private struct RawWavefieldSpeakerPosition: Decodable {
     let y: Double
     let z: Double
 }
-

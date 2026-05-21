@@ -88,5 +88,41 @@ final class WavefieldMeterFrameAdapterTests: XCTestCase {
             )
         }
     }
-}
 
+    func testSanitizedMeterFramesReportMissingExtraAndClampedChannels() throws {
+        let result = try WavefieldMeterFrameAdapter(clipThreshold: 0.9).makeSanitizedSpeakerMeterFrame(
+            timestamp: .infinity,
+            expectedChannels: [1, 2, 3],
+            channels: [
+                WavefieldMeterChannelFrame(channel: 1, rms: 0.2, peak: 0.91),
+                WavefieldMeterChannelFrame(channel: 2, rms: .nan, peak: 1.4),
+                WavefieldMeterChannelFrame(channel: 4, rms: -0.2, peak: 0.1),
+                WavefieldMeterChannelFrame(channel: 2, rms: 0.3, peak: 0.4),
+                WavefieldMeterChannelFrame(channel: 0, rms: 0.8, peak: 0.8)
+            ],
+            timestampFallback: 12.25
+        )
+
+        XCTAssertEqual(result.frame.timestamp, 12.25)
+        XCTAssertEqual(result.frame.levelsByChannel[1], try SpeakerMeterLevel(rms: 0.2, peak: 0.91, clip: true))
+        XCTAssertEqual(result.frame.levelsByChannel[2], try SpeakerMeterLevel(rms: 0.3, peak: 0.4, clip: false))
+        XCTAssertEqual(result.frame.levelsByChannel[4], try SpeakerMeterLevel(rms: 0, peak: 0.1, clip: false))
+        XCTAssertNil(result.frame.levelsByChannel[3])
+        XCTAssertEqual(result.diagnostics.missingChannels, [3])
+        XCTAssertEqual(result.diagnostics.extraChannels, [4])
+        XCTAssertEqual(result.diagnostics.invalidChannels, [0])
+        XCTAssertEqual(result.diagnostics.duplicateChannels, [2])
+        XCTAssertEqual(
+            result.diagnostics.replacedValues,
+            [OrbitalViewInputDiagnostics.ValueReplacement(channel: 2, field: "rms", replacement: 0)]
+        )
+        XCTAssertEqual(
+            result.diagnostics.clampedValues,
+            [
+                OrbitalViewInputDiagnostics.ValueClamp(channel: 2, field: "peak", original: 1.4, clamped: 1),
+                OrbitalViewInputDiagnostics.ValueClamp(channel: 4, field: "rms", original: -0.2, clamped: 0)
+            ]
+        )
+        XCTAssertTrue(result.diagnostics.timestampReplaced)
+    }
+}

@@ -31,6 +31,22 @@ public final class OrbitalViewMetalRenderer: NSObject, OrbitalViewRendering {
         renderState = renderState.updating(meters: frame)
     }
 
+    public func updateMeterVisualSettings(_ settings: SpeakerMeterVisualSettings) {
+        renderState = renderState.updating(meterVisualSettings: settings)
+    }
+
+    public func updateObjects(_ frameSet: OrbitalViewObjectFrameSet) {
+        renderState = renderState.updating(objects: frameSet)
+    }
+
+    public func updateObjectMeters(_ frame: ObjectMeterFrame) {
+        renderState = renderState.updating(objectMeters: frame)
+    }
+
+    public func updateObjectVisualSettings(_ settings: ObjectVisualSettings) {
+        renderState = renderState.updating(objectVisualSettings: settings)
+    }
+
     public func updateCamera(_ camera: OrbitalViewCameraState) {
         renderState = renderState.updating(camera: camera)
         pendingEvents.append(.cameraChanged(camera))
@@ -50,6 +66,10 @@ public final class OrbitalViewMetalRenderer: NSObject, OrbitalViewRendering {
     func renderOffscreen(device: MTLDevice, width: Int = 64, height: Int = 64) throws -> OrbitalViewOffscreenFrame {
         let pipeline = try pipeline(for: device)
         return try pipeline.renderOffscreen(state: renderState, width: width, height: height)
+    }
+
+    func debugBufferAllocationCount(device: MTLDevice) throws -> Int {
+        try pipeline(for: device).debugBufferAllocationCount
     }
 
     private func pipeline(for device: MTLDevice) throws -> OrbitalViewMetalDrawPipeline {

@@ -18,5 +18,6 @@ public enum OrbitalViewValidationError: Error, Equatable, Sendable {
     case invalidAnchorReference(String)
     case invalidRange(field: String, value: Double, validRange: String)
     case nonOriginMonitorTarget(OrbitalViewVector3)
+    case invalidObjectID(Int)
+    case duplicateObjectID(Int)
 }
-

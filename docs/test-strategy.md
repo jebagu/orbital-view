@@ -1,5 +1,7 @@
 # Test Strategy
 
+> Current note: the explicit Cube VU speaker merge task re-activates the renderer, SwiftUI wrapper, object overlay, and viewer tests as active coverage for this package. The historical deprecation record remains only as context.
+
 ## Current Package
 
 The Swift package exists and is verified with the full Xcode toolchain.
@@ -61,7 +63,10 @@ Current renderer seam tests cover:
 - `OrbitalViewMetalRenderer` provides an `MTKViewDelegate` seam
 - offscreen Metal smoke rendering produces a non-clear frame from a deterministic scene, or skips clearly when no Metal device exists
 - meter-only and camera-only updates keep static speaker draw inputs stable
-- speaker draw inputs preserve ID/channel order and stable quad dimensions
+- speaker draw inputs preserve ID/channel order and stable cube/prism dimensions
+- cube VU defaults, scalar math, range validation, material payloads, hot-fill independence, and palette-drive behavior stay separate from raw RMS
+- dynamic object frame/meter/settings updates render through a separate object path and do not rebuild speaker static geometry
+- retained speaker/object buffers do not reallocate on meter/settings/camera-only renders
 
 Future renderer drawing checks should cover:
 
@@ -78,13 +83,43 @@ Current wrapper skeleton tests cover:
 - `OrbitalView` initializes with camera and selection bindings
 - identical configuration updates do not repeatedly increment structural renderer revision
 - changed meter frames update meter revision without rebuilding scene state
+- cube VU settings and object frames/meters forward through the coordinator without reloading scene state
+- host-bound object visual settings and performance settings initialize through the tuning-surface initializer
+- MTKView applies active 30/60 FPS and draw-on-demand performance settings
 - camera and selection configuration emits renderer events
+- the confirmed SceneKit `OrbitalViewportMockup` viewer identity, left rail options, right tuning panel inventory, geodesic shell counts, and adaptive FPS constants remain intact
+- SceneKit review-app meter-only ticks update material cadence without rebuilding shell or speaker geometry
+- SceneKit review-app Cube VU controls preserve Core scalar defaults, default to 9x9 face pixels, and separate material-only tuning from speaker-height geometry tuning
+- SceneKit review-app Cube VU retained face-texture support exposes the face-pixel quantization and center-fill contract on the actual cube faces without replacing the approved SceneKit surface
+- SceneKit review-app speaker type options include `Prism`, `Sphere`, and `Cube VU`, with full-width tray header hit targets for collapsible tuning sections
+- SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state
+- SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
+- SceneKit review-app object/trail/glow/bounds trays are inactive while the review surface focuses on speakers
 
 Future wrapper tests should cover:
 
 - gesture updates bind camera state without breaking center lock
 - selection bindings round-trip from renderer picking to host UI
 - toolbar toggles do not mutate audio, playback, routing, or metering state
+
+## Native Viewer Tests
+
+The native viewer is an executable review surface, with deterministic demo data kept in a support target so it can be tested without opening a window.
+
+Current viewer tests cover:
+
+- one cube speaker per physical speaker
+- physical channel order `1...30`
+- demo speaker meter coverage for every channel
+- dynamic object frame and object meter ID agreement
+- object trail caps
+- Cube VU diagnostics and object trails enabled for visual review
+
+Launch the viewer for manual review with:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
+```
 
 ## Mockup Checks
 
@@ -103,6 +138,7 @@ Current package:
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
 ```
 
 Current mockup:
