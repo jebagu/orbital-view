@@ -875,9 +875,13 @@
             </div>
 
             <div class="control-group scalar-group">
-              <div class="control-title">Cube VU <span class="hint">RMS scalar</span></div>
-              <div class="scalar-display"><span>Same value as RMS</span><strong id="vuScalarValue">0%</strong></div>
-              <div class="status">Cube bloom radius follows the RMS percent exactly.</div>
+              <div class="control-title">Cube VU <span class="hint">display scalar</span></div>
+              <div class="scalar-display"><span>Display-compressed RMS</span><strong id="vuScalarValue">0%</strong></div>
+              <label class="control"><span class="control-row"><span>Input calibration</span><span class="value" id="inputCalibrationValue">1.00×</span></span><input id="inputCalibration" type="range" min="0.25" max="2" step="0.05" value="1" /></label>
+              <label class="control"><span class="control-row"><span>Level compression</span><span class="value" id="levelCompressionValue">1.00×</span></span><input id="levelCompression" type="range" min="1" max="4" step="0.05" value="1" /></label>
+              <label class="control"><span class="control-row"><span>Display ceiling</span><span class="value" id="displayCeilingValue">100%</span></span><input id="displayCeiling" type="range" min="0.5" max="1" step="0.01" value="1" /></label>
+              <label class="control"><span class="control-row"><span>Hot response</span><span class="value" id="hotResponseValue">1.70×</span></span><input id="hotResponse" type="range" min="0.5" max="3" step="0.05" value="1.7" /></label>
+              <div class="status">Raw RMS stays visible above; cube bloom uses this display scalar.</div>
             </div>
 
             <div class="control-group ripple-group detail-only">
@@ -1014,13 +1018,15 @@
     const state = {
       paletteName: 'Tech Rainbow', repeat: true, period: 0.85, amplitude: 0.78, swing: 0.12,
       bandWidth: 4.2, vuDrive: 1.7, attack: 0.42, speed: 0.43, damping: 0.32, softness: 0.55,
+      inputCalibration: 1, levelCompression: 1, displayCeiling: 1,
       hotFill: 0.86, hotThreshold: 0.68, memory: 0.64, tiles: 9, idleTint: 0.25, faceDelay: 0.04, checker: 0.08,
+      hotResponse: 1.7,
       exportVariant: 'packetXL', driveMode: 'music', drops: [], nextImpulseAt: 0, energy: 0, serial: 0,
       audioActive: false, audioMode: 'idle', audioRms: 0, audioPeak: 0, audioBass: 0,
-      vuScalar: 0
+      vuScalar: 0, calibratedRms: 0, displayVuScalar: 0, hotScalar: 0
     };
 
-    const ids = ['meterCanvas','meterSourceLabel','paletteSelect','swatches','vuStrip','vuScalarValue','captureAudioButton','stopAudioButton','audioFileInput','localAudio','audioStatus','audioRmsValue','audioPeakValue','audioBassValue','impulseButton','clearButton','repeat','period','amplitude','swing','bandWidth','vuDrive','attack','speed','damping','softness','hotFill','hotThreshold','memory','tiles','idleTint','faceDelay','checker','exportVariant','copyExport','downloadExport','exportText','exportStatus','paletteJson','loadPalette','resetPalette','paletteStatus','impulseModeHint','periodValue','amplitudeValue','swingValue','bandWidthValue','vuDriveValue','attackValue','speedValue','dampingValue','softnessValue','hotFillValue','hotThresholdValue','memoryValue','tilesValue','idleValue','faceDelayValue','checkerValue'];
+    const ids = ['meterCanvas','meterSourceLabel','paletteSelect','swatches','vuStrip','vuScalarValue','inputCalibration','levelCompression','displayCeiling','captureAudioButton','stopAudioButton','audioFileInput','localAudio','audioStatus','audioRmsValue','audioPeakValue','audioBassValue','impulseButton','clearButton','repeat','period','amplitude','swing','bandWidth','vuDrive','attack','speed','damping','softness','hotResponse','hotFill','hotThreshold','memory','tiles','idleTint','faceDelay','checker','exportVariant','copyExport','downloadExport','exportText','exportStatus','paletteJson','loadPalette','resetPalette','paletteStatus','impulseModeHint','periodValue','amplitudeValue','swingValue','bandWidthValue','vuDriveValue','inputCalibrationValue','levelCompressionValue','displayCeilingValue','attackValue','speedValue','dampingValue','softnessValue','hotResponseValue','hotFillValue','hotThresholdValue','memoryValue','tilesValue','idleValue','faceDelayValue','checkerValue'];
     const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
     const canvases = [
       { canvas: document.getElementById('canvasPacketXL'), variant: 'packetXL' },
@@ -1083,7 +1089,17 @@
     }
     function rampColor(p, t) { return sampleStops(normalizedStops(p), t); }
     function hotColor(p) { const s = normalizedStops(p); return hexToRgb(s[s.length - 1].color); }
-    function compressVu(v) { return 1 - Math.pow(1 - clamp01(v), state.vuDrive); }
+    function compressCurve(v, curve) { return 1 - Math.pow(1 - clamp01(v), curve); }
+    function compressVu(v) { return compressCurve(v, state.vuDrive); }
+    function compressLevel(v) { return compressCurve(v, state.levelCompression); }
+    function compressHot(v) { return compressCurve(v, state.hotResponse); }
+    function setDisplayVuScalar(rawRms) {
+      state.calibratedRms = clamp01(rawRms * state.inputCalibration);
+      state.displayVuScalar = Math.min(compressLevel(state.calibratedRms), state.displayCeiling);
+      state.hotScalar = compressHot(state.calibratedRms);
+      state.vuScalar = state.displayVuScalar;
+      return state.displayVuScalar;
+    }
     function variantConfig(id) { return VARIANT_DEFINITIONS[id] || VARIANT_DEFINITIONS.packetXL; }
 
     function applyPalette() {
@@ -1121,10 +1137,14 @@
       els.swingValue.textContent = `${Math.round(state.swing * 100)}%`;
       els.bandWidthValue.textContent = `${state.bandWidth.toFixed(1)} tiles`;
       els.vuDriveValue.textContent = `${state.vuDrive.toFixed(2)}×`;
+      els.inputCalibrationValue.textContent = `${state.inputCalibration.toFixed(2)}×`;
+      els.levelCompressionValue.textContent = `${state.levelCompression.toFixed(2)}×`;
+      els.displayCeilingValue.textContent = `${Math.round(state.displayCeiling * 100)}%`;
       els.attackValue.textContent = `${Math.round(state.attack * 100)}%`;
       els.speedValue.textContent = state.speed.toFixed(2);
       els.dampingValue.textContent = `${Math.round(state.damping * 100)}%`;
       els.softnessValue.textContent = `${Math.round(state.softness * 100)}%`;
+      els.hotResponseValue.textContent = `${state.hotResponse.toFixed(2)}×`;
       els.hotFillValue.textContent = `${Math.round(state.hotFill * 100)}%`;
       els.hotThresholdValue.textContent = `${Math.round(state.hotThreshold * 100)}%`;
       els.memoryValue.textContent = `${Math.round(state.memory * 100)}%`;
@@ -1240,7 +1260,7 @@
       state.audioRms = 0;
       state.audioPeak = 0;
       state.audioBass = 0;
-      state.vuScalar = 0;
+      setDisplayVuScalar(0);
       audioState.lastRms = 0;
       audioState.lastBass = 0;
       audioState.noAudioSince = 0;
@@ -1341,9 +1361,9 @@
         state.audioRms += (0 - state.audioRms) * (1 - Math.pow(0.0001, dt));
         state.audioPeak += (0 - state.audioPeak) * (1 - Math.pow(0.0001, dt));
         state.audioBass += (0 - state.audioBass) * (1 - Math.pow(0.0001, dt));
-        state.vuScalar = state.audioRms;
+        setDisplayVuScalar(state.audioRms);
         updateAudioUi(now);
-        return 0;
+        return state.displayVuScalar;
       }
 
       audioState.analyser.getByteTimeDomainData(audioState.timeData);
@@ -1374,7 +1394,7 @@
       state.audioRms = rms;
       state.audioPeak = scaledPeak;
       state.audioBass = bass;
-      state.vuScalar = rms;
+      setDisplayVuScalar(rms);
       const loudEnough = Math.max(rms, bass, scaledPeak) > 0.035;
       if (!loudEnough) {
         if (!audioState.noAudioSince) audioState.noAudioSince = now;
@@ -1389,7 +1409,7 @@
       }
 
       updateAudioUi(now);
-      return state.vuScalar;
+      return state.displayVuScalar;
     }
 
     function impulseVuT(p, amp, attack) {
@@ -1528,6 +1548,7 @@
     function scalarVuSignal(u, v, faceIndex, variant) {
       const cfg = variantConfig(variant);
       const level = clamp01(state.energy);
+      const hotLevel = clamp01(state.calibratedRms);
       const cu = u - 0.5, cv = v - 0.5;
       const r = Math.hypot(cu, cv) * SQRT2;
       const radius = lerp(cfg.bloomMin || 0.08, cfg.bloomMax || 1.06, Math.pow(level, cfg.radiusCurve || 0.82));
@@ -1539,7 +1560,7 @@
       const poster = cfg.poster && active > 0.18 ? 1 : active;
       const vuT = clamp01(compressVu(level) * (cfg.heatMul || 0.8) + core * level * (cfg.coreHeat || 0.16) + rimAlpha * (cfg.rimHeat || 0.08));
       const signed = Math.max(-1, Math.min(1, poster * 0.08 + core * level * 0.035 + faceIndex * 0.008));
-      return { alpha: clamp01(poster + core * level * (cfg.coreBoost || 0.2) * 0.18), rimAlpha, vuT, signed, hotPressure: clamp01(level * cfg.hotBoost + core * level * 0.12) };
+      return { alpha: clamp01(poster + core * level * (cfg.coreBoost || 0.2) * 0.18), rimAlpha, vuT, signed, hotPressure: clamp01(hotLevel * cfg.hotBoost + core * hotLevel * 0.12) };
     }
     function drawCube(ctx, cx, cy, s, variant, now, opts = {}) {
       const p = getPalette(), cfg = variantConfig(variant);
@@ -1549,15 +1570,17 @@
       const N = cfg.tinyTiles ? Math.max(5, Math.min(8, baseN - 1)) : baseN;
       const faces = getCachedCubeGeometry(cx, cy, s, N);
       const strokeAlpha = state.driveMode === 'music' ? (cfg.poster ? 0.052 : 0.032) : (cfg.poster ? 0.075 : 0.055);
-      const globalHot = state.hotFill * smoothstep(state.hotThreshold, 1.0, compressVu(state.energy));
       const scalarMode = state.driveMode === 'music';
+      const globalHotValue = scalarMode ? state.hotScalar : compressVu(state.energy);
+      const globalHot = state.hotFill * smoothstep(state.hotThreshold, 1.0, globalHotValue);
       ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.56)'; ctx.shadowBlur = opts.small ? 8 : 28; ctx.shadowOffsetY = opts.small ? 3 : 16;
       drawFaceOutline(ctx, faces[1].quad); ctx.fillStyle = rgbToCss(idleBase, 1); ctx.fill(); ctx.restore();
       for (const face of faces) {
         for (const tile of face.tiles) {
           const sig = scalarMode ? scalarVuSignal(tile.u, tile.v, face.index, variant) : rippleSignal(tile.u, tile.v, face.index, variant, now, N);
-          const localHot = state.hotFill * smoothstep(state.hotThreshold, 1.0, compressVu(sig.hotPressure));
+          const localHotValue = scalarMode ? compressHot(sig.hotPressure) : compressVu(sig.hotPressure);
+          const localHot = state.hotFill * smoothstep(state.hotThreshold, 1.0, localHotValue);
           const hotMix = clamp01(Math.max(globalHot * (variant === 'packetXL' ? 0.65 : 1), localHot));
           const hotBase = mix(idleLit, hot, hotMix);
           const vuColor = rampColor(p, sig.vuT);
@@ -1719,7 +1742,7 @@
     }
 
     function currentSettings() {
-      return { paletteName: state.paletteName, exportVariant: state.exportVariant, driveMode: state.driveMode, audioSourceMode: state.audioMode, vuScalar: state.vuScalar, rmsPercent: state.audioRms, repeat: state.repeat, periodSeconds: state.period, impulseAmplitude: state.amplitude, amplitudeSwing: state.swing, bandWidthTiles: state.bandWidth, vuPaletteDrive: state.vuDrive, attackSharpness: state.attack, outwardSpeedFaceRadiusPerSecond: state.speed, dampingPerSecond: state.damping, edgeSoftness: state.softness, hotFillStrength: state.hotFill, hotThreshold: state.hotThreshold, wholeCubeMemory: state.memory, facePixels: state.tiles, idleTint: state.idleTint, facePhaseStagger: state.faceDelay, checkerContrast: state.checker };
+      return { paletteName: state.paletteName, exportVariant: state.exportVariant, driveMode: state.driveMode, audioSourceMode: state.audioMode, vuScalar: state.displayVuScalar, rawRms: state.audioRms, rmsPercent: state.audioRms, calibratedRms: state.calibratedRms, displayVuScalar: state.displayVuScalar, inputCalibration: state.inputCalibration, levelCompression: state.levelCompression, displayCeiling: state.displayCeiling, hotScalar: state.hotScalar, hotResponse: state.hotResponse, repeat: state.repeat, periodSeconds: state.period, impulseAmplitude: state.amplitude, amplitudeSwing: state.swing, bandWidthTiles: state.bandWidth, vuPaletteDrive: state.vuDrive, attackSharpness: state.attack, outwardSpeedFaceRadiusPerSecond: state.speed, dampingPerSecond: state.damping, edgeSoftness: state.softness, hotFillStrength: state.hotFill, hotThreshold: state.hotThreshold, wholeCubeMemory: state.memory, facePixels: state.tiles, idleTint: state.idleTint, facePhaseStagger: state.faceDelay, checkerContrast: state.checker };
     }
     function controlExportDefinitions() {
       return {
@@ -1727,20 +1750,28 @@
         exportVariant: { type: 'select', current: state.exportVariant, values: Object.keys(VARIANT_DEFINITIONS), description: 'Which visual version should be implemented.' },
         driveMode: { type: 'exclusive-toggle', current: state.driveMode, values: ['music', 'impulse'], description: 'Exactly one VU drive source is active: browser music analysis or impulse test.' },
         audioSourceMode: { type: 'runtime', current: state.audioMode, description: 'Browser-only mockup input: idle, tab capture, or local file analysis. Production Swift remains a meter consumer.' },
-        vuScalar: { type: 'runtime', current: state.vuScalar, description: 'The single scalar sent to cube rendering in Music mode. It is exactly equal to the RMS meter value.' },
-        rmsPercent: { type: 'runtime', current: state.audioRms, description: 'The RMS percent from the normal meter; this is the cube VU scalar.' },
+        vuScalar: { type: 'runtime', current: state.displayVuScalar, description: 'Compatibility alias for displayVuScalar; the display-compressed scalar sent to cube rendering in Music mode.' },
+        rawRms: { type: 'runtime', current: state.audioRms, description: 'Raw RMS percent from the normal meter before display-only calibration.' },
+        rmsPercent: { type: 'runtime', current: state.audioRms, description: 'Raw RMS percent from the normal meter. It remains visible as a diagnostic and is not overwritten by display compression.' },
+        calibratedRms: { type: 'runtime', current: state.calibratedRms, description: 'Raw RMS after inputCalibration and clamping; used before display and hot response curves.' },
+        displayVuScalar: { type: 'runtime', current: state.displayVuScalar, description: 'The calibrated, level-compressed, display-ceiling-capped Music-mode scalar sent to cube bloom.' },
+        inputCalibration: { type: 'gain', min: 0.25, max: 2, step: 0.05, current: state.inputCalibration, description: 'Pre-compression RMS trim. Lower it when the music source is calibrated too hot.' },
+        levelCompression: { type: 'curve', min: 1, max: 4, step: 0.05, current: state.levelCompression, description: 'Music-mode display scalar compression. 1 is raw RMS; higher values lift quiet and mid-level material before cube bloom.' },
+        displayCeiling: { type: 'unit', min: 0.5, max: 1, step: 0.01, current: state.displayCeiling, description: 'Caps the display scalar after level compression without changing raw RMS diagnostics.' },
+        hotScalar: { type: 'runtime', current: state.hotScalar, description: 'Hot-fill scalar derived from calibrated RMS through hotResponse, independent of display compression.' },
+        hotResponse: { type: 'curve', min: 0.5, max: 3, step: 0.05, current: state.hotResponse, description: 'Whole-cube hot-fill response curve. Lower values make hot fill rarer; higher values make it arrive sooner.' },
         repeat: { type: 'boolean', current: state.repeat, description: 'Schedules repeated impulse drops only while driveMode is impulse.' },
         periodSeconds: { type: 'seconds', min: 0, max: 2, step: 0.01, current: state.period, description: 'Time between repeated impulses; runtime clamps 0 to 0.05s for safety.' },
         impulseAmplitude: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.amplitude, description: 'Base impulse amplitude; drives band strength and hot-fill pressure.' },
         amplitudeSwing: { type: 'unit', min: 0, max: 0.65, step: 0.01, current: state.swing, description: 'Random plus/minus amplitude variation for repeated impulses.' },
         bandWidthTiles: { type: 'tiles', min: 1, max: 9, step: 0.1, current: state.bandWidth, description: 'Impulse Test only: width of the artificial expanding annular band in cube-face pixels.' },
-        vuPaletteDrive: { type: 'curve', min: 0.5, max: 4, step: 0.05, current: state.vuDrive, description: 'Low-to-hot range compression. 1 is linear; higher values make ordinary hits traverse more of the palette.' },
+        vuPaletteDrive: { type: 'curve', min: 0.5, max: 4, step: 0.05, current: state.vuDrive, description: 'Low-to-hot color range compression. 1 is linear; higher values make ordinary hits traverse more of the palette without changing raw RMS.' },
         attackSharpness: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.attack, description: 'Controls edge definition and a small speed lift for sharper hits.' },
         outwardSpeedFaceRadiusPerSecond: { type: 'faceRadiusPerSecond', min: 0.15, max: 0.95, step: 0.01, current: state.speed, description: 'Outward motion speed of the ripple radius across each face.' },
         dampingPerSecond: { type: 'perSecond', min: 0.05, max: 1.1, step: 0.01, current: state.damping, description: 'Exponential decay of each band over time.' },
         edgeSoftness: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.softness, description: 'Soft edge width around each fat band.' },
-        hotFillStrength: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.hotFill, description: 'Strength of whole-cube hot-color takeover.' },
-        hotThreshold: { type: 'unit', min: 0.35, max: 0.98, step: 0.01, current: state.hotThreshold, description: 'Accumulated energy level where whole-cube hot fill begins.' },
+        hotFillStrength: { type: 'unit', min: 0, max: 1, step: 0.01, current: state.hotFill, description: 'Strength of whole-cube hot-color takeover after hotResponse and hotThreshold.' },
+        hotThreshold: { type: 'unit', min: 0.35, max: 0.98, step: 0.01, current: state.hotThreshold, description: 'Hot scalar level where whole-cube hot fill begins.' },
         wholeCubeMemory: { type: 'perSecond', min: 0.08, max: 0.95, step: 0.01, current: state.memory, description: 'Decay rate for accumulated cube energy / peak memory.' },
         facePixels: { type: 'integer', min: 6, max: 14, step: 1, current: state.tiles, description: 'Pixel grid resolution per cube face. Kept modest to reduce canvas CPU cost.' },
         idleTint: { type: 'unit', min: 0, max: 0.62, step: 0.01, current: state.idleTint, description: 'How much accent color mixes into the idle speaker surface.' },
@@ -1750,18 +1781,18 @@
     }
     function paletteExportDefinitions() {
       const out = {};
-      for (const [name, p] of Object.entries(PALETTES)) out[name] = { chassis: p.chassis, panel: p.panel, card: p.card || p.panel, accent: p.accent, accentSecondary: p.accentSecondary, sourceGradient: p.sourceGradient || null, controlMapping: { sliderGradient: [p.accent, p.accentSecondary], sliderThumb: p.accent }, vuMapping: { stops: normalizedStops(p), cycleAllStops: !!p.cycleAllStops, rule: p.cycleAllStops ? 'Normal repeated impulses cycle through every explicit VU stop in order.' : 'Each impulse samples one VU color at birth from heat; the expanding band keeps that color.' }, idleSurface: 'mix(panel, accent, idleTint)', hotSurface: 'mix(idleSurface, final VU stop / danger, hotFill * smoothstep(hotThreshold, 1.0, accumulatedEnergy))' };
+      for (const [name, p] of Object.entries(PALETTES)) out[name] = { chassis: p.chassis, panel: p.panel, card: p.card || p.panel, accent: p.accent, accentSecondary: p.accentSecondary, sourceGradient: p.sourceGradient || null, controlMapping: { sliderGradient: [p.accent, p.accentSecondary], sliderThumb: p.accent }, vuMapping: { stops: normalizedStops(p), cycleAllStops: !!p.cycleAllStops, rule: p.cycleAllStops ? 'Normal repeated impulses cycle through every explicit VU stop in order.' : 'Each impulse samples one VU color at birth from heat; the expanding band keeps that color.' }, idleSurface: 'mix(panel, accent, idleTint)', hotSurface: 'mix(idleSurface, final VU stop / danger, hotFill * smoothstep(hotThreshold, 1.0, hotScalar))' };
       return out;
     }
     function exportPayload() {
       const p = getPalette();
       return {
         id: 'sonicsphere-cube-scalar-vu', version: '2026-05-20-center-bloom-variants',
-        concept: { geometry: 'cube speakers only; each visible face is a low-resolution pixel/tile grid', visualLanguage: 'Music mode behaves like a normal VU: the RMS percent is the scalar and the cube faces bloom outward from the face center', audioSource: 'browser mockup can analyze shared tab audio for YouTube or a local audio file through Web Audio; production OrbitalViewKit remains a meter consumer', scalarFramework: 'meterScalar = RMS percent, rendered as one of four center-bloom variants', driveMode: 'exclusive Music or Impulse Test mode; never both at once', performanceRule: 'Music-mode drawing uses cached cube geometry, lower default face resolution, a capped canvas DPR, and a 24 fps render throttle.', smallScreenRule: 'wide monitor layout: left music meter plus 2×2 cube rail and right tabbed control rail fit inside a 1512×850 CSS-pixel stage that scales to the browser viewport; page scrolling is disabled', recommendedVariant: 'packetXL', selectedVariant: state.exportVariant },
+        concept: { geometry: 'cube speakers only; each visible face is a low-resolution pixel/tile grid', visualLanguage: 'Music mode behaves like a normal VU: raw RMS remains visible, then input calibration, display compression, display ceiling, and hot response tune cube bloom and hot fill independently', audioSource: 'browser mockup can analyze shared tab audio for YouTube or a local audio file through Web Audio; production OrbitalViewKit remains a meter consumer', scalarFramework: 'raw RMS percent -> calibratedRms -> displayVuScalar via levelCompression and displayCeiling -> one of four center-bloom variants; hotScalar uses calibratedRms and hotResponse', driveMode: 'exclusive Music or Impulse Test mode; never both at once', performanceRule: 'Music-mode drawing uses cached cube geometry, lower default face resolution, a capped canvas DPR, and a 24 fps render throttle.', smallScreenRule: 'wide monitor layout: left music meter plus 2×2 cube rail and right tabbed control rail fit inside a 1512×850 CSS-pixel stage that scales to the browser viewport; page scrolling is disabled', recommendedVariant: 'packetXL', selectedVariant: state.exportVariant },
         settings: currentSettings(), controlDefinitions: controlExportDefinitions(),
         activePalette: { name: state.paletteName, chassis: p.chassis, panel: p.panel, accent: p.accent, accentSecondary: p.accentSecondary, vuStops: normalizedStops(p), sourceGradient: p.sourceGradient || null, success: p.success, warning: p.warning, danger: p.danger, cycleAllStops: !!p.cycleAllStops, vuRule: p.cycleAllStops ? 'Normal repeated impulses cycle through every Tech Rainbow stop: violet, blue, cyan, green, yellow, orange, red. Amplitude controls band alpha and hot-fill pressure.' : 'Impulse heat is sampled once at birth using vuPaletteDrive, then the expanding band keeps that color.' },
         paletteDefinitions: paletteExportDefinitions(), selectedVariantDefinition: VARIANT_DEFINITIONS[state.exportVariant], allVariantDefinitions: VARIANT_DEFINITIONS,
-        mathDefinition: { audioAnalysis: ['time-domain RMS and peak come from an AnalyserNode only in Music mode', 'bass energy averages FFT bins up to 180 Hz', 'vuScalar = rms; peak and bass remain visible only as meter diagnostics', 'silence decays RMS and therefore the scalar naturally'], scalarVu: ['vuScalar = rms', 'state.energy = vuScalar in Music mode', 'radius = lerp(bloomMin, bloomMax, pow(vuScalar, radiusCurve))', 'fill = 1 - smoothstep(radius, radius + bloomEdge, distanceFromFaceCenter)'], driveMode: ['Music mode clears impulse-test drops and uses browser audio analysis as a scalar meter', 'Impulse Test mode stops music capture/playback, clears music state, and allows Drop one / Repeat impulse only'], faceCoordinate: 'u = (x + 0.5) / facePixels; v = (y + 0.5) / facePixels; r = hypot(u - 0.5, v - 0.5) * sqrt(2).', vuPaletteDrive: 'heat = 1 - pow(1 - clamp01(value), vuPaletteDrive).', techRainbowException: 'When palette.cycleAllStops is true in Impulse Test mode, bandColorT = palette.vuStops[impulseIndex % stopCount].stop, guaranteeing all colors are hit in a normal cycle.', impulseBirth: ['amp = clamp01(impulseAmplitude plus optional swing)', 'attack = attackSharpness', 'widthTiles = max(1.15, bandWidthTiles * lerp(1.18, 0.88, attackSharpness))', 'edgeSharpness = clamp01(attackSharpness * 0.7 + tempo * 0.3)', 'groupSpeed = outwardSpeedFaceRadiusPerSecond * lerp(0.92, 1.12, edgeSharpness)'], perTileSignal: ['Music mode: fill is based on the tile distance from face center and the RMS-derived bloom radius', 'Halo Edge Bloom adds a brighter rim at the current radius boundary', 'Impulse Test mode keeps the older annular ripple signal for artificial testing only'], color: ['idleBase = mix(panel, accent, idleTint)', 'vuColor = sampleVuStops(activePalette.vuStops, scalar and center-core heat)', 'hotColor = final activePalette.vuStops color', 'hot = hotFillStrength * smoothstep(hotThreshold, 1.0, vuScalar)', 'tileColor = mix(mix(idleBase, hotColor, hot), vuColor, centerBloomFill)'], performanceNote: 'Music mode draws one large cube per panel at a 24 fps cap, with cached geometry, default 9 x 9 faces, 1024-point FFT, down-sampled waveform, and canvas DPR capped at 1.35.' }
+        mathDefinition: { audioAnalysis: ['time-domain RMS and peak come from an AnalyserNode only in Music mode', 'bass energy averages FFT bins up to 180 Hz', 'raw rmsPercent remains the normal meter diagnostic', 'calibratedRms = clamp01(rmsPercent * inputCalibration)', 'displayVuScalar = min(1 - pow(1 - calibratedRms, levelCompression), displayCeiling)', 'hotScalar = 1 - pow(1 - calibratedRms, hotResponse)', 'silence decays raw RMS and therefore calibrated/display/hot scalars naturally'], scalarVu: ['default inputCalibration 1.0, levelCompression 1.0, displayCeiling 1.0 keeps displayVuScalar equal to raw RMS', 'state.energy = displayVuScalar in Music mode', 'radius = lerp(bloomMin, bloomMax, pow(displayVuScalar, radiusCurve))', 'fill = 1 - smoothstep(radius, radius + bloomEdge, distanceFromFaceCenter)'], driveMode: ['Music mode clears impulse-test drops and uses browser audio analysis as a scalar meter', 'Impulse Test mode stops music capture/playback, clears music state, and allows Drop one / Repeat impulse only'], faceCoordinate: 'u = (x + 0.5) / facePixels; v = (y + 0.5) / facePixels; r = hypot(u - 0.5, v - 0.5) * sqrt(2).', vuPaletteDrive: 'color heat = 1 - pow(1 - clamp01(value), vuPaletteDrive). This is separate from levelCompression, displayCeiling, and hotResponse.', techRainbowException: 'When palette.cycleAllStops is true in Impulse Test mode, bandColorT = palette.vuStops[impulseIndex % stopCount].stop, guaranteeing all colors are hit in a normal cycle.', impulseBirth: ['amp = clamp01(impulseAmplitude plus optional swing)', 'attack = attackSharpness', 'widthTiles = max(1.15, bandWidthTiles * lerp(1.18, 0.88, attackSharpness))', 'edgeSharpness = clamp01(attackSharpness * 0.7 + tempo * 0.3)', 'groupSpeed = outwardSpeedFaceRadiusPerSecond * lerp(0.92, 1.12, edgeSharpness)'], perTileSignal: ['Music mode: fill is based on the tile distance from face center and the display-compressed bloom radius', 'Halo Edge Bloom adds a brighter rim at the current radius boundary', 'Impulse Test mode keeps the older annular ripple signal for artificial testing only'], color: ['idleBase = mix(panel, accent, idleTint)', 'vuColor = sampleVuStops(activePalette.vuStops, scalar and center-core heat)', 'hotColor = final activePalette.vuStops color', 'hot = hotFillStrength * smoothstep(hotThreshold, 1.0, hotScalar)', 'tileColor = mix(mix(idleBase, hotColor, hot), vuColor, centerBloomFill)'], performanceNote: 'Music mode draws one large cube per panel at a 24 fps cap, with cached geometry, default 9 x 9 faces, 1024-point FFT, down-sampled waveform, and canvas DPR capped at 1.35.' }
       };
     }
     function updateExport() { if (els.exportText) els.exportText.value = JSON.stringify(exportPayload(), null, 2); }
@@ -1823,8 +1854,8 @@
       els.impulseButton.addEventListener('click', () => { setDriveMode('impulse'); triggerImpulse(performance.now() / 1000, { swing: false }); });
       els.clearButton.addEventListener('click', () => { state.drops = []; state.energy = 0; state.nextImpulseAt = performance.now() / 1000 + Math.max(0.05, state.period); updateExport(); });
       els.repeat.addEventListener('change', e => { state.repeat = e.target.checked; state.nextImpulseAt = performance.now() / 1000; updateExport(); });
-      const mappings = [['period','period'], ['amplitude','amplitude'], ['swing','swing'], ['bandWidth','bandWidth'], ['vuDrive','vuDrive'], ['attack','attack'], ['speed','speed'], ['damping','damping'], ['softness','softness'], ['hotFill','hotFill'], ['hotThreshold','hotThreshold'], ['memory','memory'], ['tiles','tiles'], ['idleTint','idleTint'], ['faceDelay','faceDelay'], ['checker','checker']];
-      for (const [id, key] of mappings) els[id].addEventListener('input', e => { state[key] = Number(e.target.value); refreshControls(); });
+      const mappings = [['period','period'], ['amplitude','amplitude'], ['swing','swing'], ['bandWidth','bandWidth'], ['vuDrive','vuDrive'], ['inputCalibration','inputCalibration'], ['levelCompression','levelCompression'], ['displayCeiling','displayCeiling'], ['attack','attack'], ['speed','speed'], ['damping','damping'], ['softness','softness'], ['hotResponse','hotResponse'], ['hotFill','hotFill'], ['hotThreshold','hotThreshold'], ['memory','memory'], ['tiles','tiles'], ['idleTint','idleTint'], ['faceDelay','faceDelay'], ['checker','checker']];
+      for (const [id, key] of mappings) els[id].addEventListener('input', e => { state[key] = Number(e.target.value); if (['inputCalibration', 'levelCompression', 'displayCeiling', 'hotResponse'].includes(key)) setDisplayVuScalar(state.audioRms); refreshControls(); });
       els.exportVariant.addEventListener('change', e => { state.exportVariant = e.target.value; updateExport(); });
       els.copyExport.addEventListener('click', copyExport); els.downloadExport.addEventListener('click', downloadExport);
       els.loadPalette.addEventListener('click', () => { try { const parsed = JSON.parse(els.paletteJson.value || '{}'); const name = parsed.name || `Custom ${Object.keys(PALETTES).length + 1}`; delete parsed.name; registerPalette(name, parsed); els.paletteStatus.textContent = `Loaded ${name}.`; updateExport(); } catch (err) { els.paletteStatus.textContent = `Palette error: ${err.message}`; } });

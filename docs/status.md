@@ -3,13 +3,13 @@
 ## Current Phase
 
 ```text
-native SwiftUI/SceneKit adaptive 30/60 fps smoothness Slice 017 complete
+browser cube VU calibration controls complete
 ```
 
 ## Current Milestone
 
 ```text
-Native continuation through Slice 017 is complete; the standalone SwiftPM app opens the approved Orbisonic-design-language native 3D Orbital View VU Kit screen with throttled inspector-only SwiftUI refresh, adaptive draw-on-demand SceneKit, a 30/60 fps active viewport motion toggle defaulting to 60 fps, cached SceneKit update paths, full-window PNG export, thicker shell struts, larger speaker labels, tuned rear-depth fog/material balance, and a release-built app bundle by default
+Browser cube VU mockup now separates raw RMS diagnostics, input calibration, display compression, display ceiling, and whole-cube hot response so quiet music can show detail without forcing cubes to stay hot
 ```
 
 ## Summary
@@ -21,6 +21,121 @@ The root launcher `Open Orbital View Kit.command` opens the live mockup file wit
 The root launcher `Open Native Orbital View VU Kit.command` builds a local `Orbital View VU Kit.app` bundle and opens it.
 
 The older root launcher `Open Orbital View Viewer.command` now opens the same `Orbital View VU Kit.app` bundle for compatibility.
+
+### Update: 2026-05-21 Browser Cube VU Calibration Controls
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added visible Cube VU `Input calibration`, `Display ceiling`, and `Hot response` controls to the single-screen browser mockup.
+- Kept raw RMS, Peak, and Bass as diagnostics.
+- Split Music-mode scalar flow into `rawRms`, `calibratedRms`, `displayVuScalar`, and `hotScalar`.
+- Kept `vuScalar` as a compatibility alias for `displayVuScalar`.
+- Changed cube bloom radius to use `displayVuScalar`.
+- Changed Music-mode whole-cube hot fill to use `calibratedRms` through `hotResponse`, not display-compressed RMS.
+- Kept existing `Color range / compression` scoped to palette/color heat only.
+- Updated browser mockup notes, the older design note, implementation map, and test strategy to document calibration, display ceiling, and independent hot response.
+- Added a dedicated `cube-vu-settings.md` reference next to the mockup to explain every cube setting, signal path value, tuning workflow, and export field.
+- Kept the work limited to browser mockup/docs; no Swift source, protected renderer/UI source, downstream audio, routing, or production renderer contracts changed.
+
+Commands run:
+
+```text
+node -e 'const fs=require("fs"); for (const file of ["mockups/orbital-view-viewport/index.html", "mockups/sonicsphere-cube-vu-single-screen/index.html"]) { const html=fs.readFileSync(file,"utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n"); new Function(scripts); } console.log("inline JS parses");'
+curl -I http://127.0.0.1:8765/OrbitalViewKit/
+node -e 'const clamp01=v=>Math.max(0,Math.min(1,v)); const c=(v,k)=>1-Math.pow(1-clamp01(v),k); const raw=0.25; const calibrated=clamp01(raw*1); const displayDefault=Math.min(c(calibrated,1),1); if (Math.abs(displayDefault-raw)>1e-12) throw new Error("default display changed"); const displayLift=Math.min(c(calibrated,3),1); if (!(displayLift>raw)) throw new Error("level compression did not lift quiet display"); const newHot=c(calibrated,1.7); const oldHotFromDisplay=c(displayLift,1.7); if (!(newHot<oldHotFromDisplay)) throw new Error("hot still follows display compression"); if (Math.min(c(0.8,3),0.6)!==0.6) throw new Error("display ceiling failed"); console.log("calibration math ok");'
+curl -s -o /tmp/orbital-view-kit-served.html http://127.0.0.1:8765/OrbitalViewKit/
+rg -n "Input calibration|Display ceiling|Hot response|calibratedRms|hotScalar" /tmp/orbital-view-kit-served.html
+rg -n "Cube VU Settings Reference|displayVuScalar|Hot response|Band width / fatness|Tech Rainbow" mockups/sonicsphere-cube-vu-single-screen/cube-vu-settings.md
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Results:
+
+```text
+Inline mockup JavaScript parse passed.
+Pinned local URL returned HTTP 200 OK.
+Served HTML contains the calibration controls and export wiring.
+Settings reference contains the signal path, display scalar, hot response, current defaults, and Tech Rainbow default.
+Calibration math check passed for default identity, quiet-level display lift, hot/display decoupling, and display ceiling cap.
+swift build passed.
+swift test passed: 86 tests, 0 failures.
+git diff --check passed.
+```
+
+Bugs found or fixed:
+
+```text
+Fixed the browser cube VU tuning path where Level compression could make ordinary RMS values trigger sustained whole-cube hot fill.
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+### Update: 2026-05-21 Browser Cube VU Level Compression
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a Tune-tab Cube VU `Level compression` slider to the single-screen browser mockup.
+- Kept the default at `1.00x`, preserving the prior raw-RMS display scalar unless the user intentionally lifts quiet material.
+- Kept RMS, Peak, and Bass as raw music diagnostics.
+- Added a separate `displayVuScalar` export value and kept `vuScalar` as a compatibility alias for that display-compressed scalar.
+- Kept existing `Color range / compression` scoped to palette/color heat only.
+- Updated browser mockup notes, the older design note, implementation map, and test strategy to document raw RMS versus display scalar versus color compression.
+- Kept the work limited to browser mockup/docs; no Swift source, protected renderer/UI source, downstream audio, routing, or production renderer contracts changed.
+
+Commands run:
+
+```text
+node -e 'const fs=require("fs"); for (const file of ["mockups/orbital-view-viewport/index.html", "mockups/sonicsphere-cube-vu-single-screen/index.html"]) { const html=fs.readFileSync(file,"utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n"); new Function(scripts); } console.log("inline JS parses");'
+curl -I http://127.0.0.1:8765/OrbitalViewKit/
+node -e 'const values=[0,0.02,0.1,0.35,0.75,1]; const compress=(v,c)=>1-Math.pow(1-Math.max(0,Math.min(1,v)),c); for (const v of values) { if (Math.abs(compress(v,1)-v)>1e-12) throw new Error(`1x mismatch at ${v}`); } if (!(compress(0.1,2)>0.1 && compress(0.35,2)>0.35 && compress(1,2)===1 && compress(0,2)===0)) throw new Error("compression curve failed"); console.log("level compression math ok");'
+curl -s -o /tmp/orbital-view-kit-served.html http://127.0.0.1:8765/OrbitalViewKit/
+rg -n "Level compression|displayVuScalar|levelCompression|Raw RMS stays visible" /tmp/orbital-view-kit-served.html
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+git diff --check
+```
+
+Results:
+
+```text
+Inline mockup JavaScript parse passed.
+Pinned local URL returned HTTP 200 OK.
+Served HTML contains the Level compression slider and displayVuScalar/export wiring.
+Level compression math check passed for 1.00x identity and higher-value quiet-level lift.
+swift build passed.
+swift test passed: 86 tests, 0 failures.
+git diff --check passed.
+```
+
+Bugs found or fixed:
+
+```text
+Fixed quiet music readability in the browser cube VU mockup by adding an explicit display-only level compression curve instead of overloading color compression or hiding raw RMS.
+```
+
+Protected paths touched:
+
+```text
+none
+```
 
 ### Update: 2026-05-21 Adaptive 30/60 FPS Native Viewer
 

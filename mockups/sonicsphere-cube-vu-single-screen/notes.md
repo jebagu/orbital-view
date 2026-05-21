@@ -1,10 +1,12 @@
 # Sonicsphere Cube Scalar VU · Single-Screen Tuner
 
-This revision is cube-only. Every Sonicsphere speaker is treated as a small Minecraft-like cube whose visible faces are divided into a low-resolution tile grid. The music visualization is intentionally simple: the normal VU meter's RMS percent is the scalar, and the cube faces render that scalar directly.
+This revision is cube-only. Every Sonicsphere speaker is treated as a small Minecraft-like cube whose visible faces are divided into a low-resolution tile grid. The music visualization keeps the normal VU meter's RMS percent as the raw diagnostic, then applies input calibration, display-only level compression, display ceiling, and independent hot response before the cube faces render.
+
+For a compact operator and implementation reference for every cube setting, see [cube-vu-settings.md](cube-vu-settings.md).
 
 ## Visual rule
 
-The effect should not read as random noise. The speaker is idle as a single tinted surface color. In **Music** mode, `vuScalar` is exactly the same number as the RMS percent shown in the normal meter. Peak and Bass stay visible as diagnostics, but they do not drive the cube bloom. The cube faces bloom outward from the center of each visible face, with the bloom color coming from the same VU palette as the normal meter.
+The effect should not read as random noise. The speaker is idle as a single tinted surface color. In **Music** mode, RMS remains the raw normal-meter value, `calibratedRms` is the input-trimmed value, `displayVuScalar` is the level-compressed and ceiling-capped scalar used by cube bloom, and `hotScalar` is a separate whole-cube hot-fill value. At the default **Input calibration 1.00x**, **Level compression 1.00x**, and **Display ceiling 100%**, `displayVuScalar` equals RMS exactly. Higher Level compression values lift quiet and mid-level music into a broader visual range without automatically forcing hot fill to stay on. Peak and Bass stay visible as diagnostics, but they do not drive the cube bloom. The cube faces bloom outward from the center of each visible face, with the bloom color coming from the same VU palette as the normal meter.
 
 At sustained high energy, the whole cube can flood toward the final hot color. This is the peak-state behavior: when the meter is really going, the cube itself becomes the hot color rather than only showing isolated center tiles.
 
@@ -38,7 +40,7 @@ The mockup can now drive the VU from browser audio while staying outside the pro
 
 - **Capture YouTube/Tab** uses `navigator.mediaDevices.getDisplayMedia()` with audio sharing. The user opens and plays YouTube in another tab, returns to this mockup, clicks capture, and selects the tab with audio enabled.
 - **Local file** uses the visible `<audio>` element plus `MediaElementAudioSourceNode`, so MP3/M4A/WAV playback is audible and analyzable in the same page.
-- The analyzer uses `AudioContext`, `AnalyserNode`, waveform RMS/peak, and low-frequency FFT bins. The cube VU scalar is exactly the RMS percent; Peak and Bass are diagnostics only.
+- The analyzer uses `AudioContext`, `AnalyserNode`, waveform RMS/peak, and low-frequency FFT bins. RMS stays raw in the normal meter; Input calibration, Level compression, Display ceiling, and Hot response derive the display/hot cube scalars from RMS. Peak and Bass are diagnostics only.
 - A VU drive toggle makes **Music** and **Impulse Test** mutually exclusive. Music mode uses the Web Audio analyzer; Impulse Test stops browser audio capture/playback, clears music-driven drops, and enables artificial Drop/Repeat controls.
 
 This does not change the production contract. `OrbitalViewKit` remains a consumer of host-provided meter frames; this is a browser-only preview for tuning how a host-provided scalar should feel.
@@ -53,17 +55,21 @@ v = (y + 0.5) / facePixels;
 r = hypot(u - 0.5, v - 0.5) * sqrt(2);
 ```
 
-Music mode uses the RMS meter value directly:
+Music mode derives separate display and hot-fill scalars from the raw RMS meter value:
 
 ```ts
-vuScalar = rms;
-state.energy = vuScalar;
+calibratedRms = clamp01(rms * inputCalibration);
+displayVuScalar = min(1 - pow(1 - calibratedRms, levelCompression), displayCeiling);
+hotScalar = 1 - pow(1 - calibratedRms, hotResponse);
+state.energy = displayVuScalar;
 ```
+
+At `inputCalibration = 1.0`, `levelCompression = 1.0`, and `displayCeiling = 1.0`, this is exactly the prior direct-RMS display behavior. Higher Level compression values keep `0` and `1` fixed while expanding quieter material between those endpoints, while Hot response controls whole-cube hot fill separately.
 
 The default cube visualization is a center VU bloom:
 
 ```ts
-radius = lerp(bloomMin, bloomMax, pow(vuScalar, radiusCurve));
+radius = lerp(bloomMin, bloomMax, pow(displayVuScalar, radiusCurve));
 distance = hypot(u - 0.5, v - 0.5) * sqrt(2);
 fill = 1 - smoothstep(radius, radius + bloomEdge, distance);
 tileColor = mix(idleSurface, sampleVuStops(centerHeat), fill);
@@ -98,7 +104,7 @@ Color mix:
 idleBase = mix(panel, accent, idleTint);
 vuColor = sampleVuStops(activePalette.vuStops, centerHeat);
 hotColor = final activePalette.vuStops color;
-hot = hotFillStrength * smoothstep(hotThreshold, 1.0, accumulatedEnergy);
+hot = hotFillStrength * smoothstep(hotThreshold, 1.0, hotScalar);
 tileColor = mix(mix(idleBase, hotColor, hot), vuColor, centerBloomFill);
 ```
 
@@ -110,10 +116,30 @@ The prototype exposes the controls that should become renderer/preset parameters
 - **Impulse interval** and **Impulse amplitude** for the simulator in the Impulse tab.
 - **Amplitude swing** for varying repeated impulses in Impulse Test mode.
 - **Capture YouTube/Tab**, **Stop Capture**, local audio file input, source status, and live RMS/Peak/Bass readouts in both the control rail and the separate normal meter panel.
-- **Cube VU scalar** readout, which should match the RMS percent exactly.
+- **Cube VU scalar** readout, which shows the display-compressed scalar. At Level compression 1.00x it matches the RMS percent exactly.
+- **Input calibration**, which trims the source RMS before display compression and hot response.
+- **Level compression**, which remaps raw RMS into the display scalar for quiet music without changing the raw RMS/Peak/Bass diagnostics.
+- **Display ceiling**, which caps cube bloom after Level compression without changing raw RMS.
+- **Hot response**, which controls whole-cube hot fill from calibrated RMS instead of from display-compressed RMS.
 - **Face pixels**, **idle tint**, **face phase stagger**, and **checker contrast**.
 - **Palette picker** in the Tune tab.
 - **Custom palette JSON loader** and **selected variant export** in the Advanced tab.
+
+The level compression formula is:
+
+```ts
+compressLevel(v) = 1 - pow(1 - clamp01(v), levelCompression)
+```
+
+`1.0` is calibrated RMS. Higher values lift quiet and medium material into a more readable cube-bloom range.
+
+The hot response formula is:
+
+```ts
+compressHot(v) = 1 - pow(1 - clamp01(v), hotResponse)
+```
+
+This uses `calibratedRms`, not `displayVuScalar`, so lifting quiet detail through Level compression does not automatically make the whole cube stay hot.
 
 The color compression formula is:
 
@@ -121,7 +147,7 @@ The color compression formula is:
 compressVu(v) = 1 - pow(1 - clamp01(v), vuPaletteDrive)
 ```
 
-`1.0` is linear. Values above `1.0` make normal hits more vivid and hot sooner. Values below `1.0` reserve hot colors for only the loudest inputs.
+`1.0` is linear. Values above `1.0` make normal hits more vivid and hot sooner. Values below `1.0` reserve hot colors for only the loudest inputs. This remains separate from Level compression and Hot response: color compression changes palette heat, Level compression changes bloom radius/energy, and Hot response changes whole-cube hot fill.
 
 ## Tech Rainbow palette
 
@@ -229,6 +255,6 @@ This pass:
 - down-samples the visible waveform to at most 160 points;
 - reduces spectrum bars from 44 to 32;
 - lowers the visual redraw cap from 30 fps to 24 fps.
-- makes `vuScalar` exactly equal to the RMS percent, removing the earlier gain/compression/release smoothing path.
+- keeps Input calibration, Level compression, and Display ceiling defaults at the old raw-RMS display behavior, so `displayVuScalar` equals the RMS percent unless the user intentionally lifts or caps it.
 
 Audio analysis still runs in the page, but the expensive canvas paint work now creates far fewer short-lived objects, which should reduce periodic garbage-collection stalls.

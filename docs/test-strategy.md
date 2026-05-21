@@ -189,7 +189,7 @@ For `mockups/sonicsphere-cube-vu-single-screen/`, verify:
 - the Advanced tab exposes custom palette JSON and implementation export controls without crowding the Tune tab
 - the VU drive toggle enforces exclusive Music vs Impulse Test behavior
 - the audio source group exposes tab capture, stop capture, local file input/playback, live RMS/Peak/Bass readouts, and idle/capturing/no-audio/permission-denied statuses
-- browser-only Web Audio analysis uses captured tab audio or local file playback to drive both the normal meter and cube VU only in Music mode, with `vuScalar` equal to RMS percent, without altering Swift package audio, routing, or renderer contracts
+- browser-only Web Audio analysis uses captured tab audio or local file playback to drive both the normal meter and cube VU only in Music mode, with raw RMS/Peak/Bass diagnostics preserved, Input calibration/Level compression/Display ceiling deriving the display scalar, and Hot response deriving whole-cube hot fill separately, without altering Swift package audio, routing, or renderer contracts
 - switching to Impulse Test stops music capture/playback, disables music controls, clears existing drops/energy, and enables impulse controls
 - switching to Music disables impulse controls and clears existing impulse drops/energy
 - browser measurement confirms the document fits within the viewport without scrollbars

@@ -82,6 +82,10 @@ The prototype exposes the controls that should become renderer/preset parameters
 - **Amplitude swing** for varying repeated impulses in Impulse Test mode.
 - **Capture YouTube/Tab**, **Stop Capture**, local audio file input, source status, and live RMS/Peak/Bass readouts in both the control rail and the separate normal meter panel.
 - **Band width / fatness**, measured in face tiles. This is the key small-screen readability control.
+- **Input calibration**, pre-compression RMS trim. Lower it when the selected source is calibrated too hot.
+- **Level compression**, the Music-mode display scalar curve. `1.0` preserves raw RMS; higher values lift quiet music before cube bloom.
+- **Display ceiling**, a cap on the display scalar after Level compression.
+- **Hot response**, the whole-cube hot-fill response curve derived from calibrated RMS, separate from the display scalar.
 - **Color range / compression** (`vuPaletteDrive`), the low-to-hot drive control. Higher values push medium amplitudes farther through the palette.
 - **Attack sharpness**, **outward speed**, **damping**, and **edge softness**.
 - **Hot fill strength**, **hot threshold**, and **whole-cube memory**.
@@ -96,6 +100,8 @@ compressVu(v) = 1 - pow(1 - clamp01(v), vuPaletteDrive)
 ```
 
 `1.0` is linear. Values above `1.0` make normal hits more vivid and hot sooner. Values below `1.0` reserve hot colors for only the loudest inputs.
+
+This is separate from Level compression and Hot response. Level compression changes the scalar used for cube bloom, Hot response changes whole-cube hot fill, and color compression only changes palette heat.
 
 ## Tech Rainbow palette
 
