@@ -34,15 +34,34 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     func testCorrectViewerKeepsLeftRailFocusedAndMovesTuningTraysRight() {
         XCTAssertEqual(
             OrbitalViewportMockup.leftRailSectionTitles,
-            ["Song Audio Source", "Camera", "Color Scheme", "Speaker Type", "View Detail"]
+            ["Song Audio Source", "Camera", "Speaker Type", "View Detail"]
         )
         XCTAssertEqual(OrbitalViewportCameraView.allCases.map(\.title), ["Plan", "Elevation", "Isometric"])
-        XCTAssertEqual(OrbitalViewportRenderStyle.allCases.map(\.title), ["Purple", "Flamingo", "Green", "B&W"])
+        XCTAssertEqual(
+            OrbitalViewportRenderStyle.allCases.map(\.title),
+            [
+                "Purple",
+                "Flamingo",
+                "Green",
+                "B&W",
+                "Daft Punk Bow",
+                "Rack Mint",
+                "Rack Pink",
+                "Rack Blue",
+                "Ember Console",
+                "Graphite",
+                "Flamingo Green",
+                "Dusty Rose"
+            ]
+        )
+        XCTAssertEqual(OrbitalViewportMockup.themeControlPattern, "full-width-orbisonic-theme-buttons")
+        XCTAssertEqual(OrbitalViewportMockup.themePaletteSource, "orbisonic-palette-brief")
         XCTAssertEqual(OrbitalViewportSpeakerShape.allCases.map(\.title), ["Prism", "Sphere", "Cube VU"])
         XCTAssertEqual(OrbitalViewportFrameRate.allCases.map(\.title), ["30 FPS", "60 FPS"])
         XCTAssertEqual(
             OrbitalViewportMockup.tuningTrayTitles,
             [
+                "Orbisonic Theme",
                 "Speaker VU",
                 "Meter Calibration",
                 "Surface + Bloom",
@@ -58,7 +77,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(OrbitalViewportMockup.motionFPSControlLocation, "right-performance-tray")
         XCTAssertEqual(OrbitalViewportMockup.audioSourcePosition, "top-left-above-title")
-        XCTAssertEqual(OrbitalViewportMockup.audioTransportButtonLayout, "side-by-side-play-pause")
+        XCTAssertEqual(OrbitalViewportMockup.audioTransportButtonLayout, "side-by-side-transport-icon-buttons")
         XCTAssertEqual(
             OrbitalViewportMockup.removedRightPanelCards,
             ["Scene", "No speaker selected", "30-channel VU list"]
@@ -77,6 +96,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(defaults.hotFillStrength, Double(core.hotFillStrength), accuracy: 0.000_001)
         XCTAssertEqual(defaults.paletteDrive, Double(core.vuPaletteDrive), accuracy: 0.000_001)
         XCTAssertEqual(defaults.facePixels, core.facePixels)
+        XCTAssertEqual(defaults.cubeOutlineStrength, 0)
 
         let scalars = SpeakerCubeVUScalars(rawRms: 0.5, settings: defaults.coreSettings, paletteValue: 0.75)
         XCTAssertGreaterThan(scalars.displayVuScalar, 0)
@@ -89,6 +109,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertFalse(OrbitalViewportCubeVUSceneKitMaterial.usesFrontFacePixelPlane)
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.usesActualCubeFaceMaterials)
         XCTAssertGreaterThan(OrbitalViewportCubeVUSceneKitMaterial.cubeVUReadableFaceScale, 2)
+        XCTAssertLessThan(OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineEdgeThicknessRatio, 0.03)
+        XCTAssertLessThan(OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineNormalAlphaMultiplier, 0.6)
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("floor(uv * pixels)"))
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("centerFill"))
         XCTAssertTrue(OrbitalViewportCubeVUSceneKitMaterial.surfaceShader.contains("gridLine"))
@@ -186,6 +208,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let base = makeViewportConfiguration(timeMS: 1_000)
         var materialOnlySettings = OrbitalViewportCubeVUSettings.default
         materialOnlySettings.paletteDrive = 2.6
+        materialOnlySettings.cubeOutlineStrength = 0.7
         var heightSettings = OrbitalViewportCubeVUSettings.default
         heightSettings.speakerHeight = 1.35
 

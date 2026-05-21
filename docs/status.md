@@ -16,11 +16,11 @@ Confirmed geodesic review app preserved with cube VU/object tuning trays
 
 The active review app is the existing `OrbitalViewViewer` executable in this package, now hosting the confirmed VU Kit native SceneKit geodesic viewport surface through `OrbitalViewportMockup`. It is not the rejected bare MTKView demo surface and does not create a second standalone copied app.
 
-The confirmed review app preserves the original left control rail sections and defaults: Camera, Color Scheme, Speaker Type, and View Detail. `Song Audio Source` now sits at the top of the left rail with separate Play and Pause buttons. The right panel is now the tuning/debug panel for speaker VU, meter calibration, surface/bloom, graphical performance versus CPU load, presets, and diagnostics. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
+The confirmed review app preserves the original left control rail sections and defaults for Camera, Speaker Type, and View Detail. `Song Audio Source` now sits at the top of the left rail with side-by-side transport icon buttons for Play and Pause. Color scheme selection moved out of the left rail and into the right `Orbisonic Theme` tray. The right panel is now the tuning/debug panel for Orbisonic theme selection, speaker VU, meter calibration, surface/bloom, graphical performance versus CPU load, presets, and diagnostics. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
 
 The SceneKit review app can load a local audio file for visual testing. Local file playback uses a simple choose-file plus separate play/pause transport and reduces the file meter to one mono RMS/peak sample applied equally to all speakers. This is a review-app input mode only; production hosts still provide real `SpeakerMeterFrame` values keyed by physical speaker channel.
 
-`Cube VU` speaker type now uses the VU Kit scalar center-bloom contract in the SceneKit surface with a retained 9x9 face-pixel material texture applied to the actual cube faces, Daft Punk Bow ramp color, RMS-driven center bloom, peak/hot fill, and clip flash. Prism and Sphere keep the existing simpler material tint behavior.
+`Cube VU` speaker type now uses the VU Kit scalar center-bloom contract in the SceneKit surface with a retained 9x9 face-pixel material texture applied to the actual cube faces, selected Orbisonic theme colors, RMS-driven center bloom, peak/hot fill, clip flash, and a material-only cube outline strength control. Prism and Sphere keep the existing simpler material tint behavior while inheriting the selected viewport theme.
 
 The production SwiftUI wrapper still targets the MetalKit renderer seam for downstream hosts. The native review executable is intentionally a SceneKit visual-review surface because that is the UI the user confirmed as correct.
 
@@ -90,6 +90,102 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-21 Orbisonic Family Theme Tray Consolidation
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Removed the duplicate `Color Scheme` section from the left rail so the left rail now stays focused on Song Audio Source, Camera, Speaker Type, and View Detail.
+- Expanded the right `Orbisonic Theme` tray from the four local review colors to the Orbisonic family palette set sourced from `orbisonic-palette-brief`: Purple, Flamingo, Green, B&W, Daft Punk Bow, Rack Mint, Rack Pink, Rack Blue, Ember Console, Graphite, Flamingo Green, and Dusty Rose.
+- Replaced the system segmented picker with full-width Orbisonic-style theme buttons with fixed-height rows, compact subtitles, active borders, and palette swatches.
+- Routed review-app shell, panels, controls, fog, labels, speaker colors, Cube VU ramps, hot color, and outline color through the selected palette.
+- Made the Cube Outline edge bars thinner and less opaque so the strongest setting reads as a delicate cube edge treatment rather than a heavy cage.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the left rail no longer includes Color Scheme, the theme tray uses full-width Orbisonic theme buttons, the expanded palette list is present, and cube outline constants stay delicate.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 17 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 77 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> refreshed app executable
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> launched refreshed native review app
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-21 Orbisonic Theme And Cube Outline Controls
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added an `Orbisonic Theme` tray at the top of the right tuning panel so Purple, Flamingo, Green, and B&W can drive shell, viewport, and Cube VU color treatment from one review-app theme picker.
+- Changed local audio Play and Pause controls to side-by-side transport icon buttons while keeping `Choose File` at the top of the left rail.
+- Routed Cube VU face colors, hot colors, fog, shell accents, labels, and selection color through the selected theme instead of a fixed Daft Punk Bow-only ramp in the SceneKit review surface.
+- Added a `Cube Outline` slider in `Speaker VU`; `0.00` hides the retained cube-edge nodes and `1.00` draws clear edge outlines along the cube speaker edges.
+- Kept the cube outline and theme changes material-only so meter/theme/outline ticks do not rebuild speaker body geometry or the shell.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the Orbisonic Theme tray exists, transport uses icon buttons, Cube Outline defaults to zero, and outline/theme tuning stays outside speaker geometry rebuild keys.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 17 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 77 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer -> refreshed app executable
+open Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app -> launched refreshed native review app
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
 
 ### Update: 2026-05-21 Cube VU Face Grid Visibility Fix
 

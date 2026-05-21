@@ -37,7 +37,7 @@ OrbitalViewCore tests and validates core scene contracts.
 OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore scenes.
 OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
 OrbitalViewRender stores scene, speaker meters, cube VU settings, dynamic object frames, object meters, object visual settings, camera, and selection state behind a MetalKit renderer seam. Internal draw-input snapshots separate static speaker geometry from display-only speaker material inputs and object overlay inputs for invariant testing.
-OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge and can opt into native collapsible tuning trays for Cube VU speaker settings, object overlays, trails, fixed object bounds, presets, performance-versus-CPU controls, and diagnostics.
+OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge and can opt into native collapsible tuning trays for Orbisonic theme selection, Cube VU speaker settings, object overlays, trails, fixed object bounds, presets, performance-versus-CPU controls, and diagnostics.
 ```
 
 Future runtime shape:
@@ -85,6 +85,8 @@ The production wrapper now includes an optional native tuning surface. Hosts can
 - speaker VU shape/style/color/height controls
 - meter calibration controls
 - surface, bloom, checker, and face-pixel controls
+- Orbisonic design language theme selection for shell, speaker, label, fog, and VU color treatment
+- Cube VU outline strength controls for retained edge-line materials
 - object overlay, trail, glow-trail, and fixed `-5...+5` bounds controls
 - graphical performance versus CPU load controls for active FPS, meter-only cadence, inspector cadence, draw-on-demand, face-pixel cost, and trail caps
 - presets and debug diagnostics
@@ -137,9 +139,9 @@ The accepted production rendering framework is MetalKit.
 
 The current native review executable is a deliberately separate visual-review surface: `OrbitalViewViewer` hosts the confirmed VU Kit SceneKit geodesic `OrbitalViewportMockup` so the approved viewport controls, shell, tuning panel, PNG export, and adaptive SceneKit interaction can be tuned before downstream integration. This review app must not be confused with the rejected bare MTKView demo surface. Production host integration remains through the MetalKit renderer seam unless a later task explicitly changes that decision.
 
-In the SceneKit review executable, the left rail is limited to song audio source, camera, color scheme, speaker type, and view detail controls. The right panel owns speaker VU tuning, meter calibration, surface/bloom, graphical performance versus CPU load, presets, and debug diagnostics. Source-object overlay/trail controls are hidden in this review surface until the Wavefield object work resumes.
+In the SceneKit review executable, the left rail is limited to song audio source, camera, speaker type, and view detail controls. The song audio source uses side-by-side transport icon buttons for Play and Pause. The right panel owns Orbisonic theme selection, speaker VU tuning, meter calibration, surface/bloom, graphical performance versus CPU load, presets, and debug diagnostics. Source-object overlay/trail controls are hidden in this review surface until the Wavefield object work resumes.
 
-The SceneKit review app's Cube VU speaker type uses the shared Core cube scalar contract but implements the visible face skin locally with a retained SceneKit material. The material uses a retained 9x9 pixelated face texture cache applied directly to the actual six `SCNBox` cube faces and a Cube-VU-only readable face scale so the face grid is visible at small speaker sizes. It maps RMS to face-center bloom, maps peak/hot energy to hot fill, and uses Daft Punk Bow ramp colors. This does not change the production MetalKit renderer contract.
+The SceneKit review app's Cube VU speaker type uses the shared Core cube scalar contract but implements the visible face skin locally with a retained SceneKit material. The material uses a retained 9x9 pixelated face texture cache applied directly to the actual six `SCNBox` cube faces and a Cube-VU-only readable face scale so the face grid is visible at small speaker sizes. It maps RMS to face-center bloom, maps peak/hot energy to hot fill, and uses the selected Orbisonic family theme for shell, panels, controls, fog, labels, cube VU ramp, hot fill, and outline colors. The theme tray uses full-width Orbisonic button rows, not a native segmented picker, and includes the current family palette set from `orbisonic-palette-brief`. Cube outlines are retained edge `SCNBox` child nodes whose material alpha is controlled by the Cube Outline slider; changing outline strength does not rebuild the speaker body. This does not change the production MetalKit renderer contract.
 
 ## Performance Model
 

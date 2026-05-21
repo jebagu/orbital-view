@@ -88,8 +88,11 @@ Current wrapper skeleton tests cover:
 - MTKView applies active 30/60 FPS and draw-on-demand performance settings
 - camera and selection configuration emits renderer events
 - the confirmed SceneKit `OrbitalViewportMockup` viewer identity, left rail options, right tuning panel inventory, geodesic shell counts, and adaptive FPS constants remain intact
+- SceneKit review-app audio source uses native transport icon buttons for Play and Pause
+- SceneKit review-app right panel includes the Orbisonic Theme tray and keeps theme controls out of the left rail tuning stack
+- SceneKit review-app Orbisonic Theme tray uses full-width custom theme buttons, includes the Orbisonic family palette list from `orbisonic-palette-brief`, and does not use a native segmented picker
 - SceneKit review-app meter-only ticks update material cadence without rebuilding shell or speaker geometry
-- SceneKit review-app Cube VU controls preserve Core scalar defaults, default to 9x9 face pixels, and separate material-only tuning from speaker-height geometry tuning
+- SceneKit review-app Cube VU controls preserve Core scalar defaults, default to 9x9 face pixels, default Cube Outline to invisible, keep outline constants delicate, and separate material-only theme/outline tuning from speaker-height geometry tuning
 - SceneKit review-app Cube VU retained face-texture support exposes the face-pixel quantization and center-fill contract on the actual cube faces without replacing the approved SceneKit surface
 - SceneKit review-app speaker type options include `Prism`, `Sphere`, and `Cube VU`, with full-width tray header hit targets for collapsible tuning sections
 - SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state

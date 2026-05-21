@@ -31,11 +31,13 @@ public struct OrbitalViewportMockup: View {
     static let leftRailSectionTitles = [
         "Song Audio Source",
         "Camera",
-        "Color Scheme",
         "Speaker Type",
         "View Detail"
     ]
+    static let themeControlPattern = "full-width-orbisonic-theme-buttons"
+    static let themePaletteSource = "orbisonic-palette-brief"
     static let tuningTrayTitles = [
+        "Orbisonic Theme",
         "Speaker VU",
         "Meter Calibration",
         "Surface + Bloom",
@@ -51,7 +53,7 @@ public struct OrbitalViewportMockup: View {
     ]
     static let objectTuningTraysVisible = false
     static let audioSourcePosition = "top-left-above-title"
-    static let audioTransportButtonLayout = "side-by-side-play-pause"
+    static let audioTransportButtonLayout = "side-by-side-transport-icon-buttons"
     static let motionFPSControlLocation = "right-performance-tray"
     static let removedRightPanelCards = [
         "Scene",
@@ -85,6 +87,7 @@ public struct OrbitalViewportMockup: View {
     @StateObject private var localAudio = OrbitalViewportLocalAudioController()
     @State private var cubeVUSettings = OrbitalViewportCubeVUSettings.default
     @State private var objectTuning = OrbitalViewportObjectTuning.default
+    @State private var themeExpanded = false
     @State private var speakerVUExpanded = false
     @State private var meterCalibrationExpanded = false
     @State private var surfaceBloomExpanded = false
@@ -224,7 +227,6 @@ public struct OrbitalViewportMockup: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     cameraSection
-                    colorSection
                     shapeSection
                     viewDetailSection
                 }
@@ -274,15 +276,17 @@ public struct OrbitalViewportMockup: View {
                 localAudio.chooseAudioFile()
             }
             HStack(spacing: 8) {
-                controlButton(
-                    "Play",
+                transportButton(
+                    systemName: "play.fill",
+                    title: "Play",
                     active: localAudio.isPlaying,
                     disabled: !localAudio.hasLoadedAudio || localAudio.isPlaying
                 ) {
                     localAudio.play()
                 }
-                controlButton(
-                    "Pause",
+                transportButton(
+                    systemName: "pause.fill",
+                    title: "Pause",
                     active: localAudio.isPlaying,
                     disabled: !localAudio.isPlaying
                 ) {
@@ -294,20 +298,6 @@ public struct OrbitalViewportMockup: View {
                 .foregroundStyle(theme.muted)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-
-    private var colorSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("Color Scheme")
-            controlButtonGroup(
-                OrbitalViewportRenderStyle.allCases,
-                selection: renderStyle,
-                title: \.title
-            ) { style in
-                renderStyle = style
-            }
         }
     }
 
@@ -345,10 +335,29 @@ public struct OrbitalViewportMockup: View {
         }
     }
 
+    private var orbisonicThemeTray: some View {
+        tuningTray("Orbisonic Theme", isExpanded: $themeExpanded) {
+            VStack(spacing: 6) {
+                ForEach(OrbitalViewportRenderStyle.allCases) { style in
+                    themeButton(style)
+                }
+            }
+            tuningValueRow("Shell", value: renderStyle.title)
+            tuningValueRow("Cube VU Ramp", value: renderStyle.title)
+        }
+    }
+
     private var speakerVUTray: some View {
         tuningTray("Speaker VU", isExpanded: $speakerVUExpanded) {
             tuningValueRow("Speaker Surface", value: "Cube VU on \(speakerShape.title)")
             tuningValueRow("Channels", value: "30 physical")
+            tuningSliderRow(
+                "Cube Outline",
+                value: $cubeVUSettings.cubeOutlineStrength,
+                range: 0...1,
+                step: 0.01,
+                valueText: cubeVUSettings.cubeOutlineStrength.formatted(.number.precision(.fractionLength(2)))
+            )
             tuningSliderRow(
                 "Speaker Height",
                 value: $cubeVUSettings.speakerHeight,
@@ -575,6 +584,18 @@ public struct OrbitalViewportMockup: View {
         )
     }
 
+    private var themeBinding: Binding<OrbitalViewportRenderStyle> {
+        Binding(
+            get: { renderStyle },
+            set: { style in
+                if renderStyle != style {
+                    renderStyle = style
+                    recordDiagnostic("Orbisonic theme set to \(style.title)")
+                }
+            }
+        )
+    }
+
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .heavy))
@@ -609,6 +630,32 @@ public struct OrbitalViewportMockup: View {
         .opacity(disabled ? 0.62 : 1)
     }
 
+    private func transportButton(
+        systemName: String,
+        title: String,
+        active: Bool,
+        disabled: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .heavy))
+                .frame(maxWidth: .infinity, minHeight: OrbitalViewportLabTheme.controlHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .accessibilityLabel(title)
+        .foregroundStyle(active ? theme.text : theme.muted)
+        .background(active ? theme.buttonActiveBackground : theme.buttonBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous)
+                .stroke(active ? theme.buttonActiveBorder : theme.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous))
+        .opacity(disabled ? 0.62 : 1)
+    }
+
     private func controlButtonGroup<Value: Identifiable & Equatable>(
         _ values: [Value],
         selection: Value,
@@ -622,6 +669,62 @@ public struct OrbitalViewportMockup: View {
                 }
             }
         }
+    }
+
+    private func themeButton(_ style: OrbitalViewportRenderStyle) -> some View {
+        let isActive = renderStyle == style
+        let optionTheme = OrbitalViewportTheme(style: style)
+        return Button {
+            themeBinding.wrappedValue = style
+        } label: {
+            HStack(spacing: 8) {
+                HStack(spacing: 3) {
+                    themeSwatch(optionTheme.accent)
+                    themeSwatch(optionTheme.accentSecondary)
+                    themeSwatch(optionTheme.vuHot)
+                }
+                .frame(width: 42, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(style.title)
+                        .font(.system(size: 11, weight: .heavy))
+                        .lineLimit(1)
+                    Text(style.subtitle)
+                        .font(.system(size: 9, weight: .semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(isActive ? optionTheme.text.opacity(0.74) : theme.muted)
+                }
+
+                Spacer(minLength: 6)
+
+                if isActive {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundStyle(optionTheme.accent)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            .padding(.horizontal, 9)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isActive ? optionTheme.text : theme.muted)
+        .background(isActive ? optionTheme.buttonActiveBackground : theme.buttonBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous)
+                .stroke(isActive ? optionTheme.buttonActiveBorder : theme.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous))
+    }
+
+    private func themeSwatch(_ color: Color) -> some View {
+        RoundedRectangle(cornerRadius: 3, style: .continuous)
+            .fill(color)
+            .frame(width: 11, height: 18)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
+            )
     }
 
     private func labSliderRow(
@@ -810,6 +913,7 @@ public struct OrbitalViewportMockup: View {
     private var tuningPanel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
+                orbisonicThemeTray
                 speakerVUTray
                 meterCalibrationTray
                 surfaceBloomTray
@@ -1586,6 +1690,14 @@ public enum OrbitalViewportRenderStyle: String, CaseIterable, Identifiable, Equa
     case flamingo
     case green
     case bw
+    case daftPunkBow
+    case rackMint
+    case rackPink
+    case rackBlue
+    case ember
+    case graphite
+    case flamingoGreen
+    case dustyRose
 
     public var id: String { rawValue }
 
@@ -1599,7 +1711,320 @@ public enum OrbitalViewportRenderStyle: String, CaseIterable, Identifiable, Equa
             return "Green"
         case .bw:
             return "B&W"
+        case .daftPunkBow:
+            return "Daft Punk Bow"
+        case .rackMint:
+            return "Rack Mint"
+        case .rackPink:
+            return "Rack Pink"
+        case .rackBlue:
+            return "Rack Blue"
+        case .ember:
+            return "Ember Console"
+        case .graphite:
+            return "Graphite"
+        case .flamingoGreen:
+            return "Flamingo Green"
+        case .dustyRose:
+            return "Dusty Rose"
         }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .purple:
+            return "Kimi Purple"
+        case .flamingo:
+            return "Flamingo Pink"
+        case .green:
+            return "Orbisonic Lab"
+        case .bw:
+            return "Neutral review"
+        case .daftPunkBow:
+            return "Rainbow VU"
+        case .rackMint:
+            return "Mint rack"
+        case .rackPink:
+            return "Pink rack"
+        case .rackBlue:
+            return "Blue rack"
+        case .ember:
+            return "Warm console"
+        case .graphite:
+            return "Silver graphite"
+        case .flamingoGreen:
+            return "Green lead"
+        case .dustyRose:
+            return "Rose lead"
+        }
+    }
+
+    var palette: OrbitalViewportPalette {
+        switch self {
+        case .green:
+            return OrbitalViewportPalette(
+                backgroundTop: Self.rgb(7, 16, 20),
+                backgroundBottom: Self.rgb(2, 7, 10),
+                panel: Self.rgb(13, 24, 29).opacity(0.9),
+                panelSoft: Color.white.opacity(0.045),
+                toolbar: Self.rgb(5, 12, 15).opacity(0.7),
+                line: Self.rgb(217, 251, 255).opacity(0.14),
+                text: Self.rgb(239, 252, 255),
+                textSoft: Self.rgb(159, 185, 189),
+                accent: Self.rgb(94, 234, 212),
+                accentSecondary: Self.rgb(170, 136, 255),
+                success: Self.rgb(24, 206, 15),
+                warning: Self.rgb(250, 204, 21),
+                danger: Self.rgb(251, 113, 133)
+            )
+        case .purple:
+            return Self.kimiPurplePalette
+        case .daftPunkBow:
+            return OrbitalViewportPalette(
+                base: Self.kimiPurplePalette,
+                vuRamp: [
+                    OrbitalViewportVURampStop(position: 0.00, color: Self.rgb(167, 139, 250)),
+                    OrbitalViewportVURampStop(position: 0.18, color: Self.rgb(91, 140, 255)),
+                    OrbitalViewportVURampStop(position: 0.34, color: Self.rgb(34, 211, 238)),
+                    OrbitalViewportVURampStop(position: 0.50, color: Self.rgb(52, 211, 153)),
+                    OrbitalViewportVURampStop(position: 0.66, color: Self.rgb(253, 224, 71)),
+                    OrbitalViewportVURampStop(position: 0.82, color: Self.rgb(251, 146, 60)),
+                    OrbitalViewportVURampStop(position: 1.00, color: Self.rgb(239, 68, 68))
+                ],
+                compressedRainbowWell: Self.rgb(52, 64, 71)
+            )
+        case .rackMint:
+            return Self.rackPalette(accent: Self.rackMintColor, accentSecondary: Self.rackPinkColor, warning: Self.rackBlueColor, danger: Self.rackPinkColor)
+        case .rackPink:
+            return Self.rackPalette(accent: Self.rackPinkColor, accentSecondary: Self.rackMintColor, warning: Self.rackBlueColor, danger: Self.rackPinkColor)
+        case .rackBlue:
+            return Self.rackPalette(accent: Self.rackBlueColor, accentSecondary: Self.rackMintColor, warning: Self.rackPinkColor, danger: Self.rgb(255, 109, 122))
+        case .ember:
+            return OrbitalViewportPalette(
+                backgroundTop: Self.rgb(20, 13, 8),
+                backgroundBottom: Self.rgb(6, 5, 4),
+                panel: Self.rgb(27, 22, 18).opacity(0.92),
+                panelSoft: Self.rgb(255, 178, 54).opacity(0.075),
+                toolbar: Self.rgb(18, 13, 10).opacity(0.78),
+                line: Self.rgb(255, 226, 177).opacity(0.16),
+                text: Self.rgb(255, 246, 232),
+                textSoft: Self.rgb(203, 180, 151),
+                accent: Self.rgb(255, 178, 54),
+                accentSecondary: Self.rgb(94, 234, 212),
+                success: Self.rgb(77, 212, 132),
+                warning: Self.rgb(250, 204, 21),
+                danger: Self.rgb(251, 113, 133)
+            )
+        case .graphite:
+            return OrbitalViewportPalette(
+                backgroundTop: Self.rgb(15, 16, 18),
+                backgroundBottom: Self.rgb(4, 5, 6),
+                panel: Self.rgb(25, 27, 30).opacity(0.94),
+                panelSoft: Color.white.opacity(0.055),
+                toolbar: Self.rgb(16, 18, 21).opacity(0.8),
+                line: Color.white.opacity(0.16),
+                text: Self.rgb(245, 247, 250),
+                textSoft: Self.rgb(170, 176, 184),
+                accent: Self.rgb(229, 231, 235),
+                accentSecondary: Self.rgb(94, 234, 212),
+                success: Self.rgb(52, 211, 153),
+                warning: Self.rgb(251, 191, 36),
+                danger: Self.rgb(248, 113, 113)
+            )
+        case .flamingoGreen:
+            return Self.flamingoPalette(accent: Self.flamingoPrimaryGreen, accentSecondary: Self.flamingoPinkColor, warning: Self.flamingoDeepGreen, danger: Self.flamingoDustyRose)
+        case .flamingo:
+            return Self.flamingoPalette(accent: Self.flamingoPinkColor, accentSecondary: Self.flamingoPrimaryGreen, warning: Self.flamingoDustyRose, danger: Self.flamingoPinkColor)
+        case .dustyRose:
+            return Self.flamingoPalette(accent: Self.flamingoDustyRose, accentSecondary: Self.flamingoPrimaryGreen, warning: Self.flamingoDeepGreen, danger: Self.flamingoPinkColor)
+        case .bw:
+            return OrbitalViewportPalette(
+                backgroundTop: Self.rgb(9, 9, 10),
+                backgroundBottom: Self.rgb(0, 0, 0),
+                panel: Self.rgb(18, 18, 20).opacity(0.92),
+                panelSoft: Color.white.opacity(0.055),
+                toolbar: Self.rgb(14, 14, 16).opacity(0.78),
+                line: Color.white.opacity(0.16),
+                text: Self.rgb(248, 248, 248),
+                textSoft: Self.rgb(178, 178, 178),
+                accent: Self.rgb(235, 235, 235),
+                accentSecondary: Self.rgb(150, 150, 150),
+                success: Self.rgb(160, 160, 160),
+                warning: Self.rgb(205, 205, 205),
+                danger: Self.rgb(255, 255, 255)
+            )
+        }
+    }
+
+    private static var kimiPurplePalette: OrbitalViewportPalette {
+        OrbitalViewportPalette(
+            backgroundTop: rgb(10, 8, 17),
+            backgroundBottom: rgb(0, 0, 0),
+            panel: rgb(20, 24, 28).opacity(0.92),
+            panelSoft: rgb(170, 136, 255).opacity(0.09),
+            toolbar: rgb(29, 33, 37).opacity(0.82),
+            line: Color.white.opacity(0.12),
+            text: rgb(242, 242, 242),
+            textSoft: rgb(170, 172, 173),
+            accent: rgb(170, 136, 255),
+            accentSecondary: rgb(50, 214, 191),
+            success: rgb(24, 206, 15),
+            warning: rgb(255, 178, 54),
+            danger: rgb(255, 54, 54)
+        )
+    }
+
+    private static func rackPalette(accent: Color, accentSecondary: Color, warning: Color, danger: Color) -> OrbitalViewportPalette {
+        OrbitalViewportPalette(
+            backgroundTop: rackPageBackground,
+            backgroundBottom: rackWell,
+            panel: rackSurface.opacity(0.94),
+            panelSoft: rackCard.opacity(0.92),
+            toolbar: rackDivider.opacity(0.88),
+            line: rackTextSecondary.opacity(0.18),
+            text: rackText,
+            textSoft: rackTextSecondary,
+            accent: accent,
+            accentSecondary: accentSecondary,
+            success: rackMintColor,
+            warning: warning,
+            danger: danger
+        )
+    }
+
+    private static func flamingoPalette(accent: Color, accentSecondary: Color, warning: Color, danger: Color) -> OrbitalViewportPalette {
+        OrbitalViewportPalette(
+            backgroundTop: flamingoSecondaryDark,
+            backgroundBottom: flamingoPrimaryDark,
+            panel: flamingoPrimaryDark.opacity(0.94),
+            panelSoft: accent.opacity(0.09),
+            toolbar: flamingoSecondaryDark.opacity(0.82),
+            line: accent.opacity(0.22),
+            text: rgb(255, 247, 250),
+            textSoft: rgb(206, 184, 194),
+            accent: accent,
+            accentSecondary: accentSecondary,
+            success: flamingoPrimaryGreen,
+            warning: warning,
+            danger: danger
+        )
+    }
+
+    private static func rgb(_ red: Double, _ green: Double, _ blue: Double) -> Color {
+        Color(.sRGB, red: red / 255, green: green / 255, blue: blue / 255)
+    }
+
+    private static let flamingoPrimaryDark = rgb(30, 33, 42)
+    private static let flamingoSecondaryDark = rgb(42, 46, 56)
+    private static let flamingoPrimaryGreen = rgb(46, 204, 138)
+    private static let flamingoDeepGreen = rgb(25, 123, 103)
+    private static let flamingoPinkColor = rgb(244, 143, 170)
+    private static let flamingoDustyRose = rgb(167, 84, 114)
+
+    private static let rackPageBackground = rgb(38, 41, 44)
+    private static let rackSurface = rgb(76, 79, 82)
+    private static let rackDivider = rgb(62, 65, 68)
+    private static let rackCard = rgb(47, 50, 53)
+    private static let rackWell = rgb(32, 34, 38)
+    private static let rackText = rgb(252, 255, 255)
+    private static let rackTextSecondary = rgb(208, 212, 216)
+    private static let rackMintColor = rgb(121, 228, 184)
+    private static let rackPinkColor = rgb(238, 164, 230)
+    private static let rackBlueColor = rgb(118, 203, 248)
+}
+
+struct OrbitalViewportVURampStop {
+    let position: Double
+    let color: Color
+}
+
+struct OrbitalViewportPalette {
+    let backgroundTop: Color
+    let backgroundBottom: Color
+    let panel: Color
+    let panelSoft: Color
+    let toolbar: Color
+    let line: Color
+    let text: Color
+    let textSoft: Color
+    let accent: Color
+    let accentSecondary: Color
+    let success: Color
+    let warning: Color
+    let danger: Color
+    let vuRamp: [OrbitalViewportVURampStop]
+    let compressedRainbowWell: Color?
+
+    init(
+        backgroundTop: Color,
+        backgroundBottom: Color,
+        panel: Color,
+        panelSoft: Color,
+        toolbar: Color,
+        line: Color,
+        text: Color,
+        textSoft: Color,
+        accent: Color,
+        accentSecondary: Color,
+        success: Color,
+        warning: Color,
+        danger: Color,
+        vuRamp: [OrbitalViewportVURampStop]? = nil,
+        compressedRainbowWell: Color? = nil
+    ) {
+        self.backgroundTop = backgroundTop
+        self.backgroundBottom = backgroundBottom
+        self.panel = panel
+        self.panelSoft = panelSoft
+        self.toolbar = toolbar
+        self.line = line
+        self.text = text
+        self.textSoft = textSoft
+        self.accent = accent
+        self.accentSecondary = accentSecondary
+        self.success = success
+        self.warning = warning
+        self.danger = danger
+        self.vuRamp = vuRamp ?? [
+            OrbitalViewportVURampStop(position: 0, color: success),
+            OrbitalViewportVURampStop(position: 0.5, color: warning),
+            OrbitalViewportVURampStop(position: 1, color: danger)
+        ]
+        self.compressedRainbowWell = compressedRainbowWell
+    }
+
+    init(base: OrbitalViewportPalette, vuRamp: [OrbitalViewportVURampStop], compressedRainbowWell: Color? = nil) {
+        self.init(
+            backgroundTop: base.backgroundTop,
+            backgroundBottom: base.backgroundBottom,
+            panel: base.panel,
+            panelSoft: base.panelSoft,
+            toolbar: base.toolbar,
+            line: base.line,
+            text: base.text,
+            textSoft: base.textSoft,
+            accent: base.accent,
+            accentSecondary: base.accentSecondary,
+            success: base.success,
+            warning: base.warning,
+            danger: base.danger,
+            vuRamp: vuRamp,
+            compressedRainbowWell: compressedRainbowWell
+        )
+    }
+
+    var vuGradientStops: [Gradient.Stop] {
+        vuRamp
+            .sorted { $0.position < $1.position }
+            .map { Gradient.Stop(color: $0.color, location: $0.position) }
+    }
+
+    func vuColor(for level: Double) -> Color {
+        let normalized = OrbitalViewportMath.clamp01(level)
+        return vuRamp
+            .sorted { $0.position < $1.position }
+            .last { normalized >= $0.position }?
+            .color ?? success
     }
 }
 
@@ -1639,6 +2064,7 @@ struct OrbitalViewportCubeVUSettings: Equatable, Sendable {
     var responseCurve = 0.72
     var facePixels = 9
     var checkerContrast = 0.08
+    var cubeOutlineStrength = 0.0
     var speakerHeight = 1.0
 
     var coreSettings: SpeakerMeterVisualSettings {
@@ -1672,6 +2098,10 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     static let usesFrontFacePixelPlane = false
     static let usesActualCubeFaceMaterials = true
     static let cubeVUReadableFaceScale = 2.35
+    static let cubeOutlineEdgeThicknessRatio = 0.026
+    static let cubeOutlineNormalAlphaMultiplier = 0.58
+    static let cubeOutlineSelectedAlphaMultiplier = 0.78
+    static let cubeOutlineEmissionMultiplier = 0.18
     static let faceTexturePixelsPerFacePixel = 8
     static let faceTextureCacheLimit = 160
 
@@ -2682,6 +3112,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var edgeNodes: [SCNNode] = []
         private var nodeMarkers: [SCNNode] = []
         private var speakerNodes: [Int: SCNNode] = [:]
+        private var speakerOutlineNodes: [Int: [SCNNode]] = [:]
         private var labelNodes: [Int: SCNNode] = [:]
         private var animationTimer: Timer?
         private var latestConfiguration: OrbitalViewportRenderConfiguration?
@@ -2923,6 +3354,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             speakerRoot.childNodes.forEach { $0.removeFromParentNode() }
             labelRoot.childNodes.forEach { $0.removeFromParentNode() }
             speakerNodes.removeAll()
+            speakerOutlineNodes.removeAll()
             labelNodes.removeAll()
             lastSpeakerGeometryKey = OrbitalViewportSpeakerGeometryUpdateKey(
                 speakerShape: shape,
@@ -2942,6 +3374,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 node.name = "speaker-\(speaker.channel)"
                 speakerRoot.addChildNode(node)
                 speakerNodes[speaker.channel] = node
+                speakerOutlineNodes[speaker.channel] = node.childNodes.filter {
+                    $0.name?.hasPrefix("speaker-outline-\(speaker.channel)-") == true
+                }
 
                 let label = makeLabelNode(channel: speaker.channel)
                 label.name = "speaker-label-\(speaker.channel)"
@@ -2975,6 +3410,14 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                     chamferRadius: shape == .cubeVU ? 0 : short * 0.05
                 )
                 node = SCNNode(geometry: geometry)
+                if shape == .cubeVU {
+                    makeCubeOutlineNodes(
+                        channel: speaker.channel,
+                        width: width,
+                        height: short,
+                        depth: depth
+                    ).forEach { node.addChildNode($0) }
+                }
                 let basis = prismBasis(for: speaker)
                 let position = OVVector3(speaker) + (basis.radialAxis * (depth * 0.5))
                 node.simdTransform = matrix(
@@ -2999,6 +3442,73 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 node.geometry?.firstMaterial?.roughness.contents = 0.38
             }
             return node
+        }
+
+        private func makeCubeOutlineNodes(
+            channel: Int,
+            width: Double,
+            height: Double,
+            depth: Double
+        ) -> [SCNNode] {
+            let line = max(0.001, min(width, height, depth) * OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineEdgeThicknessRatio)
+            let material = SCNMaterial()
+            material.lightingModel = .constant
+            material.diffuse.contents = NSColor.clear
+            material.emission.contents = NSColor.clear
+            material.transparency = 0
+            material.isDoubleSided = true
+
+            func edgeNode(
+                index: Int,
+                size: (width: Double, height: Double, depth: Double),
+                position: SCNVector3
+            ) -> SCNNode {
+                let geometry = SCNBox(
+                    width: size.width,
+                    height: size.height,
+                    length: size.depth,
+                    chamferRadius: line * 0.22
+                )
+                geometry.materials = [material]
+                let node = SCNNode(geometry: geometry)
+                node.name = "speaker-outline-\(channel)-\(index)"
+                node.position = position
+                return node
+            }
+
+            var nodes: [SCNNode] = []
+            var index = 0
+            for y in [-height / 2, height / 2] {
+                for z in [-depth / 2, depth / 2] {
+                    nodes.append(edgeNode(
+                        index: index,
+                        size: (width + line, line, line),
+                        position: SCNVector3(0, Float(y), Float(z))
+                    ))
+                    index += 1
+                }
+            }
+            for x in [-width / 2, width / 2] {
+                for z in [-depth / 2, depth / 2] {
+                    nodes.append(edgeNode(
+                        index: index,
+                        size: (line, height + line, line),
+                        position: SCNVector3(Float(x), 0, Float(z))
+                    ))
+                    index += 1
+                }
+            }
+            for x in [-width / 2, width / 2] {
+                for y in [-height / 2, height / 2] {
+                    nodes.append(edgeNode(
+                        index: index,
+                        size: (line, line, depth + line),
+                        position: SCNVector3(Float(x), Float(y), 0)
+                    ))
+                    index += 1
+                }
+            }
+            return nodes
         }
 
         private func makeLabelNode(channel: Int) -> SCNNode {
@@ -3071,6 +3581,10 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
                 if updateVisibility {
                     node.isHidden = !visible
+                    let outlineVisible = visible &&
+                        configuration.speakerShape == .cubeVU &&
+                        configuration.cubeVUSettings.cubeOutlineStrength > 0.001
+                    speakerOutlineNodes[speaker.channel]?.forEach { $0.isHidden = !outlineVisible }
                 }
 
                 if updateMaterial {
@@ -3097,8 +3611,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                         configuration.cubeVUSettings.hotFillStrength * hotMix * 0.38
                     ) * emissionScale
                     if configuration.speakerShape == .cubeVU {
-                        let vuColor = OrbitalViewportCubeVUSceneKitMaterial.rampColor(heat: heat)
-                        let hotColor = OrbitalViewportCubeVUSceneKitMaterial.rampColor(heat: 1)
+                        let vuColor = configuration.theme.cubeVUColor(heat: heat)
+                        let hotColor = configuration.theme.cubeVUHotColor
                         OrbitalViewportCubeVUSceneKitMaterial.update(
                             material: node.geometry?.firstMaterial,
                             settings: configuration.cubeVUSettings,
@@ -3107,6 +3621,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                             alpha: alpha,
                             vuColor: vuColor,
                             hotColor: hotColor
+                        )
+                        updateCubeOutline(
+                            speakerOutlineNodes[speaker.channel],
+                            theme: configuration.theme,
+                            alpha: alpha,
+                            strength: configuration.cubeVUSettings.cubeOutlineStrength,
+                            selected: selected
                         )
                     } else {
                         setMaterial(
@@ -3188,6 +3709,30 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             material?.emission.contents = NSColor(emission ?? .clear)
             material?.transparency = alpha
             material?.isDoubleSided = true
+        }
+
+        private func updateCubeOutline(
+            _ nodes: [SCNNode]?,
+            theme: OrbitalViewportTheme,
+            alpha: Double,
+            strength: Double,
+            selected: Bool
+        ) {
+            let strength = OrbitalViewportMath.clamp01(strength)
+            let alphaMultiplier = selected
+                ? OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineSelectedAlphaMultiplier
+                : OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineNormalAlphaMultiplier
+            let outlineAlpha = alpha * strength * alphaMultiplier
+            let color = selected ? theme.selectedLabel : theme.cubeOutline
+            nodes?.forEach { node in
+                node.isHidden = outlineAlpha <= 0.001
+                setMaterial(
+                    node.geometry?.firstMaterial,
+                    color: color,
+                    alpha: outlineAlpha,
+                    emission: color.opacity(strength * OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineEmissionMultiplier)
+                )
+            }
         }
     }
 }
@@ -3733,64 +4278,68 @@ struct OrbitalViewportSceneMetrics {
 struct OrbitalViewportTheme: Equatable {
     let style: OrbitalViewportRenderStyle
 
+    private var palette: OrbitalViewportPalette {
+        style.palette
+    }
+
     var pageBackground: AnyShapeStyle {
-        AnyShapeStyle(LinearGradient(colors: [OrbitalViewportLabTheme.bg, OrbitalViewportLabTheme.bgBottom], startPoint: .top, endPoint: .bottom))
+        AnyShapeStyle(LinearGradient(colors: [palette.backgroundTop, palette.backgroundBottom], startPoint: .top, endPoint: .bottom))
     }
 
     var canvasBackground: GraphicsContext.Shading {
-        .linearGradient(Gradient(colors: [OrbitalViewportLabTheme.bg, OrbitalViewportLabTheme.bgBottom]), startPoint: .zero, endPoint: CGPoint(x: 0, y: 900))
+        .linearGradient(Gradient(colors: [palette.backgroundTop, palette.backgroundBottom]), startPoint: .zero, endPoint: CGPoint(x: 0, y: 900))
     }
 
     var railBackground: Color {
-        OrbitalViewportLabTheme.panel
+        palette.panel
     }
 
     var toolbarBackground: Color {
-        OrbitalViewportLabTheme.toolbar
+        palette.toolbar
     }
 
     var panelBackground: Color {
-        OrbitalViewportLabTheme.panel
+        palette.panel
     }
 
     var panelSecondaryBackground: Color {
-        OrbitalViewportLabTheme.panelSoft
+        palette.panelSoft
     }
 
     var statusBackground: Color {
-        OrbitalViewportLabTheme.toolbar
+        palette.toolbar
     }
 
     var chipBackground: Color {
-        OrbitalViewportLabTheme.panelSoft
+        palette.panelSoft
     }
 
     var text: Color {
-        OrbitalViewportLabTheme.text
+        palette.text
     }
 
     var muted: Color {
-        OrbitalViewportLabTheme.textSoft
+        palette.textSoft
     }
 
     var line: Color {
-        OrbitalViewportLabTheme.line
+        palette.line
     }
 
     var rowLine: Color {
-        OrbitalViewportLabTheme.line.opacity(0.72)
+        palette.line.opacity(0.72)
     }
 
     var buttonBackground: Color {
-        OrbitalViewportLabTheme.panelSoft
+        palette.panelSoft
     }
 
     var buttonActiveBackground: Color {
-        OrbitalViewportLabTheme.cyan.opacity(0.14)
+        palette.accent.opacity(0.14)
     }
 
     var buttonActiveBorder: Color {
-        OrbitalViewportLabTheme.cyan.opacity(0.55)
+        palette.accent.opacity(0.55)
     }
 
     var activeButtonText: Color {
@@ -3798,15 +4347,23 @@ struct OrbitalViewportTheme: Equatable {
     }
 
     var accent: Color {
-        OrbitalViewportLabTheme.cyan
+        palette.accent
     }
 
     var accentStrong: Color {
-        OrbitalViewportLabTheme.cyan
+        palette.accent
+    }
+
+    var accentSecondary: Color {
+        palette.accentSecondary
+    }
+
+    var vuHot: Color {
+        palette.danger
     }
 
     var metricBackground: Color {
-        OrbitalViewportLabTheme.panelSoft
+        palette.panelSoft
     }
 
     var metricBorder: Color {
@@ -3814,87 +4371,55 @@ struct OrbitalViewportTheme: Equatable {
     }
 
     var barTrack: Color {
-        OrbitalViewportLabTheme.line
+        palette.compressedRainbowWell ?? palette.line
     }
 
     var meterBar: AnyShapeStyle {
-        switch style {
-        case .green:
-            return AnyShapeStyle(LinearGradient(colors: [Color(hex: "#5eead4"), Color(hex: "#18ce0f"), Color(hex: "#facc15"), Color(hex: "#fb7185")], startPoint: .leading, endPoint: .trailing))
-        case .flamingo:
-            return AnyShapeStyle(LinearGradient(colors: [Color(hex: "#f75ba7"), Color(hex: "#ffb3d7")], startPoint: .leading, endPoint: .trailing))
-        case .purple:
-            return AnyShapeStyle(LinearGradient(colors: [Color(hex: "#aa88ff"), Color(hex: "#32d6bf"), Color(hex: "#ffb236"), Color(hex: "#ff3636")], startPoint: .leading, endPoint: .trailing))
-        case .bw:
-            return AnyShapeStyle(LinearGradient(colors: [Color.white.opacity(0.54), Color.white.opacity(0.92)], startPoint: .leading, endPoint: .trailing))
-        }
+        AnyShapeStyle(LinearGradient(stops: palette.vuGradientStops, startPoint: .leading, endPoint: .trailing))
     }
 
     var structure: Color {
-        switch style {
-        case .green: return Color(red: 217 / 255, green: 251 / 255, blue: 255 / 255).opacity(0.14)
-        case .flamingo: return Color(hex: "#f75ba7").opacity(0.34)
-        case .purple: return Color.white.opacity(0.12)
-        case .bw: return OrbitalViewportLabTheme.textSoft.opacity(0.32)
-        }
+        palette.line.opacity(style == .bw ? 1.8 : 1.15)
     }
 
     var equator: Color {
-        switch style {
-        case .green: return Color(hex: "#aa88ff").opacity(0.22)
-        case .flamingo: return Color(hex: "#f75ba7").opacity(0.28)
-        case .purple: return Color(hex: "#32d6bf").opacity(0.26)
-        case .bw: return OrbitalViewportLabTheme.text.opacity(0.42)
-        }
+        palette.accent.opacity(style == .bw ? 0.42 : 0.34)
     }
 
     var label: Color {
-        switch style {
-        case .green: return Color(hex: "#9fb9bd").opacity(0.78)
-        case .flamingo: return Color(hex: "#ffdff0").opacity(0.78)
-        case .purple: return Color(hex: "#aaacad").opacity(0.78)
-        case .bw: return OrbitalViewportLabTheme.text.opacity(0.76)
-        }
+        palette.textSoft.opacity(0.78)
     }
 
     var selectedLabel: Color {
-        switch style {
-        case .green: return Color(hex: "#effcff")
-        case .flamingo: return Color.white
-        case .purple: return Color(hex: "#f2f2f2")
-        case .bw: return OrbitalViewportLabTheme.text
-        }
+        palette.text
     }
 
     var fog: Color {
-        OrbitalViewportLabTheme.bgBottom.opacity(0.64)
+        palette.backgroundBottom.opacity(style == .bw ? 0.7 : 0.66)
     }
 
     var backgroundGlow: Color? {
-        OrbitalViewportLabTheme.cyan.opacity(0.1)
+        accent.opacity(style == .bw ? 0.05 : 0.1)
     }
 
     var dot: Color {
-        OrbitalViewportLabTheme.green
+        accent
+    }
+
+    var cubeOutline: Color {
+        palette.text
     }
 
     func colorForPeak(_ peak: Double) -> Color {
-        if style == .flamingo {
-            return Color(hex: "#f75ba7")
-        }
-        if style == .bw {
-            return Color.white.opacity(0.88)
-        }
-        if peak > 0.9 {
-            return style == .green ? Color(hex: "#fb7185") : Color(hex: "#ff3636")
-        }
-        if peak > 0.68 {
-            return style == .green ? Color(hex: "#facc15") : Color(hex: "#ffb236")
-        }
-        if peak > 0.35 {
-            return style == .green ? Color(hex: "#18ce0f") : Color(hex: "#32d6bf")
-        }
-        return style == .green ? Color(hex: "#5eead4") : Color(hex: "#aa88ff")
+        palette.vuColor(for: peak)
+    }
+
+    func cubeVUColor(heat: Double) -> Color {
+        palette.vuColor(for: heat)
+    }
+
+    var cubeVUHotColor: Color {
+        palette.danger
     }
 }
 
