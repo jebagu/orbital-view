@@ -16,11 +16,11 @@ Confirmed geodesic review app preserved with cube VU/object tuning trays
 
 The active review app is the existing `OrbitalViewViewer` executable in this package, now hosting the confirmed VU Kit native SceneKit geodesic viewport surface through `OrbitalViewportMockup`. It is not the rejected bare MTKView demo surface and does not create a second standalone copied app.
 
-The confirmed review app preserves the original left control rail sections and defaults for Camera, Speaker Type, and View Detail. `Song Audio Source` now sits at the top of the left rail with side-by-side transport icon buttons for Play and Pause. Color scheme selection moved out of the left rail and into the right `Orbisonic Theme` tray. The right panel is now the tuning/debug panel for Orbisonic theme selection, speaker VU, meter calibration, surface/bloom, graphical performance versus CPU load, presets, and diagnostics. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
+The confirmed review app preserves the original left control rail sections and defaults for Camera and View Detail. `Song Audio Source` now sits at the top of the left rail with side-by-side transport icon buttons for Play and Pause plus a cheap `Render Type` selector for mono audio or audio-excited spatial patterns. Speaker Type moved to the right `Speaker Shape` tray. The right panel is organized by use into Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics sections with `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics` trays. Label Font now groups fonts by Normie, Nerd, and Nostromo families and includes a review-only font size slider. Local dice randomizers live inside Cube Surface, Bloom Style, and Meter Response. The app skin follows the speaker color palette, while the geodesic shell has its own independent palette and saturation controls. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
 
 The SceneKit review app can load a local audio file for visual testing. Local file playback uses a simple choose-file plus separate play/pause transport and reduces the file meter to one mono RMS/peak sample applied equally to all speakers. This is a review-app input mode only; production hosts still provide real `SpeakerMeterFrame` values keyed by physical speaker channel.
 
-`Cube VU` speaker type now uses the VU Kit scalar center-bloom contract in the SceneKit surface with a retained 9x9 face-pixel material texture applied to the actual cube faces, selected Orbisonic theme colors, RMS-driven center bloom, peak/hot fill, clip flash, and a material-only cube outline strength control. Prism and Sphere keep the existing simpler material tint behavior while inheriting the selected viewport theme.
+`Cube VU` speaker type now uses the VU Kit scalar center-bloom contract in the SceneKit surface with a retained 9x9 face-pixel material texture applied to the actual cube faces, selected Orbisonic theme colors, RMS-driven center bloom, peak/hot fill, clip flash, and a material-only cube outline strength control. The old review-app `Speaker Height` control is no longer visible; older saved values still decode but are normalized to the current flat cube/prism geometry path. Prism and Sphere keep the existing simpler material tint behavior while inheriting the selected viewport theme.
 
 The production SwiftUI wrapper still targets the MetalKit renderer seam for downstream hosts. The native review executable is intentionally a SceneKit visual-review surface because that is the UI the user confirmed as correct.
 
@@ -90,6 +90,453 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-22 Review App Visual Tuning Tweaks
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Replaced the narrow orbiting-comet impulse pattern with exactly two larger comet regions, each with a wider head and longer hot VU tail.
+- Applied the same two-comet shape to `Impulse Test Orbiting Comets` and audio `Excite Comets`; ripple and waves remain unchanged.
+- Retuned fog so low slider values are cleaner, midpoint density is lighter, and max fog has a heavier SceneKit distance/veil effect.
+- Removed the visible `Speaker Height` control from `Speaker Shape`; old saved `speakerHeight` values decode but normalize to flat review-app cube/prism geometry.
+- Reworked `Label Font` into Normie, Nerd, and Nostromo groups and added a review-only `Font Size` slider saved with theme/settings JSON.
+- Added local dice icon randomizers inside `Cube Surface`, `Bloom Style`, and `Meter Response`; they do not auto-save themes.
+- Refreshed and relaunched the local review `.app` bundle.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the updated tray inventory, removed Speaker Height control, new font groups and Font Size slider, dice randomizer scope/ranges, two-comet impulse shape, Excite Comets mono-envelope behavior, fog curve tuning, label font size JSON round trips/fallback, and ignored speakerHeight geometry/material keys.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 45 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 105 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed
+Computer Use UI smoke check -> passed, Label Font shows Font Size plus Normie/Nerd/Nostromo groups; Cube Surface, Bloom Style, and Meter Response dice controls are visible; Speaker Shape no longer exposes Speaker Height.
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/contracts.md
+docs/test-strategy.md
+docs/bugs.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-22 Speaker/Sphere Appearance And Meter Source Pass
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Moved `Color Palette` under `Speaker Appearance`; that palette now drives speaker colors and the app skin.
+- Added a separate `Sphere Appearance` section with `Sphere Geometry` and `Geodesic Appearance`.
+- Moved `Geodesic Saturation` into `Geodesic Appearance` and added an independent geodesic palette using the same Orbisonic palette list as speakers.
+- Moved speaker type selection out of the left rail and into the right `Speaker Shape` tray.
+- Renamed `Surface Presets` to `Bloom Style` and removed `Reset Cube VU` and `Export Settings JSON`; the tray now contains only the four bloom styles.
+- Expanded `Meter Source` from Music plus one impulse mode to Music, Impulse Test Ripple, Impulse Test Waves, and Impulse Test Orbiting Comets.
+- Fixed the live UI issue where selecting Music could visually remain on the impulse source; the refreshed app now switches `Active Meter` to `Music source`.
+- Added left-rail audio `Render Type` options: All Mono, Excite Ripple, Excite Waves, and Excite Comets. The exciter modes use the mono RMS/peak sample as an amplitude envelope over deterministic spatial patterns, avoiding FFTs, per-channel audio analysis, or extra render passes.
+- Saved theme/settings JSON now includes `geodesicRenderStyle` and audio render mode while defaulting older JSON to the speaker palette and All Mono.
+- Refreshed and relaunched the local review `.app` bundle.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the new section/tray order, removed preset controls, speaker/app palette versus geodesic palette separation, the three impulse variants, and audio-excited impulse envelopes.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 40 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 100 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 14668
+Computer Use UI smoke check -> passed, new sections visible, Bloom Style has only four choices, and Music switches Active Meter to Music source
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/contracts.md
+docs/test-strategy.md
+docs/bugs.md
+```
+
+### Update: 2026-05-22 Right Panel Organization Pass
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added right-panel section headers for `Theme`, `Speaker Appearance`, `Meter Behavior`, and `Diagnostics`.
+- Renamed the review-app trays for clearer usage: `Saved Themes`, `Color Palette`, `Speaker Shape`, `Label Font`, `Cube Surface`, `Surface Presets`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics`.
+- Reordered the trays so saved theme management and color palette controls come first, speaker appearance controls stay together, meter controls stay together, and diagnostics remain last.
+- Added empty `Sphere Geometry` and `Speaker Pattern` trays that expand to `Future work`.
+- Removed the unavailable `City Light`, `Pump Demi`, `Eurostile Bold Extended`, and `Microgramma` font choices from the label font selector.
+- Added decode fallback so saved theme/settings JSON containing one of the removed font raw values loads with `System Default` instead of failing.
+- Refreshed and relaunched the local review `.app` bundle with the updated executable and SwiftUI resource bundle.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the new right-panel section headers, renamed tray order, future-work placeholder trays, removed font inventory, and removed-font decode fallback.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 37 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 97 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 3399
+Computer Use UI smoke check -> passed, section headers and renamed trays visible; Sphere Geometry expands to Future work
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/contracts.md
+docs/test-strategy.md
+```
+
+### Update: 2026-05-22 View Theme JSON Panel
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a right-panel `View Theme` tray with Save Theme, Refresh Themes, Load, and Set Default controls.
+- Theme JSON files are stored under `Contents/Resources/View Themes/` in the review `.app` bundle.
+- New theme saves use unique random two-word filenames such as `Turbo Comet.json`; the app displays the current filename stem after manual renames.
+- Saved theme payloads include an optional stable `themeID`; default-theme metadata resolves by `themeID` first and filename fallback second so defaults survive manual renames.
+- Theme load restores visual/camera/view-detail, speaker type, speaker-label font, VU drive, Cube VU preset/settings, and performance FPS.
+- Theme load intentionally does not restore local audio file path, playback state, or selected speaker.
+- Refreshed the local review `.app` executable/resource bundle and created the app-bundle `View Themes` directory.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the View Theme tray inventory, unique two-word filenames, manual rename display behavior, save/list/load JSON round trips, selected speaker-label font persistence, default-theme rename survival by themeID, and safe fallback for invalid defaults.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 36 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 96 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+mkdir -p "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/View Themes" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 97364
+Computer Use UI smoke check -> passed, View Theme tray visible with save/load/default controls
+find "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/View Themes" -maxdepth 1 -type f -print -> passed, found Turbo Comet.json from smoke test
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/system-flows.md
+docs/contracts.md
+docs/test-strategy.md
+```
+
+### Update: 2026-05-22 Jost Speaker Label 6/9 Glyph Fix
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Replaced the bundled Jost variable font resource with the static Google Fonts regular TTF, `Jost-Regular.ttf`.
+- Kept the `Jost` speaker-label setting and visible label strings unchanged.
+- Switched Jost label rendering away from `SCNText` geometry and onto AppKit-generated text textures on billboard planes, because live visual inspection showed static Jost still rendered 6/9 as dot fragments through SceneKit glyph tessellation.
+- Added regression coverage for speaker labels containing `6` and `9` and for the Jost texture-backed label path.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert that the Jost label font uses Jost-Regular.ttf, uses the texture-backed SceneKit label path, and preserves readable two-digit labels for channels 06, 09, 16, and 29.
+```
+
+Commands run:
+
+```text
+curl -s https://fonts.googleapis.com/css2?family=Jost:wght@400 -> passed, found the static Jost Regular TTF URL
+file Sources/OrbitalViewSwiftUI/Resources/Fonts/Jost[wght].ttf -> passed, confirmed the old bundled Jost file was a variable font
+curl -L -o Sources/OrbitalViewSwiftUI/Resources/Fonts/Jost-Regular.ttf https://fonts.gstatic.com/s/jost/v20/92zPtBhPNqw79Ij1E865zBUv7myjJQVG.ttf -> passed
+rm Sources/OrbitalViewSwiftUI/Resources/Fonts/Jost[wght].ttf -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> failed initially because a stale SwiftPM resource bundle still contained the removed variable font
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift package clean -> passed with SwiftPM user-cache warnings
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 31 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 91 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+rm -rf "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed, removed stale merged app resource bundle before recopying
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+find "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -maxdepth 1 -type f -print -> passed, confirmed Jost-Regular.ttf is present and Jost[wght].ttf is absent
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 79286
+Computer Use visual inspection -> failed, running app still showed Jost 6/9 as dot fragments through SCNText
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerJostUsesStaticRegularFontForReadableSixAndNine -> passed after adding texture-backed Jost label path
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 89276
+Computer Use visual inspection -> passed, Jost selected and labels containing 6/9 render as full numerals instead of dot fragments
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 91 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/bugs.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+### Update: 2026-05-22 Alien / Nostromo Speaker Label Fonts
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added grouped Speaker Labels sections for Current, Bundled, Alien / Nostromo, and Installed / Licensed.
+- Added bundled Alien/Nostromo-inspired label fonts: Archivo Black, Jost, Michroma, and Sevastopol Interface.
+- Added install-only exact commercial selectors for Helvetica Black, Futura, City Light, Pump Demi, Eurostile Bold Extended, and Microgramma; missing fonts save normally and render with System Default.
+- Kept the SceneKit label rendering path and label-only rebuild behavior intact.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert grouped font inventory, bundled font resource resolution, install-only fallback behavior, settings JSON round trips for every font case, and label-only rebuild behavior.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 30 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 90 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 71533
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+### Update: 2026-05-22 Minecraft Speaker Label Zero Glyph Fix
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a Minecraft-only speaker-label display fallback so zeroes render as readable round glyphs instead of colon-like glyphs in SceneKit.
+- Kept all other speaker label fonts on normal numeric two-digit labels.
+- Preserved channel identity; this only changes the visible `SCNText` string for the Minecraft label font.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the Minecraft label font maps displayed zeroes to `O` while System Default, Press Start 2P, and Chintzy CPU BRK keep numeric zeroes.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 28 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 88 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 62868
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/bugs.md
+```
+
+### Update: 2026-05-22 Speaker Label Font Resource Lookup Fix
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Fixed speaker label font resource lookup so bundled fonts resolve from the SwiftPM resource bundle root as well as a `Fonts` subdirectory.
+- Added regression coverage that verifies Press Start 2P, Minecraft, and Chintzy CPU BRK resolve to their actual `NSFont` PostScript names instead of silently falling back to the system font.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert bundled speaker label font resource URLs and resolved NSFont names.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 27 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 87 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+pkill -f OrbitalViewViewer -> passed
+open "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app" -> passed, relaunched as pid 59433
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/bugs.md
+```
+
+### Update: 2026-05-22 Speaker Label Font Selector
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a right-panel `Speaker Labels` tray after `Speaker Geometry`.
+- Added System Default, Press Start 2P, Minecraft, and Chintzy CPU BRK speaker-number label font options.
+- Bundled font files and source/license notes as `OrbitalViewSwiftUI` SwiftPM resources and registered them offline through CoreText.
+- Added `speakerLabelFont` to the settings JSON export payload.
+- Split speaker label geometry rebuilds from shell and speaker body geometry rebuilds so font-only changes rebuild only `SCNText` labels.
+- Documented that manual `.app` refresh/package steps must copy `OrbitalViewKit_OrbitalViewSwiftUI.bundle` into `Contents/Resources/`.
+
+Tests added or updated:
+
+```text
+SwiftUI review-app tests now assert the Speaker Labels tray inventory, font options, settings JSON export field, label-only geometry key behavior, and SceneKit label rebuild counters.
+```
+
+Commands run:
+
+```text
+curl -L https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf -> passed
+curl -L https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/OFL.txt -> passed
+curl -L https://dl.dafont.com/dl/?f=minecraft -> passed
+curl -L https://dl.dafont.com/dl/?f=chintzy_cpu_brk -> passed
+unzip Minecraft.ttf, chintzy.ttf, chintzys.ttf, chintzycpu.txt -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 26 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 86 tests
+cp .build/arm64-apple-macosx/debug/OrbitalViewViewer "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/MacOS/OrbitalViewViewer" -> passed
+ditto .build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Resources/OrbitalViewKit_OrbitalViewSwiftUI.bundle" -> passed
+plutil -lint "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app/Contents/Info.plist" -> passed
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+docs/architecture.md
+docs/implementation-map.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Tests/OrbitalViewSwiftUITests/
+```
 
 ### Update: 2026-05-21 README Media Gallery
 

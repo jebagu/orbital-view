@@ -45,6 +45,9 @@ let package = Package(
             dependencies: [
                 "OrbitalViewCore",
                 "OrbitalViewRender"
+            ],
+            resources: [
+                .process("Resources")
             ]
         ),
         .target(

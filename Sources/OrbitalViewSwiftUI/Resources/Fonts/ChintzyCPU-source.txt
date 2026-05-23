@@ -1,0 +1,7 @@
+Chintzy CPU BRK
+
+Source: https://www.dafont.com/chintzy-cpu-brk.font
+Author: AEnigma
+DaFont listing: 100% Free
+Bundled files: chintzy.ttf and chintzys.ttf
+Only the regular chintzy.ttf face is exposed in the speaker-label font selector.

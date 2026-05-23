@@ -89,20 +89,27 @@ Current wrapper skeleton tests cover:
 - camera and selection configuration emits renderer events
 - the confirmed SceneKit `OrbitalViewportMockup` viewer identity, left rail options, right tuning panel inventory, geodesic shell counts, and adaptive FPS constants remain intact
 - SceneKit review-app audio source uses native transport icon buttons for Play and Pause
-- SceneKit review-app right panel includes the Orbisonic Theme tray and keeps theme controls out of the left rail tuning stack
-- SceneKit review-app Orbisonic Theme tray uses full-width custom theme buttons, includes the Orbisonic family palette list from `orbisonic-palette-brief`, and does not use a native segmented picker
+- SceneKit review-app right panel includes Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics section headers with the active tray order `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics`
+- SceneKit review-app right panel includes the `Saved Themes` tray, app-resource theme directory, and Save/Refresh/Load/Set Default controls
+- SceneKit review-app `Color Palette` tray uses full-width custom theme buttons, includes the Orbisonic family palette list from `orbisonic-palette-brief`, and does not use a native segmented picker
 - SceneKit review-app startup defaults are pinned to the exported settings JSON values without mutating the Core cube settings default contract
 - SceneKit review-app meter-only ticks update material cadence without rebuilding shell or speaker geometry
-- SceneKit review-app Cube VU controls preserve Core scalar defaults, default to 9x9 face pixels, default Cube Outline to invisible, keep outline constants delicate, and separate material-only theme/outline tuning from speaker-height geometry tuning
+- SceneKit review-app Cube VU controls preserve Core scalar defaults, default to 9x9 face pixels, default Cube Outline to invisible, keep outline constants delicate, and ignore old speaker-height values for geometry/material keys
 - SceneKit review-app Cube VU retained face-texture support exposes the face-pixel quantization and center-fill contract on the actual cube faces without replacing the approved SceneKit surface
 - SceneKit review-app Cube VU idle face textures have edge-to-edge pixels with no generated tile gaps and preserve an unlit checkerboard surface
-- SceneKit review-app Cube VU Surface + Bloom controls expose Pixel Fill and Surface Checker Opacity, can recover the older separated-pixel face mode, and can mute the forced idle checkerboard without changing geometry
+- SceneKit review-app `Cube Surface` controls expose Pixel Fill and Surface Checker Opacity, can recover the older separated-pixel face mode, can mute the forced idle checkerboard without changing geometry, and keep their dice randomizer scoped to cube-surface values
 - SceneKit review-app speaker type options include `Prism`, `Sphere`, and `Cube VU`, with full-width tray header hit targets for collapsible tuning sections
-- SceneKit review-app Orbisonic Theme controls expose Geodesic Saturation, update only the shell/geodesic material key, and leave speaker/Cube VU material keys unchanged
+- SceneKit review-app `Label Font` tray exposes grouped Normie, Nerd, and Nostromo font options plus a Font Size slider; bundled fonts resolve from SwiftPM resources, removed unavailable fonts are absent from the selector and decode to System Default from older JSON, commercial install-only options fall back safely, and font/font-size changes rebuild label geometry but not shell or speaker body geometry
+- SceneKit review-app Jost speaker labels use the static regular TTF resource, render through the texture-backed label path instead of `SCNText`, and preserve readable numeric labels for channels containing 6 and 9
+- SceneKit review-app speaker `Color Palette` drives speaker colors and app skin, while `Geodesic Appearance` has an independent palette plus Geodesic Saturation that updates only the shell/geodesic material key
 - SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state
-- SceneKit review-app VU Drive exposes Music and Impulse Test, with Impulse Test producing a deterministic spatial sphere-ripple meter pattern instead of random or uniform channel values
-- SceneKit review-app Cube VU presets expose Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without adding a four-up preview
-- SceneKit review-app settings JSON export includes theme, speaker type, VU drive, Cube VU preset/settings, performance cadence values, and the full left-panel audio/camera/view-detail state
+- SceneKit review-app `Meter Source` exposes Music, Impulse Test Ripple, Impulse Test Waves, and Impulse Test Orbiting Comets, with deterministic spatial patterns instead of random or uniform channel values; orbiting comets are exactly two broader hot trails
+- SceneKit review-app left audio source exposes All Mono, Excite Ripple, Excite Waves, and Excite Comets render types that reuse the mono RMS/peak sample as a cheap spatial-pattern envelope
+- SceneKit review-app `Bloom Style` exposes Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without reset/export controls or a four-up preview, and its dice randomizer chooses a different preset when possible
+- SceneKit review-app `Meter Response` keeps its dice randomizer scoped to meter response sliders
+- SceneKit review-app saved theme/settings payload includes speaker palette, geodesic palette, speaker type, speaker label font and font size, meter source, audio render type, Cube VU preset/settings, performance cadence values, and the full left-panel audio/camera/view-detail state
+- SceneKit review-app `Saved Themes` storage generates unique two-word filenames, displays manual filename renames, round-trips selected fonts/font size, survives default-theme filename changes by `themeID`, and falls back safely for missing or invalid defaults
+- SceneKit review-app `Sphere Geometry` and `Speaker Pattern` trays exist as future placeholders and expose only `Future work`
 - SceneKit review-app hidden diagnostics expose raw RMS, raw peak, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source
 - SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
 - SceneKit review-app object/trail/glow/bounds trays are inactive while the review surface focuses on speakers

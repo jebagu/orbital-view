@@ -1,0 +1,5 @@
+Source: Google Fonts repository
+URL: https://github.com/google/fonts/tree/main/ofl/jost
+File: Jost-Regular.ttf
+License: SIL Open Font License 1.1, included as Jost-OFL.txt
+Use in Orbital View VU: bundled Futura-inspired geometric substitute for speaker labels.

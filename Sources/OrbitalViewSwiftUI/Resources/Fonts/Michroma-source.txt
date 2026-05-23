@@ -1,0 +1,5 @@
+Source: Google Fonts repository
+URL: https://github.com/google/fonts/tree/main/ofl/michroma
+File: Michroma-Regular.ttf
+License: SIL Open Font License 1.1, included as Michroma-OFL.txt
+Use in Orbital View VU: bundled Microgramma/Eurostile-inspired sci-fi substitute for speaker labels.

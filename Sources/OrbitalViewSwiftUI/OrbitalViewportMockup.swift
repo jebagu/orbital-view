@@ -4,6 +4,7 @@ import AVFoundation
 import Combine
 #if os(macOS)
 import AppKit
+import CoreText
 import SceneKit
 import simd
 import UniformTypeIdentifiers
@@ -31,27 +32,70 @@ public struct OrbitalViewportMockup: View {
     static let leftRailSectionTitles = [
         "Song Audio Source",
         "Camera",
-        "Speaker Type",
         "View Detail"
     ]
     static let themeControlPattern = "full-width-orbisonic-theme-buttons"
     static let themePaletteSource = "orbisonic-palette-brief"
-    static let themeTrayControlTitles = [
-        "Geodesic Saturation",
-        "Shell",
+    static let colorPaletteControlTitles = [
+        "Speaker Palette",
+        "App Skin",
         "Cube VU Ramp"
     ]
+    static let geodesicAppearanceControlTitles = [
+        "Geodesic Palette",
+        "Geodesic Saturation",
+        "Shell"
+    ]
+    static let audioRenderTypeTitles = OrbitalViewportAudioRenderMode.allCases.map(\.title)
+    static let bloomStyleControlTitles = ["Randomize Bloom Style"] + OrbitalViewportCubeVUPreset.allCases.map(\.title)
+    static let removedPresetControlTitles = [
+        "Reset Cube VU",
+        "Export Settings JSON"
+    ]
+    static let viewThemeDirectoryName = OrbitalViewportViewThemeStore.directoryName
+    static let viewThemeTrayControlTitles = [
+        "Save Theme",
+        "Refresh Themes",
+        "Load",
+        "Set Default"
+    ]
+    static let speakerLabelFontControlTitles = OrbitalViewportSpeakerLabelFont.allCases.map(\.title)
+    static let speakerLabelFontGroupTitles = OrbitalViewportSpeakerLabelFontGroup.allCases.map(\.title)
+    static let speakerLabelFontSizeControlTitle = "Font Size"
+    static let diceRandomizerAccessibilityLabels = [
+        "Randomize Cube Surface",
+        "Randomize Bloom Style",
+        "Randomize Meter Response"
+    ]
+    static let rightPanelSectionTitles = [
+        "Theme",
+        "Speaker Appearance",
+        "Sphere Appearance",
+        "Meter Behavior",
+        "Diagnostics"
+    ]
+    static let futureWorkTrayTitles = [
+        "Sphere Geometry",
+        "Speaker Pattern"
+    ]
+    static let futureWorkLabel = "Future work"
     static let tuningTrayTitles = [
-        "Orbisonic Theme",
-        "VU Drive",
-        "Speaker Geometry",
-        "Meter Calibration",
-        "Surface + Bloom",
-        "Presets",
-        "Graphical Performance vs CPU Load",
-        "Debug + Diagnostics"
+        "Saved Themes",
+        "Speaker Shape",
+        "Speaker Pattern",
+        "Label Font",
+        "Color Palette",
+        "Cube Surface",
+        "Bloom Style",
+        "Sphere Geometry",
+        "Geodesic Appearance",
+        "Meter Source",
+        "Meter Response",
+        "Performance",
+        "Diagnostics"
     ]
     static let surfaceBloomControlTitles = [
+        "Randomize Cube Surface",
         "Bloom Min",
         "Bloom Max",
         "Bloom Edge",
@@ -62,6 +106,16 @@ public struct OrbitalViewportMockup: View {
         "Idle Tint",
         "Surface Checker Opacity",
         "Checker Contrast"
+    ]
+    static let meterResponseControlTitles = [
+        "Randomize Meter Response",
+        "Input Calibration",
+        "Level Compression",
+        "Display Ceiling",
+        "Hot Response",
+        "Hot Threshold",
+        "Hot Fill Strength",
+        "Palette Drive"
     ]
     static let inactiveObjectTrayTitles = [
         "Object Overlay",
@@ -81,11 +135,12 @@ public struct OrbitalViewportMockup: View {
     static let rightPanelPurpose = "tuning-debug-panel"
     static let defaultSettingsSourceFileName = "Orbital View VU Kit Settings 2026-05-21-171537.json"
     static let defaultRenderStyle: OrbitalViewportRenderStyle = .purple
+    static let defaultGeodesicRenderStyle: OrbitalViewportRenderStyle = .purple
     static let defaultGeodesicSaturation = 0.0
     static let defaultSpeakerShape: OrbitalViewportSpeakerShape = .cubeVU
     static let defaultViewportFrameRate: OrbitalViewportFrameRate = .sixty
     static let defaultCubeVUPreset: OrbitalViewportCubeVUPreset = .hotCoreBloom
-    static let defaultVUDriveMode: OrbitalViewportVUDriveMode = .impulseTest
+    static let defaultVUDriveMode: OrbitalViewportVUDriveMode = .impulseRipple
     static let defaultCubeVUSettings: OrbitalViewportCubeVUSettings = {
         var settings = OrbitalViewportCubeVUPreset.hotCoreBloom.settings
         settings.cubeOutlineStrength = 0.64
@@ -99,6 +154,7 @@ public struct OrbitalViewportMockup: View {
     @State private var zoom = 1.0
     @State private var cameraView: OrbitalViewportCameraView = .isometric
     @State private var renderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultRenderStyle
+    @State private var geodesicRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultGeodesicRenderStyle
     @State private var geodesicSaturation = OrbitalViewportMockup.defaultGeodesicSaturation
     @State private var speakerShape: OrbitalViewportSpeakerShape = OrbitalViewportMockup.defaultSpeakerShape
     @State private var speakerSizeSlider = 50.0
@@ -118,13 +174,21 @@ public struct OrbitalViewportMockup: View {
     @State private var exportStatus: OrbitalViewportExportStatus?
     @State private var magnificationStartZoom: Double?
     @StateObject private var localAudio = OrbitalViewportLocalAudioController()
+    @State private var localAudioRenderMode: OrbitalViewportAudioRenderMode = .allMono
     @State private var cubeVUSettings = OrbitalViewportMockup.defaultCubeVUSettings
     @State private var cubeVUPreset: OrbitalViewportCubeVUPreset = OrbitalViewportMockup.defaultCubeVUPreset
     @State private var vuDriveMode: OrbitalViewportVUDriveMode = OrbitalViewportMockup.defaultVUDriveMode
+    @State private var speakerLabelFont: OrbitalViewportSpeakerLabelFont = .systemDefault
+    @State private var speakerLabelFontSizeSlider = OrbitalViewportMath.speakerLabelFontSizeSliderCenter
     @State private var objectTuning = OrbitalViewportObjectTuning.default
     @State private var themeExpanded = false
+    @State private var viewThemeExpanded = false
     @State private var vuDriveExpanded = false
     @State private var speakerGeometryExpanded = false
+    @State private var sphereGeometryExpanded = false
+    @State private var speakerPatternExpanded = false
+    @State private var geodesicAppearanceExpanded = false
+    @State private var speakerLabelsExpanded = false
     @State private var meterCalibrationExpanded = false
     @State private var surfaceBloomExpanded = false
     @State private var objectOverlayExpanded = false
@@ -135,6 +199,9 @@ public struct OrbitalViewportMockup: View {
     @State private var presetsExpanded = false
     @State private var diagnosticsExpanded = false
     @State private var diagnosticLogEntries = OrbitalViewportDiagnosticLog.initialEntries()
+    @State private var viewThemeEntries: [OrbitalViewportSavedTheme] = []
+    @State private var defaultViewTheme: OrbitalViewportDefaultThemeMetadata?
+    @State private var didLoadInitialViewThemes = false
 
     public init() {}
 
@@ -154,6 +221,13 @@ public struct OrbitalViewportMockup: View {
             }
             recordDiagnostic(event.message)
         }
+        .onAppear {
+            guard !didLoadInitialViewThemes else {
+                return
+            }
+            didLoadInitialViewThemes = true
+            refreshViewThemes(applyDefault: true)
+        }
     }
 
     private var theme: OrbitalViewportTheme {
@@ -168,6 +242,10 @@ public struct OrbitalViewportMockup: View {
         OrbitalViewportMath.fogDensity(fromSlider: fogDensitySlider)
     }
 
+    private var speakerLabelSizeScale: Double {
+        OrbitalViewportMath.speakerLabelSizeScale(fromSlider: speakerLabelFontSizeSlider)
+    }
+
     private func configuration(size: CGSize, timeMS: Double) -> OrbitalViewportRenderConfiguration {
         let effectiveYaw = displayedYaw(timeMS: timeMS)
         return OrbitalViewportRenderConfiguration(
@@ -178,6 +256,7 @@ public struct OrbitalViewportMockup: View {
             cameraView: cameraView,
             zoom: zoom,
             renderStyle: renderStyle,
+            geodesicRenderStyle: geodesicRenderStyle,
             geodesicSaturation: geodesicSaturation,
             speakerShape: speakerShape,
             speakerSize: speakerSize,
@@ -185,6 +264,8 @@ public struct OrbitalViewportMockup: View {
             meterSource: activeMeterSource,
             cubeVUSettings: cubeVUSettings,
             activeViewportFramesPerSecond: viewportFrameRate.framesPerSecond,
+            speakerLabelFont: speakerLabelFont,
+            speakerLabelSizeScale: speakerLabelSizeScale,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
             selectedChannel: selectedChannel,
@@ -197,9 +278,13 @@ public struct OrbitalViewportMockup: View {
     private var activeMeterSource: OrbitalViewportMeterSource {
         switch vuDriveMode {
         case .music:
-            return localAudio.meterSource
-        case .impulseTest:
-            return .sphereImpulseTest
+            return localAudio.meterSource(renderMode: localAudioRenderMode)
+        case .impulseRipple:
+            return .impulse(.ripple)
+        case .impulseWaves:
+            return .impulse(.waves)
+        case .impulseOrbitingComets:
+            return .impulse(.orbitingComets)
         }
     }
 
@@ -273,7 +358,6 @@ public struct OrbitalViewportMockup: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     cameraSection
-                    shapeSection
                     viewDetailSection
                 }
                 .padding(10)
@@ -344,20 +428,15 @@ public struct OrbitalViewportMockup: View {
                 .foregroundStyle(theme.muted)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private var shapeSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("Speaker Type")
+            sectionLabel("Render Type")
             controlButtonGroup(
-                OrbitalViewportSpeakerShape.allCases,
-                selection: speakerShape,
+                OrbitalViewportAudioRenderMode.allCases,
+                selection: localAudioRenderMode,
                 title: \.title
-            ) { shape in
-                if speakerShape != shape {
-                    speakerShape = shape
-                    recordDiagnostic("Speaker type set to \(shape.title)")
+            ) { mode in
+                if localAudioRenderMode != mode {
+                    localAudioRenderMode = mode
+                    recordDiagnostic("Audio render type set to \(mode.title)")
                 }
             }
         }
@@ -382,10 +461,33 @@ public struct OrbitalViewportMockup: View {
     }
 
     private var orbisonicThemeTray: some View {
-        tuningTray("Orbisonic Theme", isExpanded: $themeExpanded) {
+        tuningTray("Color Palette", isExpanded: $themeExpanded) {
             VStack(spacing: 6) {
                 ForEach(OrbitalViewportRenderStyle.allCases) { style in
-                    themeButton(style)
+                    paletteButton(style, selection: renderStyle) {
+                        if renderStyle != style {
+                            renderStyle = style
+                            recordDiagnostic("Speaker palette set to \(style.title)")
+                        }
+                    }
+                }
+            }
+            tuningValueRow("Speaker Palette", value: renderStyle.title)
+            tuningValueRow("App Skin", value: renderStyle.title)
+            tuningValueRow("Cube VU Ramp", value: renderStyle.title)
+        }
+    }
+
+    private var geodesicAppearanceTray: some View {
+        tuningTray("Geodesic Appearance", isExpanded: $geodesicAppearanceExpanded) {
+            VStack(spacing: 6) {
+                ForEach(OrbitalViewportRenderStyle.allCases) { style in
+                    paletteButton(style, selection: geodesicRenderStyle) {
+                        if geodesicRenderStyle != style {
+                            geodesicRenderStyle = style
+                            recordDiagnostic("Geodesic palette set to \(style.title)")
+                        }
+                    }
                 }
             }
             tuningSliderRow(
@@ -395,13 +497,13 @@ public struct OrbitalViewportMockup: View {
                 step: 0.01,
                 valueText: "\((geodesicSaturation * 100).formatted(.number.precision(.fractionLength(0))))%"
             )
-            tuningValueRow("Shell", value: renderStyle.title)
-            tuningValueRow("Cube VU Ramp", value: renderStyle.title)
+            tuningValueRow("Geodesic Palette", value: geodesicRenderStyle.title)
+            tuningValueRow("Shell", value: geodesicRenderStyle.title)
         }
     }
 
     private var vuDriveTray: some View {
-        tuningTray("VU Drive", isExpanded: $vuDriveExpanded) {
+        tuningTray("Meter Source", isExpanded: $vuDriveExpanded) {
             controlButtonGroup(
                 OrbitalViewportVUDriveMode.allCases,
                 selection: vuDriveMode,
@@ -410,12 +512,49 @@ public struct OrbitalViewportMockup: View {
                 setVUDriveMode(mode)
             }
             tuningValueRow("Active Meter", value: vuDriveMode.statusTitle)
-            tuningValueRow("Music Source", value: localAudio.hasLoadedAudio ? "local mono file" : "fake review stream")
+            tuningValueRow("Music Render", value: localAudioRenderMode.title)
+            tuningValueRow("Music Source", value: localAudio.hasLoadedAudio ? "local file" : "fake review stream")
+        }
+    }
+
+    private var viewThemeTray: some View {
+        tuningTray("Saved Themes", isExpanded: $viewThemeExpanded) {
+            HStack(spacing: 8) {
+                controlButton("Save Theme", active: false) {
+                    saveViewTheme()
+                }
+                controlButton("Refresh Themes", active: false) {
+                    refreshViewThemes(applyDefault: false)
+                }
+            }
+
+            if viewThemeEntries.isEmpty {
+                Text("No saved themes")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.muted)
+                    .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(viewThemeEntries) { entry in
+                        viewThemeRow(entry)
+                    }
+                }
+            }
         }
     }
 
     private var speakerGeometryTray: some View {
-        tuningTray("Speaker Geometry", isExpanded: $speakerGeometryExpanded) {
+        tuningTray("Speaker Shape", isExpanded: $speakerGeometryExpanded) {
+            controlButtonGroup(
+                OrbitalViewportSpeakerShape.allCases,
+                selection: speakerShape,
+                title: \.title
+            ) { shape in
+                if speakerShape != shape {
+                    speakerShape = shape
+                    recordDiagnostic("Speaker type set to \(shape.title)")
+                }
+            }
             tuningValueRow("Speaker Type", value: speakerShape.title)
             tuningValueRow("VU Skin", value: speakerShape == .cubeVU ? "9x9 cube faces" : "simple meter tint")
             tuningValueRow("Channels", value: "30 physical")
@@ -426,18 +565,53 @@ public struct OrbitalViewportMockup: View {
                 step: 0.01,
                 valueText: cubeVUSettings.cubeOutlineStrength.formatted(.number.precision(.fractionLength(2)))
             )
-            tuningSliderRow(
-                "Speaker Height",
-                value: $cubeVUSettings.speakerHeight,
-                range: 1...2,
-                step: 0.01,
-                valueText: cubeVUSettings.speakerHeight.formatted(.number.precision(.fractionLength(2)))
-            )
+        }
+    }
+
+    private var sphereGeometryTray: some View {
+        tuningTray("Sphere Geometry", isExpanded: $sphereGeometryExpanded) {
+            futureWorkRow()
+        }
+    }
+
+    private var speakerPatternTray: some View {
+        tuningTray("Speaker Pattern", isExpanded: $speakerPatternExpanded) {
+            futureWorkRow()
+        }
+    }
+
+    private var speakerLabelsTray: some View {
+        tuningTray("Label Font", isExpanded: $speakerLabelsExpanded) {
+            VStack(spacing: 8) {
+                tuningSliderRow(
+                    Self.speakerLabelFontSizeControlTitle,
+                    value: $speakerLabelFontSizeSlider,
+                    range: 0...100,
+                    step: 1,
+                    valueText: "\((speakerLabelSizeScale * 100).formatted(.number.precision(.fractionLength(0))))%"
+                )
+                ForEach(OrbitalViewportSpeakerLabelFontGroup.allCases) { group in
+                    VStack(spacing: 6) {
+                        sectionLabel(group.title)
+                        ForEach(OrbitalViewportSpeakerLabelFont.fonts(in: group)) { font in
+                            speakerLabelFontButton(font)
+                        }
+                    }
+                }
+            }
+            tuningValueRow("Active Font", value: speakerLabelFont.title)
+            tuningValueRow("Font Size", value: "\((speakerLabelSizeScale * 100).formatted(.number.precision(.fractionLength(0))))%")
         }
     }
 
     private var meterCalibrationTray: some View {
-        tuningTray("Meter Calibration", isExpanded: $meterCalibrationExpanded) {
+        tuningTray("Meter Response", isExpanded: $meterCalibrationExpanded) {
+            HStack {
+                Spacer()
+                diceButton(accessibilityLabel: "Randomize Meter Response") {
+                    randomizeMeterResponse()
+                }
+            }
             tuningSliderRow(
                 "Input Calibration",
                 value: $cubeVUSettings.inputCalibration,
@@ -491,7 +665,13 @@ public struct OrbitalViewportMockup: View {
     }
 
     private var surfaceBloomTray: some View {
-        tuningTray("Surface + Bloom", isExpanded: $surfaceBloomExpanded) {
+        tuningTray("Cube Surface", isExpanded: $surfaceBloomExpanded) {
+            HStack {
+                Spacer()
+                diceButton(accessibilityLabel: "Randomize Cube Surface") {
+                    randomizeCubeSurface()
+                }
+            }
             tuningSliderRow(
                 "Bloom Min",
                 value: $cubeVUSettings.bloomMin,
@@ -614,7 +794,7 @@ public struct OrbitalViewportMockup: View {
     }
 
     private var performanceTray: some View {
-        tuningTray("Graphical Performance vs CPU Load", isExpanded: $performanceExpanded) {
+        tuningTray("Performance", isExpanded: $performanceExpanded) {
             Picker("Motion FPS", selection: viewportFrameRateBinding) {
                 ForEach(OrbitalViewportFrameRate.allCases) { frameRate in
                     Text(frameRate.title).tag(frameRate)
@@ -629,8 +809,13 @@ public struct OrbitalViewportMockup: View {
     }
 
     private var presetsTray: some View {
-        tuningTray("Presets", isExpanded: $presetsExpanded) {
-            tuningValueRow("Cube VU Preset", value: cubeVUPreset.title)
+        tuningTray("Bloom Style", isExpanded: $presetsExpanded) {
+            HStack {
+                Spacer()
+                diceButton(accessibilityLabel: "Randomize Bloom Style") {
+                    randomizeBloomStyle()
+                }
+            }
             VStack(spacing: 6) {
                 ForEach(OrbitalViewportCubeVUPreset.allCases) { preset in
                     controlButton(preset.title, active: cubeVUPreset == preset) {
@@ -638,18 +823,11 @@ public struct OrbitalViewportMockup: View {
                     }
                 }
             }
-            controlButton("Reset Cube VU", active: false) {
-                applyCubeVUPreset(.softCenterBloom)
-                recordDiagnostic("Cube VU settings reset to default")
-            }
-            controlButton("Export Settings JSON", active: false) {
-                exportSettingsJSON()
-            }
         }
     }
 
     private var diagnosticsTray: some View {
-        tuningTray("Debug + Diagnostics", isExpanded: $diagnosticsExpanded) {
+        tuningTray("Diagnostics", isExpanded: $diagnosticsExpanded) {
             let diagnostics = currentMeterDiagnostics()
             tuningValueRow("Correct Surface", value: "SceneKit geodesic")
             tuningValueRow("Geodesic Nodes", value: "\(Self.feyGeodesicNodeCount)")
@@ -691,30 +869,43 @@ public struct OrbitalViewportMockup: View {
         )
     }
 
-    private var themeBinding: Binding<OrbitalViewportRenderStyle> {
-        Binding(
-            get: { renderStyle },
-            set: { style in
-                if renderStyle != style {
-                    renderStyle = style
-                    recordDiagnostic("Orbisonic theme set to \(style.title)")
-                }
-            }
-        )
-    }
-
     private func setVUDriveMode(_ mode: OrbitalViewportVUDriveMode) {
-        guard vuDriveMode != mode else {
-            return
-        }
         vuDriveMode = mode
-        recordDiagnostic("VU drive set to \(mode.title)")
+        recordDiagnostic("Meter source set to \(mode.title)")
     }
 
     private func applyCubeVUPreset(_ preset: OrbitalViewportCubeVUPreset) {
         cubeVUPreset = preset
         cubeVUSettings = preset.settings
         recordDiagnostic("Cube VU preset set to \(preset.title)")
+    }
+
+    private func randomizeCubeSurface() {
+        var generator = SystemRandomNumberGenerator()
+        cubeVUSettings = OrbitalViewportDiceRandomizer.randomizedCubeSurfaceSettings(
+            from: cubeVUSettings,
+            using: &generator
+        )
+        recordDiagnostic("Cube Surface randomized")
+    }
+
+    private func randomizeBloomStyle() {
+        var generator = SystemRandomNumberGenerator()
+        let preset = OrbitalViewportDiceRandomizer.randomBloomPreset(
+            current: cubeVUPreset,
+            using: &generator
+        )
+        applyCubeVUPreset(preset)
+        recordDiagnostic("Bloom Style randomized")
+    }
+
+    private func randomizeMeterResponse() {
+        var generator = SystemRandomNumberGenerator()
+        cubeVUSettings = OrbitalViewportDiceRandomizer.randomizedMeterResponseSettings(
+            from: cubeVUSettings,
+            using: &generator
+        )
+        recordDiagnostic("Meter Response randomized")
     }
 
     private func currentMeterDiagnostics() -> OrbitalViewportMeterDiagnostics {
@@ -731,6 +922,16 @@ public struct OrbitalViewportMockup: View {
             .font(.system(size: 11, weight: .heavy))
             .textCase(.uppercase)
             .foregroundStyle(theme.muted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func rightPanelSectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .heavy))
+            .textCase(.uppercase)
+            .foregroundStyle(theme.accent.opacity(0.82))
+            .tracking(0.8)
+            .padding(.top, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -801,12 +1002,14 @@ public struct OrbitalViewportMockup: View {
         }
     }
 
-    private func themeButton(_ style: OrbitalViewportRenderStyle) -> some View {
-        let isActive = renderStyle == style
+    private func paletteButton(
+        _ style: OrbitalViewportRenderStyle,
+        selection: OrbitalViewportRenderStyle,
+        action: @escaping () -> Void
+    ) -> some View {
+        let isActive = selection == style
         let optionTheme = OrbitalViewportTheme(style: style)
-        return Button {
-            themeBinding.wrappedValue = style
-        } label: {
+        return Button(action: action) {
             HStack(spacing: 8) {
                 HStack(spacing: 3) {
                     themeSwatch(optionTheme.accent)
@@ -855,6 +1058,120 @@ public struct OrbitalViewportMockup: View {
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
             )
+    }
+
+    private func diceButton(accessibilityLabel: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "dice.fill")
+                .font(.system(size: 13, weight: .heavy))
+                .frame(width: 34, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(theme.accent)
+        .background(theme.buttonBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous)
+                .stroke(theme.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous))
+        .accessibilityLabel(accessibilityLabel)
+        .help(accessibilityLabel)
+    }
+
+    private func speakerLabelFontButton(_ font: OrbitalViewportSpeakerLabelFont) -> some View {
+        let isActive = speakerLabelFont == font
+        let availabilityNote = font.availabilityNote
+        return Button {
+            if speakerLabelFont != font {
+                speakerLabelFont = font
+                recordDiagnostic("Speaker label font set to \(font.title)")
+            }
+        } label: {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(font.title)
+                        .font(.system(size: 11, weight: .heavy))
+                        .lineLimit(1)
+                    Text(font.sourceNote)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(isActive ? theme.text.opacity(0.72) : theme.muted)
+                        .lineLimit(1)
+                    Text(availabilityNote)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(isActive ? theme.accent.opacity(0.78) : theme.muted.opacity(0.86))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 6)
+
+                if isActive {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundStyle(theme.accent)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+            .padding(.horizontal, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isActive ? theme.text : theme.muted)
+        .background(isActive ? theme.buttonActiveBackground : theme.buttonBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous)
+                .stroke(isActive ? theme.buttonActiveBorder : theme.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous))
+    }
+
+    private func viewThemeRow(_ entry: OrbitalViewportSavedTheme) -> some View {
+        let isDefault = isDefaultViewTheme(entry)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.displayName)
+                        .font(.system(size: 11, weight: .heavy))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                    Text(entry.isValid ? (isDefault ? "Default" : "Saved") : "Invalid JSON")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(isDefault ? theme.accent.opacity(0.82) : theme.muted)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 6)
+
+                if isDefault {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .heavy))
+                        .foregroundStyle(theme.accent)
+                }
+            }
+
+            HStack(spacing: 8) {
+                controlButton("Load", active: false, disabled: !entry.isValid) {
+                    loadViewTheme(entry)
+                }
+                controlButton("Set Default", active: isDefault, disabled: !entry.isValid) {
+                    setDefaultViewTheme(entry)
+                }
+            }
+        }
+        .padding(9)
+        .background(isDefault ? theme.buttonActiveBackground : theme.buttonBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous)
+                .stroke(isDefault ? theme.buttonActiveBorder : theme.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous))
+    }
+
+    private func futureWorkRow() -> some View {
+        Text(Self.futureWorkLabel)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(theme.muted)
+            .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
     }
 
     private func labSliderRow(
@@ -1043,13 +1360,27 @@ public struct OrbitalViewportMockup: View {
     private var tuningPanel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                orbisonicThemeTray
-                vuDriveTray
+                rightPanelSectionHeader("Theme")
+                viewThemeTray
+
+                rightPanelSectionHeader("Speaker Appearance")
                 speakerGeometryTray
-                meterCalibrationTray
+                speakerPatternTray
+                speakerLabelsTray
+                orbisonicThemeTray
                 surfaceBloomTray
                 presetsTray
+
+                rightPanelSectionHeader("Sphere Appearance")
+                sphereGeometryTray
+                geodesicAppearanceTray
+
+                rightPanelSectionHeader("Meter Behavior")
+                vuDriveTray
+                meterCalibrationTray
                 performanceTray
+
+                rightPanelSectionHeader("Diagnostics")
                 diagnosticsTray
             }
             .padding(12)
@@ -1079,7 +1410,7 @@ public struct OrbitalViewportMockup: View {
                     .fill(theme.dot)
                     .shadow(color: theme.dot.opacity(0.72), radius: renderStyle == .bw ? 0 : 6)
                     .frame(width: 8, height: 8)
-                Text(vuDriveMode == .impulseTest ? "Impulse test: sphere ripple" : localAudio.footerLabel)
+                Text(vuDriveMode.isImpulse ? vuDriveMode.statusTitle : localAudio.footerLabel(renderMode: localAudioRenderMode))
             }
             chip {
                 Text("Zoom \(zoom.formatted(.number.precision(.fractionLength(2))))x")
@@ -1263,46 +1594,7 @@ public struct OrbitalViewportMockup: View {
         recordDiagnostic("Settings JSON export started")
 
         DispatchQueue.main.async {
-            let payload = OrbitalViewportSettingsExportPayload(
-                renderStyle: renderStyle,
-                geodesicSaturation: geodesicSaturation,
-                speakerShape: speakerShape,
-                leftPanel: OrbitalViewportLeftPanelSettings(
-                    audioSource: OrbitalViewportAudioSourceExportSettings(
-                        mode: localAudio.hasLoadedAudio ? .localAudioFile : .fakeMeterStream,
-                        hasLoadedAudio: localAudio.hasLoadedAudio,
-                        fileName: localAudio.fileDisplayName,
-                        filePath: localAudio.filePath,
-                        isPlaying: localAudio.isPlaying,
-                        statusText: localAudio.statusText
-                    ),
-                    camera: OrbitalViewportCameraExportSettings(
-                        cameraView: cameraView,
-                        yaw: yaw,
-                        pitch: pitch,
-                        zoom: zoom,
-                        spin: spin,
-                        cameraAdjusted: cameraAdjusted
-                    ),
-                    speakerType: speakerShape,
-                    viewDetail: OrbitalViewportViewDetailExportSettings(
-                        speakerSizeSlider: speakerSizeSlider,
-                        speakerSize: speakerSize,
-                        fogDensitySlider: fogDensitySlider,
-                        fogDensity: fogDensity,
-                        showSpeakerNumbers: showSpeakerNumbers,
-                        showHiddenLines: showHiddenLines
-                    ),
-                    selectedChannel: selectedChannel
-                ),
-                driveMode: vuDriveMode,
-                cubePreset: cubeVUPreset,
-                cubeSettings: cubeVUSettings,
-                activeViewportFramesPerSecond: viewportFrameRate.framesPerSecond,
-                meterOnlyViewportFramesPerSecond: Self.meterOnlyViewportFramesPerSecond,
-                inspectorRefreshFramesPerSecond: Self.inspectorRefreshFramesPerSecond,
-                drawsOnDemand: !OrbitalViewport3DSceneView.rendersContinuously
-            )
+            let payload = currentSettingsPayload()
             let result: Result<URL, Error>
             do {
                 result = .success(try OrbitalViewportSettingsJSONExporter.writeSettings(payload: payload))
@@ -1311,6 +1603,164 @@ public struct OrbitalViewportMockup: View {
             }
             handleSettingsExportResult(result)
         }
+    }
+
+    private func currentSettingsPayload(themeID: String? = nil) -> OrbitalViewportSettingsExportPayload {
+        OrbitalViewportSettingsExportPayload(
+            themeID: themeID,
+            renderStyle: renderStyle,
+            geodesicRenderStyle: geodesicRenderStyle,
+            geodesicSaturation: geodesicSaturation,
+            speakerShape: speakerShape,
+            speakerLabelFont: speakerLabelFont,
+            speakerLabelFontSizeSlider: speakerLabelFontSizeSlider,
+            speakerLabelFontSizeScale: speakerLabelSizeScale,
+            leftPanel: OrbitalViewportLeftPanelSettings(
+                audioSource: OrbitalViewportAudioSourceExportSettings(
+                    mode: localAudio.hasLoadedAudio ? .localAudioFile : .fakeMeterStream,
+                    hasLoadedAudio: localAudio.hasLoadedAudio,
+                    fileName: localAudio.fileDisplayName,
+                    filePath: localAudio.filePath,
+                    isPlaying: localAudio.isPlaying,
+                    statusText: localAudio.statusText,
+                    renderMode: localAudioRenderMode
+                ),
+                camera: OrbitalViewportCameraExportSettings(
+                    cameraView: cameraView,
+                    yaw: yaw,
+                    pitch: pitch,
+                    zoom: zoom,
+                    spin: spin,
+                    cameraAdjusted: cameraAdjusted
+                ),
+                speakerType: speakerShape,
+                viewDetail: OrbitalViewportViewDetailExportSettings(
+                    speakerSizeSlider: speakerSizeSlider,
+                    speakerSize: speakerSize,
+                    fogDensitySlider: fogDensitySlider,
+                    fogDensity: fogDensity,
+                    showSpeakerNumbers: showSpeakerNumbers,
+                    showHiddenLines: showHiddenLines
+                ),
+                selectedChannel: selectedChannel
+            ),
+            driveMode: vuDriveMode,
+            cubePreset: cubeVUPreset,
+            cubeSettings: cubeVUSettings,
+            activeViewportFramesPerSecond: viewportFrameRate.framesPerSecond,
+            meterOnlyViewportFramesPerSecond: Self.meterOnlyViewportFramesPerSecond,
+            inspectorRefreshFramesPerSecond: Self.inspectorRefreshFramesPerSecond,
+            drawsOnDemand: !OrbitalViewport3DSceneView.rendersContinuously
+        )
+    }
+
+    private func saveViewTheme() {
+        do {
+            let savedTheme = try OrbitalViewportViewThemeStore.writeTheme(
+                payload: currentSettingsPayload(themeID: UUID().uuidString)
+            )
+            try reloadViewThemeEntries()
+            exportStatus = OrbitalViewportExportStatus(message: "Saved theme \(savedTheme.displayName)", isError: false)
+            recordDiagnostic("View theme saved as \(savedTheme.displayName)")
+        } catch {
+            exportStatus = OrbitalViewportExportStatus(
+                message: "Theme save failed: \(error.localizedDescription)",
+                isError: true
+            )
+            recordDiagnostic("View theme save failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func refreshViewThemes(applyDefault: Bool) {
+        do {
+            try reloadViewThemeEntries()
+            if applyDefault,
+               let defaultTheme = OrbitalViewportViewThemeStore.defaultTheme(
+                in: viewThemeEntries,
+                metadata: defaultViewTheme
+               ),
+               let payload = defaultTheme.payload {
+                applyViewTheme(payload)
+                recordDiagnostic("Default view theme loaded: \(defaultTheme.displayName)")
+            }
+        } catch {
+            exportStatus = OrbitalViewportExportStatus(
+                message: "Theme refresh failed: \(error.localizedDescription)",
+                isError: true
+            )
+            recordDiagnostic("View theme refresh failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func reloadViewThemeEntries() throws {
+        let directoryURL = try OrbitalViewportViewThemeStore.themeDirectoryURL()
+        viewThemeEntries = try OrbitalViewportViewThemeStore.savedThemes(in: directoryURL)
+        defaultViewTheme = try? OrbitalViewportViewThemeStore.readDefaultTheme(in: directoryURL)
+    }
+
+    private func loadViewTheme(_ entry: OrbitalViewportSavedTheme) {
+        guard let payload = entry.payload else {
+            exportStatus = OrbitalViewportExportStatus(message: "Theme JSON is invalid", isError: true)
+            recordDiagnostic("View theme load failed: invalid JSON in \(entry.fileName)")
+            return
+        }
+
+        applyViewTheme(payload)
+        exportStatus = OrbitalViewportExportStatus(message: "Loaded theme \(entry.displayName)", isError: false)
+        recordDiagnostic("View theme loaded: \(entry.displayName)")
+    }
+
+    private func setDefaultViewTheme(_ entry: OrbitalViewportSavedTheme) {
+        guard entry.payload != nil else {
+            exportStatus = OrbitalViewportExportStatus(message: "Theme JSON is invalid", isError: true)
+            recordDiagnostic("Default view theme failed: invalid JSON in \(entry.fileName)")
+            return
+        }
+
+        do {
+            let metadata = try OrbitalViewportViewThemeStore.writeDefaultTheme(entry)
+            defaultViewTheme = metadata
+            exportStatus = OrbitalViewportExportStatus(message: "Default theme \(entry.displayName)", isError: false)
+            recordDiagnostic("Default view theme set to \(entry.displayName)")
+        } catch {
+            exportStatus = OrbitalViewportExportStatus(
+                message: "Default theme failed: \(error.localizedDescription)",
+                isError: true
+            )
+            recordDiagnostic("Default view theme failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func applyViewTheme(_ payload: OrbitalViewportSettingsExportPayload) {
+        renderStyle = payload.renderStyle
+        geodesicRenderStyle = payload.geodesicRenderStyle
+        geodesicSaturation = OrbitalViewportMath.clamp01(payload.geodesicSaturation)
+        speakerShape = payload.speakerShape
+        speakerLabelFont = payload.speakerLabelFont
+        speakerLabelFontSizeSlider = min(100, max(0, payload.speakerLabelFontSizeSlider))
+        localAudioRenderMode = payload.leftPanel.audioSource.renderMode ?? .allMono
+        cameraView = payload.leftPanel.camera.cameraView
+        yaw = payload.leftPanel.camera.yaw
+        pitch = min(
+            OrbitalViewportOrbitState.maxPitch,
+            max(-OrbitalViewportOrbitState.maxPitch, payload.leftPanel.camera.pitch)
+        )
+        zoom = min(1.75, max(0.62, payload.leftPanel.camera.zoom))
+        spin = payload.leftPanel.camera.spin
+        cameraAdjusted = payload.leftPanel.camera.cameraAdjusted
+        speakerSizeSlider = min(100, max(0, payload.leftPanel.viewDetail.speakerSizeSlider))
+        fogDensitySlider = min(100, max(0, payload.leftPanel.viewDetail.fogDensitySlider))
+        showSpeakerNumbers = payload.leftPanel.viewDetail.showSpeakerNumbers
+        showHiddenLines = payload.leftPanel.viewDetail.showHiddenLines
+        vuDriveMode = payload.driveMode
+        cubeVUPreset = payload.cubePreset
+        cubeVUSettings = payload.cubeSettings
+        cubeVUSettings.speakerHeight = 1
+        viewportFrameRate = OrbitalViewportFrameRate.option(for: payload.activeViewportFramesPerSecond)
+    }
+
+    private func isDefaultViewTheme(_ entry: OrbitalViewportSavedTheme) -> Bool {
+        OrbitalViewportViewThemeStore.isDefaultTheme(entry, metadata: defaultViewTheme)
     }
 
     private func handleExportResult(_ result: Result<URL, Error>) {
@@ -1451,18 +1901,25 @@ struct OrbitalViewportMeterSample: Equatable {
 struct OrbitalViewportMeterSource: Equatable {
     enum Mode: Equatable {
         case fake
-        case localAudio(UUID)
-        case impulseTest
+        case localAudio(UUID, OrbitalViewportAudioRenderMode)
+        case impulse(OrbitalViewportImpulseKind)
     }
 
     let mode: Mode
     private let localAudio: OrbitalViewportLocalAudioController?
 
     static let fake = OrbitalViewportMeterSource(mode: .fake, localAudio: nil)
-    static let sphereImpulseTest = OrbitalViewportMeterSource(mode: .impulseTest, localAudio: nil)
+    static let sphereImpulseTest = OrbitalViewportMeterSource(mode: .impulse(.ripple), localAudio: nil)
 
-    static func localAudio(_ controller: OrbitalViewportLocalAudioController) -> OrbitalViewportMeterSource {
-        OrbitalViewportMeterSource(mode: .localAudio(controller.sourceID), localAudio: controller)
+    static func impulse(_ kind: OrbitalViewportImpulseKind) -> OrbitalViewportMeterSource {
+        OrbitalViewportMeterSource(mode: .impulse(kind), localAudio: nil)
+    }
+
+    static func localAudio(
+        _ controller: OrbitalViewportLocalAudioController,
+        renderMode: OrbitalViewportAudioRenderMode
+    ) -> OrbitalViewportMeterSource {
+        OrbitalViewportMeterSource(mode: .localAudio(controller.sourceID, renderMode), localAudio: controller)
     }
 
     static func == (lhs: OrbitalViewportMeterSource, rhs: OrbitalViewportMeterSource) -> Bool {
@@ -1474,21 +1931,68 @@ struct OrbitalViewportMeterSource: Equatable {
         case .fake:
             let meter = OrbitalViewportMath.fakeMeter(channel: channel, timeMS: timeMS)
             return OrbitalViewportMeterSample(rms: meter.rms, peak: meter.peak)
-        case .localAudio:
-            return localAudio?.currentMeterSample() ?? .silent
-        case .impulseTest:
-            return OrbitalViewportImpulsePattern.meter(channel: channel, timeMS: timeMS)
+        case .localAudio(_, let renderMode):
+            let sample = localAudio?.currentMeterSample() ?? .silent
+            guard let impulseKind = renderMode.impulseKind else {
+                return sample
+            }
+            return OrbitalViewportImpulsePattern.meter(
+                kind: impulseKind,
+                channel: channel,
+                timeMS: timeMS,
+                excitation: sample
+            )
+        case .impulse(let kind):
+            return OrbitalViewportImpulsePattern.meter(kind: kind, channel: channel, timeMS: timeMS)
         }
     }
 }
 
 enum OrbitalViewportImpulsePattern {
     static let patternName = "sphere-ripple-impulse"
+    static let orbitingCometCount = 2
 
     static func meter(channel: Int, timeMS: Double) -> OrbitalViewportMeterSample {
+        meter(kind: .ripple, channel: channel, timeMS: timeMS)
+    }
+
+    static func meter(
+        kind: OrbitalViewportImpulseKind,
+        channel: Int,
+        timeMS: Double,
+        excitation: OrbitalViewportMeterSample? = nil
+    ) -> OrbitalViewportMeterSample {
         let speaker = OrbitalViewportSpeaker.referenceSpeakers[safe: channel - 1]
         let position = speaker.map { OVVector3($0).normalized() } ?? OVVector3(x: 0, y: 0, z: 1)
         let seconds = timeMS / 1000
+        let rawPattern: Double
+        let rawPeak: Double
+
+        switch kind {
+        case .ripple:
+            let ripple = rippleValue(position: position, seconds: seconds)
+            rawPattern = ripple.rms
+            rawPeak = ripple.peak
+        case .waves:
+            let waves = wavesValue(position: position, seconds: seconds)
+            rawPattern = waves.rms
+            rawPeak = waves.peak
+        case .orbitingComets:
+            let comets = orbitingCometsValue(position: position, seconds: seconds)
+            rawPattern = comets.rms
+            rawPeak = comets.peak
+        }
+
+        let drive = excitation.map {
+            OrbitalViewportMath.clamp01(0.16 + $0.rms * 1.28 + $0.peak * 0.24)
+        } ?? 1
+        let floor = excitation == nil ? 0.03 : 0.008 + (excitation?.rms ?? 0) * 0.045
+        let rms = OrbitalViewportMath.clamp01(floor + rawPattern * drive)
+        let peak = OrbitalViewportMath.clamp01(rms + rawPeak * drive * 0.22 + (excitation?.peak ?? 0) * 0.08)
+        return OrbitalViewportMeterSample(rms: rms, peak: peak)
+    }
+
+    private static func rippleValue(position: OVVector3, seconds: Double) -> (rms: Double, peak: Double) {
         let primaryOrigin = movingOrigin(seconds: seconds, phase: 0)
         let secondaryOrigin = movingOrigin(seconds: seconds * 0.73, phase: 1.7)
         let primary = expandingRing(
@@ -1506,9 +2010,55 @@ enum OrbitalViewportImpulsePattern {
         let sweep = pow(max(0, 0.5 + 0.5 * sin(seconds * 2.3 + position.y * 3.7 + position.x * 1.4)), 3) * 0.14
         let meridian = pow(max(0, 0.5 + 0.5 * cos(seconds * 2.1 + atan2(position.z, position.x) * 2.0)), 4) * 0.18
         let coreFlash = gaussian(angularDistance(position, primaryOrigin), width: 0.22) * 0.34
-        let rms = OrbitalViewportMath.clamp01(0.03 + primary * 1.05 + secondary * 0.62 + sweep + meridian + coreFlash)
-        let peak = OrbitalViewportMath.clamp01(rms + max(primary, secondary) * 0.22)
-        return OrbitalViewportMeterSample(rms: rms, peak: peak)
+        let rms = OrbitalViewportMath.clamp01(primary * 1.05 + secondary * 0.62 + sweep + meridian + coreFlash)
+        return (rms, max(primary, secondary))
+    }
+
+    private static func wavesValue(position: OVVector3, seconds: Double) -> (rms: Double, peak: Double) {
+        let azimuth = atan2(position.z, position.x)
+        let latitude = asin(max(-1, min(1, position.y)))
+        let bandA = pow(max(0, 0.5 + 0.5 * sin(seconds * 2.15 + latitude * 7.2)), 2.7)
+        let bandB = pow(max(0, 0.5 + 0.5 * sin(seconds * 1.68 - azimuth * 3.0)), 3.2) * 0.62
+        let cross = pow(max(0, 0.5 + 0.5 * cos(seconds * 2.7 + position.x * 4.4 - position.z * 3.6)), 4) * 0.34
+        let rms = OrbitalViewportMath.clamp01(bandA * 0.72 + bandB + cross)
+        return (rms, max(bandA, max(bandB, cross)))
+    }
+
+    private static func orbitingCometsValue(position: OVVector3, seconds: Double) -> (rms: Double, peak: Double) {
+        let cometA = cometTrailValue(position: position, seconds: seconds, phase: 0, speed: 0.58)
+        let cometB = cometTrailValue(position: position, seconds: seconds, phase: 2.85, speed: -0.52)
+        let tailHeat = max(cometA.tailPeak, cometB.tailPeak)
+        let shimmer = pow(max(0, 0.5 + 0.5 * sin(seconds * 3.7 + position.y * 4.2)), 6) * 0.05
+        let rms = OrbitalViewportMath.clamp01(cometA.rms + cometB.rms + shimmer)
+        let peak = OrbitalViewportMath.clamp01(max(cometA.peak, cometB.peak) + tailHeat * 0.18)
+        return (rms, peak)
+    }
+
+    private static func cometTrailValue(
+        position: OVVector3,
+        seconds: Double,
+        phase: Double,
+        speed: Double
+    ) -> (rms: Double, peak: Double, tailPeak: Double) {
+        let cometTime = seconds * speed
+        let headOrigin = movingOrigin(seconds: cometTime, phase: phase)
+        let head = gaussian(angularDistance(position, headOrigin), width: 0.32)
+        let tail1 = gaussian(
+            angularDistance(position, movingOrigin(seconds: cometTime - 0.48, phase: phase)),
+            width: 0.42
+        ) * 0.72
+        let tail2 = gaussian(
+            angularDistance(position, movingOrigin(seconds: cometTime - 0.92, phase: phase)),
+            width: 0.54
+        ) * 0.5
+        let tail3 = gaussian(
+            angularDistance(position, movingOrigin(seconds: cometTime - 1.36, phase: phase)),
+            width: 0.64
+        ) * 0.32
+        let tailPeak = max(tail1, max(tail2, tail3))
+        let rms = OrbitalViewportMath.clamp01(head * 0.95 + tail1 + tail2 + tail3)
+        let peak = OrbitalViewportMath.clamp01(head + tail1 * 0.48 + tail2 * 0.3 + tail3 * 0.18)
+        return (rms, peak, tailPeak)
     }
 
     private static func movingOrigin(seconds: Double, phase: Double) -> OVVector3 {
@@ -1603,18 +2153,19 @@ final class OrbitalViewportLocalAudioController: NSObject, ObservableObject, AVA
         player != nil
     }
 
-    var meterSource: OrbitalViewportMeterSource {
+    func meterSource(renderMode: OrbitalViewportAudioRenderMode) -> OrbitalViewportMeterSource {
         guard player != nil else {
             return .fake
         }
-        return .localAudio(self)
+        return .localAudio(self, renderMode: renderMode)
     }
 
-    var footerLabel: String {
+    func footerLabel(renderMode: OrbitalViewportAudioRenderMode) -> String {
         guard let fileDisplayName else {
             return "Fake meter stream"
         }
-        return isPlaying ? "Local audio: \(fileDisplayName)" : "Local audio paused"
+        let source = isPlaying ? "Local audio: \(fileDisplayName)" : "Local audio paused"
+        return renderMode == .allMono ? source : "\(source) / \(renderMode.title)"
     }
 
     func chooseAudioFile() {
@@ -1952,12 +2503,17 @@ enum OrbitalViewportPNGExporter {
 }
 
 struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
+    var themeID: String?
     let schemaVersion: Int
     let appName: String
     let exportedAt: String
     let renderStyle: OrbitalViewportRenderStyle
+    let geodesicRenderStyle: OrbitalViewportRenderStyle
     let geodesicSaturation: Double
     let speakerShape: OrbitalViewportSpeakerShape
+    let speakerLabelFont: OrbitalViewportSpeakerLabelFont
+    let speakerLabelFontSizeSlider: Double
+    let speakerLabelFontSizeScale: Double
     let leftPanel: OrbitalViewportLeftPanelSettings
     let driveMode: OrbitalViewportVUDriveMode
     let cubePreset: OrbitalViewportCubeVUPreset
@@ -1968,9 +2524,14 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
     let drawsOnDemand: Bool
 
     init(
+        themeID: String? = nil,
         renderStyle: OrbitalViewportRenderStyle,
+        geodesicRenderStyle: OrbitalViewportRenderStyle? = nil,
         geodesicSaturation: Double = 1,
         speakerShape: OrbitalViewportSpeakerShape,
+        speakerLabelFont: OrbitalViewportSpeakerLabelFont = .systemDefault,
+        speakerLabelFontSizeSlider: Double = OrbitalViewportMath.speakerLabelFontSizeSliderCenter,
+        speakerLabelFontSizeScale: Double = 1,
         leftPanel: OrbitalViewportLeftPanelSettings = .default,
         driveMode: OrbitalViewportVUDriveMode,
         cubePreset: OrbitalViewportCubeVUPreset,
@@ -1981,12 +2542,17 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         drawsOnDemand: Bool,
         exportedAt date: Date = Date()
     ) {
-        self.schemaVersion = 2
+        self.themeID = themeID
+        self.schemaVersion = 3
         self.appName = OrbitalViewportMockup.correctReviewAppName
         self.exportedAt = OrbitalViewportSettingsJSONExporter.timestampString(date: date)
         self.renderStyle = renderStyle
+        self.geodesicRenderStyle = geodesicRenderStyle ?? renderStyle
         self.geodesicSaturation = OrbitalViewportMath.clamp01(geodesicSaturation)
         self.speakerShape = speakerShape
+        self.speakerLabelFont = speakerLabelFont
+        self.speakerLabelFontSizeSlider = min(100, max(0, speakerLabelFontSizeSlider))
+        self.speakerLabelFontSizeScale = max(0.1, speakerLabelFontSizeScale)
         self.leftPanel = leftPanel
         self.driveMode = driveMode
         self.cubePreset = cubePreset
@@ -1995,6 +2561,83 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         self.meterOnlyViewportFramesPerSecond = meterOnlyViewportFramesPerSecond
         self.inspectorRefreshFramesPerSecond = inspectorRefreshFramesPerSecond
         self.drawsOnDemand = drawsOnDemand
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case themeID
+        case schemaVersion
+        case appName
+        case exportedAt
+        case renderStyle
+        case geodesicRenderStyle
+        case geodesicSaturation
+        case speakerShape
+        case speakerLabelFont
+        case speakerLabelFontSizeSlider
+        case speakerLabelFontSizeScale
+        case leftPanel
+        case driveMode
+        case cubePreset
+        case cubeSettings
+        case activeViewportFramesPerSecond
+        case meterOnlyViewportFramesPerSecond
+        case inspectorRefreshFramesPerSecond
+        case drawsOnDemand
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        themeID = try container.decodeIfPresent(String.self, forKey: .themeID)
+        schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        appName = try container.decode(String.self, forKey: .appName)
+        exportedAt = try container.decode(String.self, forKey: .exportedAt)
+        renderStyle = try container.decode(OrbitalViewportRenderStyle.self, forKey: .renderStyle)
+        geodesicRenderStyle = try container.decodeIfPresent(
+            OrbitalViewportRenderStyle.self,
+            forKey: .geodesicRenderStyle
+        ) ?? renderStyle
+        geodesicSaturation = OrbitalViewportMath.clamp01(
+            try container.decodeIfPresent(Double.self, forKey: .geodesicSaturation) ?? 1
+        )
+        speakerShape = try container.decode(OrbitalViewportSpeakerShape.self, forKey: .speakerShape)
+        speakerLabelFont = try container.decodeIfPresent(
+            OrbitalViewportSpeakerLabelFont.self,
+            forKey: .speakerLabelFont
+        ) ?? .systemDefault
+        speakerLabelFontSizeSlider = min(
+            100,
+            max(
+                0,
+                try container.decodeIfPresent(
+                    Double.self,
+                    forKey: .speakerLabelFontSizeSlider
+                ) ?? OrbitalViewportMath.speakerLabelFontSizeSliderCenter
+            )
+        )
+        speakerLabelFontSizeScale = max(
+            0.1,
+            try container.decodeIfPresent(
+                Double.self,
+                forKey: .speakerLabelFontSizeScale
+            ) ?? OrbitalViewportMath.speakerLabelSizeScale(fromSlider: speakerLabelFontSizeSlider)
+        )
+        leftPanel = try container.decodeIfPresent(
+            OrbitalViewportLeftPanelSettings.self,
+            forKey: .leftPanel
+        ) ?? .default
+        driveMode = try container.decode(OrbitalViewportVUDriveMode.self, forKey: .driveMode)
+        cubePreset = try container.decode(OrbitalViewportCubeVUPreset.self, forKey: .cubePreset)
+        cubeSettings = try container.decode(OrbitalViewportCubeVUSettings.self, forKey: .cubeSettings)
+        activeViewportFramesPerSecond = try container.decode(Int.self, forKey: .activeViewportFramesPerSecond)
+        meterOnlyViewportFramesPerSecond = try container.decode(
+            Int.self,
+            forKey: .meterOnlyViewportFramesPerSecond
+        )
+        inspectorRefreshFramesPerSecond = try container.decode(
+            Int.self,
+            forKey: .inspectorRefreshFramesPerSecond
+        )
+        drawsOnDemand = try container.decode(Bool.self, forKey: .drawsOnDemand)
     }
 }
 
@@ -2026,7 +2669,8 @@ struct OrbitalViewportAudioSourceExportSettings: Codable, Equatable {
         fileName: nil,
         filePath: nil,
         isPlaying: false,
-        statusText: "Fake meter stream"
+        statusText: "Fake meter stream",
+        renderMode: .allMono
     )
 
     let mode: OrbitalViewportAudioSourceMode
@@ -2035,6 +2679,25 @@ struct OrbitalViewportAudioSourceExportSettings: Codable, Equatable {
     let filePath: String?
     let isPlaying: Bool
     let statusText: String
+    let renderMode: OrbitalViewportAudioRenderMode?
+
+    init(
+        mode: OrbitalViewportAudioSourceMode,
+        hasLoadedAudio: Bool,
+        fileName: String?,
+        filePath: String?,
+        isPlaying: Bool,
+        statusText: String,
+        renderMode: OrbitalViewportAudioRenderMode? = .allMono
+    ) {
+        self.mode = mode
+        self.hasLoadedAudio = hasLoadedAudio
+        self.fileName = fileName
+        self.filePath = filePath
+        self.isPlaying = isPlaying
+        self.statusText = statusText
+        self.renderMode = renderMode
+    }
 }
 
 struct OrbitalViewportCameraExportSettings: Codable, Equatable {
@@ -2104,6 +2767,254 @@ enum OrbitalViewportSettingsJSONExporter {
         let url = desktop.appendingPathComponent(fileName(date: date))
         try jsonData(payload: payload).write(to: url, options: .atomic)
         return url
+    }
+}
+
+struct OrbitalViewportSavedTheme: Identifiable, Equatable {
+    let id: String
+    let url: URL
+    let displayName: String
+    let fileName: String
+    let themeID: String?
+    let payload: OrbitalViewportSettingsExportPayload?
+
+    var isValid: Bool {
+        payload != nil
+    }
+
+    init(url: URL, payload: OrbitalViewportSettingsExportPayload?) {
+        self.id = url.path
+        self.url = url
+        self.displayName = url.deletingPathExtension().lastPathComponent
+        self.fileName = url.lastPathComponent
+        self.themeID = payload?.themeID
+        self.payload = payload
+    }
+}
+
+struct OrbitalViewportDefaultThemeMetadata: Codable, Equatable {
+    let themeID: String?
+    let fileName: String?
+}
+
+enum OrbitalViewportViewThemeStoreError: LocalizedError, Equatable {
+    case noAvailableThemeNames
+
+    var errorDescription: String? {
+        switch self {
+        case .noAvailableThemeNames:
+            return "No available two-word theme names"
+        }
+    }
+}
+
+enum OrbitalViewportViewThemeStore {
+    static let directoryName = "View Themes"
+    static let defaultThemeFileName = ".view-theme-default.json"
+
+    private static let firstWords = [
+        "Neon",
+        "Velvet",
+        "Chrome",
+        "Midnight",
+        "Solar",
+        "Lunar",
+        "Phantom",
+        "Electric",
+        "Crystal",
+        "Vivid",
+        "Radiant",
+        "Turbo",
+        "Nova",
+        "Static",
+        "Prism",
+        "Quantum"
+    ]
+
+    private static let secondWords = [
+        "Circuit",
+        "Horizon",
+        "Beacon",
+        "Pulse",
+        "Halo",
+        "Matrix",
+        "Signal",
+        "Bloom",
+        "Console",
+        "Grid",
+        "Orbit",
+        "Mirage",
+        "Vector",
+        "Comet",
+        "Flux",
+        "Satellite"
+    ]
+
+    static func defaultResourcesURL(fileManager: FileManager = .default) -> URL {
+        if let resourceURL = Bundle.main.resourceURL {
+            return resourceURL
+        }
+
+        let bundleURL = Bundle.main.bundleURL
+        if bundleURL.pathExtension == "app" {
+            return bundleURL.appendingPathComponent("Contents/Resources", isDirectory: true)
+        }
+
+        return URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
+    }
+
+    static func themeDirectoryURL(
+        resourcesURL: URL? = nil,
+        fileManager: FileManager = .default
+    ) throws -> URL {
+        let baseURL = resourcesURL ?? defaultResourcesURL(fileManager: fileManager)
+        let directoryURL = baseURL.appendingPathComponent(directoryName, isDirectory: true)
+        try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        return directoryURL
+    }
+
+    static func randomThemeStem() -> String {
+        let first = firstWords.randomElement() ?? "Neon"
+        let second = secondWords.randomElement() ?? "Circuit"
+        return "\(first) \(second)"
+    }
+
+    static func uniqueThemeFileURL(
+        in directoryURL: URL,
+        fileManager: FileManager = .default,
+        nameProvider: () -> String = randomThemeStem
+    ) throws -> URL {
+        try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        for _ in 0..<128 {
+            let stem = sanitizedStem(nameProvider())
+            let url = directoryURL.appendingPathComponent("\(stem).json", isDirectory: false)
+            if !fileManager.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+
+        for firstWord in firstWords {
+            for secondWord in secondWords {
+                let stem = "\(firstWord) \(secondWord)"
+                let url = directoryURL.appendingPathComponent("\(stem).json", isDirectory: false)
+                if !fileManager.fileExists(atPath: url.path) {
+                    return url
+                }
+            }
+        }
+
+        throw OrbitalViewportViewThemeStoreError.noAvailableThemeNames
+    }
+
+    static func writeTheme(
+        payload: OrbitalViewportSettingsExportPayload,
+        resourcesURL: URL? = nil,
+        fileManager: FileManager = .default,
+        nameProvider: () -> String = randomThemeStem
+    ) throws -> OrbitalViewportSavedTheme {
+        let directoryURL = try themeDirectoryURL(resourcesURL: resourcesURL, fileManager: fileManager)
+        let url = try uniqueThemeFileURL(in: directoryURL, fileManager: fileManager, nameProvider: nameProvider)
+        var themePayload = payload
+        if themePayload.themeID == nil {
+            themePayload.themeID = UUID().uuidString
+        }
+        try OrbitalViewportSettingsJSONExporter.jsonData(payload: themePayload).write(to: url, options: .atomic)
+        return OrbitalViewportSavedTheme(url: url, payload: themePayload)
+    }
+
+    static func savedThemes(
+        in directoryURL: URL,
+        fileManager: FileManager = .default
+    ) throws -> [OrbitalViewportSavedTheme] {
+        try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let urls = try fileManager.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: [.contentModificationDateKey],
+            options: [.skipsHiddenFiles]
+        )
+        let themeURLs = urls
+            .filter { $0.pathExtension.lowercased() == "json" && $0.lastPathComponent != defaultThemeFileName }
+            .sorted { lhs, rhs in
+                let lhsDate = (try? lhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                let rhsDate = (try? rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                if lhsDate == rhsDate {
+                    return lhs.lastPathComponent.localizedCaseInsensitiveCompare(rhs.lastPathComponent) == .orderedAscending
+                }
+                return lhsDate > rhsDate
+            }
+
+        return themeURLs.map { url in
+            let payload = (try? Data(contentsOf: url))
+                .flatMap { try? JSONDecoder().decode(OrbitalViewportSettingsExportPayload.self, from: $0) }
+            return OrbitalViewportSavedTheme(url: url, payload: payload)
+        }
+    }
+
+    static func writeDefaultTheme(
+        _ theme: OrbitalViewportSavedTheme,
+        fileManager: FileManager = .default
+    ) throws -> OrbitalViewportDefaultThemeMetadata {
+        let directoryURL = theme.url.deletingLastPathComponent()
+        try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let metadata = OrbitalViewportDefaultThemeMetadata(
+            themeID: theme.themeID,
+            fileName: theme.fileName
+        )
+        let data = try JSONEncoder().encode(metadata)
+        try data.write(to: defaultThemeURL(in: directoryURL), options: .atomic)
+        return metadata
+    }
+
+    static func readDefaultTheme(in directoryURL: URL) throws -> OrbitalViewportDefaultThemeMetadata {
+        let data = try Data(contentsOf: defaultThemeURL(in: directoryURL))
+        return try JSONDecoder().decode(OrbitalViewportDefaultThemeMetadata.self, from: data)
+    }
+
+    static func defaultTheme(
+        in themes: [OrbitalViewportSavedTheme],
+        metadata: OrbitalViewportDefaultThemeMetadata?
+    ) -> OrbitalViewportSavedTheme? {
+        guard let metadata else {
+            return nil
+        }
+        if let themeID = metadata.themeID,
+           let match = themes.first(where: { $0.themeID == themeID && $0.isValid }) {
+            return match
+        }
+        if let fileName = metadata.fileName,
+           let match = themes.first(where: { $0.fileName == fileName && $0.isValid }) {
+            return match
+        }
+        return nil
+    }
+
+    static func isDefaultTheme(
+        _ theme: OrbitalViewportSavedTheme,
+        metadata: OrbitalViewportDefaultThemeMetadata?
+    ) -> Bool {
+        guard let metadata else {
+            return false
+        }
+        if let themeID = metadata.themeID,
+           let entryThemeID = theme.themeID {
+            return themeID == entryThemeID
+        }
+        return metadata.fileName == theme.fileName
+    }
+
+    static func defaultThemeURL(in directoryURL: URL) -> URL {
+        directoryURL.appendingPathComponent(defaultThemeFileName, isDirectory: false)
+    }
+
+    private static func sanitizedStem(_ rawStem: String) -> String {
+        let illegal = CharacterSet(charactersIn: "/:\\?%*|\"<>")
+        let replaced = rawStem.unicodeScalars.map { scalar -> String in
+            illegal.contains(scalar) ? " " : String(scalar)
+        }.joined()
+        let collapsed = replaced
+            .split(whereSeparator: { $0.isWhitespace })
+            .joined(separator: " ")
+        return collapsed.isEmpty ? randomThemeStem() : collapsed
     }
 }
 
@@ -2551,9 +3462,318 @@ public enum OrbitalViewportSpeakerShape: String, CaseIterable, Identifiable, Equ
     }
 }
 
+enum OrbitalViewportSpeakerLabelFontGroup: String, CaseIterable, Identifiable, Equatable {
+    case normie
+    case nerd
+    case nostromo
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .normie:
+            return "Normie"
+        case .nerd:
+            return "Nerd"
+        case .nostromo:
+            return "Nostromo"
+        }
+    }
+}
+
+enum OrbitalViewportSpeakerLabelFont: String, CaseIterable, Identifiable, Equatable, Codable {
+    case systemDefault
+    case helveticaBlack
+    case futura
+    case pressStart2P
+    case minecraft
+    case chintzyCPU
+    case archivoBlack
+    case jost
+    case michroma
+    case sevastopolInterface
+
+    var id: String { rawValue }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = Self(rawValue: rawValue) ?? .systemDefault
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    static func fonts(in group: OrbitalViewportSpeakerLabelFontGroup) -> [OrbitalViewportSpeakerLabelFont] {
+        allCases.filter { $0.group == group }
+    }
+
+    var group: OrbitalViewportSpeakerLabelFontGroup {
+        switch self {
+        case .systemDefault, .helveticaBlack, .futura:
+            return .normie
+        case .pressStart2P, .minecraft, .chintzyCPU:
+            return .nerd
+        case .archivoBlack, .jost, .michroma, .sevastopolInterface:
+            return .nostromo
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .systemDefault:
+            return "System Default"
+        case .pressStart2P:
+            return "Press Start 2P"
+        case .minecraft:
+            return "Minecraft"
+        case .chintzyCPU:
+            return "Chintzy CPU BRK"
+        case .archivoBlack:
+            return "Archivo Black"
+        case .jost:
+            return "Jost"
+        case .michroma:
+            return "Michroma"
+        case .sevastopolInterface:
+            return "Sevastopol Interface"
+        case .helveticaBlack:
+            return "Helvetica Black"
+        case .futura:
+            return "Futura"
+        }
+    }
+
+    var sourceNote: String {
+        switch self {
+        case .systemDefault:
+            return "Current native label font"
+        case .pressStart2P:
+            return "Google Fonts / SIL OFL"
+        case .minecraft:
+            return "Craftron Gaming / DaFont 100% Free"
+        case .chintzyCPU:
+            return "AEnigma / DaFont 100% Free"
+        case .archivoBlack:
+            return "Helvetica Black-ish / Google OFL"
+        case .jost:
+            return "Futura-ish / Google OFL"
+        case .michroma:
+            return "Microgramma-ish / Google OFL"
+        case .sevastopolInterface:
+            return "Alien: Isolation-inspired / DaFont 100% Free"
+        case .helveticaBlack:
+            return "Alien title-like / commercial local font"
+        case .futura:
+            return "Alien title candidate / commercial local font"
+        }
+    }
+
+    var resourceFileNames: [String] {
+        switch self {
+        case .systemDefault, .helveticaBlack, .futura:
+            return []
+        case .pressStart2P:
+            return ["PressStart2P-Regular.ttf"]
+        case .minecraft:
+            return ["Minecraft.ttf"]
+        case .chintzyCPU:
+            return ["chintzy.ttf", "chintzys.ttf"]
+        case .archivoBlack:
+            return ["ArchivoBlack-Regular.ttf"]
+        case .jost:
+            return ["Jost-Regular.ttf"]
+        case .michroma:
+            return ["Michroma-Regular.ttf"]
+        case .sevastopolInterface:
+            return ["Sevastopol-Interface.ttf"]
+        }
+    }
+
+    var postScriptNameCandidates: [String] {
+        switch self {
+        case .systemDefault:
+            return []
+        case .pressStart2P:
+            return ["PressStart2P-Regular", "Press Start 2P Regular"]
+        case .minecraft:
+            return ["Minecraft"]
+        case .chintzyCPU:
+            return ["ChintzyCPUBRK", "Chintzy CPU BRK"]
+        case .archivoBlack:
+            return ["ArchivoBlack-Regular", "Archivo Black Regular"]
+        case .jost:
+            return ["Jost-Regular", "JostRoman-Regular", "Jost"]
+        case .michroma:
+            return ["Michroma-Regular", "Michroma"]
+        case .sevastopolInterface:
+            return ["Sevastopol-Interface", "Sevastopol Interface Regular", "SevastopolInterface-Regular"]
+        case .helveticaBlack:
+            return ["Helvetica-Black", "HelveticaPro-Black", "HelveticaNeue-Black"]
+        case .futura:
+            return ["Futura-Medium", "FuturaPT-Book", "FuturaBT-Book", "Futura"]
+        }
+    }
+
+    func speakerLabelText(channel: Int) -> String {
+        let label = String(format: "%02d", channel)
+        switch self {
+        case .minecraft:
+            return label.replacingOccurrences(of: "0", with: "O")
+        case .systemDefault, .pressStart2P, .chintzyCPU, .archivoBlack, .jost, .michroma, .sevastopolInterface, .helveticaBlack, .futura:
+            return label
+        }
+    }
+
+    var sceneKitTextFlatness: CGFloat {
+        switch self {
+        case .jost:
+            return 0.025
+        case .systemDefault, .pressStart2P, .minecraft, .chintzyCPU, .archivoBlack, .michroma, .sevastopolInterface, .helveticaBlack, .futura:
+            return 0.18
+        }
+    }
+
+    var usesTextureBackedSceneKitLabel: Bool {
+        switch self {
+        case .jost:
+            return true
+        case .systemDefault, .pressStart2P, .minecraft, .chintzyCPU, .archivoBlack, .michroma, .sevastopolInterface, .helveticaBlack, .futura:
+            return false
+        }
+    }
+
+    #if os(macOS)
+    func nsFont(pointSize: CGFloat) -> NSFont {
+        switch self {
+        case .systemDefault:
+            return NSFont.systemFont(ofSize: pointSize, weight: .semibold)
+        case .pressStart2P, .minecraft, .chintzyCPU, .archivoBlack, .jost, .michroma, .sevastopolInterface, .helveticaBlack, .futura:
+            return resolvedCustomFont(pointSize: pointSize) ?? NSFont.systemFont(ofSize: pointSize, weight: .semibold)
+        }
+    }
+
+    var availabilityNote: String {
+        switch self {
+        case .systemDefault:
+            return "Built in"
+        case .pressStart2P, .minecraft, .chintzyCPU, .archivoBlack, .jost, .michroma, .sevastopolInterface:
+            return "Bundled offline"
+        case .helveticaBlack, .futura:
+            return isInstalled ? "Installed" : "Not installed - uses System Default"
+        }
+    }
+
+    private var isInstalled: Bool {
+        resolvedCustomFont(pointSize: 12) != nil
+    }
+
+    private func resolvedCustomFont(pointSize: CGFloat) -> NSFont? {
+        OrbitalViewportFontRegistry.registerFontsIfNeeded()
+        for name in postScriptNameCandidates {
+            if let font = NSFont(name: name, size: pointSize) {
+                return font
+            }
+        }
+        return nil
+    }
+    #endif
+}
+
+#if os(macOS)
+enum OrbitalViewportFontRegistry {
+    private static var registered = false
+    private static let resourceFileNames = OrbitalViewportSpeakerLabelFont.allCases.flatMap(\.resourceFileNames)
+
+    static func registerFontsIfNeeded() {
+        guard !registered else {
+            return
+        }
+        registered = true
+
+        for fileName in resourceFileNames {
+            guard let url = resourceURL(fileName: fileName) else {
+                continue
+            }
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
+    }
+
+    static func resourceURL(fileName: String) -> URL? {
+        let url = URL(fileURLWithPath: fileName)
+        return Bundle.module.url(
+            forResource: url.deletingPathExtension().lastPathComponent,
+            withExtension: url.pathExtension,
+            subdirectory: "Fonts"
+        ) ?? Bundle.module.url(
+            forResource: url.deletingPathExtension().lastPathComponent,
+            withExtension: url.pathExtension
+        )
+    }
+}
+#endif
+
+enum OrbitalViewportImpulseKind: String, CaseIterable, Identifiable, Equatable, Codable {
+    case ripple
+    case waves
+    case orbitingComets
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .ripple:
+            return "Ripple"
+        case .waves:
+            return "Waves"
+        case .orbitingComets:
+            return "Orbiting Comets"
+        }
+    }
+}
+
+enum OrbitalViewportAudioRenderMode: String, CaseIterable, Identifiable, Equatable, Codable {
+    case allMono
+    case exciteRipple
+    case exciteWaves
+    case exciteOrbitingComets
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .allMono:
+            return "All Mono"
+        case .exciteRipple:
+            return "Excite Ripple"
+        case .exciteWaves:
+            return "Excite Waves"
+        case .exciteOrbitingComets:
+            return "Excite Comets"
+        }
+    }
+
+    var impulseKind: OrbitalViewportImpulseKind? {
+        switch self {
+        case .allMono:
+            return nil
+        case .exciteRipple:
+            return .ripple
+        case .exciteWaves:
+            return .waves
+        case .exciteOrbitingComets:
+            return .orbitingComets
+        }
+    }
+}
+
 enum OrbitalViewportVUDriveMode: String, CaseIterable, Identifiable, Equatable, Codable {
     case music
-    case impulseTest
+    case impulseRipple = "impulseTest"
+    case impulseWaves
+    case impulseOrbitingComets
 
     var id: String { rawValue }
 
@@ -2561,8 +3781,12 @@ enum OrbitalViewportVUDriveMode: String, CaseIterable, Identifiable, Equatable, 
         switch self {
         case .music:
             return "Music"
-        case .impulseTest:
-            return "Impulse Test"
+        case .impulseRipple:
+            return "Impulse Test Ripple"
+        case .impulseWaves:
+            return "Impulse Test Waves"
+        case .impulseOrbitingComets:
+            return "Impulse Test Orbiting Comets"
         }
     }
 
@@ -2570,9 +3794,17 @@ enum OrbitalViewportVUDriveMode: String, CaseIterable, Identifiable, Equatable, 
         switch self {
         case .music:
             return "Music source"
-        case .impulseTest:
-            return "Sphere ripple impulse"
+        case .impulseRipple:
+            return "Impulse ripple"
+        case .impulseWaves:
+            return "Impulse waves"
+        case .impulseOrbitingComets:
+            return "Impulse orbiting comets"
         }
+    }
+
+    var isImpulse: Bool {
+        self != .music
     }
 }
 
@@ -2610,7 +3842,7 @@ struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
             vuPaletteDrive: Float(paletteDrive),
             idleTint: Float(idleTint),
             checkerContrast: Float(checkerContrast),
-            speakerZScale: Float(speakerHeight),
+            speakerZScale: 1,
             bloomMin: Float(bloomMin),
             bloomMax: Float(bloomMax),
             bloomEdge: Float(bloomEdge),
@@ -2684,6 +3916,52 @@ enum OrbitalViewportCubeVUPreset: String, CaseIterable, Identifiable, Equatable,
             settings.checkerContrast = 0.14
         }
         return settings
+    }
+}
+
+enum OrbitalViewportDiceRandomizer {
+    static func randomizedCubeSurfaceSettings<R: RandomNumberGenerator>(
+        from settings: OrbitalViewportCubeVUSettings,
+        using generator: inout R
+    ) -> OrbitalViewportCubeVUSettings {
+        var randomized = settings
+        let bloomMin = Double.random(in: 0...0.26, using: &generator)
+        randomized.bloomMin = bloomMin
+        randomized.bloomMax = Double.random(in: min(1, bloomMin + 0.28)...1, using: &generator)
+        randomized.bloomEdge = Double.random(in: 0.025...0.38, using: &generator)
+        randomized.rimHaloEdge = Double.random(in: 0...1, using: &generator)
+        randomized.responseCurve = Double.random(in: 0.35...2.2, using: &generator)
+        randomized.facePixels = Int.random(in: 6...14, using: &generator)
+        randomized.pixelFill = Double.random(in: 0.55...1, using: &generator)
+        randomized.idleTint = Double.random(in: 0...0.35, using: &generator)
+        randomized.surfaceCheckerOpacity = Double.random(in: 0...0.75, using: &generator)
+        randomized.checkerContrast = Double.random(in: 0...0.28, using: &generator)
+        randomized.speakerHeight = 1
+        return randomized
+    }
+
+    static func randomizedMeterResponseSettings<R: RandomNumberGenerator>(
+        from settings: OrbitalViewportCubeVUSettings,
+        using generator: inout R
+    ) -> OrbitalViewportCubeVUSettings {
+        var randomized = settings
+        randomized.inputCalibration = Double.random(in: 0.5...1.65, using: &generator)
+        randomized.levelCompression = Double.random(in: 1...2.7, using: &generator)
+        randomized.displayCeiling = Double.random(in: 0.72...1, using: &generator)
+        randomized.hotResponse = Double.random(in: 1.1...3, using: &generator)
+        randomized.hotThreshold = Double.random(in: 0.42...0.84, using: &generator)
+        randomized.hotFillStrength = Double.random(in: 0.45...1, using: &generator)
+        randomized.paletteDrive = Double.random(in: 1...3.4, using: &generator)
+        randomized.speakerHeight = 1
+        return randomized
+    }
+
+    static func randomBloomPreset<R: RandomNumberGenerator>(
+        current: OrbitalViewportCubeVUPreset,
+        using generator: inout R
+    ) -> OrbitalViewportCubeVUPreset {
+        let options = OrbitalViewportCubeVUPreset.allCases.filter { $0 != current }
+        return options.randomElement(using: &generator) ?? current
     }
 }
 
@@ -3153,8 +4431,12 @@ enum OrbitalViewportFrameRate: Int, CaseIterable, Identifiable, Equatable {
         "\(rawValue) FPS"
     }
 
+    static func option(for framesPerSecond: Int) -> OrbitalViewportFrameRate {
+        allCases.first(where: { $0.framesPerSecond == framesPerSecond }) ?? .sixty
+    }
+
     static func normalized(_ framesPerSecond: Int) -> Int {
-        allCases.first(where: { $0.framesPerSecond == framesPerSecond })?.framesPerSecond ?? sixty.framesPerSecond
+        option(for: framesPerSecond).framesPerSecond
     }
 }
 
@@ -3287,6 +4569,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let cameraView: OrbitalViewportCameraView
     let zoom: Double
     let renderStyle: OrbitalViewportRenderStyle
+    let geodesicRenderStyle: OrbitalViewportRenderStyle
     let geodesicSaturation: Double
     let speakerShape: OrbitalViewportSpeakerShape
     let speakerSize: Double
@@ -3294,6 +4577,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let meterSource: OrbitalViewportMeterSource
     let cubeVUSettings: OrbitalViewportCubeVUSettings
     let activeViewportFramesPerSecond: Int
+    let speakerLabelFont: OrbitalViewportSpeakerLabelFont
+    let speakerLabelSizeScale: Double
     let showSpeakerNumbers: Bool
     let showHiddenLines: Bool
     let selectedChannel: Int?
@@ -3309,6 +4594,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         cameraView: OrbitalViewportCameraView,
         zoom: Double,
         renderStyle: OrbitalViewportRenderStyle,
+        geodesicRenderStyle: OrbitalViewportRenderStyle? = nil,
         geodesicSaturation: Double = 1,
         speakerShape: OrbitalViewportSpeakerShape,
         speakerSize: Double,
@@ -3316,6 +4602,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         meterSource: OrbitalViewportMeterSource = .fake,
         cubeVUSettings: OrbitalViewportCubeVUSettings = .default,
         activeViewportFramesPerSecond: Int = OrbitalViewportMockup.viewportAnimationFramesPerSecond,
+        speakerLabelFont: OrbitalViewportSpeakerLabelFont = .systemDefault,
+        speakerLabelSizeScale: Double = 1,
         showSpeakerNumbers: Bool,
         showHiddenLines: Bool,
         selectedChannel: Int?,
@@ -3330,6 +4618,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.cameraView = cameraView
         self.zoom = zoom
         self.renderStyle = renderStyle
+        self.geodesicRenderStyle = geodesicRenderStyle ?? renderStyle
         self.geodesicSaturation = OrbitalViewportMath.clamp01(geodesicSaturation)
         self.speakerShape = speakerShape
         self.speakerSize = speakerSize
@@ -3337,6 +4626,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.meterSource = meterSource
         self.cubeVUSettings = cubeVUSettings
         self.activeViewportFramesPerSecond = OrbitalViewportFrameRate.normalized(activeViewportFramesPerSecond)
+        self.speakerLabelFont = speakerLabelFont
+        self.speakerLabelSizeScale = max(0.1, speakerLabelSizeScale)
         self.showSpeakerNumbers = showSpeakerNumbers
         self.showHiddenLines = showHiddenLines
         self.selectedChannel = selectedChannel
@@ -3347,6 +4638,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
 
     var theme: OrbitalViewportTheme {
         OrbitalViewportTheme(style: renderStyle)
+    }
+
+    var geodesicTheme: OrbitalViewportTheme {
+        OrbitalViewportTheme(style: geodesicRenderStyle)
     }
 
     func geodesicColor(_ color: Color) -> Color {
@@ -3473,6 +4768,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             cameraView: cameraView,
             zoom: zoom,
             renderStyle: renderStyle,
+            geodesicRenderStyle: geodesicRenderStyle,
             geodesicSaturation: geodesicSaturation,
             speakerShape: speakerShape,
             speakerSize: speakerSize,
@@ -3480,6 +4776,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             meterSource: meterSource,
             cubeVUSettings: cubeVUSettings,
             activeViewportFramesPerSecond: activeViewportFramesPerSecond,
+            speakerLabelFont: speakerLabelFont,
+            speakerLabelSizeScale: speakerLabelSizeScale,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
             selectedChannel: selectedChannel,
@@ -3508,7 +4806,7 @@ struct OrbitalViewportShellUpdateKey: Equatable {
     let yaw: Double
     let pitch: Double
     let cameraView: OrbitalViewportCameraView
-    let renderStyle: OrbitalViewportRenderStyle
+    let geodesicRenderStyle: OrbitalViewportRenderStyle
     let geodesicSaturation: Double
     let showHiddenLines: Bool
 
@@ -3516,7 +4814,7 @@ struct OrbitalViewportShellUpdateKey: Equatable {
         self.yaw = configuration.yaw
         self.pitch = configuration.pitch
         self.cameraView = configuration.cameraView
-        self.renderStyle = configuration.renderStyle
+        self.geodesicRenderStyle = configuration.geodesicRenderStyle
         self.geodesicSaturation = configuration.geodesicSaturation
         self.showHiddenLines = configuration.showHiddenLines
     }
@@ -3525,23 +4823,36 @@ struct OrbitalViewportShellUpdateKey: Equatable {
 struct OrbitalViewportSpeakerGeometryUpdateKey: Equatable {
     let speakerShape: OrbitalViewportSpeakerShape
     let speakerSize: Double
-    let speakerHeight: Double
 
     init(
         speakerShape: OrbitalViewportSpeakerShape,
-        speakerSize: Double,
-        speakerHeight: Double
+        speakerSize: Double
     ) {
         self.speakerShape = speakerShape
         self.speakerSize = speakerSize
-        self.speakerHeight = speakerHeight
     }
 
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.init(
             speakerShape: configuration.speakerShape,
-            speakerSize: configuration.speakerSize,
-            speakerHeight: configuration.cubeVUSettings.speakerHeight
+            speakerSize: configuration.speakerSize
+        )
+    }
+}
+
+struct OrbitalViewportSpeakerLabelGeometryUpdateKey: Equatable {
+    let speakerLabelFont: OrbitalViewportSpeakerLabelFont
+    let speakerLabelSizeScale: Double
+
+    init(speakerLabelFont: OrbitalViewportSpeakerLabelFont, speakerLabelSizeScale: Double) {
+        self.speakerLabelFont = speakerLabelFont
+        self.speakerLabelSizeScale = speakerLabelSizeScale
+    }
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.init(
+            speakerLabelFont: configuration.speakerLabelFont,
+            speakerLabelSizeScale: configuration.speakerLabelSizeScale
         )
     }
 }
@@ -3577,7 +4888,9 @@ struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
         self.meterFrame = Int(configuration.timeMS / (1000 / Double(configuration.activeViewportFramesPerSecond)))
         self.renderStyle = configuration.renderStyle
         self.meterSourceMode = configuration.meterSource.mode
-        self.cubeVUSettings = configuration.cubeVUSettings
+        var materialSettings = configuration.cubeVUSettings
+        materialSettings.speakerHeight = 1
+        self.cubeVUSettings = materialSettings
         self.selectedChannel = configuration.selectedChannel
     }
 }
@@ -3618,14 +4931,14 @@ struct OrbitalViewportFogConfiguration: Equatable {
             return .disabled
         }
 
-        let startDistance = max(0.1, cameraDistance - 0.35)
-        let endDistance = cameraDistance + max(0.55, 2.25 - (normalized * 1.55))
+        let startDistance = max(0.1, cameraDistance - (0.24 + normalized * 0.18))
+        let endDistance = cameraDistance + max(0.42, 2.55 - (normalized * 2.12))
         return OrbitalViewportFogConfiguration(
             isEnabled: true,
             normalizedDensity: normalized,
             startDistance: startDistance,
             endDistance: max(startDistance + 0.1, endDistance),
-            densityExponent: 0.75 + normalized * 1.55
+            densityExponent: 0.62 + normalized * 1.95
         )
     }
 }
@@ -3750,6 +5063,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastCameraKey: OrbitalViewportCameraUpdateKey?
         private var lastShellKey: OrbitalViewportShellUpdateKey?
         private var lastSpeakerGeometryKey: OrbitalViewportSpeakerGeometryUpdateKey?
+        private var lastSpeakerLabelGeometryKey: OrbitalViewportSpeakerLabelGeometryUpdateKey?
         private var lastSpeakerVisibilityKey: OrbitalViewportSpeakerVisibilityUpdateKey?
         private var lastSpeakerMaterialKey: OrbitalViewportSpeakerMaterialUpdateKey?
         private var lastFogKey: OrbitalViewportFogUpdateKey?
@@ -3758,6 +5072,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private(set) var shellBuildCount = 0
         private(set) var speakerRebuildCount = 0
+        private(set) var labelRebuildCount = 0
 
         init() {
             scene.rootNode.addChildNode(rootNode)
@@ -3770,7 +5085,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             rebuildSpeakers(
                 shape: .prism,
                 speakerSize: OrbitalViewportMath.speakerSize(fromSlider: 50),
-                speakerHeight: OrbitalViewportCubeVUSettings.default.speakerHeight
+                speakerLabelFont: .systemDefault,
+                speakerLabelSizeScale: 1
             )
         }
 
@@ -3806,8 +5122,17 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 rebuildSpeakers(
                     shape: configuration.speakerShape,
                     speakerSize: configuration.speakerSize,
-                    speakerHeight: configuration.cubeVUSettings.speakerHeight
+                    speakerLabelFont: configuration.speakerLabelFont,
+                    speakerLabelSizeScale: configuration.speakerLabelSizeScale
                 )
+            } else {
+                let labelGeometryKey = OrbitalViewportSpeakerLabelGeometryUpdateKey(configuration: configuration)
+                if lastSpeakerLabelGeometryKey != labelGeometryKey {
+                    rebuildSpeakerLabels(
+                        font: configuration.speakerLabelFont,
+                        sizeScale: configuration.speakerLabelSizeScale
+                    )
+                }
             }
 
             renderScene(configuration: configuration)
@@ -3979,28 +5304,23 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private func rebuildSpeakers(
             shape: OrbitalViewportSpeakerShape,
             speakerSize: Double,
-            speakerHeight: Double
+            speakerLabelFont: OrbitalViewportSpeakerLabelFont,
+            speakerLabelSizeScale: Double
         ) {
             speakerRebuildCount += 1
             speakerRoot.childNodes.forEach { $0.removeFromParentNode() }
-            labelRoot.childNodes.forEach { $0.removeFromParentNode() }
             speakerNodes.removeAll()
             speakerOutlineNodes.removeAll()
-            labelNodes.removeAll()
             lastSpeakerGeometryKey = OrbitalViewportSpeakerGeometryUpdateKey(
                 speakerShape: shape,
-                speakerSize: speakerSize,
-                speakerHeight: speakerHeight
+                speakerSize: speakerSize
             )
-            lastSpeakerVisibilityKey = nil
-            lastSpeakerMaterialKey = nil
 
             for speaker in OrbitalViewportSpeaker.referenceSpeakers {
                 let node = makeSpeakerNode(
                     speaker: speaker,
                     shape: shape,
-                    speakerSize: speakerSize,
-                    speakerHeight: speakerHeight
+                    speakerSize: speakerSize
                 )
                 node.name = "speaker-\(speaker.channel)"
                 speakerRoot.addChildNode(node)
@@ -4008,8 +5328,24 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 speakerOutlineNodes[speaker.channel] = node.childNodes.filter {
                     $0.name?.hasPrefix("speaker-outline-\(speaker.channel)-") == true
                 }
+            }
 
-                let label = makeLabelNode(channel: speaker.channel)
+            rebuildSpeakerLabels(font: speakerLabelFont, sizeScale: speakerLabelSizeScale)
+        }
+
+        private func rebuildSpeakerLabels(font: OrbitalViewportSpeakerLabelFont, sizeScale: Double) {
+            labelRebuildCount += 1
+            labelRoot.childNodes.forEach { $0.removeFromParentNode() }
+            labelNodes.removeAll()
+            lastSpeakerLabelGeometryKey = OrbitalViewportSpeakerLabelGeometryUpdateKey(
+                speakerLabelFont: font,
+                speakerLabelSizeScale: sizeScale
+            )
+            lastSpeakerVisibilityKey = nil
+            lastSpeakerMaterialKey = nil
+
+            for speaker in OrbitalViewportSpeaker.referenceSpeakers {
+                let label = makeLabelNode(channel: speaker.channel, font: font, sizeScale: sizeScale)
                 label.name = "speaker-label-\(speaker.channel)"
                 label.position = (OVVector3(speaker) * 1.18).scn
                 labelRoot.addChildNode(label)
@@ -4020,8 +5356,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private func makeSpeakerNode(
             speaker: OrbitalViewportSpeaker,
             shape: OrbitalViewportSpeakerShape,
-            speakerSize: Double,
-            speakerHeight: Double
+            speakerSize: Double
         ) -> SCNNode {
             let node: SCNNode
             switch shape {
@@ -4033,7 +5368,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                     shape == .cubeVU ? OrbitalViewportCubeVUSceneKitMaterial.cubeVUReadableFaceScale : 1
                 )
                 let width = shape == .cubeVU ? short : short * 2
-                let depth = short * min(2, max(1, speakerHeight))
+                let depth = short
                 let geometry = SCNBox(
                     width: width,
                     height: short,
@@ -4142,13 +5477,20 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             return nodes
         }
 
-        private func makeLabelNode(channel: Int) -> SCNNode {
-            let text = SCNText(string: String(format: "%02d", channel), extrusionDepth: 0.0008)
-            text.font = NSFont.systemFont(
-                ofSize: OrbitalViewportSceneMetrics.speakerLabelFontPointSize,
-                weight: .semibold
+        private func makeLabelNode(
+            channel: Int,
+            font: OrbitalViewportSpeakerLabelFont,
+            sizeScale: Double
+        ) -> SCNNode {
+            if font.usesTextureBackedSceneKitLabel {
+                return makeTextureBackedLabelNode(channel: channel, font: font, sizeScale: sizeScale)
+            }
+
+            let text = SCNText(string: font.speakerLabelText(channel: channel), extrusionDepth: 0.0008)
+            text.font = font.nsFont(
+                pointSize: OrbitalViewportSceneMetrics.speakerLabelFontPointSize * CGFloat(sizeScale)
             )
-            text.flatness = 0.18
+            text.flatness = font.sceneKitTextFlatness
             let material = SCNMaterial()
             material.isDoubleSided = true
             material.readsFromDepthBuffer = false
@@ -4171,8 +5513,67 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             return node
         }
 
+        private func makeTextureBackedLabelNode(
+            channel: Int,
+            font: OrbitalViewportSpeakerLabelFont,
+            sizeScale: Double
+        ) -> SCNNode {
+            let image = makeLabelTexture(
+                text: font.speakerLabelText(channel: channel),
+                font: font.nsFont(
+                    pointSize: OrbitalViewportSceneMetrics.speakerLabelTextureFontPointSize * CGFloat(sizeScale)
+                )
+            )
+            let plane = SCNPlane(
+                width: OrbitalViewportSceneMetrics.speakerLabelTextureWidth * CGFloat(sizeScale),
+                height: OrbitalViewportSceneMetrics.speakerLabelTextureHeight * CGFloat(sizeScale)
+            )
+            let material = SCNMaterial()
+            material.isDoubleSided = true
+            material.lightingModel = .constant
+            material.readsFromDepthBuffer = false
+            material.writesToDepthBuffer = false
+            material.diffuse.contents = image
+            material.multiply.contents = NSColor.white
+            material.transparency = 0.94
+            material.blendMode = .alpha
+            plane.materials = [material]
+
+            let node = SCNNode(geometry: plane)
+            node.renderingOrder = 1000
+            node.constraints = [SCNBillboardConstraint()]
+            return node
+        }
+
+        private func makeLabelTexture(text: String, font: NSFont) -> NSImage {
+            let size = NSSize(width: 160, height: 80)
+            let image = NSImage(size: size)
+            image.lockFocus()
+            NSColor.clear.setFill()
+            NSRect(origin: .zero, size: size).fill()
+
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = .center
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: NSColor.white,
+                .paragraphStyle: paragraph
+            ]
+            let string = NSAttributedString(string: text, attributes: attributes)
+            let textSize = string.size()
+            let rect = NSRect(
+                x: 0,
+                y: max(0, (size.height - textSize.height) * 0.5),
+                width: size.width,
+                height: textSize.height
+            )
+            string.draw(in: rect)
+            image.unlockFocus()
+            return image
+        }
+
         private func updateShell(configuration: OrbitalViewportRenderConfiguration) {
-            let theme = configuration.theme
+            let theme = configuration.geodesicTheme
             let structureColor = configuration.geodesicColor(theme.structure)
             let equatorColor = configuration.geodesicColor(theme.equator)
 
@@ -4280,12 +5681,20 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 }
                 if updateMaterial {
                     let labelColor = selected ? configuration.theme.selectedLabel : configuration.theme.text
-                    setMaterial(
-                        label.geometry?.firstMaterial,
-                        color: labelColor,
-                        alpha: selected ? 1 : 0.94,
-                        emission: labelColor.opacity(selected ? 0.35 : 0.18)
-                    )
+                    if configuration.speakerLabelFont.usesTextureBackedSceneKitLabel {
+                        setTextureBackedLabelMaterial(
+                            label.geometry?.firstMaterial,
+                            color: labelColor,
+                            alpha: selected ? 1 : 0.94
+                        )
+                    } else {
+                        setMaterial(
+                            label.geometry?.firstMaterial,
+                            color: labelColor,
+                            alpha: selected ? 1 : 0.94,
+                            emission: labelColor.opacity(selected ? 0.35 : 0.18)
+                        )
+                    }
                 }
             }
         }
@@ -4341,6 +5750,16 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             material?.diffuse.contents = nsColor.withAlphaComponent(alpha)
             material?.emission.contents = NSColor(emission ?? .clear)
             material?.transparency = alpha
+            material?.isDoubleSided = true
+        }
+
+        private func setTextureBackedLabelMaterial(
+            _ material: SCNMaterial?,
+            color: Color,
+            alpha: Double
+        ) {
+            material?.multiply.contents = NSColor(color).withAlphaComponent(alpha)
+            material?.transparency = CGFloat(alpha)
             material?.isDoubleSided = true
         }
 
@@ -4481,6 +5900,10 @@ private struct OrbitalViewportPainter {
         configuration.theme
     }
 
+    private var geodesicTheme: OrbitalViewportTheme {
+        configuration.geodesicTheme
+    }
+
     mutating func draw(size: CGSize) {
         drawBackground(size: size)
         drawStructure()
@@ -4534,7 +5957,7 @@ private struct OrbitalViewportPainter {
             path.move(to: configuration.project(edgeView.start))
             path.addLine(to: configuration.project(edgeView.end))
             let alpha = ([0.58, 0.78, 0.96][safe: edgeView.edge.lengthGroup] ?? 0.72) * edgeView.fade
-            let strokeColor = configuration.geodesicColor(edgeView.edge.lengthGroup == 2 ? theme.equator : theme.structure)
+            let strokeColor = configuration.geodesicColor(edgeView.edge.lengthGroup == 2 ? geodesicTheme.equator : geodesicTheme.structure)
             context.stroke(
                 path,
                 with: .color(strokeColor.opacity(alpha)),
@@ -4554,7 +5977,7 @@ private struct OrbitalViewportPainter {
             let point = configuration.project(rotated)
             let alpha = 0.42 * configuration.hiddenDepthFade(rotated.z)
             let rect = CGRect(x: point.x - 1.45, y: point.y - 1.45, width: 2.9, height: 2.9)
-            context.fill(Path(ellipseIn: rect), with: .color(configuration.geodesicColor(theme.structure).opacity(alpha)))
+            context.fill(Path(ellipseIn: rect), with: .color(configuration.geodesicColor(geodesicTheme.structure).opacity(alpha)))
         }
     }
 
@@ -4565,7 +5988,7 @@ private struct OrbitalViewportPainter {
         let center = CGPoint(x: configuration.size.width * 0.5, y: configuration.size.height * 0.5)
         let radius = configuration.sphereRadius
         let rect = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
-        context.stroke(Path(ellipseIn: rect), with: .color(configuration.geodesicColor(theme.structure)), lineWidth: 1)
+        context.stroke(Path(ellipseIn: rect), with: .color(configuration.geodesicColor(geodesicTheme.structure)), lineWidth: 1)
     }
 
     mutating private func drawFogVeil(size: CGSize) {
@@ -4573,7 +5996,7 @@ private struct OrbitalViewportPainter {
         guard fog.isEnabled else {
             return
         }
-        let alpha = min(0.34, fog.normalizedDensity * 0.34)
+        let alpha = min(0.42, pow(fog.normalizedDensity, 1.15) * 0.42)
         var overlay = context
         overlay.opacity = alpha
         overlay.fill(
@@ -4760,7 +6183,7 @@ private struct OrbitalViewportPainter {
         let basis = prismBasis(for: speaker)
         let short = (10 * configuration.speakerSize) / max(1, configuration.sphereRadius)
         let long = configuration.speakerShape == .cubeVU ? short : short * 2
-        let depth = short * min(2, max(1, configuration.cubeVUSettings.speakerHeight))
+        let depth = short
         let base = basis.radialAxis
         func vertex(_ longSign: Double, _ sideSign: Double, _ radialAmount: Double) -> OrbitalViewportPrismPoint {
             let source = base
@@ -4906,6 +6329,9 @@ struct OrbitalViewportSceneMetrics {
     static let shellNodeRadius = 0.005 * shellStrutScale
     static let speakerLabelFontPointSize = OrbitalViewportLabTheme.controlFontSize
     static let speakerLabelScale: Float = 0.0032
+    static let speakerLabelTextureFontPointSize: CGFloat = 44
+    static let speakerLabelTextureWidth: CGFloat = 0.084
+    static let speakerLabelTextureHeight: CGFloat = 0.042
 }
 
 struct OrbitalViewportTheme: Equatable {
@@ -5250,7 +6676,8 @@ enum OrbitalViewportColorTools {
 
 enum OrbitalViewportMath {
     static let speakerSizeCenter = 1.95
-    private static let fogMidpointDensity = 30.0
+    static let speakerLabelFontSizeSliderCenter = 50.0
+    private static let fogMidpointDensity = 20.0
     private static let fogDensityExponent = log(fogMidpointDensity / 100) / log(0.5)
 
     static func speakerSize(fromSlider value: Double) -> Double {
@@ -5261,6 +6688,11 @@ enum OrbitalViewportMath {
     static func fogDensity(fromSlider value: Double) -> Double {
         let normalized = max(0, min(1, value / 100))
         return round(100 * pow(normalized, fogDensityExponent))
+    }
+
+    static func speakerLabelSizeScale(fromSlider value: Double) -> Double {
+        let normalized = max(0, min(1, value / 100))
+        return 0.62 + normalized * 0.76
     }
 
     static func fakeMeter(channel: Int, timeMS: Double) -> (rms: Double, peak: Double) {

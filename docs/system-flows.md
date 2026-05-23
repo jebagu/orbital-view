@@ -109,7 +109,22 @@ flowchart LR
   PerfSettings --> MTKView["MTKView FPS and draw-on-demand config"]
 ```
 
-Orbisonic theme, VU drive, speaker geometry, calibration, surface/bloom, presets, performance, and diagnostics are host-facing controls in the current SceneKit review surface. They tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing. The review-only Impulse Test drive is a deterministic synthetic meter source for visual stress testing and does not change production host meter contracts.
+Saved themes, speaker shape, speaker pattern, label font and font size, speaker color palette, cube surface, bloom style, sphere geometry, geodesic appearance, meter source, meter response, performance, and diagnostics are host-facing controls in the current SceneKit review surface. They tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing. The review-only impulse drives are deterministic synthetic meter sources for visual stress testing and do not change production host meter contracts. Audio-excited render types use the already-computed mono audio RMS/peak sample as a lightweight spatial-pattern envelope. Dice-icon randomizers are local to Cube Surface, Bloom Style, and Meter Response and do not save themes automatically.
+
+## Current Saved Themes Flow
+
+```mermaid
+flowchart LR
+  Tray["Saved Themes tray"] --> Save["Save visual settings JSON"]
+  Save --> Folder["Contents/Resources/View Themes"]
+  Folder --> Refresh["Refresh list"]
+  Refresh --> Names["Display filename stems"]
+  Names --> Load["Load visual settings"]
+  Names --> Default["Set default metadata"]
+  Default --> Launch["Apply default on next app launch"]
+```
+
+View themes are review-app visual settings only. Loading a theme restores viewport styling, camera/view-detail, speaker label font and font size, Cube VU tuning, drive mode, and performance FPS, but it does not restore a local audio file, playback state, or selected speaker.
 
 ## Current Offscreen Harness Flow
 

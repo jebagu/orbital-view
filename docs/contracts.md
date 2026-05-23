@@ -258,7 +258,7 @@ Splat app targets
 
 ### Status
 
-SwiftUI wrapper and optional collapsible tuning trays are implemented. The trays expose speaker VU controls, meter calibration, surface/bloom/checker controls, object overlay controls, trails/glow trails, fixed bounds diagnostics, performance-versus-CPU controls, optional visual preset actions, selected speaker diagnostics, object/trail diagnostics, and input diagnostics. Gestures, hit testing, full inspector UI, and production host integration remain deferred.
+SwiftUI wrapper and optional collapsible tuning trays are implemented. The review-only SceneKit surface organizes the active right-panel controls into Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics sections. It includes `Saved Themes` JSON persistence with selected speaker-label font and font size, geodesic palette, audio render mode, and stable `themeID` metadata under the app bundle resources, plus `Speaker Shape`, future `Speaker Pattern` and `Sphere Geometry` placeholders, `Label Font`, speaker `Color Palette`, `Cube Surface`, `Bloom Style`, `Geodesic Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics`; this does not change the public `OrbitalView` API. `Cube Surface`, `Bloom Style`, and `Meter Response` include review-only dice randomizers. Speaker height remains decodable from older JSON through `OrbitalViewportCubeVUSettings`, but it is ignored by the review surface. Gestures, hit testing, full inspector UI, and production host integration remain deferred.
 
 ### Tests Required
 
