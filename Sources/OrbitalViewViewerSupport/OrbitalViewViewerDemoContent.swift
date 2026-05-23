@@ -32,7 +32,11 @@ public enum OrbitalViewViewerDemoContent {
             levelsByChannel[channel] = try SpeakerMeterLevel(rms: rms, peak: peak, clip: clip)
         }
 
-        return try SpeakerMeterFrame(timestamp: timestamp, levelsByChannel: levelsByChannel)
+        return try SpeakerMeterFrame(
+            timestamp: timestamp,
+            levelsByChannel: levelsByChannel,
+            source: .syntheticVisualStress
+        )
     }
 
     public static func makeObjectFrames(timestamp: TimeInterval) throws -> OrbitalViewObjectFrameSet {
@@ -64,7 +68,11 @@ public enum OrbitalViewViewerDemoContent {
             levelsByObjectID[objectID] = try ObjectMeterLevel(rms: rms, peak: peak, clip: peak > 0.98)
         }
 
-        return try ObjectMeterFrame(timestamp: timestamp, levelsByObjectID: levelsByObjectID)
+        return try ObjectMeterFrame(
+            timestamp: timestamp,
+            levelsByObjectID: levelsByObjectID,
+            source: .syntheticVisualStress
+        )
     }
 
     public static func makeMeterVisualSettings() throws -> SpeakerMeterVisualSettings {

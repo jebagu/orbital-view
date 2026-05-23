@@ -27,6 +27,8 @@ Use for:
 - shell node/edge/face validation
 - speaker ID/channel/shape validation
 - meter frame identity
+- telemetry source descriptor defaults and validation
+- telemetry overload diagnostics round-trip and deduplication
 - camera preset state
 - scene builder behavior
 
@@ -44,6 +46,9 @@ Use when a downstream adapter is added:
 - map channel/rms/peak records into `SpeakerMeterFrame`
 - preserve missing meter channels as absent values
 - derive clip from a configurable threshold
+- apply explicit meter source descriptors such as external Wavefield stream or local livestream test generator
+- preserve Wavefield object IDs as source-object identity when prepared object frame and object meter snapshots are provided by the host
+- treat local livestream generator profiles as source metadata and stress inputs, not alternate audio paths
 
 ## Renderer Tests
 
@@ -63,6 +68,7 @@ Current renderer seam tests cover:
 - `OrbitalViewMetalRenderer` provides an `MTKViewDelegate` seam
 - offscreen Metal smoke rendering produces a non-clear frame from a deterministic scene, or skips clearly when no Metal device exists
 - meter-only and camera-only updates keep static speaker draw inputs stable
+- meter source descriptors stay metadata and do not change renderer static geometry
 - speaker draw inputs preserve ID/channel order and stable cube/prism dimensions
 - cube VU defaults, scalar math, range validation, material payloads, hot-fill independence, and palette-drive behavior stay separate from raw RMS
 - dynamic object frame/meter/settings updates render through a separate object path and do not rebuild speaker static geometry
@@ -76,7 +82,7 @@ Future renderer drawing checks should cover:
 - meter updates can be tested separately from structural scene updates
 - targeted pixel probes catch blank frames without brittle full-frame snapshots
 
-## SwiftUI Wrapper Tests
+## SwiftUI Wrapper And Review Tests
 
 Current wrapper skeleton tests cover:
 
@@ -87,6 +93,9 @@ Current wrapper skeleton tests cover:
 - host-bound object visual settings and performance settings initialize through the tuning-surface initializer
 - MTKView applies active 30/60 FPS and draw-on-demand performance settings
 - camera and selection configuration emits renderer events
+
+Current review-surface tests cover `OrbitalViewReview` through the existing SwiftUI test target:
+
 - the confirmed SceneKit `OrbitalViewportMockup` viewer identity, left rail options, right tuning panel inventory, geodesic shell counts, and adaptive FPS constants remain intact
 - SceneKit review-app audio source uses native transport icon buttons for Play and Pause
 - SceneKit review-app right panel includes Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics section headers with the active tray order `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics`
@@ -114,11 +123,72 @@ Current wrapper skeleton tests cover:
 - SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
 - SceneKit review-app object/trail/glow/bounds trays are inactive while the review surface focuses on speakers
 
+The production wrapper and review surface intentionally share a test target for now, but they import separate package targets. Production wrapper assertions should exercise `OrbitalViewSwiftUI`; review/demo assertions should exercise `OrbitalViewReview`.
+
+## Orbisonic Design-Language Checks
+
+Design-language guidance lives in:
+
+```text
+docs/orbisonic-design-language.md
+```
+
+Existing SwiftUI/review-surface tests cover current source-level design hooks such as Orbisonic design-language source labels, full-width Orbisonic theme buttons, palette source attribution, current palette inventory, Daft Punk Bow display name, and Tech Rainbow migration behavior.
+
+Future UI changes should add static tests only when a design-language rule becomes a source-level constant or behavior. Manual visual review is required when visible UI behavior, layout, palette rendering, or review executable controls change. Docs-only design-language updates do not require manual visual review.
+
+## Host Profile Checks
+
+Host profile contracts live in:
+
+```text
+docs/integrations/wavefield-realtime-connection.md
+docs/integrations/orbisonic-splat-host-profiles.md
+docs/visual-telemetry-stress-gates.md
+docs/realtime-family-compliance-audit.md
+```
+
+Docs-only host profile slices should run static reference checks for the relevant host names and boundaries. Source-level host adapter slices must add tests for source descriptor provenance, physical channel identity, object identity, neutral geometry preservation, and no direct dependency on downstream app targets unless the slice explicitly allows it.
+
 Future wrapper tests should cover:
 
 - gesture updates bind camera state without breaking center lock
 - selection bindings round-trip from renderer picking to host UI
 - toolbar toggles do not mutate audio, playback, routing, or metering state
+
+## Compliance Closeout Checks
+
+The realtime-family adoption closeout requires:
+
+- `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`
+- `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`
+- `git diff --check`
+- OpenSpec CLI validation when `openspec` or `opsx` is installed
+- static reference checks for final compliance terms when OpenSpec CLI validation is unavailable
+
+The compliance audit is a documentation gate, not a new runtime test target. It should not claim callback p99/deadline coverage unless a host-owned integration test supplies that evidence.
+
+## Visual Telemetry Stress Checks
+
+The Slice 9 stress fixture lives in:
+
+```text
+Sources/OrbitalViewViewerSupport/OrbitalViewVisualTelemetryStressScene.swift
+Tests/OrbitalViewViewerTests/OrbitalViewViewerDemoContentTests.swift
+```
+
+Current stress tests cover:
+
+- 30 physical speakers in channel order;
+- 128 source objects with object IDs `1...128`;
+- object trails capped at 16 points per object;
+- local livestream generator provenance for speaker and object meter frames;
+- `32-object-should-pass-stress` source metadata;
+- 120 FPS incoming meter cadence versus 60 FPS active viewport cadence;
+- diagnostics-open stress profile intent;
+- dropped display frames represented by overload actions only, without fabricated input/audio failure fields.
+
+Renderer retained-buffer tests and SwiftUI/review diagnostics tests remain the evidence for no static-geometry rebuilds, retained buffer stability, object-meter separation, and diagnostic log caps. The visual telemetry stress gate proves viewport no-backpressure behavior only; host callback p99/deadline tests belong in the owning host app.
 
 ## Native Viewer Tests
 
@@ -132,12 +202,15 @@ Current viewer tests cover:
 - dynamic object frame and object meter ID agreement
 - object trail caps
 - Cube VU diagnostics and object trails enabled for visual review
+- the display-only stress fixture preserves physical speaker identity, source object identity, capped trails, local generator provenance, and display-drop diagnostics
 
 Launch the viewer for manual review with:
 
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
 ```
+
+The viewer imports `OrbitalViewReview` for the SceneKit/local-audio review surface. Production host apps should import `OrbitalViewSwiftUI` instead.
 
 ## Mockup Checks
 

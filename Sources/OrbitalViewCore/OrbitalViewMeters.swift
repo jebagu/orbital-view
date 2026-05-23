@@ -3,10 +3,16 @@ import Foundation
 public struct SpeakerMeterFrame: Equatable, Sendable {
     public let timestamp: TimeInterval
     public let levelsByChannel: [Int: SpeakerMeterLevel]
+    public let source: OrbitalViewTelemetrySourceDescriptor
 
-    public init(timestamp: TimeInterval, levelsByChannel: [Int: SpeakerMeterLevel]) throws {
+    public init(
+        timestamp: TimeInterval,
+        levelsByChannel: [Int: SpeakerMeterLevel],
+        source: OrbitalViewTelemetrySourceDescriptor = .speakerBus
+    ) throws {
         self.timestamp = timestamp
         self.levelsByChannel = levelsByChannel
+        self.source = source
         try validate()
     }
 
@@ -14,6 +20,7 @@ public struct SpeakerMeterFrame: Equatable, Sendable {
         guard timestamp.isFinite else {
             throw OrbitalViewValidationError.nonFiniteValue(field: "meter.timestamp")
         }
+        try source.validate()
 
         for channel in levelsByChannel.keys {
             guard channel > 0 else {

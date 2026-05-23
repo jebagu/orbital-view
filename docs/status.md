@@ -3,13 +3,13 @@
 ## Current Phase
 
 ```text
-Corrected VU Kit SceneKit review app handoff
+Realtime audio family compliance baseline complete
 ```
 
 ## Current Milestone
 
 ```text
-Confirmed geodesic review app preserved with cube VU/object tuning trays
+Final realtime-family compliance audit
 ```
 
 ## Summary
@@ -22,14 +22,24 @@ The SceneKit review app can load a local audio file for visual testing. Local fi
 
 `Cube VU` speaker type now uses the VU Kit scalar center-bloom contract in the SceneKit surface with a retained 9x9 face-pixel material texture applied to the actual cube faces, selected Orbisonic theme colors, RMS-driven center bloom, peak/hot fill, clip flash, and a material-only cube outline strength control. The old review-app `Speaker Height` control is no longer visible; older saved values still decode but are normalized to the current flat cube/prism geometry path. Prism and Sphere keep the existing simpler material tint behavior while inheriting the selected viewport theme.
 
-The production SwiftUI wrapper still targets the MetalKit renderer seam for downstream hosts. The native review executable is intentionally a SceneKit visual-review surface because that is the UI the user confirmed as correct.
+The production SwiftUI wrapper still targets the MetalKit renderer seam for downstream hosts. Review/demo-only SceneKit, local audio playback, file dialogs, PNG export, app-bundle theme persistence, and bundled review fonts now live in the separate `OrbitalViewReview` target. Speaker and object meter frames now carry telemetry source descriptors so displayed meters can identify speaker bus, object bus, final output, hardware tap, local livestream test generator, external Wavefield stream, Orbisonic prepared meter tap, Splat prepared analysis, review local audio, or synthetic visual stress provenance. The native review executable is intentionally a SceneKit visual-review surface because that is the UI the user confirmed as correct.
+
+Wavefield realtime output is now specified as a host-owned prepared snapshot boundary. Wavefield owns external livestream parsing, the local livestream test generator, MIDI streams, realtime queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View Kit receives only prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots. Local generator profiles are source metadata and display stress inputs, not alternate Orbital View audio paths.
+
+Orbital View UI and review-surface work now has a local design-language contract in `docs/orbisonic-design-language.md`. Future UI slices must use the Orbisonic design-language source files for shell layout, palette behavior, meter treatment, diagnostics separation, and information hierarchy while preserving Orbital View Kit's own product role and realtime boundaries.
+
+Orbisonic and Splat host integration profiles are now specified in `docs/integrations/orbisonic-splat-host-profiles.md`. Orbisonic receives a prepared viewport for explicit bus/object/speaker meter tap points while retaining playback, routing, Core Audio device I/O, render/control, metering, operator state, and performance ownership. Splat receives a preparation/control viewport for virtual speakers, source objects, renderer-kernel overlays, and neutral geometry review while retaining project/session state, edit/export, kernel analysis, file formats, persistence, and host handoff ownership.
+
+The Slice 9 visual telemetry stress gate is now specified in `docs/visual-telemetry-stress-gates.md` and implemented as `OrbitalViewVisualTelemetryStressScene`. The fixture models 30 physical speakers, 128 source objects, capped object trails, 60 FPS active motion, 120 FPS incoming meter cadence, open diagnostics, local livestream generator provenance, and stale display-frame drops as overload diagnostics. This is viewport no-backpressure evidence only; host callback p99, callback deadline, route repair, device I/O, MIDI/OSC, and meter-extraction gates remain host-owned.
+
+The final realtime-family adoption audit is now recorded in `docs/realtime-family-compliance-audit.md`. The package can be described as standards-aligned as a visual telemetry/preparation package: it inherits the Realtime Audio Family Standards Package, owns no callback entry points, keeps review-only code separated, uses OpenSpec for future audio-facing or architecture-facing changes, treats the Wavefield local livestream generator as a host source, and uses the Orbisonic design language as UI guidance only. Remaining risks are explicit in the audit.
 
 The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
 
 ## Current Work Package
 
 ```text
-work-packages/orbital-view-kit/MV.md
+work-packages/orbital-view-kit/realtime-family-adoption-work-package.md
 ```
 
 ## Current Tree
@@ -72,6 +82,13 @@ main tree
 - Deprecated the native Cube VU merge, viewer target, object overlay merge, and related docs produced in this chat.
 - Re-activated the Cube VU/object overlay direction through an explicit merge plan, added collapsible tuning trays, and wired performance settings into the existing SwiftUI + MTKView wrapper.
 - Replaced the rejected viewer executable surface with the confirmed VU Kit SceneKit geodesic viewport mockup, preserving the exact left control rail and adding tuning trays beneath View Detail.
+- Split the review-only SceneKit/local-audio surface into `OrbitalViewReview` so production `OrbitalViewSwiftUI` no longer imports review playback, file, export, theme, or font resources.
+- Added telemetry source descriptors to speaker/object meter frames and documented latest-complete-frame-wins display overload behavior.
+- Specified the Wavefield realtime connection, including local livestream generator profile handling, object/speaker identity mapping, and no direct Wavefield package dependency.
+- Added Orbisonic design-language guidance for future UI and review-surface work.
+- Specified Orbisonic and Splat host integration profiles without downstream source edits.
+- Added the Slice 9 visual telemetry stress fixture, stress docs, and tests for local-generator-sourced display no-backpressure behavior.
+- Completed the realtime-family compliance audit and documented the remaining risks.
 
 ## In Progress
 
@@ -81,7 +98,9 @@ none
 
 ## Pending
 
-- Decide the next bounded task for live host integration, camera/gesture controls, or production object smoothing.
+```text
+none
+```
 
 ## Blocked
 
@@ -90,6 +109,304 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-23 Final Realtime-Family Compliance Audit
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `docs/realtime-family-compliance-audit.md` as the final adoption closeout record.
+- Documented the inherited Realtime Audio Family Standards Package and `2026-05-23-family-standard` revision label.
+- Documented target plane ownership for `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewReview`, `OrbitalViewViewerSupport`, `OrbitalViewViewer`, and test targets.
+- Confirmed that Orbital View Kit owns no callback entry points and no public target is callback-safe by default.
+- Confirmed review-only SceneKit, local audio, impulse, file dialog, PNG export, theme persistence, and font behavior is separated in `OrbitalViewReview`.
+- Confirmed OpenSpec is active for future audio-facing, architecture-facing, and protected-path changes.
+- Confirmed the Wavefield local livestream generator is a host source and profile metadata provider, not an Orbital View special audio path.
+- Confirmed Orbisonic design language is the UI guideline, not Orbisonic product behavior.
+- Listed remaining risks explicitly: host callback p99/deadline proof remains host-owned, downstream integrations remain future work, OpenSpec CLI validation is unavailable in this checkout, and the visual stress fixture is not exposed as a manual review-app mode yet.
+- Updated architecture, contracts, implementation map, system flows, test strategy, protected paths, and status with the final compliance audit link and closeout state.
+- Updated the OpenSpec proposal to point at the final compliance audit instead of leaving the activation-slice status stale.
+
+Tests added or updated:
+
+```text
+No source-level behavior changed in this slice, so no tests were added.
+```
+
+Commands run:
+
+```text
+command -v openspec -> not available
+command -v opsx -> not available
+find . -maxdepth 3 -name package.json -o -name pnpm-lock.yaml -o -name package-lock.json -o -name yarn.lock -> no local JS package manager manifest found
+rg -n "Realtime Family Compliance Audit|realtime-family compliance|2026-05-23-family-standard|callback entry|no callback|OrbitalViewReview|OpenSpec|local livestream generator|Orbisonic design language|callback p99|deadline|remaining risks" docs openspec/changes/adopt-realtime-family-standards -> passed
+rg -n "does not claim full realtime-family compliance yet|Realtime Family Compliance Audit|docs/realtime-family-compliance-audit.md|OpenSpec CLI validation|callback p99|local livestream generator" docs openspec/changes/adopt-realtime-family-standards -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 111 tests
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/protected-paths.md
+docs/realtime-family-compliance-audit.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+openspec/changes/adopt-realtime-family-standards/proposal.md
+```
+
+OpenSpec validation:
+
+```text
+not run; no openspec or opsx CLI is installed in this checkout environment. Static reference checks and full Swift verification are required for this closeout.
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+### Update: 2026-05-23 Visual Telemetry Stress Scene And Gates
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewVisualTelemetryStressScene` in `OrbitalViewViewerSupport`.
+- Defined the display stress fixture as 30 physical speakers, 128 source objects, 16 trail points per object, 60 FPS active motion, 120 FPS incoming meter cadence, diagnostics open, and local livestream generator provenance for `32-object-should-pass-stress`.
+- Added stress diagnostics that model stale display drops through overload actions only: drop stale frames, decimate display refresh, keep latest complete snapshot, and set diagnostics outside realtime.
+- Added viewer-support tests for speaker identity, object identity, trail caps, local generator source metadata, faster-than-display meter cadence, and display-drop diagnostics without fabricated audio failure fields.
+- Added `docs/visual-telemetry-stress-gates.md` to separate Orbital View UI/render no-backpressure gates from host callback p99/deadline gates.
+- Updated architecture, contracts, implementation map, system flows, test strategy, project profile, protected paths, and OpenSpec ingress docs for the stress gate.
+
+Tests added or updated:
+
+```text
+Tests/OrbitalViewViewerTests/OrbitalViewViewerDemoContentTests.swift
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewViewerTests -> passed, 6 tests
+rg -n "Visual Telemetry Stress|visual telemetry stress|no-backpressure|p99|deadline|32-object-should-pass-stress|localLivestreamTestGenerator|dropStaleFrames|128 source objects|60 FPS|120 FPS" docs Sources Tests openspec/changes/adopt-realtime-family-standards -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 111 tests
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+docs/visual-telemetry-stress-gates.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-telemetry-ingress/spec.md
+```
+
+Manual visual review:
+
+```text
+not run; this slice added a source-level stress fixture and tests, but did not expose the stress scene in the visible review app.
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+### Update: 2026-05-23 Orbisonic And Splat Host Integration Profiles
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `docs/integrations/orbisonic-splat-host-profiles.md` as the active Orbisonic/Splat host integration contract.
+- Defined the shared host-owned preparation boundary for Orbisonic and Splat.
+- Documented that Orbisonic owns playback, transport, source selection, Core Audio device I/O, route discovery, route repair, channel mapping, output routing, render/control engines, meter extraction, explicit tap-point selection, operator state, and realtime performance gates.
+- Documented that Orbital View Kit receives prepared Orbisonic bus/object/speaker meter snapshots, diagnostics, and source metadata only, with `orbisonicPreparedMeterTap` provenance.
+- Documented that Splat owns project/session state, authoring/edit commands, renderer-kernel analysis, neutral geometry import/export, file formats, persistence, and any eventual handoff to an audio/render host.
+- Documented that Orbital View Kit may visualize Splat virtual speakers, source objects, renderer-kernel overlays, neutral geometry review, camera, selection, and diagnostics, with `splatPreparedAnalysis` provenance.
+- Reinforced that Splat edit/export remains preparation/control behavior, canonical 3D coordinates must not become permanent flattened screen coordinates, and browser/DomeLab runtime code must stay out of Orbital View Kit.
+- Updated the OpenSpec host-integration delta with Orbisonic profile, Splat profile, and downstream protected-path inspection requirements.
+
+Tests added or updated:
+
+```text
+No source-level behavior changed in this slice, so no tests were added.
+```
+
+Commands run:
+
+```text
+rg -n "Orbisonic|Splat|host integration|tap point|screen coordinates|orbisonicPreparedMeterTap|splatPreparedAnalysis|DomeLab runtime" docs work-packages openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 109 tests
+```
+
+Documentation updated:
+
+```text
+docs/integrations/orbisonic-splat-host-profiles.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+### Update: 2026-05-23 Orbisonic Design-Language Alignment
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `docs/orbisonic-design-language.md` as the local UI guideline for Orbital View Kit.
+- Pointed future UI work to the current Orbisonic design-language files:
+  - `/Users/jeremyguillory/Documents/vibecode projects/orbisonic design language/orbisonic-ui-language.md`
+  - `/Users/jeremyguillory/Documents/vibecode projects/orbisonic design language/orbisonic-palette-brief.md`
+  - `/Users/jeremyguillory/Documents/vibecode projects/orbisonic design language/Orbisonic Design System Kit/design-system.md`
+- Added review criteria for strict grid alignment, no page-level active-workflow scrolling, title-only headers, compact primary status UI, diagnostics for raw evidence, and no global animation timeline for static shell chrome.
+- Documented that Daft Punk Bow remains display-only VU color/material behavior and the canonical Tech Rainbow successor in this kit.
+- Clarified that the Orbisonic design language is a shell/layout/palette/information-hierarchy guide, not permission to import Orbisonic product semantics.
+- Updated the OpenSpec review-surface delta with design-language references, criteria, and palette behavior scenarios.
+
+Tests added or updated:
+
+```text
+No source-level constants were added in this slice, so no new static tests were required. Existing SwiftUI/review-surface tests already cover the current source-level design hooks, palette inventory, and Daft Punk Bow behavior.
+```
+
+Commands run:
+
+```text
+rg -n "orbisonic-ui-language.md|orbisonic-palette-brief.md|Orbisonic Design System Kit/design-system.md|strict grid alignment|no page-level active-workflow scrolling|title-only panel|compact status primary UI|diagnostics for raw evidence|no global animation timeline|Daft Punk Bow" docs openspec/changes/adopt-realtime-family-standards/specs/orbital-view-review-surface/spec.md Tests Sources -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests -> passed, 45 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 109 tests
+```
+
+Documentation updated:
+
+```text
+docs/orbisonic-design-language.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/protected-paths.md
+docs/status.md
+docs/test-strategy.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-review-surface/spec.md
+```
+
+Manual visual review:
+
+```text
+not run; this slice changed documentation and OpenSpec guidance only, with no visible UI behavior changes.
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+### Update: 2026-05-23 Wavefield Realtime Connection Specification
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `docs/integrations/wavefield-realtime-connection.md` as the active Wavefield host integration contract.
+- Documented that Wavefield owns external live stream parsing, the local livestream test generator, local MIDI streams, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates.
+- Documented that Orbital View Kit receives only prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots.
+- Added identity mapping guidance: Wavefield object IDs remain source-object identity, speaker channels remain physical speaker identity, generator profile names stay source metadata, disappeared objects are omitted from active object snapshots, and stale display frames may be dropped.
+- Added local livestream generator profile examples: `smoke`, `moving-pose`, `sustained-moving-object`, `burst-reorder`, `16-object-stress`, and `32-object-should-pass-stress`.
+- Updated the OpenSpec host-integration delta with Wavefield ownership, identity mapping, generator profile, and stale-frame scenarios.
+
+Tests added or updated:
+
+```text
+Added Core coverage for object disappear as absent active-object ownership.
+Added Wavefield adapter coverage proving local livestream generator source metadata preserves physical channel identity.
+```
+
+Commands run:
+
+```text
+rg -n "import Wavefield|WavefieldReceiver|WavefieldRealtime|WavefieldPackage|WavefieldAudio|WavefieldMIDI|WavefieldOSC" Package.swift Sources Tests -> no matches, exit 1 as expected
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 109 tests
+git diff --check -> passed
+rg -n "Wavefield owns|local livestream test generator|smoke|moving-pose|sustained-moving-object|burst-reorder|16-object-stress|32-object-should-pass-stress|Object disappear|source metadata" docs/integrations docs/contracts.md docs/system-flows.md docs/implementation-map.md docs/test-strategy.md docs/project/profile.md docs/architecture.md openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md Tests/OrbitalViewWavefieldTests Tests/OrbitalViewCoreTests -> passed
+```
+
+Documentation updated:
+
+```text
+docs/integrations/wavefield-realtime-connection.md
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md
+```
+
+Protected paths touched:
+
+```text
+none
+```
 
 ### Update: 2026-05-22 Review App Visual Tuning Tweaks
 
@@ -3388,3 +3705,477 @@ Open a protected SwiftUI/Metal renderer slice when the Fey geodesic shell should
 
 - `docs/decisions/0001-initial-architecture.md`
 - `docs/decisions/0002-renderer-backend.md`
+- `docs/decisions/0003-realtime-audio-family-standards.md`
+
+### Update: 2026-05-23 Realtime Family Adoption Work Package
+
+Status:
+
+```text
+planned
+```
+
+Changed:
+
+- Added a planning work package for adopting the Realtime Audio Family Standards as Orbital View Kit's governing architecture layer.
+- Classified Orbital View Kit as Control / UI / Telemetry Plane plus Preparation Plane adapters, with no owned Realtime Plane.
+- Added OpenSpec usage expectations for future audio-facing and architecture-facing changes.
+- Added Orbisonic design-language guidance as the UI reference for future review-surface and host-UI work.
+- Added the Wavefield local livestream test generator as a host-owned input source that Orbital View Kit should visualize through the same prepared snapshot contracts as external streams.
+
+Files changed:
+
+```text
+work-packages/orbital-view-kit/realtime-family-adoption-work-package.md
+docs/status.md
+```
+
+Tests added or updated:
+
+```text
+none - planning documentation only
+```
+
+Commands run:
+
+```text
+rg -n "Slice [0-9]+ complete\\. I'm ready to do the next slice\\.|openspec.dev|Orbisonic design language|local livestream test generator|Realtime Audio Family Standards" work-packages/orbital-view-kit/realtime-family-adoption-work-package.md docs/status.md -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 105 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+work-packages/orbital-view-kit/realtime-family-adoption-work-package.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+The realtime-family adoption plan is now captured as a sliced work package.
+```
+
+Risks:
+
+- This work package is planning only; the repo is not compliant until the slices are implemented and verified.
+- The current review-only SceneKit/local-audio surface still needs a later boundary cleanup slice before production wrapper compliance is clean.
+
+### Update: 2026-05-23 Realtime Family Adoption Slice 1
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added ADR 0003 to accept Realtime Audio Family Standards inheritance for Orbital View Kit.
+- Added the required family-standard inheritance language to the architecture, contracts, protected-path, and system-flow docs.
+- Documented the current plane fit as Control / UI / Telemetry Plane plus Preparation Plane adapters, with no owned Realtime Plane.
+- Kept the existing measured-level-only visual contract and clarified that host apps own callback-safe bridges, realtime callbacks, routing, playback timing, MIDI, OSC, and meter extraction.
+- Referenced the shared standards package path instead of copying the standards package into this repository.
+
+Files changed:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/decisions/0003-realtime-audio-family-standards.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+```
+
+Tests added or updated:
+
+```text
+none - documentation and ADR slice only
+```
+
+Commands run:
+
+```text
+rg -n "Realtime Audio Family Standards|Bencina|callback" docs AGENTS.md -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 105 tests
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/decisions/0003-realtime-audio-family-standards.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Slice 1 is complete. Orbital View Kit now formally inherits the Realtime Audio Family Standards in project docs without claiming full realtime compliance or changing source/API behavior.
+```
+
+Risks:
+
+- Later slices still need OpenSpec structure, standards profile docs, boundary review, and test/stress-gate definitions.
+
+### Update: 2026-05-23 Realtime Family Adoption Slice 2
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Created the OpenSpec change package `openspec/changes/adopt-realtime-family-standards/`.
+- Added `proposal.md`, `design.md`, and `tasks.md` for the realtime-family adoption.
+- Added spec deltas for `orbital-view-realtime-boundary`, `orbital-view-telemetry-ingress`, `orbital-view-host-integration`, and `orbital-view-review-surface`.
+- Each spec delta answers realtime impact, routing impact, meter source-of-truth, callback reachability, overload policy, and performance gates.
+- Added an `openspec.dev` workflow note to `openspec/README.md` for future audio-facing and architecture-facing changes.
+
+Files changed:
+
+```text
+docs/status.md
+openspec/README.md
+openspec/changes/adopt-realtime-family-standards/proposal.md
+openspec/changes/adopt-realtime-family-standards/design.md
+openspec/changes/adopt-realtime-family-standards/tasks.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-realtime-boundary/spec.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-telemetry-ingress/spec.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-review-surface/spec.md
+```
+
+Tests added or updated:
+
+```text
+none - OpenSpec and documentation slice only
+```
+
+Commands run:
+
+```text
+command -v openspec -> unavailable, no installed OpenSpec CLI found
+rg -n "openspec.dev|adopt-realtime-family-standards|realtime-boundary" openspec docs -> passed
+rg -n "Touches realtime|Touches routing|Meter source-of-truth|Callback reachability|Overload policy|Performance gates" openspec/changes/adopt-realtime-family-standards/specs -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 105 tests
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+openspec/README.md
+openspec/changes/adopt-realtime-family-standards/
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Slice 2 is complete. Future realtime-family adoption slices now have a concrete OpenSpec change package to implement against.
+```
+
+Risks:
+
+- OpenSpec CLI validation was not run because the `openspec` executable is not installed in this environment.
+- Later slices must keep the OpenSpec change, docs, tests, and implementation synchronized.
+
+### Update: 2026-05-23 Realtime Family Adoption Slice 3
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `docs/project/profile.md` as the Orbital View Kit family-standard project profile.
+- Recorded the inherited Realtime Audio Family Standards Package revision as `2026-05-23-family-standard`.
+- Added product identity, app type, backend choice, library/review executable shape, sample-rate and block-size ownership, channel/routing ownership, event/control sources, telemetry outputs, stress scenes, and overload policy.
+- Added a target-by-target plane map for package libraries, review executable/support target, and test targets.
+- Added a callback inventory stating Orbital View Kit owns no callback entry points.
+- Added the callback-adjacent warning that host apps must not call Orbital View Kit from audio callbacks or callback-reachable functions.
+- Explicitly stated production `OrbitalViewSwiftUI` and `OrbitalViewRender` are not callback-safe APIs.
+
+Files changed:
+
+```text
+docs/project/profile.md
+docs/status.md
+```
+
+Tests added or updated:
+
+```text
+none - documentation and project profile slice only
+```
+
+Commands run:
+
+```text
+rg -n "callback entry|Realtime Plane|Control / UI / Telemetry|Preparation Plane" docs/project docs -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 105 tests
+```
+
+Documentation updated:
+
+```text
+docs/project/profile.md
+docs/status.md
+```
+
+Bugs found or fixed:
+
+```text
+none
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Slice 3 is complete. A future reviewer can classify every package target from the project profile without reading source code.
+```
+
+Risks:
+
+- The profile documents current ownership boundaries only; later source movement and stress gates still need their own slices.
+
+### Update: 2026-05-23 Realtime Family Adoption Slice 4
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added the `OrbitalViewReview` library target for review/demo-only tooling.
+- Moved `OrbitalViewportMockup` and its bundled font resources from `Sources/OrbitalViewSwiftUI/` into `Sources/OrbitalViewReview/`.
+- Updated `OrbitalViewViewer` to import `OrbitalViewReview` instead of the production SwiftUI wrapper.
+- Kept `OrbitalViewSwiftUI` focused on `OrbitalView`, `OrbitalViewMetalView`, host bindings, the MetalKit bridge, and production-safe tuning controls.
+- Kept the existing review-surface tests in `OrbitalViewSwiftUITests`, now importing the separate review target for `OrbitalViewportMockup` assertions.
+- Updated contracts, architecture, implementation map, system flows, test strategy, protected paths, project profile, and status to document the production/review split.
+
+Files changed:
+
+```text
+Package.swift
+Sources/OrbitalViewReview/
+Sources/OrbitalViewSwiftUI/
+Sources/OrbitalViewViewer/OrbitalViewViewer.swift
+Tests/OrbitalViewSwiftUITests/OrbitalViewSwiftUITests.swift
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Tests added or updated:
+
+```text
+Updated SwiftUI/review test imports so production wrapper tests exercise OrbitalViewSwiftUI and review-surface tests exercise OrbitalViewReview.
+```
+
+Commands run:
+
+```text
+rg -n "AVFoundation|SceneKit|NSOpenPanel|AVAudioPlayer|FileManager|PNG|theme" Sources/OrbitalViewSwiftUI -> passed, no production SwiftUI matches
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 105 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer -> first sandboxed launch failed on user clang cache permissions; escalated launch built and started the executable, then was stopped with Ctrl-C
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/protected-paths.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+```
+
+Bugs found or fixed:
+
+```text
+Fixed the production wrapper boundary by removing review-only AVFoundation, SceneKit, local file playback, PNG export, theme persistence, and font-resource ownership from OrbitalViewSwiftUI.
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewSwiftUI/
+Sources/OrbitalViewReview/
+Tests/OrbitalViewSwiftUITests/
+```
+
+Result:
+
+```text
+Slice 4 is complete. Production OrbitalViewSwiftUI no longer imports AVFoundation or SceneKit, while review-only behavior remains available through OrbitalViewReview and OrbitalViewViewer.
+```
+
+Risks:
+
+- `OrbitalViewSwiftUITests` still covers both production wrapper and review target behavior; a future cleanup could split review tests into a dedicated `OrbitalViewReviewTests` target if the suite becomes harder to scan.
+- Existing historical status entries still reference the old `OrbitalViewKit_OrbitalViewSwiftUI.bundle`; current implementation-map instructions now use `OrbitalViewKit_OrbitalViewReview.bundle`.
+
+### Update: 2026-05-23 Realtime Family Adoption Slice 5
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added `OrbitalViewTelemetrySourceKind`, `OrbitalViewTelemetrySourceDescriptor`, and `OrbitalViewTelemetryOverloadAction` to `OrbitalViewCore`.
+- Added source descriptors to `SpeakerMeterFrame` and `ObjectMeterFrame`, with source defaults of `speakerBus` and `objectBus`.
+- Added supported source labels for speaker bus, object bus, final output, hardware tap, local livestream test generator, external Wavefield stream, Orbisonic prepared meter tap, Splat prepared analysis, review local audio, and synthetic visual stress.
+- Added allowed overload diagnostics for dropped stale frames, decimated display refresh, latest complete snapshot retention, and diagnostics set outside realtime.
+- Updated `WavefieldMeterFrameAdapter` so Wavefield-style meters default to `.externalWavefieldStream`.
+- Updated viewer demo speaker/object meters so deterministic review fixtures are labeled `.syntheticVisualStress`.
+- Updated OpenSpec and project docs to define latest-complete-frame-wins display telemetry, allowed display drops/decimation, and forbidden callback/display backpressure behavior.
+
+Files changed:
+
+```text
+Sources/OrbitalViewCore/OrbitalViewTelemetrySource.swift
+Sources/OrbitalViewCore/OrbitalViewMeters.swift
+Sources/OrbitalViewCore/OrbitalViewObjects.swift
+Sources/OrbitalViewCore/OrbitalViewMeterInput.swift
+Sources/OrbitalViewWavefield/WavefieldMeterFrameAdapter.swift
+Sources/OrbitalViewViewerSupport/OrbitalViewViewerDemoContent.swift
+Tests/OrbitalViewCoreTests/OrbitalViewCoreTests.swift
+Tests/OrbitalViewWavefieldTests/WavefieldMeterFrameAdapterTests.swift
+Tests/OrbitalViewViewerTests/OrbitalViewViewerDemoContentTests.swift
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-telemetry-ingress/spec.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-review-surface/spec.md
+```
+
+Tests added or updated:
+
+```text
+Added targeted Core tests for telemetry source labels, source descriptor validation, diagnostics overload actions, and legacy diagnostics decoding. Updated Wavefield and viewer demo tests for source descriptors.
+```
+
+Commands run:
+
+```text
+rg -n "OrbitalViewTelemetrySource|Telemetry source|latest-complete|drop stale|local livestream test generator|Orbisonic prepared meter tap|Splat prepared analysis|raw packets" Sources Tests docs openspec/changes/adopt-realtime-family-standards -> passed
+git diff --check -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 107 tests
+```
+
+Documentation updated:
+
+```text
+docs/architecture.md
+docs/contracts.md
+docs/implementation-map.md
+docs/project/profile.md
+docs/status.md
+docs/system-flows.md
+docs/test-strategy.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-telemetry-ingress/spec.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-review-surface/spec.md
+```
+
+Bugs found or fixed:
+
+```text
+Fixed the provenance gap where displayed speaker/object meter frames could carry levels without saying which source-of-truth produced them.
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+Result:
+
+```text
+Slice 5 is complete. Displayed meter frames now carry source descriptors, and Orbital View Kit's lossy display overload policy is explicit in source contracts, tests, OpenSpec, and docs.
+```
+
+Risks:
+
+- This slice adds metadata to public frame structs while preserving existing initializer call sites through defaults; downstream code that constructs frames positionally should still compile, but source-aware host integrations should now pass explicit descriptors.

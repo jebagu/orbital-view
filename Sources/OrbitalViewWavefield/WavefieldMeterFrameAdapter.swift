@@ -21,12 +21,18 @@ public struct WavefieldMeterChannelFrame: Equatable, Sendable {
 
 public struct WavefieldMeterFrameAdapter: Sendable {
     public let clipThreshold: Float
+    public let source: OrbitalViewTelemetrySourceDescriptor
 
-    public init(clipThreshold: Float = 1.0) throws {
+    public init(
+        clipThreshold: Float = 1.0,
+        source: OrbitalViewTelemetrySourceDescriptor = .externalWavefieldStream
+    ) throws {
         guard clipThreshold.isFinite else {
             throw WavefieldMeterFrameAdapterError.nonFiniteLevel(channel: 0, field: "clipThreshold")
         }
         self.clipThreshold = clipThreshold
+        self.source = source
+        try source.validate()
     }
 
     public func makeSpeakerMeterFrame(
@@ -65,7 +71,7 @@ public struct WavefieldMeterFrameAdapter: Sendable {
             )
         }
 
-        return try SpeakerMeterFrame(timestamp: timestamp, levelsByChannel: levelsByChannel)
+        return try SpeakerMeterFrame(timestamp: timestamp, levelsByChannel: levelsByChannel, source: source)
     }
 
     public func makeSanitizedSpeakerMeterFrame(
@@ -84,7 +90,8 @@ public struct WavefieldMeterFrameAdapter: Sendable {
         }
         return try SpeakerMeterFrameSanitizer(
             expectedChannels: expectedChannels,
-            timestampFallback: timestampFallback
+            timestampFallback: timestampFallback,
+            source: source
         )
         .sanitize(timestamp: timestamp, samples: samples)
     }

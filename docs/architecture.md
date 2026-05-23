@@ -4,6 +4,16 @@
 
 Orbital View Kit will become a layered Swift module family for spherical speaker visualization. The first layer is `OrbitalViewCore`, a pure data and validation target. Rendering, SwiftUI wrapping, and downstream app adapters are future layers.
 
+## Realtime Audio Family Standards Inheritance
+
+This project inherits the Realtime Audio Family Standards Package. The Bencina Realtime Callback Doctrine is mandatory for every callback and every callback-reachable function. Project-specific requirements may add stricter rules but may not weaken the family standard.
+
+Orbital View Kit currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane, no audio callback entry point, no playback scheduler, no output routing, and no MIDI or OSC transport. Its public package APIs consume host-prepared scene, meter, object, and camera state for display-rate rendering.
+
+The shared standards package is referenced from `/Users/jeremyguillory/Documents/vibecode projects/All projects assets/realtime-audio-family-standards`; it is not copied into this repository.
+
+The closeout audit for the adoption package lives in `docs/realtime-family-compliance-audit.md`. It is the current record of inherited standards, plane ownership, callback inventory, OpenSpec status, review-only separation, host-generator boundaries, Orbisonic design-language use, and remaining risks.
+
 ## Planned Module Layers
 
 ```text
@@ -14,7 +24,10 @@ OrbitalViewRender
   MetalKit / MTKView renderer seam with an initial offscreen smoke-tested draw path.
 
 OrbitalViewSwiftUI
-  Compile-only SwiftUI wrapper skeleton for host apps.
+  Production SwiftUI wrapper and MetalKit bridge for host apps.
+
+OrbitalViewReview
+  Review/demo-only SceneKit, local-audio, theme, PNG export, and font tooling.
 
 OrbitalViewDomeLab
   Optional neutral shell geometry import/export bridge.
@@ -26,7 +39,7 @@ OrbitalViewWavefield
   Local Wavefield speaker-layout JSON and meter-frame adapters into OrbitalViewCore.
 ```
 
-`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and `OrbitalViewSwiftUI` are implemented. `OrbitalViewRender` now has an instanced Metal cube/prism speaker draw path verified by offscreen smoke tests, pixel probes, retained-buffer checks, object overlay tests, and invariant tests for static draw inputs. Broad SwiftUI gestures, hit testing, shell/label visuals, and downstream app source integration remain deferred.
+`OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, and `OrbitalViewReview` are implemented. `OrbitalViewRender` now has an instanced Metal cube/prism speaker draw path verified by offscreen smoke tests, pixel probes, retained-buffer checks, object overlay tests, and invariant tests for static draw inputs. Broad SwiftUI gestures, hit testing, shell/label visuals, and downstream app source integration remain deferred.
 
 ## Runtime Architecture
 
@@ -38,6 +51,7 @@ OrbitalViewWavefield converts Wavefield speaker-layout JSON into OrbitalViewCore
 OrbitalViewWavefield converts Wavefield-style channel/rms/peak meter records into SpeakerMeterFrame.
 OrbitalViewRender stores scene, speaker meters, cube VU settings, dynamic object frames, object meters, object visual settings, camera, and selection state behind a MetalKit renderer seam. Internal draw-input snapshots separate static speaker geometry from display-only speaker material inputs and object overlay inputs for invariant testing.
 OrbitalViewSwiftUI wraps the renderer seam in an NSViewRepresentable MTKView bridge and can opt into native collapsible tuning trays for Orbisonic theme selection, Cube VU speaker settings, object overlays, trails, fixed object bounds, presets, performance-versus-CPU controls, and diagnostics.
+OrbitalViewReview owns the SceneKit review surface, local file playback, review impulse sources, app-bundle themes, PNG export, bundled fonts, and AppKit/CoreText label generation.
 ```
 
 Future runtime shape:
@@ -50,7 +64,15 @@ Host app
   -> OrbitalViewCore contracts
 ```
 
-The viewport receives scene and meter state from the host app. It does not parse files, schedule playback, receive OSC, parse MIDI, or decide output routing.
+Review/demo path:
+
+```text
+OrbitalViewViewer
+  -> OrbitalViewReview
+  -> OrbitalViewCore contracts
+```
+
+The production viewport receives scene and meter state from the host app. It does not parse files, schedule playback, receive OSC, parse MIDI, or decide output routing.
 
 ## Renderer Backend Decision
 
@@ -63,6 +85,16 @@ Long-term renderer source should not be SceneKit-first, RealityKit-first, WebVie
 ## Audio Architecture
 
 Orbital View Kit does not own audio behavior.
+
+Current plane fit:
+
+```text
+Realtime Plane: none owned by Orbital View Kit
+Preparation Plane: scene, layout, meter, object, and host-adapter normalization
+Control / UI / Telemetry Plane: renderer state, SwiftUI wrapper, camera/selection events, diagnostics, and review surfaces
+```
+
+Host applications must extract meters and publish prepared snapshots from their own realtime-safe paths. Orbital View Kit may coalesce, drop, or interpolate display updates, but it must not be called directly from an audio callback unless a future task establishes an explicit callback-safe contract.
 
 It may consume already-computed meter frames:
 
@@ -78,7 +110,35 @@ It must not:
 - make routing decisions
 - block timing-sensitive host paths
 
+## Wavefield Realtime Host Boundary
+
+The Wavefield realtime connection is specified in `docs/integrations/wavefield-realtime-connection.md`.
+
+Wavefield owns external live stream parsing, the local livestream test generator, local MIDI streams, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View Kit receives prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots only.
+
+The local livestream test generator is a normal Wavefield host source. Generator profile names such as `smoke`, `moving-pose`, `sustained-moving-object`, `burst-reorder`, `16-object-stress`, and `32-object-should-pass-stress` are source metadata and stress inputs only, not alternate audio paths.
+
+## Visual Telemetry Stress Boundary
+
+The canonical display stress gate is specified in `docs/visual-telemetry-stress-gates.md`.
+
+`OrbitalViewVisualTelemetryStressScene` defines a display-only fixture with 30 physical speakers, 128 source objects, capped object trails, 60 FPS active motion, 120 FPS incoming meter cadence, open diagnostics, local livestream generator provenance, and stale display frame diagnostics. This fixture proves Control / UI / Telemetry Plane no-backpressure behavior only.
+
+Host callback p99, callback deadline, route repair timing, device I/O timing, MIDI/OSC timing, and meter extraction timing remain host-owned performance gates. Orbital View Kit cannot claim host realtime callback compliance because it owns no callback entry point.
+
+## Orbisonic And Splat Host Profiles
+
+The Orbisonic and Splat host profiles are specified in `docs/integrations/orbisonic-splat-host-profiles.md`.
+
+Orbisonic connects through prepared bus, object, and speaker meter snapshots from explicit tap points. Orbisonic owns playback, transport, Core Audio device I/O, route discovery, route repair, channel mapping, output routing, render/control engines, meter extraction, operator state, and realtime performance gates. Orbital View Kit labels the prepared provenance, preserves physical channel/object identity, and follows the Orbisonic design-language palette grammar without becoming an Orbisonic source selector, route validator, or live mixer.
+
+Splat connects through prepared virtual speaker/source/object layouts, renderer-kernel overlays, neutral geometry review snapshots, diagnostics, camera, and selection. Splat owns project/session state, authoring commands, kernel analysis, file formats, persistence, neutral geometry import/export, and any later handoff to an audio/render host. Orbital View Kit must not store permanent flattened screen coordinates as canonical spatial state or import browser/DomeLab runtime code.
+
 ## UI Architecture
+
+Orbital View UI and review surfaces follow `docs/orbisonic-design-language.md`. Future UI work must read the Orbisonic design-language references before changing shell layout, tuning trays, diagnostics, palette behavior, or visible meter treatment.
+
+The design-language rule is intentionally visual and ergonomic. Orbital View Kit should reuse Orbisonic-family shell grammar, compact technical panels, palette behavior, title-only panel headers, diagnostics separation, and Daft Punk Bow meter treatment without importing Orbisonic product semantics, playback controls, routing ownership, or realtime behavior.
 
 The production wrapper now includes an optional native tuning surface. Hosts can keep the renderer as a plain viewport or opt into collapsible trays for:
 
@@ -105,6 +165,7 @@ Wavefield and Orbisonic use monitor mode. Splat may enable edit modes later.
 - speaker anchors, shapes, and visual roles
 - scene specs
 - meter frames by channel
+- telemetry source descriptors for speaker/object meter provenance
 - camera state
 - selection and events
 
@@ -117,7 +178,8 @@ Core rules:
 - `OrbitalViewCore` has no dependency on SwiftUI, AppKit, MetalKit, AVFoundation, MIDI, OSC, playback, or downstream app targets.
 - `OrbitalViewWavefield` depends only on Foundation and `OrbitalViewCore`; it must not depend on Wavefield package targets unless a future task explicitly changes that boundary.
 - `OrbitalViewRender` may depend on Metal and MetalKit; it must not depend on SwiftUI, AVFoundation, CoreMIDI, or downstream app targets.
-- `OrbitalViewSwiftUI` may depend on SwiftUI, MetalKit, `OrbitalViewCore`, and `OrbitalViewRender`; it must not depend on AVFoundation, CoreMIDI, or downstream app targets.
+- `OrbitalViewSwiftUI` may depend on SwiftUI, MetalKit, `OrbitalViewCore`, and `OrbitalViewRender`; it must not depend on AVFoundation, SceneKit, CoreMIDI, or downstream app targets.
+- `OrbitalViewReview` may depend on SwiftUI, AppKit, AVFoundation, SceneKit, CoreText, UniformTypeIdentifiers, and `OrbitalViewCore` for review/demo tooling; it must not be required by production host integrations.
 - Host apps adapt their own layouts and meters into core scene contracts.
 - Renderer backends consume core types but do not change their semantic meaning.
 - App integrations must preserve speaker channel identity and order.
@@ -131,6 +193,16 @@ Foundation
 Metal
 MetalKit
 SwiftUI
+```
+
+Review-only dependencies live in `OrbitalViewReview`:
+
+```text
+AVFoundation
+AppKit
+SceneKit
+CoreText
+UniformTypeIdentifiers
 ```
 
 Future production rendering may use Apple-native rendering frameworks. A major third-party dependency requires an explicit task decision.
@@ -157,11 +229,16 @@ Renderer constraints:
 
 - Do not rebuild shell or speaker geometry for every meter update.
 - Smooth visual envelopes on display refresh, not in audio callbacks.
+- Treat display telemetry as latest-complete-frame-wins.
+- Drop stale frames, decimate display refresh, and keep only the latest complete snapshot under load.
+- Set overload diagnostics outside realtime paths.
+- Never make audio wait for the viewport, allocate display queue from a callback, log from a callback, post UI from a callback, or feed raw packets directly into the renderer.
 - Use instancing for repeated speakers, nodes, and struts when practical.
 - Keep meter updates separate from structural scene updates.
 - Keep draw-on-demand enabled by default for idle/static viewports.
 - Use 30/60 FPS active-motion settings as viewport cadence hints without forcing meter-only or inspector UI refresh to match active-motion FPS.
 - Keep object trails and glow trails capped by object count and per-object trail point settings.
+- Use the visual telemetry stress gate for viewport no-backpressure evidence, not for host callback p99 or deadline claims.
 - In the SceneKit review executable, preserve the adaptive loop: 60 FPS only for active motion, 10 FPS for idle fake meter-only updates, 10 FPS for the inspector, and no root SwiftUI animation timeline.
 
 ## Reliability Model

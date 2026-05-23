@@ -20,7 +20,19 @@ reviewers/                    Human-readable review checklists
 prompts/                      Reusable project prompts
 ```
 
-Swift source directories are now present for `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewViewerSupport`, and the `OrbitalViewViewer` executable.
+UI design-language contract:
+
+```text
+docs/orbisonic-design-language.md
+```
+
+Realtime-family compliance closeout:
+
+```text
+docs/realtime-family-compliance-audit.md
+```
+
+Swift source directories are now present for `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, `OrbitalViewSwiftUI`, `OrbitalViewReview`, `OrbitalViewViewerSupport`, and the `OrbitalViewViewer` executable.
 
 ## Feature Map
 
@@ -40,6 +52,8 @@ Sources/OrbitalViewCore/
 Tests/OrbitalViewCoreTests/
 ```
 
+Current meter frames include `OrbitalViewTelemetrySourceDescriptor` metadata so speaker and object telemetry can identify its source of truth without changing channel/object identity. `OrbitalViewInputDiagnostics` can also record allowed lossy-display overload actions: dropped stale frames, decimated display refresh, latest complete snapshot retention, and diagnostics set outside realtime.
+
 Related docs:
 
 ```text
@@ -50,6 +64,23 @@ docs/test-strategy.md
 work-packages/orbital-view-kit/MV.md
 .tasks/001-orbital-view-core-foundation.md
 ```
+
+### Realtime Family Compliance Audit
+
+Purpose:
+
+```text
+Record the final standards-adoption state for the current package.
+```
+
+Implementation locations:
+
+```text
+docs/realtime-family-compliance-audit.md
+openspec/changes/adopt-realtime-family-standards/
+```
+
+The audit states the inherited realtime audio family standard, target-to-plane mapping, callback inventory, review-only target separation, OpenSpec status, Wavefield local generator boundary, Orbisonic design-language role, and explicit remaining risks. It is documentation only and does not create callback-safe APIs.
 
 ### Wavefield Adapters
 
@@ -66,7 +97,35 @@ Sources/OrbitalViewWavefield/
 Tests/OrbitalViewWavefieldTests/
 ```
 
-The current adapter reads speaker-layout JSON and local channel/rms/peak meter DTOs. Direct Wavefield package type integration is not implemented.
+The current adapter reads speaker-layout JSON and local channel/rms/peak meter DTOs. Direct Wavefield package type integration is not implemented. Wavefield-style meter frames are labeled as `.externalWavefieldStream` by default, with room for the local livestream test generator to use `.localLivestreamTestGenerator` in a later host integration slice.
+
+Wavefield realtime connection contract:
+
+```text
+docs/integrations/wavefield-realtime-connection.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md
+```
+
+Wavefield owns external stream parsing, local livestream generator profiles, MIDI streams, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View Kit receives prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots only.
+
+### Orbisonic And Splat Host Profiles
+
+Purpose:
+
+```text
+Define how Orbisonic and Splat should connect without changing downstream apps.
+```
+
+Integration contract:
+
+```text
+docs/integrations/orbisonic-splat-host-profiles.md
+openspec/changes/adopt-realtime-family-standards/specs/orbital-view-host-integration/spec.md
+```
+
+Orbisonic provides prepared bus/object/speaker meter snapshots from explicit tap points, labels provenance as `orbisonicPreparedMeterTap`, keeps playback/routing/Core Audio/device/output ownership in Orbisonic, and preserves Orbisonic design-language palette grammar.
+
+Splat uses Orbital View Kit for virtual speakers, source objects, renderer-kernel overlays, neutral geometry review, camera/selection, and diagnostics. Splat edit/export actions stay preparation/control behavior, canonical 3D coordinates remain canonical, and neutral geometry import/export stays separate from browser or DomeLab runtime code.
 
 ### Orbital Viewport Visual Mockup
 
@@ -129,7 +188,26 @@ Sources/OrbitalViewSwiftUI/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-The current wrapper provides `OrbitalView`, an `NSViewRepresentable` bridge, coordinator tests, and opt-in collapsible tuning trays. The SceneKit review surface now organizes active trays under Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics sections with clearer labels for saved themes, speaker shape, speaker pattern, label font, color palette, cube surface, bloom style, sphere geometry, geodesic appearance, meter source, meter response, performance, and diagnostics. The binding initializer lets hosts tune `SpeakerMeterVisualSettings`, `ObjectVisualSettings`, and `OrbitalViewPerformanceSettings`; value-based initializers remain available for hosts that do not want the tuning surface. Gestures, hit testing, and production inspector UI remain deferred.
+The current wrapper provides `OrbitalView`, an `NSViewRepresentable` MetalKit bridge, coordinator tests, and opt-in collapsible tuning trays. The binding initializer lets hosts tune `SpeakerMeterVisualSettings`, `ObjectVisualSettings`, and `OrbitalViewPerformanceSettings`; value-based initializers remain available for hosts that do not want the tuning surface. The production target does not own SceneKit, local audio playback, file dialogs, PNG export, bundled review fonts, or theme JSON persistence. Gestures, hit testing, and production inspector UI remain deferred.
+
+### OrbitalViewReview Surface
+
+Purpose:
+
+```text
+Keep review/demo-only SceneKit, local-audio, theme, export, and font tooling out of the production SwiftUI wrapper.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewReview/
+Tests/OrbitalViewSwiftUITests/
+```
+
+`OrbitalViewReview` owns `OrbitalViewportMockup`, the confirmed VU Kit SceneKit geodesic viewport review app, plus its SwiftPM font resources. This target may use review-only `AVFoundation`, `AppKit`, `SceneKit`, `NSOpenPanel`, CoreText font registration, app-bundle theme JSON, and PNG export behavior. Production hosts should import `OrbitalViewSwiftUI`; the review executable imports `OrbitalViewReview`.
+
+Any future visible review-surface change must verify against `docs/orbisonic-design-language.md` and the Orbisonic design-language source files it references. The rule covers layout, palette, meter treatment, diagnostics separation, and information hierarchy; it does not import Orbisonic product semantics.
 
 ### Native OrbitalViewViewer
 
@@ -143,12 +221,13 @@ Implementation locations:
 
 ```text
 Package.swift
+Sources/OrbitalViewReview/
 Sources/OrbitalViewViewer/
 Sources/OrbitalViewViewerSupport/
 Tests/OrbitalViewViewerTests/
 ```
 
-The viewer executable now hosts `OrbitalViewportMockup`, the confirmed VU Kit SceneKit geodesic viewport review app. This preserves the original camera/view-detail controls, the Fey 3V geodesic shell, full-window PNG export, and adaptive SceneKit interaction loop. `Song Audio Source` sits at the top of the left rail with native transport icon buttons for Play and Pause plus audio render type buttons. Speaker type selection now lives in the right `Speaker Shape` tray and exposes `Prism`, `Sphere`, and `Cube VU`; Cube VU uses square cube geometry with the shared Cube VU scalar/material path.
+The viewer executable now imports `OrbitalViewReview` and hosts `OrbitalViewportMockup`, the confirmed VU Kit SceneKit geodesic viewport review app. This preserves the original camera/view-detail controls, the Fey 3V geodesic shell, full-window PNG export, and adaptive SceneKit interaction loop. `Song Audio Source` sits at the top of the left rail with native transport icon buttons for Play and Pause plus audio render type buttons. Speaker type selection now lives in the right `Speaker Shape` tray and exposes `Prism`, `Sphere`, and `Cube VU`; Cube VU uses square cube geometry with the shared Cube VU scalar/material path.
 
 The right panel is now a tuning/debug surface instead of a large meter inspector. It is sectioned by use: `Theme` contains `Saved Themes`; `Speaker Appearance` contains `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, and `Bloom Style`; `Sphere Appearance` contains `Sphere Geometry` and `Geodesic Appearance`; `Meter Behavior` contains `Meter Source`, `Meter Response`, and `Performance`; `Diagnostics` contains `Diagnostics`. `Sphere Geometry` and `Speaker Pattern` are empty future trays that currently show only `Future work`. `Cube Surface`, `Bloom Style`, and `Meter Response` each include a local dice-icon randomizer. The speaker `Color Palette` tray uses full-width custom theme buttons with fixed-height rows, subtitles, palette swatches, and active borders; it does not use a native segmented picker. The palette list is sourced from the Orbisonic design-language brief and includes Purple, Flamingo, Green, B&W, Daft Punk Bow, Rack Mint, Rack Pink, Rack Blue, Ember Console, Graphite, Flamingo Green, and Dusty Rose. The speaker palette also drives the app skin. `Geodesic Appearance` uses the same palette list independently and owns `Geodesic Saturation`, a shell-only color control that desaturates the geodesic struts/nodes to grayscale at the low end and restores the selected geodesic palette at the high end without changing speaker or Cube VU materials. The `Saved Themes` tray saves, refreshes, loads, and sets defaults for JSON themes in `Contents/Resources/View Themes/`; new files get unique two-word names, manual filename changes become the visible app label on refresh, and default selection uses a stable `themeID` before falling back to filename. The old Scene summary, selected-speaker placeholder, and 30-channel VU list are removed. Object Overlay, Trails, Glow Trails, and Bounds are inactive in this review surface for now, while the reusable object contracts and renderer paths remain available for future Wavefield work.
 
@@ -160,7 +239,7 @@ The `Label Font` tray switches SceneKit speaker-number labels between grouped No
 
 `Meter Source` has four mutually exclusive modes: `Music`, `Impulse Test Ripple`, `Impulse Test Waves`, and `Impulse Test Orbiting Comets`. Music uses the local-audio/fake review meter source. Orbiting Comets now uses exactly two larger comets with longer hot VU trails, and the left rail `Render Type` can keep local audio as All Mono or use the mono RMS/peak sample to excite the ripple, waves, or comets spatial patterns. Fog keeps the same 0...100 slider but uses a lighter low/mid curve and stronger max fog. The `Bloom Style` tray selects Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without reset/export buttons or a four-up preview. The `Saved Themes` tray saves the visual payload with an optional stable `themeID`. The payload includes top-level tuning fields including `speakerLabelFont`, `speakerLabelFontSizeSlider`, `speakerLabelFontSizeScale`, `geodesicRenderStyle`, and a `leftPanel` block for audio source mode/file metadata/play state/render mode, camera view, yaw, pitch, zoom, spin, adjusted-camera flag, speaker type, speaker size/fog slider values and resolved values, speaker numbers, hidden lines, and selected channel. Theme load ignores audio file fields and selected channel so themes remain visual settings only. The `Diagnostics` tray stays collapsed by default and includes raw RMS, raw peak, calibrated RMS, display scalar, hot scalar, and diagnostic channel values.
 
-When manually refreshing the verbose local `.app` bundle from SwiftPM, copy both `.build/arm64-apple-macosx/debug/OrbitalViewViewer` into `Contents/MacOS/OrbitalViewViewer` and `.build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewSwiftUI.bundle` into `Contents/Resources/` so bundled label fonts are available offline.
+When manually refreshing the verbose local `.app` bundle from SwiftPM, copy both `.build/arm64-apple-macosx/debug/OrbitalViewViewer` into `Contents/MacOS/OrbitalViewViewer` and `.build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewReview.bundle` into `Contents/Resources/` so bundled label fonts are available offline.
 
 The review app also has a local audio file input mode for quick visual testing. `Choose File` loads a local audio file, side-by-side transport icon buttons control Play and Pause, and the current file meter is reduced to one mono RMS/peak sample that drives every speaker equally. This intentionally does not change the production contract: downstream hosts should continue to feed real `SpeakerMeterFrame` values keyed by physical channel.
 
@@ -171,6 +250,24 @@ Launch command:
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
 ```
+
+### Visual Telemetry Stress Gate
+
+Purpose:
+
+```text
+Provide a deterministic display-only pressure fixture for viewport no-backpressure tests.
+```
+
+Implementation locations:
+
+```text
+Sources/OrbitalViewViewerSupport/OrbitalViewVisualTelemetryStressScene.swift
+Tests/OrbitalViewViewerTests/OrbitalViewViewerDemoContentTests.swift
+docs/visual-telemetry-stress-gates.md
+```
+
+The fixture uses 30 physical speaker channels, 128 source objects, 16 trail points per object, 60 FPS active motion, 120 FPS incoming meter cadence, open diagnostics, and `.localLivestreamTestGenerator` source metadata for the `32-object-should-pass-stress` profile. Its diagnostics model stale display drops through overload actions only. It does not establish host audio callback p99, deadline, route, device I/O, MIDI/OSC, or meter-extraction compliance.
 
 ### Renderer Test Harness Plan
 

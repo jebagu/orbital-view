@@ -113,10 +113,16 @@ public struct OrbitalViewObjectFrame: Equatable, Sendable {
 public struct ObjectMeterFrame: Equatable, Sendable {
     public let timestamp: TimeInterval
     public let levelsByObjectID: [Int: ObjectMeterLevel]
+    public let source: OrbitalViewTelemetrySourceDescriptor
 
-    public init(timestamp: TimeInterval, levelsByObjectID: [Int: ObjectMeterLevel]) throws {
+    public init(
+        timestamp: TimeInterval,
+        levelsByObjectID: [Int: ObjectMeterLevel],
+        source: OrbitalViewTelemetrySourceDescriptor = .objectBus
+    ) throws {
         self.timestamp = timestamp
         self.levelsByObjectID = levelsByObjectID
+        self.source = source
         try validate()
     }
 
@@ -124,6 +130,7 @@ public struct ObjectMeterFrame: Equatable, Sendable {
         guard timestamp.isFinite else {
             throw OrbitalViewValidationError.nonFiniteValue(field: "objectMeter.timestamp")
         }
+        try source.validate()
         for objectID in levelsByObjectID.keys {
             try validateSourceObjectID(objectID, field: "objectMeter.objectID")
         }

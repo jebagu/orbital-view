@@ -1,4 +1,4 @@
-import OrbitalViewSwiftUI
+import OrbitalViewReview
 import SwiftUI
 
 @main

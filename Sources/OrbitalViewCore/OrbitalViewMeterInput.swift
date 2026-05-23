@@ -15,6 +15,17 @@ public struct SpeakerMeterSample: Equatable, Sendable {
 }
 
 public struct OrbitalViewInputDiagnostics: Equatable, Codable, Sendable {
+    private enum CodingKeys: String, CodingKey {
+        case missingChannels
+        case extraChannels
+        case invalidChannels
+        case duplicateChannels
+        case replacedValues
+        case clampedValues
+        case timestampReplaced
+        case overloadActions
+    }
+
     public struct ValueReplacement: Equatable, Codable, Sendable {
         public let channel: Int
         public let field: String
@@ -50,6 +61,7 @@ public struct OrbitalViewInputDiagnostics: Equatable, Codable, Sendable {
     public let replacedValues: [ValueReplacement]
     public let clampedValues: [ValueClamp]
     public let timestampReplaced: Bool
+    public let overloadActions: [OrbitalViewTelemetryOverloadAction]
 
     public init(
         missingChannels: [Int] = [],
@@ -58,7 +70,8 @@ public struct OrbitalViewInputDiagnostics: Equatable, Codable, Sendable {
         duplicateChannels: [Int] = [],
         replacedValues: [ValueReplacement] = [],
         clampedValues: [ValueClamp] = [],
-        timestampReplaced: Bool = false
+        timestampReplaced: Bool = false,
+        overloadActions: [OrbitalViewTelemetryOverloadAction] = []
     ) {
         self.missingChannels = missingChannels
         self.extraChannels = extraChannels
@@ -67,6 +80,36 @@ public struct OrbitalViewInputDiagnostics: Equatable, Codable, Sendable {
         self.replacedValues = replacedValues
         self.clampedValues = clampedValues
         self.timestampReplaced = timestampReplaced
+        self.overloadActions = Self.normalizedOverloadActions(overloadActions)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            missingChannels: try container.decodeIfPresent([Int].self, forKey: .missingChannels) ?? [],
+            extraChannels: try container.decodeIfPresent([Int].self, forKey: .extraChannels) ?? [],
+            invalidChannels: try container.decodeIfPresent([Int].self, forKey: .invalidChannels) ?? [],
+            duplicateChannels: try container.decodeIfPresent([Int].self, forKey: .duplicateChannels) ?? [],
+            replacedValues: try container.decodeIfPresent([ValueReplacement].self, forKey: .replacedValues) ?? [],
+            clampedValues: try container.decodeIfPresent([ValueClamp].self, forKey: .clampedValues) ?? [],
+            timestampReplaced: try container.decodeIfPresent(Bool.self, forKey: .timestampReplaced) ?? false,
+            overloadActions: try container.decodeIfPresent(
+                [OrbitalViewTelemetryOverloadAction].self,
+                forKey: .overloadActions
+            ) ?? []
+        )
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(missingChannels, forKey: .missingChannels)
+        try container.encode(extraChannels, forKey: .extraChannels)
+        try container.encode(invalidChannels, forKey: .invalidChannels)
+        try container.encode(duplicateChannels, forKey: .duplicateChannels)
+        try container.encode(replacedValues, forKey: .replacedValues)
+        try container.encode(clampedValues, forKey: .clampedValues)
+        try container.encode(timestampReplaced, forKey: .timestampReplaced)
+        try container.encode(overloadActions, forKey: .overloadActions)
     }
 
     public var hasIssues: Bool {
@@ -77,6 +120,14 @@ public struct OrbitalViewInputDiagnostics: Equatable, Codable, Sendable {
             || !duplicateChannels.isEmpty
             || !replacedValues.isEmpty
             || !clampedValues.isEmpty
+            || !overloadActions.isEmpty
+    }
+
+    private static func normalizedOverloadActions(
+        _ actions: [OrbitalViewTelemetryOverloadAction]
+    ) -> [OrbitalViewTelemetryOverloadAction] {
+        let actionSet = Set(actions)
+        return OrbitalViewTelemetryOverloadAction.allCases.filter { actionSet.contains($0) }
     }
 }
 
@@ -93,10 +144,16 @@ public struct SpeakerMeterFrameSanitizer: Equatable, Sendable {
 
     public let expectedChannels: [Int]
     public let timestampFallback: TimeInterval
+    public let source: OrbitalViewTelemetrySourceDescriptor
 
-    public init(expectedChannels: [Int], timestampFallback: TimeInterval = 0) {
+    public init(
+        expectedChannels: [Int],
+        timestampFallback: TimeInterval = 0,
+        source: OrbitalViewTelemetrySourceDescriptor = .speakerBus
+    ) {
         self.expectedChannels = Array(Set(expectedChannels.filter { $0 > 0 })).sorted()
         self.timestampFallback = timestampFallback.isFinite ? timestampFallback : 0
+        self.source = source
     }
 
     public func sanitize(timestamp: TimeInterval, samples: [SpeakerMeterSample]) throws -> Result {
@@ -151,7 +208,11 @@ public struct SpeakerMeterFrameSanitizer: Equatable, Sendable {
             timestampReplaced: !timestamp.isFinite
         )
         return try Result(
-            frame: SpeakerMeterFrame(timestamp: safeTimestamp, levelsByChannel: levelsByChannel),
+            frame: SpeakerMeterFrame(
+                timestamp: safeTimestamp,
+                levelsByChannel: levelsByChannel,
+                source: source
+            ),
             diagnostics: diagnostics
         )
     }

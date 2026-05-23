@@ -16,6 +16,7 @@ final class WavefieldMeterFrameAdapterTests: XCTestCase {
         XCTAssertEqual(frame.levelsByChannel[1], try SpeakerMeterLevel(rms: 0.1, peak: 0.2, clip: false))
         XCTAssertEqual(frame.levelsByChannel[30], try SpeakerMeterLevel(rms: 0.3, peak: 0.7, clip: false))
         XCTAssertNil(frame.levelsByChannel[2])
+        XCTAssertEqual(frame.source, .externalWavefieldStream)
     }
 
     func testClipThresholdMarksPeakAtOrAboveThreshold() throws {
@@ -32,6 +33,26 @@ final class WavefieldMeterFrameAdapterTests: XCTestCase {
         XCTAssertEqual(frame.levelsByChannel[1]?.clip, false)
         XCTAssertEqual(frame.levelsByChannel[2]?.clip, true)
         XCTAssertEqual(frame.levelsByChannel[3]?.clip, true)
+    }
+
+    func testLocalLivestreamGeneratorSourcePreservesChannelIdentity() throws {
+        let source = try OrbitalViewTelemetrySourceDescriptor(
+            kind: .localLivestreamTestGenerator,
+            label: "Wavefield local generator",
+            detail: "profile=smoke"
+        )
+        let frame = try WavefieldMeterFrameAdapter(source: source).makeSpeakerMeterFrame(
+            timestamp: 2.5,
+            channels: [
+                WavefieldMeterChannelFrame(channel: 8, rms: 0.25, peak: 0.5),
+                WavefieldMeterChannelFrame(channel: 3, rms: 0.15, peak: 0.35)
+            ]
+        )
+
+        XCTAssertEqual(frame.source, source)
+        XCTAssertEqual(frame.levelsByChannel.keys.sorted(), [3, 8])
+        XCTAssertEqual(frame.levelsByChannel[3], try SpeakerMeterLevel(rms: 0.15, peak: 0.35, clip: false))
+        XCTAssertEqual(frame.levelsByChannel[8], try SpeakerMeterLevel(rms: 0.25, peak: 0.5, clip: false))
     }
 
     func testDuplicateChannelsAreRejected() throws {
@@ -108,6 +129,7 @@ final class WavefieldMeterFrameAdapterTests: XCTestCase {
         XCTAssertEqual(result.frame.levelsByChannel[2], try SpeakerMeterLevel(rms: 0.3, peak: 0.4, clip: false))
         XCTAssertEqual(result.frame.levelsByChannel[4], try SpeakerMeterLevel(rms: 0, peak: 0.1, clip: false))
         XCTAssertNil(result.frame.levelsByChannel[3])
+        XCTAssertEqual(result.frame.source, .externalWavefieldStream)
         XCTAssertEqual(result.diagnostics.missingChannels, [3])
         XCTAssertEqual(result.diagnostics.extraChannels, [4])
         XCTAssertEqual(result.diagnostics.invalidChannels, [0])

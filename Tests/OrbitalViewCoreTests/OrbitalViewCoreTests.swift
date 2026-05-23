@@ -181,6 +181,7 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertEqual(frame.levelsByChannel[1], low)
         XCTAssertEqual(frame.levelsByChannel[30], hot)
         XCTAssertNil(frame.levelsByChannel[2])
+        XCTAssertEqual(frame.source, .speakerBus)
 
         XCTAssertThrowsError(try SpeakerMeterLevel(rms: .nan, peak: 0, clip: false)) { error in
             XCTAssertEqual(error as? OrbitalViewValidationError, .nonFiniteValue(field: "meter.rms"))
@@ -188,6 +189,68 @@ final class OrbitalViewCoreTests: XCTestCase {
 
         XCTAssertThrowsError(try SpeakerMeterFrame(timestamp: 0, levelsByChannel: [0: low])) { error in
             XCTAssertEqual(error as? OrbitalViewValidationError, .invalidChannel(0))
+        }
+    }
+
+    func testTelemetrySourceDescriptorDefaultsAndValidation() throws {
+        XCTAssertEqual(
+            OrbitalViewTelemetrySourceKind.allCases.map(\.displayName),
+            [
+                "Speaker bus",
+                "Object bus",
+                "Final output",
+                "Hardware tap",
+                "Local livestream test generator",
+                "External Wavefield stream",
+                "Orbisonic prepared meter tap",
+                "Splat prepared analysis",
+                "Review local audio",
+                "Synthetic visual stress"
+            ]
+        )
+        XCTAssertEqual(OrbitalViewTelemetrySourceDescriptor.speakerBus.label, "Speaker bus")
+        XCTAssertEqual(OrbitalViewTelemetrySourceDescriptor.objectBus.label, "Object bus")
+        XCTAssertTrue(OrbitalViewTelemetrySourceDescriptor.reviewLocalAudio.kind.isReviewOrTestHarness)
+        XCTAssertTrue(OrbitalViewTelemetrySourceDescriptor.syntheticVisualStress.kind.isReviewOrTestHarness)
+        XCTAssertFalse(OrbitalViewTelemetrySourceDescriptor.orbisonicPreparedMeterTap.kind.isReviewOrTestHarness)
+
+        let custom = try OrbitalViewTelemetrySourceDescriptor(
+            kind: .hardwareTap,
+            label: " DVS hardware tap ",
+            detail: " Prepared by host outside realtime callback "
+        )
+        XCTAssertEqual(custom.label, "DVS hardware tap")
+        XCTAssertEqual(custom.detail, "Prepared by host outside realtime callback")
+
+        let encoded = try JSONEncoder().encode(custom)
+        let decoded = try JSONDecoder().decode(OrbitalViewTelemetrySourceDescriptor.self, from: encoded)
+        XCTAssertEqual(decoded, custom)
+
+        XCTAssertThrowsError(
+            try OrbitalViewTelemetrySourceDescriptor(kind: .speakerBus, label: " ")
+        ) { error in
+            XCTAssertEqual(error as? OrbitalViewValidationError, .emptyID(field: "telemetrySource.label"))
+        }
+
+        let invalidJSON = #"{"kind":"speakerBus","label":" "}"#.data(using: .utf8)!
+        XCTAssertThrowsError(
+            try JSONDecoder().decode(OrbitalViewTelemetrySourceDescriptor.self, from: invalidJSON)
+        ) { error in
+            XCTAssertEqual(error as? OrbitalViewValidationError, .emptyID(field: "telemetrySource.label"))
+        }
+
+        let oversized = String(repeating: "x", count: OrbitalViewTelemetrySourceDescriptor.maxLabelLength + 1)
+        XCTAssertThrowsError(
+            try OrbitalViewTelemetrySourceDescriptor(kind: .speakerBus, label: oversized)
+        ) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(
+                    field: "telemetrySource.label",
+                    value: Double(OrbitalViewTelemetrySourceDescriptor.maxLabelLength + 1),
+                    validRange: "1...\(OrbitalViewTelemetrySourceDescriptor.maxLabelLength)"
+                )
+            )
         }
     }
 
@@ -463,6 +526,42 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertTrue(result.diagnostics.hasIssues)
     }
 
+    func testInputDiagnosticsTrackAllowedTelemetryOverloadActionsOutsideRealtime() throws {
+        let diagnostics = OrbitalViewInputDiagnostics(
+            overloadActions: [
+                .keepLatestCompleteSnapshot,
+                .dropStaleFrames,
+                .setDiagnosticsOutsideRealtime,
+                .dropStaleFrames
+            ]
+        )
+
+        XCTAssertEqual(
+            diagnostics.overloadActions,
+            [.dropStaleFrames, .keepLatestCompleteSnapshot, .setDiagnosticsOutsideRealtime]
+        )
+        XCTAssertTrue(diagnostics.hasIssues)
+        XCTAssertEqual(
+            OrbitalViewTelemetryOverloadAction.allCases.map(\.displayName),
+            [
+                "Drop stale frames",
+                "Decimate display refresh",
+                "Keep latest complete snapshot",
+                "Set diagnostics outside realtime"
+            ]
+        )
+
+        let encoded = try JSONEncoder().encode(diagnostics)
+        let decoded = try JSONDecoder().decode(OrbitalViewInputDiagnostics.self, from: encoded)
+        XCTAssertEqual(decoded, diagnostics)
+
+        let legacyJSON = #"{"missingChannels":[1],"timestampReplaced":true}"#.data(using: .utf8)!
+        let legacyDecoded = try JSONDecoder().decode(OrbitalViewInputDiagnostics.self, from: legacyJSON)
+        XCTAssertEqual(legacyDecoded.missingChannels, [1])
+        XCTAssertTrue(legacyDecoded.timestampReplaced)
+        XCTAssertEqual(legacyDecoded.overloadActions, [])
+    }
+
     func testVisualPresetCodableRoundTripAndDefaultReset() throws {
         let preset = try OrbitalViewVisualPreset(
             id: "bow",
@@ -623,6 +722,7 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertEqual(frame.levelsByObjectID[1], quiet)
         XCTAssertEqual(frame.levelsByObjectID[128], hot)
         XCTAssertNil(frame.levelsByObjectID[2])
+        XCTAssertEqual(frame.source, .objectBus)
 
         XCTAssertThrowsError(try ObjectMeterFrame(timestamp: 0, levelsByObjectID: [0: quiet])) { error in
             XCTAssertEqual(error as? OrbitalViewValidationError, .invalidObjectID(0))
@@ -631,6 +731,32 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertThrowsError(try ObjectMeterLevel(rms: .nan, peak: 0, clip: false)) { error in
             XCTAssertEqual(error as? OrbitalViewValidationError, .nonFiniteValue(field: "objectMeter.rms"))
         }
+    }
+
+    func testObjectDisappearIsPreparedAsAbsentActiveObject() throws {
+        let objectOne = try OrbitalViewObjectFrame(
+            objectID: 1,
+            label: "Object 1",
+            pose: UnitSphereDirection(x: 1, y: 0, z: 0)
+        )
+        let objectTwo = try OrbitalViewObjectFrame(
+            objectID: 2,
+            label: "Object 2",
+            pose: UnitSphereDirection(x: 0, y: 1, z: 0)
+        )
+
+        let beforeDisappear = try OrbitalViewObjectFrameSet(
+            timestamp: 1,
+            activeObjects: [objectOne, objectTwo]
+        )
+        let afterDisappear = try OrbitalViewObjectFrameSet(
+            timestamp: 2,
+            activeObjects: [objectTwo]
+        )
+
+        XCTAssertEqual(beforeDisappear.activeObjects.map(\.objectID), [1, 2])
+        XCTAssertEqual(afterDisappear.activeObjects.map(\.objectID), [2])
+        XCTAssertFalse(afterDisappear.activeObjects.contains { $0.objectID == 1 })
     }
 
     func testObjectVisualSettingsDefaultToCappedTrailsAndFiveUnitBounds() throws {

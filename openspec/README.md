@@ -2,6 +2,8 @@
 
 OpenSpec is the behavioral spec and change-management layer.
 
+This project uses the openspec.dev workflow for future audio-facing and architecture-facing changes. For Orbital View Kit, that includes realtime-family boundaries, telemetry ingress, host integration, review-surface behavior, protected renderer/UI paths, and any change that could affect callback reachability, routing, meter source-of-truth, overload behavior, or performance gates.
+
 It does not replace:
 
 ```text

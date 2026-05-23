@@ -6,6 +6,7 @@ import AppKit
 #endif
 @testable import OrbitalViewCore
 @testable import OrbitalViewRender
+@testable import OrbitalViewReview
 @testable import OrbitalViewSwiftUI
 
 final class OrbitalViewSwiftUITests: XCTestCase {
