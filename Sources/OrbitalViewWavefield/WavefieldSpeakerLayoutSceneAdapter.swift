@@ -105,7 +105,7 @@ public struct WavefieldSpeakerLayoutSceneAdapter: Sendable {
         }
 
         if let axes = raw.coordinateSystem.axes {
-            guard axes["x"] == "right", axes["y"] == "up", axes["z"] == "front" else {
+            guard axes["x"] == "right", axes["y"] == "front", axes["z"] == "up" else {
                 throw WavefieldSpeakerLayoutSceneAdapterError.unsupportedAxes(axes)
             }
         }

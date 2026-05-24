@@ -700,7 +700,7 @@ final class OrbitalViewMetalDrawPipeline {
     }
 
     private static func projectedPosition(for direction: UnitSphereDirection) -> SIMD2<Float> {
-        SIMD2<Float>(Float(direction.x) * projectionScale, Float(direction.y) * projectionScale)
+        SIMD2<Float>(Float(direction.x) * projectionScale, Float(direction.z) * projectionScale)
     }
 
     private static func speakerOrientation(for speaker: OrbitalViewSpeaker, depthScale: Float) -> SIMD4<Float> {
@@ -709,8 +709,8 @@ final class OrbitalViewMetalDrawPipeline {
         case .direction(let direction, _):
             normal = normalizeNonZero(SIMD3<Float>(
                 Float(direction.x),
-                Float(direction.y),
-                Float(direction.z)
+                Float(direction.z),
+                Float(direction.y)
             ))
         case .node, .edge, .face:
             normal = SIMD3<Float>(0, 0, 1)

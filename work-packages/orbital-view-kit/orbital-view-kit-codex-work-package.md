@@ -139,7 +139,7 @@ From the current workspace and docs, preserve these rules:
 - Speaker positions are unit-sphere directions.
 - Existing Fey layout is 30 main speakers plus optional sub channel 31.
 - The Fey layout coordinate system is unitSphereCartesian.
-- Axes are x = right, y = up, z = front.
+- Axes are x = right, y = front, z = up.
 - Channel numbering is 1-based for human-facing docs.
 - Do not flatten canonical spatial coordinates into permanent screen coordinates.
 - Do not treat MIDI channel as Wavefield object identity.
@@ -230,7 +230,7 @@ Suggested neutral DomeLab/shell geometry schema:
   "schema": "orbital-view.shell.v1",
   "source": "DomeLab",
   "units": "meters",
-  "coordinateSystem": { "x": "right", "y": "up", "z": "front" },
+  "coordinateSystem": { "x": "right", "y": "front", "z": "up" },
   "shell": {
     "kind": "geodesic",
     "radiusM": 1.0,
@@ -427,23 +427,23 @@ Camera presets, expressed in Wavefield coordinates:
 
 ```text
 Plan:
-- Looking from +Y down toward origin.
-- Up vector should be +Z or another agreed plan-up convention.
+- Looking from +Z down toward origin.
+- Up vector should be +Y or another agreed plan-up convention.
 
 Front elevation:
-- Looking from +Z toward origin.
-- Up vector = +Y.
+- Looking from +Y toward origin.
+- Up vector = +Z.
 
 Side elevation:
 - Looking from +X or -X toward origin.
-- Up vector = +Y.
+- Up vector = +Z.
 
 Isometric:
 - Looking from a normalized diagonal, e.g. (+X, +Y, +Z).
-- Up vector = +Y.
+- Up vector = +Z.
 ```
 
-DomeLab already has plan/elevation/isometric and perspective/axonometric concepts. Adapt those to Wavefield's `x right / y up / z front` coordinate system rather than copying axes blindly.
+DomeLab already has plan/elevation/isometric and perspective/axonometric concepts. Adapt those to Wavefield's `x right / y front / z up` coordinate system rather than copying axes blindly.
 
 ### 8.5 View toolbar
 
@@ -575,8 +575,8 @@ For the first implementation, `theme` and `virtualObjects` may be simple placeho
 ```swift
 public struct OrbitalViewCoordinateSystem: Sendable, Equatable {
     public let xAxis: AxisMeaning   // right
-    public let yAxis: AxisMeaning   // up
-    public let zAxis: AxisMeaning   // front
+    public let yAxis: AxisMeaning   // front
+    public let zAxis: AxisMeaning   // up
 }
 
 public enum AxisMeaning: String, Sendable, Equatable, Codable {
@@ -1090,7 +1090,7 @@ The biggest architectural decision is renderer backend. `MetalKit` is the best f
 
 The biggest data decision is DomeLab import. The cleanest route is a neutral exported shell geometry JSON. Parsing DomeLab project config and regenerating geometry in Swift is possible, but it risks divergence. Exported geometry is more reliable.
 
-The biggest UX decision is camera axes. Wavefield's coordinate system is `x right / y up / z front`; plan/elevation presets should be defined against that system explicitly.
+The biggest UX decision is camera axes. Wavefield's coordinate system is `x right / y front / z up`; plan/elevation presets should be defined against that system explicitly.
 
 ---
 
@@ -1281,4 +1281,3 @@ This work package is intentionally not the full PRD. The next PRD should decide:
 - Snapshot/export requirements.
 - Accessibility requirements for channel/meter inspection.
 ```
-

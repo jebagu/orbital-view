@@ -135,14 +135,14 @@ public enum OrbitalViewViewerDemoContent {
     private static func speakerDirection(_ channel: Int) throws -> UnitSphereDirection {
         let index = Double(channel - 1)
         let count = Double(speakerCount)
-        let y = 1.0 - (2.0 * (index + 0.5) / count)
-        let radius = sqrt(max(0, 1.0 - y * y))
+        let z = 1.0 - (2.0 * (index + 0.5) / count)
+        let radius = sqrt(max(0, 1.0 - z * z))
         let goldenAngle = Double.pi * (3.0 - sqrt(5.0))
         let theta = index * goldenAngle
         return try UnitSphereDirection.normalized(
             x: cos(theta) * radius,
-            y: y,
-            z: sin(theta) * radius
+            y: sin(theta) * radius,
+            z: z
         )
     }
 
@@ -151,8 +151,8 @@ public enum OrbitalViewViewerDemoContent {
         let elevation = 0.48 * sin(timestamp * 0.18 + Double(objectID))
         return try UnitSphereDirection.normalized(
             x: cos(phase) * cos(elevation),
-            y: sin(elevation),
-            z: sin(phase) * cos(elevation)
+            y: sin(phase) * cos(elevation),
+            z: sin(elevation)
         )
     }
 

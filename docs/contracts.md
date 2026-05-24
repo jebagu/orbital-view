@@ -464,7 +464,7 @@ Wavefield speaker layout JSON with:
 
 ```text
 coordinateSystem.type = unitSphereCartesian
-axes x/right, y/up, z/front
+axes x/right, y/front, z/up
 mainSpeakerCount = 30
 speakers[] channel, label, position
 ```

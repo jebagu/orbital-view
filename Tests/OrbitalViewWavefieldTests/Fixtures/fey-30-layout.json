@@ -6,8 +6,8 @@
     "type": "unitSphereCartesian",
     "axes": {
       "x": "right",
-      "y": "up",
-      "z": "front"
+      "y": "front",
+      "z": "up"
     }
   },
   "mainSpeakerCount": 30,

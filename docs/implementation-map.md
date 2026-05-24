@@ -54,6 +54,8 @@ Tests/OrbitalViewCoreTests/
 
 Current meter frames include `OrbitalViewTelemetrySourceDescriptor` metadata so speaker and object telemetry can identify its source of truth without changing channel/object identity. `OrbitalViewInputDiagnostics` can also record allowed lossy-display overload actions: dropped stale frames, decimated display refresh, latest complete snapshot retention, and diagnostics set outside realtime.
 
+Canonical coordinates are Z-up across the package: `x = right`, `y = front`, and `z = up`. Core shell helpers put top/bottom on `+Z/-Z` and front/back on `+Y/-Y`.
+
 Related docs:
 
 ```text
@@ -97,7 +99,7 @@ Sources/OrbitalViewWavefield/
 Tests/OrbitalViewWavefieldTests/
 ```
 
-The current adapter reads speaker-layout JSON and local channel/rms/peak meter DTOs. Direct Wavefield package type integration is not implemented. Wavefield-style meter frames are labeled as `.externalWavefieldStream` by default, with room for the local livestream test generator to use `.localLivestreamTestGenerator` in a later host integration slice.
+The current adapter reads speaker-layout JSON and local channel/rms/peak meter DTOs. It validates Wavefield/Fey layout axes as `x/right`, `y/front`, and `z/up`, preserving FEY physical channel order `1...30` without sorting by position. Direct Wavefield package type integration is not implemented. Wavefield-style meter frames are labeled as `.externalWavefieldStream` by default, with room for the local livestream test generator to use `.localLivestreamTestGenerator` in a later host integration slice.
 
 Wavefield realtime connection contract:
 
@@ -142,7 +144,7 @@ mockups/orbital-view-viewport/index.html
 mockups/orbital-view-viewport/notes.md
 ```
 
-This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It now mirrors DomeLab's 3D Model control panel on the left side of the viewport, grouped under Camera, Color, Speaker Shape, and View Detail headings. The shell structure is generated as a Fey 3V class-I icosahedron geodesic from the DomeLab project config values in `fey sphere - domelab-configuration.json`, normalized to the viewport sphere. Purple, Flamingo, Green, and B&W color palettes theme the full mockup surface, with Purple as the default. Projection is always axonometric, speaker numbers and hidden lines use switch controls defaulted off, speaker size is centered at 1.95x with half/double range mapping, fog density remaps the prior 30-density look to the slider midpoint, and prism mode is the default shape using true 8-vertex rectangular-prism speaker cabinets with hidden-line face clipping. It is not production renderer source.
+This is disposable HTML/CSS/JS with fake speaker positions and fake meter animation. It now mirrors DomeLab's 3D Model control panel on the left side of the viewport, grouped under Camera, Color, Speaker Shape, and View Detail headings. The shell structure is generated as a Fey 3V class-I icosahedron geodesic from the DomeLab project config values in `fey sphere - domelab-configuration.json`, normalized to the viewport sphere. Purple, Flamingo, Green, and B&W color palettes theme the full mockup surface, with Purple as the default. Projection is always axonometric, speaker numbers and hidden lines use switch controls defaulted off, speaker size is centered at 1.95x with half/double range mapping, fog density remaps the prior 30-density look to the slider midpoint, and prism mode is the default shape using true 8-vertex rectangular-prism speaker cabinets with hidden-line face clipping. The mockup keeps speaker data in canonical Z-up coordinates and maps to its Y-up canvas math at projection time. It is not production renderer source.
 
 ### OrbitalViewRender Seam
 
@@ -171,7 +173,7 @@ Decision record:
 docs/decisions/0002-renderer-backend.md
 ```
 
-The current renderer stores scene, speaker meters, cube VU settings, dynamic object frames, object meters, object visual settings, camera, and selection state separately. It exposes an `MTKViewDelegate` path and includes an offscreen-tested Metal draw pipeline with one instanced cube/prism mesh per speaker. Speaker meter updates change material/color payloads only; static speaker geometry and physical channel mapping stay stable. Dynamic object overlays render through a separate retained quad path.
+The current renderer stores scene, speaker meters, cube VU settings, dynamic object frames, object meters, object visual settings, camera, and selection state separately. It exposes an `MTKViewDelegate` path and includes an offscreen-tested Metal draw pipeline with one instanced cube/prism mesh per speaker. Speaker meter updates change material/color payloads only; static speaker geometry and physical channel mapping stay stable. The Metal screen projection uses canonical `x` horizontally and canonical `z` vertically, treating canonical `y` as depth/front. Dynamic object overlays render through a separate retained quad path.
 
 ### OrbitalViewSwiftUI Wrapper Skeleton
 
@@ -205,7 +207,7 @@ Sources/OrbitalViewReview/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-`OrbitalViewReview` owns `OrbitalViewportMockup`, the confirmed VU Kit SceneKit geodesic viewport review app, plus its SwiftPM font resources. This target may use review-only `AVFoundation`, `AppKit`, `SceneKit`, `NSOpenPanel`, CoreText font registration, app-bundle theme JSON, and PNG export behavior. Production hosts should import `OrbitalViewSwiftUI`; the review executable imports `OrbitalViewReview`.
+`OrbitalViewReview` owns `OrbitalViewportMockup`, the confirmed VU Kit SceneKit geodesic viewport review app, plus its SwiftPM font resources. This target may use review-only `AVFoundation`, `AppKit`, `SceneKit`, `NSOpenPanel`, CoreText font registration, app-bundle theme JSON, and PNG export behavior. SceneKit remains a Y-up implementation detail, so canonical vectors are mapped as `(x, y, z) -> (x, z, y)` at the SceneKit boundary. Production hosts should import `OrbitalViewSwiftUI`; the review executable imports `OrbitalViewReview`.
 
 Any future visible review-surface change must verify against `docs/orbisonic-design-language.md` and the Orbisonic design-language source files it references. The rule covers layout, palette, meter treatment, diagnostics separation, and information hierarchy; it does not import Orbisonic product semantics.
 
@@ -239,7 +241,9 @@ The `Label Font` tray switches SceneKit speaker-number labels between grouped No
 
 `Meter Source` has four mutually exclusive modes: `Music`, `Impulse Test Ripple`, `Impulse Test Waves`, and `Impulse Test Orbiting Comets`. Music uses the local-audio/fake review meter source. Orbiting Comets now uses exactly two larger comets with longer hot VU trails, and the left rail `Render Type` can keep local audio as All Mono or use the mono RMS/peak sample to excite the ripple, waves, or comets spatial patterns. Fog keeps the same 0...100 slider but uses a lighter low/mid curve and stronger max fog. The `Bloom Style` tray selects Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without reset/export buttons or a four-up preview. The `Saved Themes` tray saves the visual payload with an optional stable `themeID`. The payload includes top-level tuning fields including `speakerLabelFont`, `speakerLabelFontSizeSlider`, `speakerLabelFontSizeScale`, `geodesicRenderStyle`, and a `leftPanel` block for audio source mode/file metadata/play state/render mode, camera view, yaw, pitch, zoom, spin, adjusted-camera flag, speaker type, speaker size/fog slider values and resolved values, speaker numbers, hidden lines, and selected channel. Theme load ignores audio file fields and selected channel so themes remain visual settings only. The `Diagnostics` tray stays collapsed by default and includes raw RMS, raw peak, calibrated RMS, display scalar, hot scalar, and diagnostic channel values.
 
-When manually refreshing the verbose local `.app` bundle from SwiftPM, copy both `.build/arm64-apple-macosx/debug/OrbitalViewViewer` into `Contents/MacOS/OrbitalViewViewer` and `.build/arm64-apple-macosx/debug/OrbitalViewKit_OrbitalViewReview.bundle` into `Contents/Resources/` so bundled label fonts are available offline.
+The project launcher `Open Orbital View Kit.command` is the current refresh path for the verbose local `.app` bundle. It builds `OrbitalViewViewer`, copies the executable into `Contents/MacOS/OrbitalViewViewer`, copies `OrbitalViewKit_OrbitalViewReview.bundle` into `Contents/Resources/`, removes the stale pre-split SwiftUI resource bundle if present, restarts any stale viewer process, and opens the refreshed app so bundled label fonts are available offline.
+
+The parent `vibecode projects` folder also has `Open Orbital View Kit Latest.command`, a thin wrapper that delegates to this checkout's project launcher for Finder access.
 
 The review app also has a local audio file input mode for quick visual testing. `Choose File` loads a local audio file, side-by-side transport icon buttons control Play and Pause, and the current file meter is reduced to one mono RMS/peak sample that drives every speaker equally. This intentionally does not change the production contract: downstream hosts should continue to feed real `SpeakerMeterFrame` values keyed by physical channel.
 
@@ -248,7 +252,7 @@ The production `OrbitalView` wrapper and MTKView bridge still exist for downstre
 Launch command:
 
 ```text
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
 ```
 
 ### Visual Telemetry Stress Gate

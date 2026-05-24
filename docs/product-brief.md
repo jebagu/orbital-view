@@ -84,7 +84,7 @@ The first usable implementation already:
 
 ## Assumptions
 
-- Wavefield coordinates use `x = right`, `y = up`, `z = front`.
+- Wavefield coordinates use canonical Z-up semantics: `x = right`, `y = front`, `z = up`.
 - Physical speaker channels are 1-based and must not be reordered.
 - DomeLab is a reference and future geometry-export source, not a dependency.
 - `OrbitalViewCore` should stay portable and independent of downstream app targets.

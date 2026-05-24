@@ -2007,19 +2007,19 @@ enum OrbitalViewportImpulsePattern {
             period: 2.25,
             speedBias: 0.42
         ) * 0.62
-        let sweep = pow(max(0, 0.5 + 0.5 * sin(seconds * 2.3 + position.y * 3.7 + position.x * 1.4)), 3) * 0.14
-        let meridian = pow(max(0, 0.5 + 0.5 * cos(seconds * 2.1 + atan2(position.z, position.x) * 2.0)), 4) * 0.18
+        let sweep = pow(max(0, 0.5 + 0.5 * sin(seconds * 2.3 + position.z * 3.7 + position.x * 1.4)), 3) * 0.14
+        let meridian = pow(max(0, 0.5 + 0.5 * cos(seconds * 2.1 + atan2(position.y, position.x) * 2.0)), 4) * 0.18
         let coreFlash = gaussian(angularDistance(position, primaryOrigin), width: 0.22) * 0.34
         let rms = OrbitalViewportMath.clamp01(primary * 1.05 + secondary * 0.62 + sweep + meridian + coreFlash)
         return (rms, max(primary, secondary))
     }
 
     private static func wavesValue(position: OVVector3, seconds: Double) -> (rms: Double, peak: Double) {
-        let azimuth = atan2(position.z, position.x)
-        let latitude = asin(max(-1, min(1, position.y)))
+        let azimuth = atan2(position.y, position.x)
+        let latitude = asin(max(-1, min(1, position.z)))
         let bandA = pow(max(0, 0.5 + 0.5 * sin(seconds * 2.15 + latitude * 7.2)), 2.7)
         let bandB = pow(max(0, 0.5 + 0.5 * sin(seconds * 1.68 - azimuth * 3.0)), 3.2) * 0.62
-        let cross = pow(max(0, 0.5 + 0.5 * cos(seconds * 2.7 + position.x * 4.4 - position.z * 3.6)), 4) * 0.34
+        let cross = pow(max(0, 0.5 + 0.5 * cos(seconds * 2.7 + position.x * 4.4 - position.y * 3.6)), 4) * 0.34
         let rms = OrbitalViewportMath.clamp01(bandA * 0.72 + bandB + cross)
         return (rms, max(bandA, max(bandB, cross)))
     }
@@ -2028,7 +2028,7 @@ enum OrbitalViewportImpulsePattern {
         let cometA = cometTrailValue(position: position, seconds: seconds, phase: 0, speed: 0.58)
         let cometB = cometTrailValue(position: position, seconds: seconds, phase: 2.85, speed: -0.52)
         let tailHeat = max(cometA.tailPeak, cometB.tailPeak)
-        let shimmer = pow(max(0, 0.5 + 0.5 * sin(seconds * 3.7 + position.y * 4.2)), 6) * 0.05
+        let shimmer = pow(max(0, 0.5 + 0.5 * sin(seconds * 3.7 + position.z * 4.2)), 6) * 0.05
         let rms = OrbitalViewportMath.clamp01(cometA.rms + cometB.rms + shimmer)
         let peak = OrbitalViewportMath.clamp01(max(cometA.peak, cometB.peak) + tailHeat * 0.18)
         return (rms, peak)
@@ -2067,8 +2067,8 @@ enum OrbitalViewportImpulsePattern {
         let horizontal = sqrt(max(0.0001, 1 - latitude * latitude))
         return OVVector3(
             x: cos(longitude) * horizontal,
-            y: latitude,
-            z: sin(longitude) * horizontal
+            y: sin(longitude) * horizontal,
+            z: latitude
         ).normalized()
     }
 
@@ -3043,17 +3043,17 @@ public enum OrbitalViewportCameraView: String, CaseIterable, Identifiable, Equat
     fileprivate var baseViewDirection: OVVector3 {
         switch self {
         case .plan:
-            return OVVector3(x: 0, y: 1, z: 0)
-        case .elevation:
             return OVVector3(x: 0, y: 0, z: 1)
+        case .elevation:
+            return OVVector3(x: 0, y: 1, z: 0)
         case .isometric:
             let yaw = Double.pi * 0.25
             let pitch = Double.pi * 0.22
             let horizontal = cos(pitch)
             return OVVector3(
                 x: sin(yaw) * horizontal,
-                y: sin(pitch),
-                z: cos(yaw) * horizontal
+                y: cos(yaw) * horizontal,
+                z: sin(pitch)
             ).normalized()
         }
     }
@@ -3061,14 +3061,14 @@ public enum OrbitalViewportCameraView: String, CaseIterable, Identifiable, Equat
     fileprivate var baseUp: OVVector3 {
         switch self {
         case .plan:
-            return OVVector3(x: 0, y: 0, z: -1)
+            return OVVector3(x: 0, y: -1, z: 0)
         case .elevation:
-            return OVVector3(x: 0, y: 1, z: 0)
+            return OVVector3(x: 0, y: 0, z: 1)
         case .isometric:
             let direction = baseViewDirection
-            let worldUp = OVVector3(x: 0, y: 1, z: 0)
+            let worldUp = OVVector3(x: 0, y: 0, z: 1)
             return (worldUp - (direction * worldUp.dot(direction)))
-                .normalized(fallback: OVVector3(x: 0, y: 1, z: 0))
+                .normalized(fallback: OVVector3(x: 0, y: 0, z: 1))
         }
     }
 }
@@ -4470,16 +4470,16 @@ public struct OrbitalViewportSpeaker: Identifiable, Equatable, Sendable {
         OrbitalViewportSpeaker(channel: 18, label: "Fey 18", x: 0.572638174674189, y: 0.795330798158596, z: 0.198832699539649),
         OrbitalViewportSpeaker(channel: 19, label: "Fey 19", x: 0.923947703083417, y: -0.304902742017528, z: 0.230986925770854),
         OrbitalViewportSpeaker(channel: 20, label: "Fey 20", x: 0, y: -0.970142500145332, z: 0.242535625036333),
-        OrbitalViewportSpeaker(channel: 21, label: "Fey 21", x: -0.548614782048403, y: -0.630906999355663, z: 0.548614782048403),
-        OrbitalViewportSpeaker(channel: 22, label: "Fey 22", x: 0.548614782048403, y: -0.630906999355663, z: 0.548614782048403),
-        OrbitalViewportSpeaker(channel: 23, label: "Fey 23", x: 0.545454545454545, y: -0.181818181818182, z: 0.818181818181818),
-        OrbitalViewportSpeaker(channel: 24, label: "Fey 24", x: 0, y: 0.8, z: 0.6),
-        OrbitalViewportSpeaker(channel: 25, label: "Fey 25", x: -0.545454545454545, y: -0.181818181818182, z: 0.818181818181818),
-        OrbitalViewportSpeaker(channel: 26, label: "Fey 26", x: -0.331448998468967, y: 0.45113891458276, z: 0.828622496172417),
-        OrbitalViewportSpeaker(channel: 27, label: "Fey 27", x: 0.331448998468967, y: 0.45113891458276, z: 0.828622496172417),
-        OrbitalViewportSpeaker(channel: 28, label: "Fey 28", x: 0, y: -0.554700196225229, z: 0.832050294337844),
-        OrbitalViewportSpeaker(channel: 29, label: "Fey 29", x: -0.774258005430618, y: 0.251633851764951, z: 0.580693504072963),
-        OrbitalViewportSpeaker(channel: 30, label: "Fey 30", x: 0.774258005430618, y: 0.251633851764951, z: 0.580693504072963)
+        OrbitalViewportSpeaker(channel: 21, label: "Fey 21", x: -0.479772219839528, y: -0.662085663378549, z: 0.575726663807434),
+        OrbitalViewportSpeaker(channel: 22, label: "Fey 22", x: -0.776114000116266, y: 0.242535625036333, z: 0.582085500087199),
+        OrbitalViewportSpeaker(channel: 23, label: "Fey 23", x: 0, y: 0.8, z: 0.6),
+        OrbitalViewportSpeaker(channel: 24, label: "Fey 24", x: 0.774258005430618, y: 0.251633851764951, z: 0.580693504072963),
+        OrbitalViewportSpeaker(channel: 25, label: "Fey 25", x: 0.479772219839528, y: -0.662085663378549, z: 0.575726663807434),
+        OrbitalViewportSpeaker(channel: 26, label: "Fey 26", x: 0, y: -0.554700196225229, z: 0.832050294337844),
+        OrbitalViewportSpeaker(channel: 27, label: "Fey 27", x: -0.545454545454545, y: -0.181818181818182, z: 0.818181818181818),
+        OrbitalViewportSpeaker(channel: 28, label: "Fey 28", x: -0.403422633196499, y: 0.556723233811169, z: 0.726160739753698),
+        OrbitalViewportSpeaker(channel: 29, label: "Fey 29", x: 0.403422633196499, y: 0.556723233811169, z: 0.726160739753698),
+        OrbitalViewportSpeaker(channel: 30, label: "Fey 30", x: 0.545454545454545, y: -0.181818181818182, z: 0.818181818181818)
     ]
 }
 
@@ -4517,8 +4517,8 @@ struct OrbitalViewportOrbitState: Equatable {
     }
 
     var cameraBasis: OrbitalViewportCameraBasis {
-        let baseDirection = view.baseViewDirection.normalized(fallback: OVVector3(x: 0, y: 0, z: 1))
-        let baseUp = view.baseUp.normalized(fallback: OVVector3(x: 0, y: 1, z: 0))
+        let baseDirection = view.baseViewDirection.normalized(fallback: OVVector3(x: 0, y: 1, z: 0))
+        let baseUp = view.baseUp.normalized(fallback: OVVector3(x: 0, y: 0, z: 1))
         let yawedDirection = baseDirection.rotated(around: baseUp, angle: yaw)
             .normalized(fallback: baseDirection)
         let yawedRight = OVVector3.cross(baseUp, yawedDirection)
@@ -5720,7 +5720,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private func prismBasis(for speaker: OrbitalViewportSpeaker) -> (longAxis: OVVector3, radialAxis: OVVector3, sideAxis: OVVector3) {
             let normal = OVVector3(speaker).normalized(fallback: OVVector3(x: 0, y: 0, z: 1))
-            let pole = OVVector3(x: 0, y: 1, z: 0)
+            let pole = OVVector3(x: 0, y: 0, z: 1)
             let dot = normal.dot(pole)
             let tangent = pole - (normal * dot)
             var longAxis = tangent.normalized(fallback: OVVector3(x: 1, y: 0, z: 0))
@@ -5732,11 +5732,15 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func matrix(longAxis: OVVector3, sideAxis: OVVector3, radialAxis: OVVector3, position: OVVector3) -> simd_float4x4 {
-            simd_float4x4(
-                SIMD4<Float>(Float(longAxis.x), Float(longAxis.y), Float(longAxis.z), 0),
-                SIMD4<Float>(Float(sideAxis.x), Float(sideAxis.y), Float(sideAxis.z), 0),
-                SIMD4<Float>(Float(radialAxis.x), Float(radialAxis.y), Float(radialAxis.z), 0),
-                SIMD4<Float>(Float(position.x), Float(position.y), Float(position.z), 1)
+            func column(_ vector: OVVector3, w: Float) -> SIMD4<Float> {
+                SIMD4<Float>(Float(vector.x), Float(vector.z), Float(vector.y), w)
+            }
+
+            return simd_float4x4(
+                column(longAxis, w: 0),
+                column(sideAxis, w: 0),
+                column(radialAxis, w: 0),
+                column(position, w: 1)
             )
         }
 
@@ -6168,7 +6172,7 @@ private struct OrbitalViewportPainter {
 
     private func prismBasis(for speaker: OrbitalViewportProjectedSpeaker) -> (longAxis: OVVector3, radialAxis: OVVector3, sideAxis: OVVector3) {
         let normal = OVVector3(speaker.source).normalized(fallback: OVVector3(x: 0, y: 0, z: 1))
-        let pole = OVVector3(x: 0, y: 1, z: 0)
+        let pole = OVVector3(x: 0, y: 0, z: 1)
         let dot = normal.dot(pole)
         let tangent = pole - (normal * dot)
         var longAxis = tangent.normalized(fallback: OVVector3(x: 1, y: 0, z: 0))
@@ -6508,7 +6512,7 @@ private struct OrbitalViewportGeodesic {
         let baseVertices = createIcosahedronVertices()
         let source = baseVertices[5]
         let base = baseVertices.map {
-            rotateVectorBetween(vector: $0, from: source, to: OVVector3(x: 0, y: 1, z: 0))
+            rotateVectorBetween(vector: $0, from: source, to: OVVector3(x: 0, y: 0, z: 1))
         }
         var nodes: [OVVector3] = []
         var nodeIds: [String: Int] = [:]
@@ -6729,11 +6733,11 @@ struct OVVector3: Equatable {
     }
 
     var scn: SCNVector3 {
-        SCNVector3(x, y, z)
+        SCNVector3(x, z, y)
     }
 
     var simdNormalized: SIMD3<Float> {
-        let vector = SIMD3<Float>(Float(x), Float(y), Float(z))
+        let vector = SIMD3<Float>(Float(x), Float(z), Float(y))
         let length = simd_length(vector)
         if length < 0.0001 {
             return SIMD3<Float>(0, 1, 0)

@@ -12,8 +12,8 @@ public enum AxisMeaning: String, Codable, Equatable, Sendable {
 public struct OrbitalViewCoordinateSystem: Equatable, Codable, Sendable {
     public static let wavefield = OrbitalViewCoordinateSystem(
         xAxis: .right,
-        yAxis: .up,
-        zAxis: .front
+        yAxis: .front,
+        zAxis: .up
     )
 
     public let xAxis: AxisMeaning
@@ -26,4 +26,3 @@ public struct OrbitalViewCoordinateSystem: Equatable, Codable, Sendable {
         self.zAxis = zAxis
     }
 }
-

@@ -23,7 +23,30 @@ final class WavefieldSpeakerLayoutSceneAdapterTests: XCTestCase {
         XCTAssertEqual(direction.x, 0, accuracy: 1.0e-12)
         XCTAssertEqual(direction.y, 0.554700196225229, accuracy: 1.0e-12)
         XCTAssertEqual(direction.z, -0.832050294337844, accuracy: 1.0e-12)
+        XCTAssertLessThan(direction.z, 0)
         XCTAssertEqual(offsetM, 0.05)
+    }
+
+    func testFeyLayoutUsesZUpRingNumbering() throws {
+        let scene = try WavefieldSpeakerLayoutSceneAdapter().makeScene(layoutURL: feyFixtureURL())
+
+        let expectedChannelsByRing = [
+            1...5,
+            6...10,
+            11...15,
+            16...20,
+            21...25,
+            26...30
+        ].map(Array.init)
+
+        let zValuesByRing = try expectedChannelsByRing.map { channels in
+            try channels.map { try direction(for: $0, in: scene).z }
+        }
+
+        XCTAssertEqual(expectedChannelsByRing.flatMap { $0 }, Array(1...30))
+        for (lowerRing, upperRing) in zip(zValuesByRing, zValuesByRing.dropFirst()) {
+            XCTAssertLessThan(lowerRing.max() ?? 0, upperRing.min() ?? 0)
+        }
     }
 
     func testSceneUsesCallerProvidedShell() throws {
@@ -38,14 +61,14 @@ final class WavefieldSpeakerLayoutSceneAdapterTests: XCTestCase {
 
     func testRejectsUnsupportedAxes() throws {
         var json = try String(contentsOf: feyFixtureURL(), encoding: .utf8)
-        json = json.replacingOccurrences(of: "\"z\": \"front\"", with: "\"z\": \"back\"")
+        json = json.replacingOccurrences(of: "\"z\": \"up\"", with: "\"z\": \"front\"")
 
         XCTAssertThrowsError(
             try WavefieldSpeakerLayoutSceneAdapter().makeScene(data: Data(json.utf8))
         ) { error in
             XCTAssertEqual(
                 error as? WavefieldSpeakerLayoutSceneAdapterError,
-                .unsupportedAxes(["x": "right", "y": "up", "z": "back"])
+                .unsupportedAxes(["x": "right", "y": "front", "z": "front"])
             )
         }
     }
@@ -90,5 +113,17 @@ final class WavefieldSpeakerLayoutSceneAdapterTests: XCTestCase {
             return URL(fileURLWithPath: "/missing-fey-fixture.json")
         }
         return url
+    }
+
+    private func direction(for channel: Int, in scene: OrbitalViewSceneSpec) throws -> UnitSphereDirection {
+        guard let speaker = scene.speakers.first(where: { $0.channel == channel }) else {
+            throw XCTSkip("Missing channel \(channel)")
+        }
+
+        guard case .direction(let direction, _) = speaker.anchor else {
+            throw XCTSkip("Expected direction anchor for channel \(channel)")
+        }
+
+        return direction
     }
 }

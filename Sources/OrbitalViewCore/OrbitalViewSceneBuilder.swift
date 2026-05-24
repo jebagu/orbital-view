@@ -20,10 +20,10 @@ public enum OrbitalViewSceneBuilder {
 
     public static func makeDefaultOctahedronShell(radiusM: Double = 1.0) throws -> OrbitalViewShellSpec {
         let nodes = try [
-            ShellNode(id: "top", position: OrbitalViewVector3(x: 0, y: radiusM, z: 0), normal: nil),
-            ShellNode(id: "bottom", position: OrbitalViewVector3(x: 0, y: -radiusM, z: 0), normal: nil),
-            ShellNode(id: "front", position: OrbitalViewVector3(x: 0, y: 0, z: radiusM), normal: nil),
-            ShellNode(id: "back", position: OrbitalViewVector3(x: 0, y: 0, z: -radiusM), normal: nil),
+            ShellNode(id: "top", position: OrbitalViewVector3(x: 0, y: 0, z: radiusM), normal: nil),
+            ShellNode(id: "bottom", position: OrbitalViewVector3(x: 0, y: 0, z: -radiusM), normal: nil),
+            ShellNode(id: "front", position: OrbitalViewVector3(x: 0, y: radiusM, z: 0), normal: nil),
+            ShellNode(id: "back", position: OrbitalViewVector3(x: 0, y: -radiusM, z: 0), normal: nil),
             ShellNode(id: "right", position: OrbitalViewVector3(x: radiusM, y: 0, z: 0), normal: nil),
             ShellNode(id: "left", position: OrbitalViewVector3(x: -radiusM, y: 0, z: 0), normal: nil)
         ]
@@ -62,4 +62,3 @@ public enum OrbitalViewSceneBuilder {
         ))
     }
 }
-

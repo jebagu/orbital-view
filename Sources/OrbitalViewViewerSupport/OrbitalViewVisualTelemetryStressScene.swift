@@ -125,14 +125,14 @@ public enum OrbitalViewVisualTelemetryStressScene {
     private static func speakerDirection(_ channel: Int) throws -> UnitSphereDirection {
         let index = Double(channel - 1)
         let count = Double(speakerCount)
-        let y = 1.0 - (2.0 * (index + 0.5) / count)
-        let radius = sqrt(max(0, 1.0 - y * y))
+        let z = 1.0 - (2.0 * (index + 0.5) / count)
+        let radius = sqrt(max(0, 1.0 - z * z))
         let goldenAngle = Double.pi * (3.0 - sqrt(5.0))
         let theta = index * goldenAngle
         return try UnitSphereDirection.normalized(
             x: cos(theta) * radius,
-            y: y,
-            z: sin(theta) * radius
+            y: sin(theta) * radius,
+            z: z
         )
     }
 
@@ -141,12 +141,12 @@ public enum OrbitalViewVisualTelemetryStressScene {
         let goldenAngle = Double.pi * (3.0 - sqrt(5.0))
         let orbit = timestamp * (0.22 + Double(objectID % 17) * 0.006)
         let theta = objectIndex * goldenAngle + orbit
-        let y = sin(timestamp * 0.16 + Double(objectID) * 0.11) * 0.72
-        let radius = sqrt(max(0, 1.0 - y * y))
+        let z = sin(timestamp * 0.16 + Double(objectID) * 0.11) * 0.72
+        let radius = sqrt(max(0, 1.0 - z * z))
         return try UnitSphereDirection.normalized(
             x: cos(theta) * radius,
-            y: y,
-            z: sin(theta) * radius
+            y: sin(theta) * radius,
+            z: z
         )
     }
 

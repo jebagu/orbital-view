@@ -24,6 +24,24 @@ http://127.0.0.1:<port>/OrbitalViewKit/
 
 Pin the port in this file before treating that URL as permanent.
 
+## Launchers
+
+The project launcher is:
+
+```text
+Open Orbital View Kit.command
+```
+
+The stable launcher in the parent `vibecode projects` folder is:
+
+```text
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
+```
+
+Keep the parent launcher as a thin wrapper that delegates to this checkout's project launcher. The project launcher is the source of truth and must rebuild `OrbitalViewViewer`, refresh the native review `.app` executable and `OrbitalViewKit_OrbitalViewReview.bundle`, restart any stale `OrbitalViewViewer` process, and open the latest app.
+
+Whenever source, resource, bundled theme, app-bundle, or launch-flow changes affect the visible review app, update `Open Orbital View Kit.command`, confirm the parent launcher still points to it, and launch through the parent launcher before reporting the change complete.
+
 ## Read First
 
 Before making changes, read:
@@ -59,6 +77,7 @@ Current renderer source must stay within the active renderer task scope, and it 
 
 - Work only on the requested task or slice.
 - Keep implementation slices small and testable.
+- Canonical 3D coordinates in this repository are always Z-up: `x = right/left`, `y = front/back`, and `z = up/down`.
 - Keep `OrbitalViewCore` independent of SwiftUI, AppKit, MetalKit, AVFoundation, MIDI, OSC, playback, and downstream app targets.
 - Do not introduce WebView or DomeLab code dependencies.
 - Treat DomeLab as a visual reference and future neutral geometry-import source only.

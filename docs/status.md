@@ -16,6 +16,8 @@ Final realtime-family compliance audit
 
 The active review app is the existing `OrbitalViewViewer` executable in this package, now hosting the confirmed VU Kit native SceneKit geodesic viewport surface through `OrbitalViewportMockup`. It is not the rejected bare MTKView demo surface and does not create a second standalone copied app.
 
+Canonical 3D coordinates in this package are now Z-up: `x = right`, `y = front`, and `z = up`. Wavefield/Fey channel order remains physical channel order `1...30`; renderer and review surfaces transform canonical vectors into their own Y-up spaces only at render boundaries.
+
 The confirmed review app preserves the original left control rail sections and defaults for Camera and View Detail. `Song Audio Source` now sits at the top of the left rail with side-by-side transport icon buttons for Play and Pause plus a cheap `Render Type` selector for mono audio or audio-excited spatial patterns. Speaker Type moved to the right `Speaker Shape` tray. The right panel is organized by use into Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics sections with `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics` trays. Label Font now groups fonts by Normie, Nerd, and Nostromo families and includes a review-only font size slider. Local dice randomizers live inside Cube Surface, Bloom Style, and Meter Response. The app skin follows the speaker color palette, while the geodesic shell has its own independent palette and saturation controls. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
 
 The SceneKit review app can load a local audio file for visual testing. Local file playback uses a simple choose-file plus separate play/pause transport and reduces the file meter to one mono RMS/peak sample applied equally to all speakers. This is a review-app input mode only; production hosts still provide real `SpeakerMeterFrame` values keyed by physical speaker channel.
@@ -34,7 +36,7 @@ The Slice 9 visual telemetry stress gate is now specified in `docs/visual-teleme
 
 The final realtime-family adoption audit is now recorded in `docs/realtime-family-compliance-audit.md`. The package can be described as standards-aligned as a visual telemetry/preparation package: it inherits the Realtime Audio Family Standards Package, owns no callback entry points, keeps review-only code separated, uses OpenSpec for future audio-facing or architecture-facing changes, treats the Wavefield local livestream generator as a host source, and uses the Orbisonic design language as UI guidance only. Remaining risks are explicit in the audit.
 
-The root launcher `Open Orbital View Kit.command` opens the live mockup file with a cache-busting URL so browser reloads pick up current file changes.
+The project launcher `Open Orbital View Kit.command` rebuilds the latest `OrbitalViewViewer`, refreshes the native review `.app` executable and `OrbitalViewKit_OrbitalViewReview.bundle`, restarts stale `OrbitalViewViewer` processes, and opens the refreshed review app. The parent-folder launcher `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` delegates to the project launcher so Finder access from the `vibecode projects` root stays current.
 
 ## Current Work Package
 
@@ -109,6 +111,103 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-24 Canonical Z-Up Coordinate System
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Changed the canonical Wavefield coordinate contract to `x = right`, `y = front`, and `z = up`.
+- Preserved FEY physical channel order `1...30` while validating FEY ring groups by rising canonical `z`: `1-5`, `6-10`, `11-15`, `16-20`, `21-25`, and `26-30`.
+- Updated core default shell helpers so top/bottom are `+Z/-Z` and front/back are `+Y/-Y`.
+- Updated Metal draw inputs so canonical `x` drives screen horizontal, canonical `z` drives screen vertical, and canonical `y` is treated as depth/front.
+- Updated the SceneKit review surface and browser mockup to keep speaker data canonical Z-up and transform into Y-up renderer spaces at render boundaries.
+- Replaced stale hardcoded FEY speaker copies in the native review surface and browser mockup for channels `21...30`.
+- Added the durable `AGENTS.md` operating rule that canonical 3D coordinates in this repo are always Z-up.
+
+Tests added or updated:
+
+```text
+OrbitalViewCoreTests.testWavefieldCoordinateSystemIsZUp
+WavefieldSpeakerLayoutSceneAdapterTests.testFeyLayoutUsesZUpRingNumbering
+Updated renderer draw-input expectations for canonical z-driven vertical projection
+Updated SceneKit review impulse-pattern test to avoid the old y-up peak-channel assumption
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> initial compile error in SceneKit transform helper, fixed; rerun passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> initial review comet peak-channel assertion failed after Z-up correction, fixed; rerun passed, 113 tests
+node -e 'const fs=require("fs"); const html=fs.readFileSync("mockups/orbital-view-viewport/index.html","utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join("\n"); new Function(scripts); console.log("inline JS parses");' -> passed
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> initial sandboxed run failed on SwiftPM user cache access; rerun outside sandbox passed and opened OrbitalViewViewer pid 1847
+pgrep -fl OrbitalViewViewer -> passed, pid 1847
+```
+
+Documentation updated:
+
+```text
+AGENTS.md
+docs/contracts.md
+docs/implementation-map.md
+docs/product-brief.md
+docs/status.md
+docs/test-strategy.md
+work-packages/orbital-view-kit/orbital-view-kit-codex-work-package.md
+```
+
+### Update: 2026-05-24 Latest Launcher Refresh
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Updated `Open Orbital View Kit.command` to rebuild `OrbitalViewViewer` before launch.
+- The launcher now refreshes the native review app executable and `OrbitalViewKit_OrbitalViewReview.bundle` from the current SwiftPM build output.
+- Removed the stale `OrbitalViewKit_OrbitalViewSwiftUI.bundle` from the app resources during launcher refresh.
+- Added a parent-folder launcher at `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` that delegates to this checkout's project launcher.
+- Updated `AGENTS.md` with the durable rule that visible review-app changes must keep the project launcher current, confirm the parent launcher still delegates to it, and launch through the parent launcher before reporting completion.
+
+Tests added or updated:
+
+```text
+No source-level behavior changed in this slice, so no tests were added.
+```
+
+Commands run:
+
+```text
+zsh -n "Open Orbital View Kit.command" -> passed
+zsh -n "/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command" -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 111 tests
+"/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command" -> initial sandboxed run failed because SwiftPM could not write /Users/jeremyguillory/.cache/clang/ModuleCache; rerun outside sandbox passed and launched OrbitalViewViewer pid 90619
+pgrep -fl OrbitalViewViewer -> passed, pid 90619
+```
+
+Documentation updated:
+
+```text
+AGENTS.md
+docs/implementation-map.md
+docs/status.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+none
+```
 
 ### Update: 2026-05-23 Final Realtime-Family Compliance Audit
 
@@ -2921,7 +3020,7 @@ complete
 Changed:
 
 - Accepted the pasted Fey 30 raw speaker coordinates as the current canonical Fey sphere geometry source.
-- Confirmed axes remain `x = right`, `y = up`, and `z = front`.
+- Historical note: this accepted the Fey 30 raw coordinates before the 2026-05-24 Z-up contract change superseded the axis semantics.
 - Confirmed the existing `Tests/OrbitalViewWavefieldTests/Fixtures/fey-30-layout.json` positions are the raw coordinates projected radially onto the unit sphere.
 - Preserved one-based speaker channel order `1...30` with no position-based reordering.
 

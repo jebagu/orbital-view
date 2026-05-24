@@ -22,6 +22,22 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertEqual(normalized, try UnitSphereDirection(x: 1, y: 0, z: 0))
     }
 
+    func testWavefieldCoordinateSystemIsZUp() throws {
+        XCTAssertEqual(OrbitalViewCoordinateSystem.wavefield.xAxis, .right)
+        XCTAssertEqual(OrbitalViewCoordinateSystem.wavefield.yAxis, .front)
+        XCTAssertEqual(OrbitalViewCoordinateSystem.wavefield.zAxis, .up)
+
+        guard case .imported(let shell) = try OrbitalViewSceneBuilder.makeDefaultOctahedronShell(radiusM: 1) else {
+            return XCTFail("Expected imported default shell")
+        }
+
+        let nodesByID = Dictionary(uniqueKeysWithValues: shell.nodes.map { ($0.id, $0.position) })
+        XCTAssertEqual(nodesByID["top"], try OrbitalViewVector3(x: 0, y: 0, z: 1))
+        XCTAssertEqual(nodesByID["bottom"], try OrbitalViewVector3(x: 0, y: 0, z: -1))
+        XCTAssertEqual(nodesByID["front"], try OrbitalViewVector3(x: 0, y: 1, z: 0))
+        XCTAssertEqual(nodesByID["back"], try OrbitalViewVector3(x: 0, y: -1, z: 0))
+    }
+
     func testSpeakerValidationRejectsInvalidValues() throws {
         let direction = try UnitSphereDirection(x: 1, y: 0, z: 0)
 

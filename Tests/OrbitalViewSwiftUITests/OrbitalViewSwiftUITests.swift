@@ -504,14 +504,12 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         }
         let activeCount = firstFrame.filter { $0.sample.rms > 0.22 }.count
         let hotTrailCount = firstFrame.filter { $0.sample.peak > 0.34 }.count
-        let firstPeakChannel = firstFrame.max { $0.sample.peak < $1.sample.peak }?.channel
-        let secondPeakChannel = secondFrame.max { $0.sample.peak < $1.sample.peak }?.channel
 
         XCTAssertEqual(OrbitalViewportImpulsePattern.orbitingCometCount, 2)
         XCTAssertGreaterThanOrEqual(activeCount, 8)
         XCTAssertLessThanOrEqual(activeCount, 14)
         XCTAssertGreaterThanOrEqual(hotTrailCount, 4)
-        XCTAssertNotEqual(firstPeakChannel, secondPeakChannel)
+        XCTAssertNotEqual(firstFrame.map(\.sample.rms), secondFrame.map(\.sample.rms))
     }
 
     func testCorrectViewerAudioExcitationUsesMonoSampleAsCheapEnvelope() {

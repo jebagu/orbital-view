@@ -748,16 +748,16 @@
       [18, "Fey 18", 0.572638174674189, 0.795330798158596, 0.198832699539649],
       [19, "Fey 19", 0.923947703083417, -0.304902742017528, 0.230986925770854],
       [20, "Fey 20", 0, -0.970142500145332, 0.242535625036333],
-      [21, "Fey 21", -0.548614782048403, -0.630906999355663, 0.548614782048403],
-      [22, "Fey 22", 0.548614782048403, -0.630906999355663, 0.548614782048403],
-      [23, "Fey 23", 0.545454545454545, -0.181818181818182, 0.818181818181818],
-      [24, "Fey 24", 0, 0.8, 0.6],
-      [25, "Fey 25", -0.545454545454545, -0.181818181818182, 0.818181818181818],
-      [26, "Fey 26", -0.331448998468967, 0.45113891458276, 0.828622496172417],
-      [27, "Fey 27", 0.331448998468967, 0.45113891458276, 0.828622496172417],
-      [28, "Fey 28", 0, -0.554700196225229, 0.832050294337844],
-      [29, "Fey 29", -0.774258005430618, 0.251633851764951, 0.580693504072963],
-      [30, "Fey 30", 0.774258005430618, 0.251633851764951, 0.580693504072963]
+      [21, "Fey 21", -0.479772219839528, -0.662085663378549, 0.575726663807434],
+      [22, "Fey 22", -0.776114000116266, 0.242535625036333, 0.582085500087199],
+      [23, "Fey 23", 0, 0.8, 0.6],
+      [24, "Fey 24", 0.774258005430618, 0.251633851764951, 0.580693504072963],
+      [25, "Fey 25", 0.479772219839528, -0.662085663378549, 0.575726663807434],
+      [26, "Fey 26", 0, -0.554700196225229, 0.832050294337844],
+      [27, "Fey 27", -0.545454545454545, -0.181818181818182, 0.818181818181818],
+      [28, "Fey 28", -0.403422633196499, 0.556723233811169, 0.726160739753698],
+      [29, "Fey 29", 0.403422633196499, 0.556723233811169, 0.726160739753698],
+      [30, "Fey 30", 0.545454545454545, -0.181818181818182, 0.818181818181818]
     ];
 
     const speakers = rawSpeakers.map(([channel, label, x, y, z]) => ({
@@ -777,15 +777,16 @@
     }
 
     function rotate(point) {
+      const renderPoint = { x: point.x, y: point.z, z: point.y };
       const cy = Math.cos(state.yaw);
       const sy = Math.sin(state.yaw);
       const cp = Math.cos(state.pitch);
       const sp = Math.sin(state.pitch);
 
-      const x1 = point.x * cy - point.z * sy;
-      const z1 = point.x * sy + point.z * cy;
-      const y1 = point.y * cp - z1 * sp;
-      const z2 = point.y * sp + z1 * cp;
+      const x1 = renderPoint.x * cy - renderPoint.z * sy;
+      const z1 = renderPoint.x * sy + renderPoint.z * cy;
+      const y1 = renderPoint.y * cp - z1 * sp;
+      const z2 = renderPoint.y * sp + z1 * cp;
       return { x: x1, y: y1, z: z2 };
     }
 
@@ -939,7 +940,7 @@
       const baseVertices = createIcosahedronVertices();
       const vertexUpSource = baseVertices[5];
       const alignedBaseVertices = config.orientationMode === "vertex-up"
-        ? baseVertices.map(vertex => rotateVectorBetween(vertex, vertexUpSource, { x: 0, y: 1, z: 0 }))
+        ? baseVertices.map(vertex => rotateVectorBetween(vertex, vertexUpSource, { x: 0, y: 0, z: 1 }))
         : baseVertices;
       const nodes = [];
       const nodeIds = new Map();
@@ -1206,7 +1207,7 @@
 
     function prismBasis(speaker) {
       const normal = normalize3({ x: speaker.x, y: speaker.y, z: speaker.z }, { x: 0, y: 0, z: 1 });
-      const pole = { x: 0, y: 1, z: 0 };
+      const pole = { x: 0, y: 0, z: 1 };
       const dot = dot3(normal, pole);
       let tangent = {
         x: pole.x - normal.x * dot,

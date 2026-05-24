@@ -16,6 +16,7 @@ Once implementation starts, the test suite should prove:
 - monitor camera presets keep the target at origin
 - imported shell geometry references are valid
 - downstream adapters do not reorder Wavefield/Fey speakers
+- canonical coordinates stay Z-up: `x = right`, `y = front`, `z = up`
 - local Wavefield JSON adapter rejects invalid layout shape explicitly
 - local Wavefield meter adapter rejects duplicate channels and invalid levels explicitly
 
@@ -40,6 +41,8 @@ Use when a downstream adapter is added:
 - adapt it to `OrbitalViewSceneSpec`
 - assert 30 physical speaker records
 - assert channels remain `1...30`
+- assert Fey channels group by rising `z` rings: `1-5`, `6-10`, `11-15`, `16-20`, `21-25`, `26-30`
+- assert channel 1 is on the lowest ring with negative canonical `z`
 - assert labels remain stable
 - assert directions match the source layout
 - reject unsupported axes and invalid speaker counts
@@ -70,6 +73,7 @@ Current renderer seam tests cover:
 - meter-only and camera-only updates keep static speaker draw inputs stable
 - meter source descriptors stay metadata and do not change renderer static geometry
 - speaker draw inputs preserve ID/channel order and stable cube/prism dimensions
+- speaker draw inputs project canonical `x` horizontally and canonical `z` vertically, treating canonical `y` as depth/front
 - cube VU defaults, scalar math, range validation, material payloads, hot-fill independence, and palette-drive behavior stay separate from raw RMS
 - dynamic object frame/meter/settings updates render through a separate object path and do not rebuild speaker static geometry
 - retained speaker/object buffers do not reallocate on meter/settings/camera-only renders
@@ -207,7 +211,7 @@ Current viewer tests cover:
 Launch the viewer for manual review with:
 
 ```text
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
 ```
 
 The viewer imports `OrbitalViewReview` for the SceneKit/local-audio review surface. Production host apps should import `OrbitalViewSwiftUI` instead.
@@ -229,7 +233,7 @@ Current package:
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewViewer
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
 ```
 
 Current mockup:
