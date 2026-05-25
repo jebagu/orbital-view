@@ -1386,11 +1386,13 @@ public struct OrbitalViewportMockup: View {
             onDrag: { delta in
                 let startYaw = dragStartYaw ?? yaw
                 let startPitch = dragStartPitch ?? pitch
-                yaw = startYaw - Double(delta.width) * 0.006
-                pitch = min(
-                    OrbitalViewportOrbitState.maxPitch,
-                    max(-OrbitalViewportOrbitState.maxPitch, startPitch - Double(delta.height) * 0.006)
-                )
+                let next = OrbitalViewportOrbitState(
+                    view: cameraView,
+                    yaw: startYaw,
+                    pitch: startPitch
+                ).applyingDrag(translation: delta)
+                yaw = next.yaw
+                pitch = next.pitch
                 cameraAdjusted = true
             },
             onDragEnded: {
@@ -1582,11 +1584,15 @@ public struct OrbitalViewportMockup: View {
                 let dx = value.translation.width
                 let dy = value.translation.height
                 if abs(dx) > 2 || abs(dy) > 2 {
-                    yaw = (dragStartYaw ?? yaw) - Double(dx) * 0.006
-                    pitch = min(
-                        OrbitalViewportOrbitState.maxPitch,
-                        max(-OrbitalViewportOrbitState.maxPitch, (dragStartPitch ?? pitch) - Double(dy) * 0.006)
+                    let next = OrbitalViewportOrbitState(
+                        view: cameraView,
+                        yaw: dragStartYaw ?? yaw,
+                        pitch: dragStartPitch ?? pitch
+                    ).applyingDrag(
+                        translation: CGSize(width: dx, height: dy)
                     )
+                    yaw = next.yaw
+                    pitch = next.pitch
                     cameraAdjusted = true
                 }
             }
@@ -4693,7 +4699,7 @@ struct OrbitalViewportOrbitState: Equatable {
     func applyingDrag(translation: CGSize) -> OrbitalViewportOrbitState {
         OrbitalViewportOrbitState(
             view: view,
-            yaw: yaw - Double(translation.width) * 0.006,
+            yaw: yaw + Double(translation.width) * 0.006,
             pitch: min(Self.maxPitch, max(-Self.maxPitch, pitch - Double(translation.height) * 0.006)),
             distance: distance
         )
@@ -4719,7 +4725,7 @@ struct OrbitalViewportOrbitState: Equatable {
             .normalized(fallback: yawedDirection)
         let pitchedUp = baseUp.rotated(around: yawedRight, angle: pitch)
             .normalized(fallback: baseUp)
-        let right = OVVector3.cross(pitchedUp, pitchedDirection)
+        let right = OVVector3.cross(pitchedDirection, pitchedUp)
             .normalized(fallback: yawedRight)
         return OrbitalViewportCameraBasis(
             viewDirection: pitchedDirection,

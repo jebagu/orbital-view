@@ -9,6 +9,8 @@ none
 ## Fixed Bugs
 
 ```text
+2026-05-25: The native SceneKit review viewport projected the canonical left/right axis backward after the Z-up conversion, and the visible SceneKit drag callback still used the old horizontal yaw sign. Fixed by computing the review projection horizontal basis from view direction cross up after pitch is applied and routing native/fallback drag handling through the corrected orbit-state helper, leaving speaker data, the Z-up contract, and the SceneKit coordinate bridge unchanged. Regression coverage now asserts canonical `+X` projects to screen right and `-X` projects to screen left for all review camera presets, plus rightward and leftward drags move yaw in the expected directions.
+
 2026-05-22: Excite Comets and Impulse Test Orbiting Comets were too narrow and did not read clearly as moving VU trails. Fixed by replacing the old three-hotspot pattern with exactly two larger comets with broader heads and longer hot tails, shared by both the impulse source and audio-excited comet mode. Regression coverage now asserts two broad hot trails, multiple active speakers, and mono-envelope excitation.
 
 2026-05-22: Speaker Height was visible in the Speaker Shape tray even though it no longer provided a useful review-app control. Fixed by removing the control, normalizing old saved `speakerHeight` values to the current flat cube geometry path, and excluding height from review-app geometry/material update keys.

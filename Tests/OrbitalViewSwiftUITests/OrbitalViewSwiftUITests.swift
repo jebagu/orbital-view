@@ -239,6 +239,32 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
     }
 
+    func testCorrectViewerProjectsCanonicalXRightToScreenRight() {
+        for view in OrbitalViewportCameraView.allCases {
+            let configuration = makeViewportConfiguration(
+                size: CGSize(width: 1_000, height: 800),
+                cameraView: view
+            )
+            let centerX = configuration.size.width * 0.5
+            let right = configuration.project(configuration.rotate(OVVector3(x: 1, y: 0, z: 0)))
+            let left = configuration.project(configuration.rotate(OVVector3(x: -1, y: 0, z: 0)))
+
+            XCTAssertGreaterThan(right.x, centerX, "\(view.title) should project canonical +X to screen right")
+            XCTAssertLessThan(left.x, centerX, "\(view.title) should project canonical -X to screen left")
+        }
+    }
+
+    func testCorrectViewerRightwardDragMovesHorizontalOrbitRight() {
+        let base = OrbitalViewportOrbitState.preset(.isometric)
+        let draggedRight = base.applyingDrag(translation: CGSize(width: 24, height: 0))
+        let draggedLeft = base.applyingDrag(translation: CGSize(width: -24, height: 0))
+
+        XCTAssertGreaterThan(draggedRight.yaw, base.yaw)
+        XCTAssertLessThan(draggedLeft.yaw, base.yaw)
+        XCTAssertEqual(draggedRight.pitch, base.pitch)
+        XCTAssertEqual(draggedLeft.pitch, base.pitch)
+    }
+
     func testCorrectViewerUsesCubeVUDefaultsFromCoreContract() {
         let defaults = OrbitalViewportCubeVUSettings.default
         let core = SpeakerMeterVisualSettings.default

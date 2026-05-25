@@ -116,6 +116,46 @@ none
 
 ## Recent Changes
 
+### Update: 2026-05-25 Fix Review Left/Right Projection And Control Axis
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Fixed the native SceneKit review viewport projection basis so canonical `+X = right` projects to screen right and canonical `-X = left` projects to screen left.
+- Routed the visible native SceneKit drag callback and the fallback drag gesture through the corrected orbit-state helper so rightward drags increase yaw and leftward drags decrease yaw.
+- Left pitch coefficients, speaker fixture coordinates, canonical Z-up semantics, and the SceneKit `(x, y, z) -> (x, z, y)` coordinate bridge unchanged.
+
+Tests added or updated:
+
+```text
+OrbitalViewSwiftUITests.testCorrectViewerProjectsCanonicalXRightToScreenRight
+OrbitalViewSwiftUITests.testCorrectViewerRightwardDragMovesHorizontalOrbitRight
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 119 tests
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed outside sandbox and opened the review app
+pgrep -fl OrbitalViewViewer -> passed, running from this checkout
+git diff --check -> passed
+```
+
+Documentation updated:
+
+```text
+docs/bugs.md
+docs/implementation-map.md
+docs/status.md
+docs/test-strategy.md
+```
+
 ### Update: 2026-05-25 Restore First App Icon
 
 Status:
