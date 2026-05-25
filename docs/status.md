@@ -94,7 +94,7 @@ main tree
 - Added the review-only optional `Grid Plane` toggle, SceneKit and Canvas fallback grid drawing, theme JSON persistence, and grid-isolated update-key tests.
 - Added review-only `Grid Visibility` tuning and expanded the ground plane to 10 x 10 canonical units.
 - Moved review-only ground plane controls into the right-panel `Ground Appearance` section and added grid spacing plus ground palette controls.
-- Replaced the review app icon with the corrected black-background planet logo using the final Daft Punk Bow gradient treatment, and archived the previous gradient option 02 icon assets in the repo.
+- Restored the review app icon to the archived previous gradient option 02 icon assets in the repo.
 
 ## In Progress
 
@@ -115,6 +115,53 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-25 Restore First App Icon
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Restored the active app icon PNG and ICNS from the archived previous gradient option 02 icon.
+- Replaced the active source SVG with a small wrapper that references the archived previous gradient option 02 PNG, so the tracked source now follows the active app icon again.
+- Rebuilt and reopened the review app through the parent launcher.
+- Verified the app bundle `AppIcon.icns` matches both the active tracked ICNS and the archived previous gradient option 02 ICNS.
+
+Tests added or updated:
+
+```text
+No source-level behavior changed, so no tests were added.
+```
+
+Commands run:
+
+```text
+shasum -a 256 active icon assets and archived previous gradient option 02 icon assets -> matched
+file dist/app-logo/OrbitalViewKit-AppIcon-1024.png dist/app-logo/AppIcon.icns dist/app-logo/OrbitalViewKit-AppIcon-source.svg -> passed
+sips -g pixelWidth -g pixelHeight dist/app-logo/OrbitalViewKit-AppIcon-1024.png -> passed, 1024 x 1024
+qlmanage -t -s 1024 -o /private/tmp dist/app-logo/OrbitalViewKit-AppIcon-source.svg -> passed
+zsh -n "Open Orbital View Kit.command" -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 117 tests
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed, rebuilt and opened OrbitalViewViewer pid 86835
+/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' app/Contents/Info.plist -> AppIcon
+shasum -a 256 tracked AppIcon.icns, app-bundle AppIcon.icns, and archived previous gradient option 02 ICNS -> matched
+```
+
+Documentation updated:
+
+```text
+docs/status.md
+```
+
+Protected paths touched:
+
+```text
+none
+```
 
 ### Update: 2026-05-25 Black Planet App Icon
 
