@@ -128,6 +128,7 @@ Changed:
 
 - Rebuilt the tracked app icon from the corrected full planet SVG geometry, preserving the thicker planet-ring cutout stroke overlays.
 - Kept the final Daft Punk Bow app-icon gradient treatment on the planet logo and placed it on a black square app-icon background.
+- Tightened the planet icon crop so its colored-art bounds match the previous icon's `752 x 752` scale inside the 1024 app-icon canvas.
 - Updated `dist/app-logo/OrbitalViewKit-AppIcon-1024.png` and `dist/app-logo/AppIcon.icns`.
 - Added `dist/app-logo/OrbitalViewKit-AppIcon-source.svg` as the tracked source for the generated icon.
 - Archived the previous gradient option 02 app icon PNG and ICNS under `dist/app-logo/archive/`.
@@ -142,10 +143,11 @@ Commands run:
 
 ```text
 qlmanage -t -s 1024 -o /private/tmp dist/app-logo/OrbitalViewKit-AppIcon-source.svg -> passed
+pixel-bounds check against archived previous icon -> passed, both colored-art bounds `136...887` / `752 x 752`
 sips iconset resizing commands -> passed
-iconutil --convert icns --output dist/app-logo/AppIcon.icns /private/tmp/OrbitalViewKit-NewAppIcon.iconset -> passed
+iconutil --convert icns --output dist/app-logo/AppIcon.icns /private/tmp/OrbitalViewKit-CroppedAppIcon.iconset -> passed
 file dist/app-logo/OrbitalViewKit-AppIcon-1024.png dist/app-logo/AppIcon.icns -> passed
-iconutil --convert iconset --output /private/tmp/OrbitalViewKit-NewAppIcon-verify.iconset dist/app-logo/AppIcon.icns -> passed
+iconutil --convert iconset --output /private/tmp/OrbitalViewKit-CroppedAppIcon-verify.iconset dist/app-logo/AppIcon.icns -> passed
 zsh -n "Open Orbital View Kit.command" -> passed
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 117 tests
@@ -153,6 +155,9 @@ git diff --check -> passed
 /Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed, rebuilt and opened OrbitalViewViewer pid 73681
 /usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' app/Contents/Info.plist -> AppIcon
 shasum -a 256 tracked AppIcon.icns and app-bundle AppIcon.icns -> matched
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 117 tests after crop adjustment
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed after crop adjustment, rebuilt and opened OrbitalViewViewer pid 78826
+shasum -a 256 tracked AppIcon.icns and app-bundle AppIcon.icns -> matched after crop adjustment
 ```
 
 Documentation updated:
