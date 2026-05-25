@@ -97,8 +97,16 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             ["Speaker Palette", "App Skin", "Cube VU Ramp"]
         )
         XCTAssertEqual(
+            OrbitalViewportMockup.viewDetailControlTitles,
+            ["Speaker Size", "Fog Density", "Speaker Numbers", "Hidden Lines"]
+        )
+        XCTAssertEqual(
             OrbitalViewportMockup.geodesicAppearanceControlTitles,
             ["Geodesic Palette", "Geodesic Saturation", "Shell"]
+        )
+        XCTAssertEqual(
+            OrbitalViewportMockup.groundAppearanceControlTitles,
+            ["Ground Palette", "Grid Plane", "Grid Visibility", "Grid Spacing", "Grid Size"]
         )
         XCTAssertEqual(
             OrbitalViewportMockup.audioRenderTypeTitles,
@@ -118,6 +126,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Bloom Style",
                 "Sphere Geometry",
                 "Geodesic Appearance",
+                "Ground Appearance",
                 "Meter Source",
                 "Meter Response",
                 "Performance",
@@ -126,7 +135,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(
             OrbitalViewportMockup.rightPanelSectionTitles,
-            ["Theme", "Speaker Appearance", "Sphere Appearance", "Meter Behavior", "Diagnostics"]
+            ["Theme", "Speaker Appearance", "Sphere Appearance", "Ground Appearance", "Meter Behavior", "Diagnostics"]
         )
         XCTAssertEqual(OrbitalViewportMockup.futureWorkTrayTitles, ["Sphere Geometry", "Speaker Pattern"])
         XCTAssertEqual(OrbitalViewportMockup.futureWorkLabel, "Future work")
@@ -607,9 +616,17 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                     fogDensitySlider: 38,
                     fogDensity: 24,
                     showSpeakerNumbers: true,
-                    showHiddenLines: true
+                    showHiddenLines: true,
+                    showGridPlane: true,
+                    gridPlaneVisibilitySlider: 86
                 ),
                 selectedChannel: 12
+            ),
+            groundAppearance: OrbitalViewportGroundAppearanceExportSettings(
+                showGridPlane: true,
+                gridPlaneVisibilitySlider: 86,
+                gridPlaneSpacing: 0.75,
+                gridPlaneRenderStyle: .rackMint
             ),
             driveMode: .impulseRipple,
             cubePreset: .haloEdgeBloom,
@@ -637,6 +654,11 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertTrue(json.contains("\"leftPanel\""))
         XCTAssertTrue(json.contains("\"cameraView\" : \"elevation\""))
         XCTAssertTrue(json.contains("\"speakerSizeSlider\" : 64"))
+        XCTAssertTrue(json.contains("\"showGridPlane\" : true"))
+        XCTAssertTrue(json.contains("\"gridPlaneVisibilitySlider\" : 86"))
+        XCTAssertTrue(json.contains("\"groundAppearance\""))
+        XCTAssertTrue(json.contains("\"gridPlaneSpacing\" : 0.75"))
+        XCTAssertTrue(json.contains("\"gridPlaneRenderStyle\" : \"rackMint\""))
         XCTAssertTrue(json.contains("\"fileName\" : \"reference-track.wav\""))
         XCTAssertTrue(json.contains("\"selectedChannel\" : 12"))
         XCTAssertTrue(json.contains("\"rimHaloEdge\" : 1"))
@@ -653,6 +675,12 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(decoded.leftPanel.viewDetail.speakerSizeSlider, 64)
         XCTAssertTrue(decoded.leftPanel.viewDetail.showSpeakerNumbers)
         XCTAssertTrue(decoded.leftPanel.viewDetail.showHiddenLines)
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showGridPlane)
+        XCTAssertEqual(decoded.leftPanel.viewDetail.gridPlaneVisibilitySlider, 86)
+        XCTAssertTrue(decoded.groundAppearance.showGridPlane)
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneVisibilitySlider, 86)
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneSpacing, 0.75, accuracy: 0.000_001)
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneRenderStyle, .rackMint)
         XCTAssertEqual(decoded.leftPanel.selectedChannel, 12)
         XCTAssertEqual(decoded.speakerLabelFont, .pressStart2P)
         XCTAssertEqual(decoded.speakerLabelFontSizeSlider, 72)
@@ -713,6 +741,129 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(decoded.speakerLabelFont, .minecraft)
         XCTAssertEqual(decoded.speakerLabelFontSizeSlider, OrbitalViewportMath.speakerLabelFontSizeSliderCenter)
         XCTAssertEqual(decoded.speakerLabelFontSizeScale, 1, accuracy: 0.000_001)
+    }
+
+    func testCorrectViewerSettingsJSONFallsBackFromLegacyViewDetailGridPlaneFields() throws {
+        let payload = OrbitalViewportSettingsExportPayload(
+            renderStyle: .purple,
+            geodesicRenderStyle: .rackBlue,
+            speakerShape: .cubeVU,
+            leftPanel: OrbitalViewportLeftPanelSettings(
+                audioSource: .default,
+                camera: .default,
+                speakerType: .cubeVU,
+                viewDetail: OrbitalViewportViewDetailExportSettings(
+                    speakerSizeSlider: 52,
+                    speakerSize: 2,
+                    fogDensitySlider: 42,
+                    fogDensity: 27,
+                    showSpeakerNumbers: true,
+                    showHiddenLines: true,
+                    showGridPlane: true,
+                    gridPlaneVisibilitySlider: 88
+                ),
+                selectedChannel: nil
+            ),
+            groundAppearance: OrbitalViewportGroundAppearanceExportSettings(
+                showGridPlane: true,
+                gridPlaneVisibilitySlider: 88,
+                gridPlaneSpacing: 0.75,
+                gridPlaneRenderStyle: .rackMint
+            ),
+            driveMode: .music,
+            cubePreset: .softCenterBloom,
+            cubeSettings: .default,
+            activeViewportFramesPerSecond: 60,
+            meterOnlyViewportFramesPerSecond: 10,
+            inspectorRefreshFramesPerSecond: 10,
+            drawsOnDemand: true,
+            exportedAt: Date(timeIntervalSince1970: 0)
+        )
+        let data = try OrbitalViewportSettingsJSONExporter.jsonData(payload: payload)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "groundAppearance")
+        let olderData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(
+            OrbitalViewportSettingsExportPayload.self,
+            from: olderData
+        )
+
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showSpeakerNumbers)
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showHiddenLines)
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showGridPlane)
+        XCTAssertEqual(decoded.leftPanel.viewDetail.gridPlaneVisibilitySlider, 88)
+        XCTAssertTrue(decoded.groundAppearance.showGridPlane)
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneVisibilitySlider, 88)
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneSpacing, OrbitalViewportGridPlaneGeometry.defaultSpacing)
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneRenderStyle, .rackBlue)
+    }
+
+    func testCorrectViewerSettingsJSONDefaultsMissingGridPlaneFields() throws {
+        let payload = OrbitalViewportSettingsExportPayload(
+            renderStyle: .purple,
+            speakerShape: .cubeVU,
+            leftPanel: OrbitalViewportLeftPanelSettings(
+                audioSource: .default,
+                camera: .default,
+                speakerType: .cubeVU,
+                viewDetail: OrbitalViewportViewDetailExportSettings(
+                    speakerSizeSlider: 52,
+                    speakerSize: 2,
+                    fogDensitySlider: 42,
+                    fogDensity: 27,
+                    showSpeakerNumbers: true,
+                    showHiddenLines: true,
+                    showGridPlane: true,
+                    gridPlaneVisibilitySlider: 88
+                ),
+                selectedChannel: nil
+            ),
+            groundAppearance: OrbitalViewportGroundAppearanceExportSettings(
+                showGridPlane: true,
+                gridPlaneVisibilitySlider: 88,
+                gridPlaneSpacing: 0.75,
+                gridPlaneRenderStyle: .rackMint
+            ),
+            driveMode: .music,
+            cubePreset: .softCenterBloom,
+            cubeSettings: .default,
+            activeViewportFramesPerSecond: 60,
+            meterOnlyViewportFramesPerSecond: 10,
+            inspectorRefreshFramesPerSecond: 10,
+            drawsOnDemand: true,
+            exportedAt: Date(timeIntervalSince1970: 0)
+        )
+        let data = try OrbitalViewportSettingsJSONExporter.jsonData(payload: payload)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "groundAppearance")
+        var leftPanel = try XCTUnwrap(object["leftPanel"] as? [String: Any])
+        var viewDetail = try XCTUnwrap(leftPanel["viewDetail"] as? [String: Any])
+        viewDetail.removeValue(forKey: "showGridPlane")
+        viewDetail.removeValue(forKey: "gridPlaneVisibilitySlider")
+        leftPanel["viewDetail"] = viewDetail
+        object["leftPanel"] = leftPanel
+        let olderData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(
+            OrbitalViewportSettingsExportPayload.self,
+            from: olderData
+        )
+
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showSpeakerNumbers)
+        XCTAssertTrue(decoded.leftPanel.viewDetail.showHiddenLines)
+        XCTAssertFalse(decoded.leftPanel.viewDetail.showGridPlane)
+        XCTAssertEqual(
+            decoded.leftPanel.viewDetail.gridPlaneVisibilitySlider,
+            OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
+        )
+        XCTAssertFalse(decoded.groundAppearance.showGridPlane)
+        XCTAssertEqual(
+            decoded.groundAppearance.gridPlaneVisibilitySlider,
+            OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
+        )
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneSpacing, OrbitalViewportGridPlaneGeometry.defaultSpacing)
+        XCTAssertEqual(decoded.groundAppearance.gridPlaneRenderStyle, .purple)
     }
 
     func testCorrectViewerRemovedSpeakerLabelFontsDecodeToSystemDefault() throws {
@@ -897,6 +1048,107 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: base), OrbitalViewportSpeakerMaterialUpdateKey(configuration: geodesicPaletteOnly))
         XCTAssertEqual(base.theme.accent, OrbitalViewportTheme(style: .rackMint).accent)
         XCTAssertEqual(geodesicPaletteOnly.geodesicTheme.accent, OrbitalViewportTheme(style: .rackBlue).accent)
+    }
+
+    func testCorrectViewerGridPlaneTuningStaysOutOfSpeakerAndShellKeys() {
+        let base = makeViewportConfiguration(renderStyle: .rackMint, geodesicRenderStyle: .purple, showGridPlane: false)
+        let gridShown = makeViewportConfiguration(renderStyle: .rackMint, geodesicRenderStyle: .purple, showGridPlane: true)
+        let gridVisibility = makeViewportConfiguration(
+            renderStyle: .rackMint,
+            geodesicRenderStyle: .purple,
+            showGridPlane: true,
+            gridPlaneVisibility: 0.92
+        )
+        let gridSpacing = makeViewportConfiguration(
+            renderStyle: .rackMint,
+            geodesicRenderStyle: .purple,
+            showGridPlane: true,
+            gridPlaneSpacing: 0.75
+        )
+        let groundPalette = makeViewportConfiguration(
+            renderStyle: .rackMint,
+            geodesicRenderStyle: .purple,
+            showGridPlane: true,
+            gridPlaneRenderStyle: .rackBlue
+        )
+        let geodesicPalette = makeViewportConfiguration(
+            renderStyle: .rackMint,
+            geodesicRenderStyle: .rackBlue,
+            geodesicSaturation: 0.3,
+            showGridPlane: true
+        )
+
+        XCTAssertNotEqual(OrbitalViewportGridPlaneUpdateKey(configuration: base), OrbitalViewportGridPlaneUpdateKey(configuration: gridShown))
+        XCTAssertEqual(OrbitalViewportShellUpdateKey(configuration: base), OrbitalViewportShellUpdateKey(configuration: gridShown))
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: base), OrbitalViewportSpeakerGeometryUpdateKey(configuration: gridShown))
+        XCTAssertEqual(OrbitalViewportSpeakerLabelGeometryUpdateKey(configuration: base), OrbitalViewportSpeakerLabelGeometryUpdateKey(configuration: gridShown))
+        XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: base), OrbitalViewportSpeakerMaterialUpdateKey(configuration: gridShown))
+
+        XCTAssertNotEqual(OrbitalViewportGridPlaneUpdateKey(configuration: gridShown), OrbitalViewportGridPlaneUpdateKey(configuration: gridVisibility))
+        XCTAssertEqual(OrbitalViewportShellUpdateKey(configuration: gridShown), OrbitalViewportShellUpdateKey(configuration: gridVisibility))
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: gridShown), OrbitalViewportSpeakerGeometryUpdateKey(configuration: gridVisibility))
+        XCTAssertEqual(OrbitalViewportSpeakerLabelGeometryUpdateKey(configuration: gridShown), OrbitalViewportSpeakerLabelGeometryUpdateKey(configuration: gridVisibility))
+        XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: gridShown), OrbitalViewportSpeakerMaterialUpdateKey(configuration: gridVisibility))
+
+        XCTAssertNotEqual(OrbitalViewportGridPlaneUpdateKey(configuration: gridShown), OrbitalViewportGridPlaneUpdateKey(configuration: gridSpacing))
+        XCTAssertEqual(OrbitalViewportShellUpdateKey(configuration: gridShown), OrbitalViewportShellUpdateKey(configuration: gridSpacing))
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: gridShown), OrbitalViewportSpeakerGeometryUpdateKey(configuration: gridSpacing))
+        XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: gridShown), OrbitalViewportSpeakerMaterialUpdateKey(configuration: gridSpacing))
+
+        XCTAssertNotEqual(OrbitalViewportGridPlaneUpdateKey(configuration: gridShown), OrbitalViewportGridPlaneUpdateKey(configuration: groundPalette))
+        XCTAssertEqual(OrbitalViewportShellUpdateKey(configuration: gridShown), OrbitalViewportShellUpdateKey(configuration: groundPalette))
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: gridShown), OrbitalViewportSpeakerGeometryUpdateKey(configuration: groundPalette))
+        XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: gridShown), OrbitalViewportSpeakerMaterialUpdateKey(configuration: groundPalette))
+
+        XCTAssertEqual(OrbitalViewportGridPlaneUpdateKey(configuration: gridShown), OrbitalViewportGridPlaneUpdateKey(configuration: geodesicPalette))
+        XCTAssertNotEqual(OrbitalViewportShellUpdateKey(configuration: gridShown), OrbitalViewportShellUpdateKey(configuration: geodesicPalette))
+        XCTAssertEqual(OrbitalViewportSpeakerGeometryUpdateKey(configuration: gridShown), OrbitalViewportSpeakerGeometryUpdateKey(configuration: geodesicPalette))
+        XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: gridShown), OrbitalViewportSpeakerMaterialUpdateKey(configuration: geodesicPalette))
+    }
+
+    func testCorrectViewerGridPlaneGeometryUsesCanonicalOffsetAndStableLineCount() {
+        let lines = OrbitalViewportGridPlaneGeometry.lineSegments
+
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.canonicalZ, -1.2, accuracy: 0.000_001)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.halfExtent, 5.0, accuracy: 0.000_001)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.defaultSpacing, 0.5, accuracy: 0.000_001)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.spacingRange, 0.25...1.0)
+        XCTAssertEqual(lines.count, 42)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.lineSegments(spacing: 0.25).count, 82)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.lineSegments(spacing: 1.0).count, 22)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.normalizedSpacing(0.1), 0.25)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.normalizedSpacing(2.0), 1.0)
+        XCTAssertEqual(lines.filter(\.isMajor).count, 2)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider, 70, accuracy: 0.000_001)
+        XCTAssertEqual(OrbitalViewportGridPlaneGeometry.defaultVisibility, 0.7, accuracy: 0.000_001)
+        XCTAssertEqual(
+            OrbitalViewportGridPlaneGeometry.alpha(for: lines.first { !$0.isMajor }!, visibility: 0.7),
+            0.315,
+            accuracy: 0.000_001
+        )
+        XCTAssertEqual(
+            OrbitalViewportGridPlaneGeometry.alpha(for: lines.first { $0.isMajor }!, visibility: 0.7),
+            0.56,
+            accuracy: 0.000_001
+        )
+        XCTAssertTrue(lines.allSatisfy { line in
+            abs(line.start.z + 1.2) < 0.000_001 &&
+                abs(line.end.z + 1.2) < 0.000_001
+        })
+        XCTAssertTrue(lines.contains { line in
+            line.isMajor &&
+                abs(line.start.x) < 0.000_001 &&
+                abs(line.end.x) < 0.000_001 &&
+                abs(line.start.y + 5.0) < 0.000_001 &&
+                abs(line.end.y - 5.0) < 0.000_001
+        })
+        XCTAssertTrue(lines.contains { line in
+            line.isMajor &&
+                abs(line.start.x + 5.0) < 0.000_001 &&
+                abs(line.end.x - 5.0) < 0.000_001 &&
+                abs(line.start.y) < 0.000_001 &&
+                abs(line.end.y) < 0.000_001
+        })
     }
 
     func testCorrectViewerKeepsMeterOnlyTicksOutOfStaticGeometry() {
@@ -1347,6 +1599,10 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         meterSource: OrbitalViewportMeterSource = .fake,
         showSpeakerNumbers: Bool = false,
         showHiddenLines: Bool = false,
+        showGridPlane: Bool = false,
+        gridPlaneVisibility: Double = OrbitalViewportGridPlaneGeometry.defaultVisibility,
+        gridPlaneSpacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing,
+        gridPlaneRenderStyle: OrbitalViewportRenderStyle? = nil,
         selectedChannel: Int? = nil,
         spin: Bool = false,
         spinStartYaw: Double = 0,
@@ -1372,6 +1628,10 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             speakerLabelSizeScale: speakerLabelSizeScale,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
+            showGridPlane: showGridPlane,
+            gridPlaneVisibility: gridPlaneVisibility,
+            gridPlaneSpacing: gridPlaneSpacing,
+            gridPlaneRenderStyle: gridPlaneRenderStyle,
             selectedChannel: selectedChannel,
             spin: spin,
             spinStartYaw: spinStartYaw,
@@ -1433,9 +1693,17 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                     fogDensitySlider: 44,
                     fogDensity: 28,
                     showSpeakerNumbers: true,
-                    showHiddenLines: false
+                    showHiddenLines: false,
+                    showGridPlane: false,
+                    gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
                 ),
                 selectedChannel: nil
+            ),
+            groundAppearance: OrbitalViewportGroundAppearanceExportSettings(
+                showGridPlane: false,
+                gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider,
+                gridPlaneSpacing: OrbitalViewportGridPlaneGeometry.defaultSpacing,
+                gridPlaneRenderStyle: .rackBlue
             ),
             driveMode: .impulseRipple,
             cubePreset: .hotCoreBloom,

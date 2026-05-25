@@ -41,10 +41,23 @@ public struct OrbitalViewportMockup: View {
         "App Skin",
         "Cube VU Ramp"
     ]
+    static let viewDetailControlTitles = [
+        "Speaker Size",
+        "Fog Density",
+        "Speaker Numbers",
+        "Hidden Lines"
+    ]
     static let geodesicAppearanceControlTitles = [
         "Geodesic Palette",
         "Geodesic Saturation",
         "Shell"
+    ]
+    static let groundAppearanceControlTitles = [
+        "Ground Palette",
+        "Grid Plane",
+        "Grid Visibility",
+        "Grid Spacing",
+        "Grid Size"
     ]
     static let audioRenderTypeTitles = OrbitalViewportAudioRenderMode.allCases.map(\.title)
     static let bloomStyleControlTitles = ["Randomize Bloom Style"] + OrbitalViewportCubeVUPreset.allCases.map(\.title)
@@ -71,6 +84,7 @@ public struct OrbitalViewportMockup: View {
         "Theme",
         "Speaker Appearance",
         "Sphere Appearance",
+        "Ground Appearance",
         "Meter Behavior",
         "Diagnostics"
     ]
@@ -89,6 +103,7 @@ public struct OrbitalViewportMockup: View {
         "Bloom Style",
         "Sphere Geometry",
         "Geodesic Appearance",
+        "Ground Appearance",
         "Meter Source",
         "Meter Response",
         "Performance",
@@ -163,6 +178,10 @@ public struct OrbitalViewportMockup: View {
     @State private var spin = false
     @State private var showSpeakerNumbers = false
     @State private var showHiddenLines = false
+    @State private var showGridPlane = false
+    @State private var gridPlaneVisibilitySlider = OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
+    @State private var gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.defaultSpacing
+    @State private var gridPlaneRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultGeodesicRenderStyle
     @State private var selectedChannel: Int?
     @State private var dragStartYaw: Double?
     @State private var dragStartPitch: Double?
@@ -188,6 +207,7 @@ public struct OrbitalViewportMockup: View {
     @State private var sphereGeometryExpanded = false
     @State private var speakerPatternExpanded = false
     @State private var geodesicAppearanceExpanded = false
+    @State private var groundAppearanceExpanded = false
     @State private var speakerLabelsExpanded = false
     @State private var meterCalibrationExpanded = false
     @State private var surfaceBloomExpanded = false
@@ -246,6 +266,10 @@ public struct OrbitalViewportMockup: View {
         OrbitalViewportMath.speakerLabelSizeScale(fromSlider: speakerLabelFontSizeSlider)
     }
 
+    private var gridPlaneVisibility: Double {
+        OrbitalViewportGridPlaneGeometry.visibility(fromSlider: gridPlaneVisibilitySlider)
+    }
+
     private func configuration(size: CGSize, timeMS: Double) -> OrbitalViewportRenderConfiguration {
         let effectiveYaw = displayedYaw(timeMS: timeMS)
         return OrbitalViewportRenderConfiguration(
@@ -268,6 +292,10 @@ public struct OrbitalViewportMockup: View {
             speakerLabelSizeScale: speakerLabelSizeScale,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
+            showGridPlane: showGridPlane,
+            gridPlaneVisibility: gridPlaneVisibility,
+            gridPlaneSpacing: gridPlaneSpacing,
+            gridPlaneRenderStyle: gridPlaneRenderStyle,
             selectedChannel: selectedChannel,
             spin: spin && !isDragging,
             spinStartYaw: spinStartYaw,
@@ -499,6 +527,38 @@ public struct OrbitalViewportMockup: View {
             )
             tuningValueRow("Geodesic Palette", value: geodesicRenderStyle.title)
             tuningValueRow("Shell", value: geodesicRenderStyle.title)
+        }
+    }
+
+    private var groundAppearanceTray: some View {
+        tuningTray("Ground Appearance", isExpanded: $groundAppearanceExpanded) {
+            VStack(spacing: 6) {
+                ForEach(OrbitalViewportRenderStyle.allCases) { style in
+                    paletteButton(style, selection: gridPlaneRenderStyle) {
+                        if gridPlaneRenderStyle != style {
+                            gridPlaneRenderStyle = style
+                            recordDiagnostic("Ground palette set to \(style.title)")
+                        }
+                    }
+                }
+            }
+            toggleRow("Grid Plane", isOn: $showGridPlane)
+            tuningSliderRow(
+                "Grid Visibility",
+                value: $gridPlaneVisibilitySlider,
+                range: 0...100,
+                step: 1,
+                valueText: "\((gridPlaneVisibility * 100).formatted(.number.precision(.fractionLength(0))))%"
+            )
+            tuningSliderRow(
+                "Grid Spacing",
+                value: $gridPlaneSpacing,
+                range: OrbitalViewportGridPlaneGeometry.spacingRange,
+                step: 0.05,
+                valueText: gridPlaneSpacing.formatted(.number.precision(.fractionLength(2)))
+            )
+            tuningValueRow("Ground Palette", value: gridPlaneRenderStyle.title)
+            tuningValueRow("Grid Size", value: "10 x 10")
         }
     }
 
@@ -1375,6 +1435,9 @@ public struct OrbitalViewportMockup: View {
                 sphereGeometryTray
                 geodesicAppearanceTray
 
+                rightPanelSectionHeader("Ground Appearance")
+                groundAppearanceTray
+
                 rightPanelSectionHeader("Meter Behavior")
                 vuDriveTray
                 meterCalibrationTray
@@ -1640,9 +1703,17 @@ public struct OrbitalViewportMockup: View {
                     fogDensitySlider: fogDensitySlider,
                     fogDensity: fogDensity,
                     showSpeakerNumbers: showSpeakerNumbers,
-                    showHiddenLines: showHiddenLines
+                    showHiddenLines: showHiddenLines,
+                    showGridPlane: showGridPlane,
+                    gridPlaneVisibilitySlider: gridPlaneVisibilitySlider
                 ),
                 selectedChannel: selectedChannel
+            ),
+            groundAppearance: OrbitalViewportGroundAppearanceExportSettings(
+                showGridPlane: showGridPlane,
+                gridPlaneVisibilitySlider: gridPlaneVisibilitySlider,
+                gridPlaneSpacing: gridPlaneSpacing,
+                gridPlaneRenderStyle: gridPlaneRenderStyle
             ),
             driveMode: vuDriveMode,
             cubePreset: cubeVUPreset,
@@ -1752,6 +1823,10 @@ public struct OrbitalViewportMockup: View {
         fogDensitySlider = min(100, max(0, payload.leftPanel.viewDetail.fogDensitySlider))
         showSpeakerNumbers = payload.leftPanel.viewDetail.showSpeakerNumbers
         showHiddenLines = payload.leftPanel.viewDetail.showHiddenLines
+        showGridPlane = payload.groundAppearance.showGridPlane
+        gridPlaneVisibilitySlider = payload.groundAppearance.gridPlaneVisibilitySlider
+        gridPlaneSpacing = payload.groundAppearance.gridPlaneSpacing
+        gridPlaneRenderStyle = payload.groundAppearance.gridPlaneRenderStyle
         vuDriveMode = payload.driveMode
         cubeVUPreset = payload.cubePreset
         cubeVUSettings = payload.cubeSettings
@@ -2515,6 +2590,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
     let speakerLabelFontSizeSlider: Double
     let speakerLabelFontSizeScale: Double
     let leftPanel: OrbitalViewportLeftPanelSettings
+    let groundAppearance: OrbitalViewportGroundAppearanceExportSettings
     let driveMode: OrbitalViewportVUDriveMode
     let cubePreset: OrbitalViewportCubeVUPreset
     let cubeSettings: OrbitalViewportCubeVUSettings
@@ -2533,6 +2609,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         speakerLabelFontSizeSlider: Double = OrbitalViewportMath.speakerLabelFontSizeSliderCenter,
         speakerLabelFontSizeScale: Double = 1,
         leftPanel: OrbitalViewportLeftPanelSettings = .default,
+        groundAppearance: OrbitalViewportGroundAppearanceExportSettings = .default,
         driveMode: OrbitalViewportVUDriveMode,
         cubePreset: OrbitalViewportCubeVUPreset,
         cubeSettings: OrbitalViewportCubeVUSettings,
@@ -2554,6 +2631,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         self.speakerLabelFontSizeSlider = min(100, max(0, speakerLabelFontSizeSlider))
         self.speakerLabelFontSizeScale = max(0.1, speakerLabelFontSizeScale)
         self.leftPanel = leftPanel
+        self.groundAppearance = groundAppearance
         self.driveMode = driveMode
         self.cubePreset = cubePreset
         self.cubeSettings = cubeSettings
@@ -2576,6 +2654,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         case speakerLabelFontSizeSlider
         case speakerLabelFontSizeScale
         case leftPanel
+        case groundAppearance
         case driveMode
         case cubePreset
         case cubeSettings
@@ -2625,6 +2704,15 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
             OrbitalViewportLeftPanelSettings.self,
             forKey: .leftPanel
         ) ?? .default
+        groundAppearance = try container.decodeIfPresent(
+            OrbitalViewportGroundAppearanceExportSettings.self,
+            forKey: .groundAppearance
+        ) ?? OrbitalViewportGroundAppearanceExportSettings(
+            showGridPlane: leftPanel.viewDetail.showGridPlane,
+            gridPlaneVisibilitySlider: leftPanel.viewDetail.gridPlaneVisibilitySlider,
+            gridPlaneSpacing: OrbitalViewportGridPlaneGeometry.defaultSpacing,
+            gridPlaneRenderStyle: geodesicRenderStyle
+        )
         driveMode = try container.decode(OrbitalViewportVUDriveMode.self, forKey: .driveMode)
         cubePreset = try container.decode(OrbitalViewportCubeVUPreset.self, forKey: .cubePreset)
         cubeSettings = try container.decode(OrbitalViewportCubeVUSettings.self, forKey: .cubeSettings)
@@ -2725,7 +2813,9 @@ struct OrbitalViewportViewDetailExportSettings: Codable, Equatable {
         fogDensitySlider: 50,
         fogDensity: OrbitalViewportMath.fogDensity(fromSlider: 50),
         showSpeakerNumbers: false,
-        showHiddenLines: false
+        showHiddenLines: false,
+        showGridPlane: false,
+        gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
     )
 
     let speakerSizeSlider: Double
@@ -2734,6 +2824,108 @@ struct OrbitalViewportViewDetailExportSettings: Codable, Equatable {
     let fogDensity: Double
     let showSpeakerNumbers: Bool
     let showHiddenLines: Bool
+    let showGridPlane: Bool
+    let gridPlaneVisibilitySlider: Double
+
+    init(
+        speakerSizeSlider: Double,
+        speakerSize: Double,
+        fogDensitySlider: Double,
+        fogDensity: Double,
+        showSpeakerNumbers: Bool,
+        showHiddenLines: Bool,
+        showGridPlane: Bool = false,
+        gridPlaneVisibilitySlider: Double = OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
+    ) {
+        self.speakerSizeSlider = speakerSizeSlider
+        self.speakerSize = speakerSize
+        self.fogDensitySlider = fogDensitySlider
+        self.fogDensity = fogDensity
+        self.showSpeakerNumbers = showSpeakerNumbers
+        self.showHiddenLines = showHiddenLines
+        self.showGridPlane = showGridPlane
+        self.gridPlaneVisibilitySlider = min(100, max(0, gridPlaneVisibilitySlider))
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case speakerSizeSlider
+        case speakerSize
+        case fogDensitySlider
+        case fogDensity
+        case showSpeakerNumbers
+        case showHiddenLines
+        case showGridPlane
+        case gridPlaneVisibilitySlider
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            speakerSizeSlider: try container.decode(Double.self, forKey: .speakerSizeSlider),
+            speakerSize: try container.decode(Double.self, forKey: .speakerSize),
+            fogDensitySlider: try container.decode(Double.self, forKey: .fogDensitySlider),
+            fogDensity: try container.decode(Double.self, forKey: .fogDensity),
+            showSpeakerNumbers: try container.decode(Bool.self, forKey: .showSpeakerNumbers),
+            showHiddenLines: try container.decode(Bool.self, forKey: .showHiddenLines),
+            showGridPlane: try container.decodeIfPresent(Bool.self, forKey: .showGridPlane) ?? false,
+            gridPlaneVisibilitySlider: try container.decodeIfPresent(
+                Double.self,
+                forKey: .gridPlaneVisibilitySlider
+            ) ?? OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
+        )
+    }
+}
+
+struct OrbitalViewportGroundAppearanceExportSettings: Codable, Equatable {
+    static let `default` = OrbitalViewportGroundAppearanceExportSettings(
+        showGridPlane: false,
+        gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider,
+        gridPlaneSpacing: OrbitalViewportGridPlaneGeometry.defaultSpacing,
+        gridPlaneRenderStyle: OrbitalViewportMockup.defaultGeodesicRenderStyle
+    )
+
+    let showGridPlane: Bool
+    let gridPlaneVisibilitySlider: Double
+    let gridPlaneSpacing: Double
+    let gridPlaneRenderStyle: OrbitalViewportRenderStyle
+
+    init(
+        showGridPlane: Bool = false,
+        gridPlaneVisibilitySlider: Double = OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider,
+        gridPlaneSpacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing,
+        gridPlaneRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultGeodesicRenderStyle
+    ) {
+        self.showGridPlane = showGridPlane
+        self.gridPlaneVisibilitySlider = min(100, max(0, gridPlaneVisibilitySlider))
+        self.gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.normalizedSpacing(gridPlaneSpacing)
+        self.gridPlaneRenderStyle = gridPlaneRenderStyle
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case showGridPlane
+        case gridPlaneVisibilitySlider
+        case gridPlaneSpacing
+        case gridPlaneRenderStyle
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            showGridPlane: try container.decodeIfPresent(Bool.self, forKey: .showGridPlane) ?? false,
+            gridPlaneVisibilitySlider: try container.decodeIfPresent(
+                Double.self,
+                forKey: .gridPlaneVisibilitySlider
+            ) ?? OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider,
+            gridPlaneSpacing: try container.decodeIfPresent(
+                Double.self,
+                forKey: .gridPlaneSpacing
+            ) ?? OrbitalViewportGridPlaneGeometry.defaultSpacing,
+            gridPlaneRenderStyle: try container.decodeIfPresent(
+                OrbitalViewportRenderStyle.self,
+                forKey: .gridPlaneRenderStyle
+            ) ?? OrbitalViewportMockup.defaultGeodesicRenderStyle
+        )
+    }
 }
 
 enum OrbitalViewportSettingsJSONExporter {
@@ -4581,6 +4773,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let speakerLabelSizeScale: Double
     let showSpeakerNumbers: Bool
     let showHiddenLines: Bool
+    let showGridPlane: Bool
+    let gridPlaneVisibility: Double
+    let gridPlaneSpacing: Double
+    let gridPlaneRenderStyle: OrbitalViewportRenderStyle
     let selectedChannel: Int?
     let spin: Bool
     let spinStartYaw: Double
@@ -4606,6 +4802,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         speakerLabelSizeScale: Double = 1,
         showSpeakerNumbers: Bool,
         showHiddenLines: Bool,
+        showGridPlane: Bool = false,
+        gridPlaneVisibility: Double = OrbitalViewportGridPlaneGeometry.defaultVisibility,
+        gridPlaneSpacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing,
+        gridPlaneRenderStyle: OrbitalViewportRenderStyle? = nil,
         selectedChannel: Int?,
         spin: Bool = false,
         spinStartYaw: Double = 0,
@@ -4630,6 +4830,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.speakerLabelSizeScale = max(0.1, speakerLabelSizeScale)
         self.showSpeakerNumbers = showSpeakerNumbers
         self.showHiddenLines = showHiddenLines
+        self.showGridPlane = showGridPlane
+        self.gridPlaneVisibility = OrbitalViewportMath.clamp01(gridPlaneVisibility)
+        self.gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.normalizedSpacing(gridPlaneSpacing)
+        self.gridPlaneRenderStyle = gridPlaneRenderStyle ?? OrbitalViewportMockup.defaultGeodesicRenderStyle
         self.selectedChannel = selectedChannel
         self.spin = spin
         self.spinStartYaw = spinStartYaw
@@ -4642,6 +4846,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
 
     var geodesicTheme: OrbitalViewportTheme {
         OrbitalViewportTheme(style: geodesicRenderStyle)
+    }
+
+    var gridPlaneTheme: OrbitalViewportTheme {
+        OrbitalViewportTheme(style: gridPlaneRenderStyle)
     }
 
     func geodesicColor(_ color: Color) -> Color {
@@ -4780,6 +4988,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             speakerLabelSizeScale: speakerLabelSizeScale,
             showSpeakerNumbers: showSpeakerNumbers,
             showHiddenLines: showHiddenLines,
+            showGridPlane: showGridPlane,
+            gridPlaneVisibility: gridPlaneVisibility,
+            gridPlaneSpacing: gridPlaneSpacing,
+            gridPlaneRenderStyle: gridPlaneRenderStyle,
             selectedChannel: selectedChannel,
             spin: spin,
             spinStartYaw: spinStartYaw,
@@ -4875,6 +5087,20 @@ struct OrbitalViewportSpeakerVisibilityUpdateKey: Equatable {
     }
 }
 
+struct OrbitalViewportGridPlaneUpdateKey: Equatable {
+    let showGridPlane: Bool
+    let gridPlaneVisibility: Double
+    let gridPlaneSpacing: Double
+    let gridPlaneRenderStyle: OrbitalViewportRenderStyle
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.showGridPlane = configuration.showGridPlane
+        self.gridPlaneVisibility = configuration.gridPlaneVisibility
+        self.gridPlaneSpacing = configuration.gridPlaneSpacing
+        self.gridPlaneRenderStyle = configuration.gridPlaneRenderStyle
+    }
+}
+
 struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
     let meterFrame: Int
     let activeFramesPerSecond: Int
@@ -4892,6 +5118,68 @@ struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
         materialSettings.speakerHeight = 1
         self.cubeVUSettings = materialSettings
         self.selectedChannel = configuration.selectedChannel
+    }
+}
+
+struct OrbitalViewportGridPlaneGeometry {
+    static let canonicalZ = -1.2
+    static let halfExtent = 5.0
+    static let defaultSpacing = 0.5
+    static let spacingRange: ClosedRange<Double> = 0.25...1.0
+    static let defaultVisibilitySlider = 70.0
+    static let defaultVisibility = visibility(fromSlider: defaultVisibilitySlider)
+    static let minorLineRadius = 0.00115
+    static let majorLineRadius = 0.00185
+    static let minorLineAlpha = 0.45
+    static let majorLineAlpha = 0.8
+    static let lineSegments = lineSegments(spacing: defaultSpacing)
+
+    struct LineSegment: Equatable {
+        let start: OVVector3
+        let end: OVVector3
+        let isMajor: Bool
+    }
+
+    static func visibility(fromSlider value: Double) -> Double {
+        OrbitalViewportMath.clamp01(value / 100)
+    }
+
+    static func alpha(for line: LineSegment, visibility: Double) -> Double {
+        (line.isMajor ? majorLineAlpha : minorLineAlpha) * OrbitalViewportMath.clamp01(visibility)
+    }
+
+    static func normalizedSpacing(_ value: Double) -> Double {
+        min(spacingRange.upperBound, max(spacingRange.lowerBound, value))
+    }
+
+    static func lineSegments(spacing rawSpacing: Double) -> [LineSegment] {
+        let spacing = normalizedSpacing(rawSpacing)
+        let steps = Int(round((halfExtent * 2) / spacing))
+        let startIndex = -steps / 2
+        let endIndex = steps / 2
+        var lines: [LineSegment] = []
+        lines.reserveCapacity((endIndex - startIndex + 1) * 2)
+
+        for index in startIndex...endIndex {
+            let value = Double(index) * spacing
+            let isMajor = abs(value) < 0.000_001
+            lines.append(
+                LineSegment(
+                    start: OVVector3(x: value, y: -halfExtent, z: canonicalZ),
+                    end: OVVector3(x: value, y: halfExtent, z: canonicalZ),
+                    isMajor: isMajor
+                )
+            )
+            lines.append(
+                LineSegment(
+                    start: OVVector3(x: -halfExtent, y: value, z: canonicalZ),
+                    end: OVVector3(x: halfExtent, y: value, z: canonicalZ),
+                    isMajor: isMajor
+                )
+            )
+        }
+
+        return lines
     }
 }
 
@@ -5047,12 +5335,14 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
     final class Coordinator {
         let scene = SCNScene()
         let rootNode = SCNNode()
+        let gridPlaneNode = SCNNode()
         let shellNode = SCNNode()
         let speakerRoot = SCNNode()
         let labelRoot = SCNNode()
         let cameraNode = SCNNode()
 
         private weak var view: OrbitalViewportSceneNSView?
+        private var gridPlaneLineNodes: [SCNNode] = []
         private var edgeNodes: [SCNNode] = []
         private var nodeMarkers: [SCNNode] = []
         private var speakerNodes: [Int: SCNNode] = [:]
@@ -5061,6 +5351,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var animationTimer: Timer?
         private var latestConfiguration: OrbitalViewportRenderConfiguration?
         private var lastCameraKey: OrbitalViewportCameraUpdateKey?
+        private var lastGridPlaneKey: OrbitalViewportGridPlaneUpdateKey?
         private var lastShellKey: OrbitalViewportShellUpdateKey?
         private var lastSpeakerGeometryKey: OrbitalViewportSpeakerGeometryUpdateKey?
         private var lastSpeakerLabelGeometryKey: OrbitalViewportSpeakerLabelGeometryUpdateKey?
@@ -5068,19 +5359,23 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastSpeakerMaterialKey: OrbitalViewportSpeakerMaterialUpdateKey?
         private var lastFogKey: OrbitalViewportFogUpdateKey?
         private var lastRenderedAnimationTimeMS: Double?
+        private var gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.defaultSpacing
         private var activeFramesPerSecond = OrbitalViewport3DSceneView.sceneFramesPerSecond
 
+        private(set) var gridPlaneBuildCount = 0
         private(set) var shellBuildCount = 0
         private(set) var speakerRebuildCount = 0
         private(set) var labelRebuildCount = 0
 
         init() {
             scene.rootNode.addChildNode(rootNode)
+            rootNode.addChildNode(gridPlaneNode)
             rootNode.addChildNode(shellNode)
             rootNode.addChildNode(speakerRoot)
             rootNode.addChildNode(labelRoot)
             configureCamera()
             configureLights()
+            buildGridPlane()
             buildShell()
             rebuildSpeakers(
                 shape: .prism,
@@ -5180,6 +5475,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private func renderScene(configuration: OrbitalViewportRenderConfiguration) {
             let snapshot = OrbitalViewportSnapshot(configuration: configuration)
             let cameraKey = OrbitalViewportCameraUpdateKey(configuration: configuration)
+            let gridPlaneKey = OrbitalViewportGridPlaneUpdateKey(configuration: configuration)
             let shellKey = OrbitalViewportShellUpdateKey(configuration: configuration)
             let visibilityKey = OrbitalViewportSpeakerVisibilityUpdateKey(configuration: configuration)
             let materialKey = OrbitalViewportSpeakerMaterialUpdateKey(configuration: configuration)
@@ -5195,6 +5491,10 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             if lastCameraKey != cameraKey {
                 updateCamera(configuration: configuration)
                 lastCameraKey = cameraKey
+            }
+            if lastGridPlaneKey != gridPlaneKey {
+                updateGridPlane(configuration: configuration)
+                lastGridPlaneKey = gridPlaneKey
             }
             if lastShellKey != shellKey {
                 updateShell(configuration: configuration)
@@ -5258,6 +5558,62 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             fill.light?.intensity = 240
             fill.position = SCNVector3(-1.5, 1.2, 2.8)
             scene.rootNode.addChildNode(fill)
+        }
+
+        private func buildGridPlane(spacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing) {
+            gridPlaneBuildCount += 1
+            gridPlaneNode.childNodes.forEach { $0.removeFromParentNode() }
+            gridPlaneLineNodes.removeAll()
+            gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.normalizedSpacing(spacing)
+            gridPlaneNode.name = "grid-plane"
+            gridPlaneNode.isHidden = true
+
+            for line in OrbitalViewportGridPlaneGeometry.lineSegments(spacing: gridPlaneSpacing) {
+                let node = cylinderNode(
+                    from: line.start,
+                    to: line.end,
+                    radius: line.isMajor
+                        ? OrbitalViewportGridPlaneGeometry.majorLineRadius
+                        : OrbitalViewportGridPlaneGeometry.minorLineRadius
+                )
+                node.name = line.isMajor ? "grid-plane-major-line" : "grid-plane-line"
+                let material = SCNMaterial()
+                material.lightingModel = .constant
+                material.isDoubleSided = true
+                node.geometry?.materials = [material]
+                gridPlaneNode.addChildNode(node)
+                gridPlaneLineNodes.append(node)
+            }
+        }
+
+        private func updateGridPlane(configuration: OrbitalViewportRenderConfiguration) {
+            gridPlaneNode.isHidden = !configuration.showGridPlane
+            guard configuration.showGridPlane else {
+                return
+            }
+
+            let lineSegments = OrbitalViewportGridPlaneGeometry.lineSegments(spacing: configuration.gridPlaneSpacing)
+            if gridPlaneLineNodes.count != lineSegments.count ||
+                abs(gridPlaneSpacing - configuration.gridPlaneSpacing) > 0.000_001 {
+                buildGridPlane(spacing: configuration.gridPlaneSpacing)
+                gridPlaneNode.isHidden = false
+            }
+
+            let theme = configuration.gridPlaneTheme
+            let structureColor = theme.structure
+            let axisColor = theme.equator
+
+            for (index, lineNode) in gridPlaneLineNodes.enumerated() {
+                let line = lineSegments[index]
+                setMaterial(
+                    lineNode.geometry?.firstMaterial,
+                    color: line.isMajor ? axisColor : structureColor,
+                    alpha: OrbitalViewportGridPlaneGeometry.alpha(
+                        for: line,
+                        visibility: configuration.gridPlaneVisibility
+                    )
+                )
+            }
         }
 
         private func updateCamera(configuration: OrbitalViewportRenderConfiguration) {
@@ -5908,8 +6264,13 @@ private struct OrbitalViewportPainter {
         configuration.geodesicTheme
     }
 
+    private var gridPlaneTheme: OrbitalViewportTheme {
+        configuration.gridPlaneTheme
+    }
+
     mutating func draw(size: CGSize) {
         drawBackground(size: size)
+        drawGridPlane()
         drawStructure()
         drawHiddenLinesBoundary()
         drawFogVeil(size: size)
@@ -5931,6 +6292,30 @@ private struct OrbitalViewportPainter {
                     startRadius: 0,
                     endRadius: max(size.width, size.height) * 0.65
                 )
+            )
+        }
+    }
+
+    mutating private func drawGridPlane() {
+        guard configuration.showGridPlane else {
+            return
+        }
+
+        for line in OrbitalViewportGridPlaneGeometry.lineSegments(spacing: configuration.gridPlaneSpacing) {
+            let start = configuration.rotate(line.start)
+            let end = configuration.rotate(line.end)
+            var path = Path()
+            path.move(to: configuration.project(start))
+            path.addLine(to: configuration.project(end))
+            let color = line.isMajor ? gridPlaneTheme.equator : gridPlaneTheme.structure
+            let alpha = OrbitalViewportGridPlaneGeometry.alpha(
+                for: line,
+                visibility: configuration.gridPlaneVisibility
+            )
+            context.stroke(
+                path,
+                with: .color(color.opacity(alpha)),
+                style: StrokeStyle(lineWidth: line.isMajor ? 1.05 : 0.72, lineCap: .round)
             )
         }
     }

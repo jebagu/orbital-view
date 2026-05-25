@@ -101,8 +101,10 @@ Current wrapper skeleton tests cover:
 Current review-surface tests cover `OrbitalViewReview` through the existing SwiftUI test target:
 
 - the confirmed SceneKit `OrbitalViewportMockup` viewer identity, left rail options, right tuning panel inventory, geodesic shell counts, and adaptive FPS constants remain intact
+- SceneKit review-app `View Detail` stays focused on Speaker Size, Fog Density, Speaker Numbers, and Hidden Lines
 - SceneKit review-app audio source uses native transport icon buttons for Play and Pause
-- SceneKit review-app right panel includes Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics section headers with the active tray order `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics`
+- SceneKit review-app right panel includes Theme, Speaker Appearance, Sphere Appearance, Ground Appearance, Meter Behavior, and Diagnostics section headers with the active tray order `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Ground Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics`
+- SceneKit review-app `Ground Appearance` exposes Ground Palette, Grid Plane, Grid Visibility, Grid Spacing, and Grid Size controls
 - SceneKit review-app right panel includes the `Saved Themes` tray, app-resource theme directory, and Save/Refresh/Load/Set Default controls
 - SceneKit review-app `Color Palette` tray uses full-width custom theme buttons, includes the Orbisonic family palette list from `orbisonic-palette-brief`, and does not use a native segmented picker
 - SceneKit review-app startup defaults are pinned to the exported settings JSON values without mutating the Core cube settings default contract
@@ -115,12 +117,15 @@ Current review-surface tests cover `OrbitalViewReview` through the existing Swif
 - SceneKit review-app `Label Font` tray exposes grouped Normie, Nerd, and Nostromo font options plus a Font Size slider; bundled fonts resolve from SwiftPM resources, removed unavailable fonts are absent from the selector and decode to System Default from older JSON, commercial install-only options fall back safely, and font/font-size changes rebuild label geometry but not shell or speaker body geometry
 - SceneKit review-app Jost speaker labels use the static regular TTF resource, render through the texture-backed label path instead of `SCNText`, and preserve readable numeric labels for channels containing 6 and 9
 - SceneKit review-app speaker `Color Palette` drives speaker colors and app skin, while `Geodesic Appearance` has an independent palette plus Geodesic Saturation that updates only the shell/geodesic material key
+- SceneKit review-app grid-plane visibility, spacing, and ground palette changes stay isolated from shell, speaker geometry, speaker material, and label update keys
 - SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state
 - SceneKit review-app `Meter Source` exposes Music, Impulse Test Ripple, Impulse Test Waves, and Impulse Test Orbiting Comets, with deterministic spatial patterns instead of random or uniform channel values; orbiting comets are exactly two broader hot trails
 - SceneKit review-app left audio source exposes All Mono, Excite Ripple, Excite Waves, and Excite Comets render types that reuse the mono RMS/peak sample as a cheap spatial-pattern envelope
 - SceneKit review-app `Bloom Style` exposes Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without reset/export controls or a four-up preview, and its dice randomizer chooses a different preset when possible
 - SceneKit review-app `Meter Response` keeps its dice randomizer scoped to meter response sliders
 - SceneKit review-app saved theme/settings payload includes speaker palette, geodesic palette, speaker type, speaker label font and font size, meter source, audio render type, Cube VU preset/settings, performance cadence values, and the full left-panel audio/camera/view-detail state
+- SceneKit review-app saved theme/settings payload round-trips top-level `groundAppearance.showGridPlane`, `gridPlaneVisibilitySlider`, `gridPlaneSpacing`, and `gridPlaneRenderStyle`, while decoding older `leftPanel.viewDetail` grid fields and defaulting missing older JSON values to `false`, `70`, default spacing, and the fallback palette
+- SceneKit review-app grid-plane geometry keeps the canonical `z = -1.2` offset, default `0.5` spacing, 10 x 10 bounds, deterministic default line count, alternate spacing line counts, and default opacity mapping
 - SceneKit review-app `Saved Themes` storage generates unique two-word filenames, displays manual filename renames, round-trips selected fonts/font size, survives default-theme filename changes by `themeID`, and falls back safely for missing or invalid defaults
 - SceneKit review-app `Sphere Geometry` and `Speaker Pattern` trays exist as future placeholders and expose only `Future work`
 - SceneKit review-app hidden diagnostics expose raw RMS, raw peak, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source

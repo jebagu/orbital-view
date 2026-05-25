@@ -5,6 +5,9 @@ PROJECT_DIR="${0:A:h}"
 APP_DIR="$PROJECT_DIR/Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail.app"
 APP_BINARY="$APP_DIR/Contents/MacOS/OrbitalViewViewer"
 APP_RESOURCES="$APP_DIR/Contents/Resources"
+APP_ICON_SOURCE="$PROJECT_DIR/dist/app-logo/AppIcon.icns"
+APP_ICON_DEST="$APP_RESOURCES/AppIcon.icns"
+APP_PLIST="$APP_DIR/Contents/Info.plist"
 
 cd "$PROJECT_DIR"
 
@@ -42,6 +45,16 @@ cp -R "$BUILD_REVIEW_BUNDLE" "$APP_RESOURCES/OrbitalViewKit_OrbitalViewReview.bu
 
 if [[ -d "$APP_RESOURCES/OrbitalViewKit_OrbitalViewSwiftUI.bundle" ]]; then
   rm -rf "$APP_RESOURCES/OrbitalViewKit_OrbitalViewSwiftUI.bundle"
+fi
+
+if [[ -f "$APP_ICON_SOURCE" ]]; then
+  cp "$APP_ICON_SOURCE" "$APP_ICON_DEST"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile AppIcon" "$APP_PLIST" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "$APP_PLIST"
+  touch "$APP_DIR"
+else
+  echo "Orbital View Kit launcher warning: app icon source is missing:"
+  echo "$APP_ICON_SOURCE"
 fi
 
 echo "Opening latest Orbital View Kit review app..."

@@ -18,7 +18,7 @@ The active review app is the existing `OrbitalViewViewer` executable in this pac
 
 Canonical 3D coordinates in this package are now Z-up: `x = right`, `y = front`, and `z = up`. Wavefield/Fey channel order remains physical channel order `1...30`; renderer and review surfaces transform canonical vectors into their own Y-up spaces only at render boundaries.
 
-The confirmed review app preserves the original left control rail sections and defaults for Camera and View Detail. `Song Audio Source` now sits at the top of the left rail with side-by-side transport icon buttons for Play and Pause plus a cheap `Render Type` selector for mono audio or audio-excited spatial patterns. Speaker Type moved to the right `Speaker Shape` tray. The right panel is organized by use into Theme, Speaker Appearance, Sphere Appearance, Meter Behavior, and Diagnostics sections with `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics` trays. Label Font now groups fonts by Normie, Nerd, and Nostromo families and includes a review-only font size slider. Local dice randomizers live inside Cube Surface, Bloom Style, and Meter Response. The app skin follows the speaker color palette, while the geodesic shell has its own independent palette and saturation controls. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
+The confirmed review app preserves the original left control rail sections and defaults for Camera and View Detail. `Song Audio Source` now sits at the top of the left rail with side-by-side transport icon buttons for Play and Pause plus a cheap `Render Type` selector for mono audio or audio-excited spatial patterns. Speaker Type moved to the right `Speaker Shape` tray. The right panel is organized by use into Theme, Speaker Appearance, Sphere Appearance, Ground Appearance, Meter Behavior, and Diagnostics sections with `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Ground Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics` trays. Label Font now groups fonts by Normie, Nerd, and Nostromo families and includes a review-only font size slider. Local dice randomizers live inside Cube Surface, Bloom Style, and Meter Response. The app skin follows the speaker color palette, while the geodesic shell has its own independent palette and saturation controls. The review-only `Ground Appearance` tray owns the optional display-only `Grid Plane` toggle, `Grid Visibility`, `Grid Spacing`, and ground palette controls for the 10 x 10 line grid below the sphere without changing speaker geometry, labels, Cube VU materials, shell style, or meter state. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
 
 The SceneKit review app can load a local audio file for visual testing. Local file playback uses a simple choose-file plus separate play/pause transport and reduces the file meter to one mono RMS/peak sample applied equally to all speakers. This is a review-app input mode only; production hosts still provide real `SpeakerMeterFrame` values keyed by physical speaker channel.
 
@@ -91,6 +91,10 @@ main tree
 - Specified Orbisonic and Splat host integration profiles without downstream source edits.
 - Added the Slice 9 visual telemetry stress fixture, stress docs, and tests for local-generator-sourced display no-backpressure behavior.
 - Completed the realtime-family compliance audit and documented the remaining risks.
+- Added the review-only optional `Grid Plane` toggle, SceneKit and Canvas fallback grid drawing, theme JSON persistence, and grid-isolated update-key tests.
+- Added review-only `Grid Visibility` tuning and expanded the ground plane to 10 x 10 canonical units.
+- Moved review-only ground plane controls into the right-panel `Ground Appearance` section and added grid spacing plus ground palette controls.
+- Replaced the review app icon with the corrected black-background planet logo using the final Daft Punk Bow gradient treatment, and archived the previous gradient option 02 icon assets in the repo.
 
 ## In Progress
 
@@ -111,6 +115,260 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-25 Black Planet App Icon
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Rebuilt the tracked app icon from the corrected full planet SVG geometry, preserving the thicker planet-ring cutout stroke overlays.
+- Kept the final Daft Punk Bow app-icon gradient treatment on the planet logo and placed it on a black square app-icon background.
+- Updated `dist/app-logo/OrbitalViewKit-AppIcon-1024.png` and `dist/app-logo/AppIcon.icns`.
+- Added `dist/app-logo/OrbitalViewKit-AppIcon-source.svg` as the tracked source for the generated icon.
+- Archived the previous gradient option 02 app icon PNG and ICNS under `dist/app-logo/archive/`.
+
+Tests added or updated:
+
+```text
+No source-level behavior changed, so no tests were added.
+```
+
+Commands run:
+
+```text
+qlmanage -t -s 1024 -o /private/tmp dist/app-logo/OrbitalViewKit-AppIcon-source.svg -> passed
+sips iconset resizing commands -> passed
+iconutil --convert icns --output dist/app-logo/AppIcon.icns /private/tmp/OrbitalViewKit-NewAppIcon.iconset -> passed
+file dist/app-logo/OrbitalViewKit-AppIcon-1024.png dist/app-logo/AppIcon.icns -> passed
+iconutil --convert iconset --output /private/tmp/OrbitalViewKit-NewAppIcon-verify.iconset dist/app-logo/AppIcon.icns -> passed
+zsh -n "Open Orbital View Kit.command" -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 117 tests
+git diff --check -> passed
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed, rebuilt and opened OrbitalViewViewer pid 73681
+/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' app/Contents/Info.plist -> AppIcon
+shasum -a 256 tracked AppIcon.icns and app-bundle AppIcon.icns -> matched
+```
+
+Documentation updated:
+
+```text
+docs/implementation-map.md
+docs/status.md
+```
+
+Protected paths touched:
+
+```text
+none
+```
+
+### Update: 2026-05-25 Ground Appearance Right Panel Controls
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Moved the review-only grid controls out of left-rail `View Detail` and into a right-panel `Ground Appearance` section/tray.
+- Added `Grid Spacing` tuning with a default `0.5` canonical-unit spacing, clamped to the review-only spacing range.
+- Added a separate ground palette choice using the existing Orbisonic palette button style, independent from speaker and geodesic-shell palettes.
+- Persisted current ground settings in top-level `groundAppearance` theme JSON while still decoding older `leftPanel.viewDetail` grid fields for compatibility.
+- Updated SceneKit and SwiftUI Canvas grid drawing to use the chosen spacing and ground palette.
+- Kept grid visibility, spacing, and palette in the grid-only update key so changes do not rebuild shell, speaker geometry, labels, Cube VU materials, or meter state.
+
+Tests added or updated:
+
+```text
+Updated review UI inventory coverage for the right-panel Ground Appearance section and tray controls.
+Updated settings JSON round-trip coverage for groundAppearance show/visibility/spacing/palette values.
+Added backward-compatibility coverage for older themes with only leftPanel.viewDetail grid fields.
+Updated grid update-key isolation coverage for spacing and ground palette changes.
+Updated deterministic grid geometry coverage for default spacing, spacing range, and alternate line counts.
+```
+
+Commands:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 117 tests
+git diff --check -> passed
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed, rebuilt and opened OrbitalViewViewer pid 63049
+Computer Use app inspection -> passed, Ground Appearance section/tray visible on the right panel; Grid Plane toggle, Grid Visibility, Grid Spacing, Ground Palette, and Grid Size controls visible; toggle-on grid rendered in the viewport
+```
+
+### Update: 2026-05-25 Grid Visibility And 10 x 10 Ground Plane
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a `Grid Visibility` slider under the left-rail `Grid Plane` toggle.
+- Persisted the slider as `leftPanel.viewDetail.gridPlaneVisibilitySlider` with a missing-field default of `70`.
+- Expanded the grid plane to canonical `x/y` bounds `-5...5` at `z = -1.2`, with `0.5` spacing and 42 deterministic line segments.
+- Routed the visibility slider into grid opacity only for both SceneKit and the SwiftUI Canvas fallback.
+- Kept grid visibility in the grid update key so slider changes do not rebuild shell, speaker geometry, labels, Cube VU materials, or meter state.
+
+QA note:
+
+```text
+The earlier slow/choppy graphics suspicion still needs shore-power QA. Re-check Grid Plane off, default visibility, and high visibility on shore power before classifying any larger-grid behavior as a renderer performance bug.
+```
+
+Tests added or updated:
+
+```text
+Updated review UI inventory coverage for Grid Visibility.
+Updated settings JSON round-trip and missing-field default coverage for gridPlaneVisibilitySlider.
+Updated grid update-key isolation coverage for visibility-only changes.
+Updated deterministic grid geometry coverage for halfExtent 5.0, spacing 0.5, line count 42, and default opacity mapping.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 116 tests
+git diff --check -> passed
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed, rebuilt and opened OrbitalViewViewer pid 57396
+Computer Use app inspection -> passed, Grid Plane default-off visible with Grid Visibility at 70%, toggle-on default visibility visible, and high visibility verified at 97%
+pgrep -fl "OrbitalViewViewer|Orbital View VU" -> passed, pid 57396
+```
+
+Documentation updated:
+
+```text
+docs/bugs.md
+docs/implementation-map.md
+docs/status.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewReview/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-24 Optional Grid Plane For Review Viewport
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Added a `Grid Plane` toggle to the left-rail `View Detail` controls, defaulting off.
+- Persisted the toggle as `leftPanel.viewDetail.showGridPlane` with a missing-field decode default of `false` for older saved themes.
+- Added SceneKit and SwiftUI Canvas fallback line-grid drawing at canonical `z = -1.2`, with half extent `1.2`, spacing `0.2`, and geodesic palette/saturation styling.
+- Kept grid updates behind a separate review-only update key so toggling or restyling the grid does not rebuild speaker geometry, labels, Cube VU materials, or meter state.
+
+QA note:
+
+```text
+Visual verification suggested the native SceneKit graphics may have looked slow or choppy after this change. This is not confirmed as a regression because the laptop may have been on low battery. Re-QA on shore power with Grid Plane off and on before classifying it as a renderer performance bug.
+```
+
+Tests added or updated:
+
+```text
+Updated review UI inventory coverage for Grid Plane under View Detail.
+Updated settings JSON round-trip coverage for showGridPlane: true.
+Added backward-compatible missing-field decode coverage for showGridPlane default false.
+Added grid update-key isolation coverage.
+Added deterministic grid geometry coverage for offset, spacing, and line count.
+```
+
+Commands run:
+
+```text
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 116 tests
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed, rebuilt and opened OrbitalViewViewer pid 15411
+Computer Use app inspection -> passed, Grid Plane visible under View Detail, confirmed default-off after clean relaunch and toggle-on visual state
+pgrep -fl "OrbitalViewViewer|Orbital View VU" -> passed, pid 15411
+git diff --check -> passed
+```
+
+Documentation updated:
+
+```text
+docs/bugs.md
+docs/implementation-map.md
+docs/status.md
+docs/test-strategy.md
+```
+
+Protected paths touched:
+
+```text
+Sources/OrbitalViewReview/
+Tests/OrbitalViewSwiftUITests/
+```
+
+### Update: 2026-05-24 App Logo From Gradient Option 02
+
+Status:
+
+```text
+complete
+```
+
+Changed:
+
+- Promoted gradient option 02 from the Daft Punk Bow logo exploration to the review app logo.
+- Added tracked app-logo artifacts under `dist/app-logo/`: `OrbitalViewKit-AppIcon-1024.png` and `AppIcon.icns`.
+- Copied `AppIcon.icns` into the local review `.app` bundle's `Contents/Resources/` directory.
+- Set the ignored local app bundle's `CFBundleIconFile` to `AppIcon`.
+- Updated `Open Orbital View Kit.command` so future launcher refreshes keep copying `dist/app-logo/AppIcon.icns` into the app bundle and preserve the icon plist setting.
+
+Tests added or updated:
+
+```text
+No source-level behavior changed, so no tests were added.
+```
+
+Commands run:
+
+```text
+sips/icon generation and verification commands -> generated 1024 PNG and iconset sizes
+iconutil --convert iconset --output /private/tmp/OrbitalViewKit-AppIcon-verify.iconset dist/app-logo/AppIcon.icns -> passed
+file dist/app-logo/AppIcon.icns -> passed
+/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' app/Contents/Info.plist -> AppIcon
+zsh -n "Open Orbital View Kit.command" -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -> passed
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test -> passed, 113 tests
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command -> passed outside sandbox, rebuilt and opened OrbitalViewViewer pid 11888
+pgrep -fl OrbitalViewViewer -> passed, pid 11888
+```
+
+Documentation updated:
+
+```text
+docs/implementation-map.md
+docs/status.md
+```
+
+Protected paths touched:
+
+```text
+none
+```
 
 ### Update: 2026-05-24 Canonical Z-Up Coordinate System
 

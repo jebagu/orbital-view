@@ -27,5 +27,5 @@ none
 ## Deferred Suspicions
 
 ```text
-none
+2026-05-24: After the optional Grid Plane review-viewport change, the native SceneKit graphics may have looked slow or choppy during visual verification. This is not yet confirmed as a regression because the laptop may have been on low battery. Re-QA the relaunched review app on shore power with Grid Plane off, default visibility, high visibility, spacing extremes, and alternate ground palettes before treating it as a renderer performance bug, especially now that the ground plane is 10 x 10 canonical units.
 ```
