@@ -427,10 +427,24 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertEqual(thirty.inspectorRefreshFramesPerSecond, 8)
         XCTAssertFalse(thirty.drawsOnDemand)
 
+        let highRefresh = try OrbitalViewPerformanceSettings(
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30,
+            inspectorRefreshFramesPerSecond: 10
+        )
+        XCTAssertEqual(highRefresh, .highRefreshDisplayTarget)
+
         XCTAssertThrowsError(try OrbitalViewPerformanceSettings(activeViewportFramesPerSecond: 45)) { error in
             XCTAssertEqual(
                 error as? OrbitalViewValidationError,
-                .invalidRange(field: "performance.activeViewportFramesPerSecond", value: 45, validRange: "30 or 60")
+                .invalidRange(field: "performance.activeViewportFramesPerSecond", value: 45, validRange: "30, 60, or 120")
+            )
+        }
+
+        XCTAssertThrowsError(try OrbitalViewPerformanceSettings(activeViewportFramesPerSecond: 144)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "performance.activeViewportFramesPerSecond", value: 144, validRange: "30, 60, or 120")
             )
         }
 

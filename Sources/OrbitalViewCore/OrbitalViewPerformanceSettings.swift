@@ -8,6 +8,13 @@ public struct OrbitalViewPerformanceSettings: Equatable, Codable, Sendable {
         drawsOnDemand: true
     )
 
+    public static let highRefreshDisplayTarget = OrbitalViewPerformanceSettings(
+        uncheckedActiveViewportFramesPerSecond: 120,
+        meterOnlyViewportFramesPerSecond: 30,
+        inspectorRefreshFramesPerSecond: 10,
+        drawsOnDemand: true
+    )
+
     public let activeViewportFramesPerSecond: Int
     public let meterOnlyViewportFramesPerSecond: Int
     public let inspectorRefreshFramesPerSecond: Int
@@ -39,11 +46,11 @@ public struct OrbitalViewPerformanceSettings: Equatable, Codable, Sendable {
     }
 
     public func validate() throws {
-        guard [30, 60].contains(activeViewportFramesPerSecond) else {
+        guard [30, 60, 120].contains(activeViewportFramesPerSecond) else {
             throw OrbitalViewValidationError.invalidRange(
                 field: "performance.activeViewportFramesPerSecond",
                 value: Double(activeViewportFramesPerSecond),
-                validRange: "30 or 60"
+                validRange: "30, 60, or 120"
             )
         }
         guard (1...30).contains(meterOnlyViewportFramesPerSecond) else {

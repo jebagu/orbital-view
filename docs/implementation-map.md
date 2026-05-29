@@ -300,7 +300,7 @@ Tests/OrbitalViewViewerTests/OrbitalViewViewerDemoContentTests.swift
 docs/visual-telemetry-stress-gates.md
 ```
 
-The fixture uses 30 physical speaker channels, 128 source objects, 16 trail points per object, 60 FPS active motion, 120 FPS incoming meter cadence, open diagnostics, and `.localLivestreamTestGenerator` source metadata for the `32-object-should-pass-stress` profile. Its diagnostics model stale display drops through overload actions only. It does not establish host audio callback p99, deadline, route, device I/O, MIDI/OSC, or meter-extraction compliance.
+The fixture uses 30 physical speaker channels, 128 source objects, 16 trail points per object, 120 FPS active motion, 120 FPS incoming meter cadence, 30 FPS displayed meter cadence, open diagnostics, and `.localLivestreamTestGenerator` source metadata for the `32-object-should-pass-stress` profile. Its diagnostics model stale display drops through overload actions only. It does not establish host audio callback p99, deadline, route, device I/O, MIDI/OSC, or meter-extraction compliance.
 
 ### Renderer Test Harness Plan
 

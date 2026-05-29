@@ -469,6 +469,53 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertEqual(firstAllocationCount, secondAllocationCount)
     }
 
+    func testMetalStressFixtureRetainsObjectBuffersAcrossMeterOnlyUpdates() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("Metal device unavailable; skipping retained object buffer check.")
+        }
+
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThirtySpeakerScene())
+        renderer.updateObjectVisualSettings(
+            try ObjectVisualSettings(trailsEnabled: true, maxTrailPointsPerObject: 16, glowTrailsEnabled: true)
+        )
+        renderer.updateObjects(
+            try OrbitalViewObjectFrameSet(
+                timestamp: 1,
+                activeObjects: makeObjectSet(count: 128, trailCount: 16),
+                maxTrailPointsPerObject: 16
+            )
+        )
+        let baselineInputs = OrbitalViewMetalDrawPipeline.makeObjectDrawInputs(from: renderer.renderState)
+
+        _ = try renderer.renderOffscreen(device: device, width: 96, height: 96)
+        let baselineAllocationCount = try renderer.debugBufferAllocationCount(device: device)
+        let levelsByObjectID = try Dictionary(
+            uniqueKeysWithValues: (1...128).map { objectID in
+                (
+                    objectID,
+                    try ObjectMeterLevel(
+                        rms: Float(objectID % 17) / 16,
+                        peak: Float((objectID + 4) % 17) / 16,
+                        clip: objectID.isMultiple(of: 31)
+                    )
+                )
+            }
+        )
+        renderer.updateObjectMeters(
+            try ObjectMeterFrame(
+                timestamp: 2,
+                levelsByObjectID: levelsByObjectID
+            )
+        )
+        let meteredInputs = OrbitalViewMetalDrawPipeline.makeObjectDrawInputs(from: renderer.renderState)
+        _ = try renderer.renderOffscreen(device: device, width: 96, height: 96)
+
+        XCTAssertEqual(try renderer.debugBufferAllocationCount(device: device), baselineAllocationCount)
+        XCTAssertEqual(baselineInputs.staticObjects, meteredInputs.staticObjects)
+        XCTAssertNotEqual(baselineInputs.colors, meteredInputs.colors)
+    }
+
     func testMeterOnlyUpdatesDoNotChangeStaticSpeakerDrawInputs() throws {
         let renderer = OrbitalViewMetalRenderer()
         renderer.loadScene(try makeThreeSpeakerScene())

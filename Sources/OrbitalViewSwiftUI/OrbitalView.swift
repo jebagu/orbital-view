@@ -479,6 +479,7 @@ struct OrbitalViewMeterSettingsTray: View {
             Picker("Active Motion FPS", selection: activeViewportFPSBinding) {
                 Text("30 FPS").tag(30)
                 Text("60 FPS").tag(60)
+                Text("120 FPS").tag(120)
             }
             .pickerStyle(.segmented)
 

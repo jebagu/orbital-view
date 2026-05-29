@@ -116,7 +116,7 @@ Forbidden overload behavior:
 
 Stress scenes are display-only no-backpressure scenes. Valid stress sources include deterministic Fey 30 speaker fixtures, synthetic impulse waves/comets, local file review playback reduced to visual RMS/peak samples, object-frame churn, and the planned host-owned local livestream test generator.
 
-The canonical Slice 9 visual telemetry stress scene is `OrbitalViewVisualTelemetryStressScene`: 30 physical speakers, 128 source objects, 16 capped trail points per object, 60 FPS active motion, 120 FPS incoming meter cadence, open diagnostics, `.localLivestreamTestGenerator` provenance, and `32-object-should-pass-stress` profile metadata. Dropped display frames are diagnostics-only overload events and must not be represented as audio failure.
+The canonical Slice 9 visual telemetry stress scene is `OrbitalViewVisualTelemetryStressScene`: 30 physical speakers, 128 source objects, 16 capped trail points per object, 120 FPS active motion, 120 FPS incoming meter cadence, 30 FPS displayed meter cadence, open diagnostics, `.localLivestreamTestGenerator` provenance, and `32-object-should-pass-stress` profile metadata. Dropped display frames are diagnostics-only overload events and must not be represented as audio failure.
 
 Wavefield realtime connection:
 

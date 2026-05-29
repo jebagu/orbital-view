@@ -126,7 +126,7 @@ The local livestream test generator is a normal Wavefield host source. Generator
 
 The canonical display stress gate is specified in `docs/visual-telemetry-stress-gates.md`.
 
-`OrbitalViewVisualTelemetryStressScene` defines a display-only fixture with 30 physical speakers, 128 source objects, capped object trails, 60 FPS active motion, 120 FPS incoming meter cadence, open diagnostics, local livestream generator provenance, and stale display frame diagnostics. This fixture proves Control / UI / Telemetry Plane no-backpressure behavior only.
+`OrbitalViewVisualTelemetryStressScene` defines a display-only fixture with 30 physical speakers, 128 source objects, capped object trails, 120 FPS active motion, 120 FPS incoming meter cadence, 30 FPS displayed meter cadence, open diagnostics, local livestream generator provenance, and stale display frame diagnostics. This fixture proves Control / UI / Telemetry Plane no-backpressure behavior only.
 
 Host callback p99, callback deadline, route repair timing, device I/O timing, MIDI/OSC timing, and meter extraction timing remain host-owned performance gates. Orbital View Kit cannot claim host realtime callback compliance because it owns no callback entry point.
 
@@ -244,10 +244,10 @@ Renderer constraints:
 - Use instancing for repeated speakers, nodes, and struts when practical.
 - Keep meter updates separate from structural scene updates.
 - Keep draw-on-demand enabled by default for idle/static viewports.
-- Use 30/60 FPS active-motion settings as viewport cadence hints without forcing meter-only or inspector UI refresh to match active-motion FPS.
+- Use 30/60/120 FPS active-motion settings as viewport cadence hints without forcing meter-only or inspector UI refresh to match active-motion FPS.
 - Keep object trails and glow trails capped by object count and per-object trail point settings.
 - Use the visual telemetry stress gate for viewport no-backpressure evidence, not for host callback p99 or deadline claims.
-- In the SceneKit review executable, preserve the adaptive loop: 60 FPS only for active motion, 10 FPS for idle fake meter-only updates, 10 FPS for the inspector, and no root SwiftUI animation timeline.
+- In the SceneKit review executable, preserve the adaptive loop: 120 FPS for active motion, 30 FPS for displayed meter updates, 10 FPS for the inspector, and no root SwiftUI animation timeline.
 
 ## Reliability Model
 

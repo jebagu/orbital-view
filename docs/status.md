@@ -32,7 +32,7 @@ Orbital View UI and review-surface work now has a local design-language contract
 
 Orbisonic and Splat host integration profiles are now specified in `docs/integrations/orbisonic-splat-host-profiles.md`. Orbisonic receives a prepared viewport for explicit bus/object/speaker meter tap points while retaining playback, routing, Core Audio device I/O, render/control, metering, operator state, and performance ownership. Splat receives a preparation/control viewport for virtual speakers, source objects, renderer-kernel overlays, and neutral geometry review while retaining project/session state, edit/export, kernel analysis, file formats, persistence, and host handoff ownership.
 
-The Slice 9 visual telemetry stress gate is now specified in `docs/visual-telemetry-stress-gates.md` and implemented as `OrbitalViewVisualTelemetryStressScene`. The fixture models 30 physical speakers, 128 source objects, capped object trails, 60 FPS active motion, 120 FPS incoming meter cadence, open diagnostics, local livestream generator provenance, and stale display-frame drops as overload diagnostics. This is viewport no-backpressure evidence only; host callback p99, callback deadline, route repair, device I/O, MIDI/OSC, and meter-extraction gates remain host-owned.
+The Slice 9 visual telemetry stress gate is now specified in `docs/visual-telemetry-stress-gates.md` and implemented as `OrbitalViewVisualTelemetryStressScene`. The fixture models 30 physical speakers, 128 source objects, capped object trails, 120 FPS active motion, 120 FPS incoming meter cadence, 30 FPS displayed meter cadence, open diagnostics, local livestream generator provenance, and stale display-frame drops as overload diagnostics. This is viewport no-backpressure evidence only; host callback p99, callback deadline, route repair, device I/O, MIDI/OSC, and meter-extraction gates remain host-owned.
 
 The final realtime-family adoption audit is now recorded in `docs/realtime-family-compliance-audit.md`. The package can be described as standards-aligned as a visual telemetry/preparation package: it inherits the Realtime Audio Family Standards Package, owns no callback entry points, keeps review-only code separated, uses OpenSpec for future audio-facing or architecture-facing changes, treats the Wavefield local livestream generator as a host source, and uses the Orbisonic design language as UI guidance only. Remaining risks are explicit in the audit.
 
@@ -41,7 +41,7 @@ The project launcher `Open Orbital View Kit.command` rebuilds the latest `Orbita
 ## Current Work Package
 
 ```text
-work-packages/orbital-view-kit/realtime-family-adoption-work-package.md
+orbital-view-graphics-performance-codex-work-package/orbital-view-graphics-performance-codex-work-package.md
 ```
 
 ## Current Tree
@@ -117,6 +117,20 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-29 Graphics Performance 120/30 Cadence Package
+
+- Added review-only SceneKit instrumentation counters for render attempts, render-scene passes, camera/grid/rib/speaker/source/fog work, display requests, frame-rate samples, Cube VU cache activity, texture assignment, and material/uniform writes. These counters are internal/test-visible only and do not write to the diagnostics log per frame.
+- Added a deterministic review cadence helper and scheduler helper for active viewport, displayed meter, and inspector frame buckets. Active review motion now supports a 120 FPS target while meter material/display cadence is explicit at 30 FPS.
+- Split SceneKit source update keys into pose/visibility and material cadence keys, changed speaker material keys to bucket by displayed meter cadence instead of active cadence, and prevented hidden ribbed-sphere camera motion from looping through segment material updates.
+- Reduced Cube VU hot-path writes by counting cache hit/miss/generation/eviction and skipping repeated SceneKit texture assignments, uniform writes, emission intensity writes, and transparency writes when the applied value is unchanged. Camera-only active frames inside the same meter bucket no longer request Cube VU textures.
+- Expanded `OrbitalViewPerformanceSettings` to accept explicit 120 FPS active viewport settings while preserving `.default` at 60/10/10. Added `.highRefreshDisplayTarget` as the 120/30/10 draw-on-demand contract.
+- Updated the SwiftUI performance picker and `OrbitalViewMetalView` tests so production Metal view configuration accepts 120 FPS without forcing continuous rendering when draw-on-demand is true.
+- Updated `OrbitalViewVisualTelemetryStressScene` to active=120, incoming=120, displayed meter=30, with descriptor detail `incoming=120fps; display=30fps`; the fixture still preserves 30 physical speakers, 128 objects, capped trails, and display-drop diagnostics.
+- Added or updated tests for SceneKit instrumentation, 120/30 cadence buckets, speaker/source key separation, Cube VU cache/write diagnostics, camera-only active frames, meter-bucket material updates, hidden ribbed-sphere camera motion, Metal 120 FPS view configuration, retained speaker buffers, retained object buffers with 128 objects, and stress fixture target assertions.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 164 tests and 0 failures, and `git diff --check` passed.
+- Manual smoke: the parent-folder launcher initially opened the sibling `orbital-view-with-objects` app path, so `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` was repointed to this checkout's project launcher. The ignored `.app` wrapper was copied into this checkout from the source checkout, and `./Open Orbital View Kit.command` now ad-hoc signs the refreshed app after copying the executable/resources. The fixed parent launcher rebuilt and opened the current Turbo app path, and `pgrep -fl /Contents/MacOS/OrbitalViewViewer` confirmed PID `81255` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`.
+- Manual 120 Hz presentation has not been claimed; current evidence is source-level cadence, scheduler, retained-resource, offscreen render verification, and native app launch from this checkout.
 
 ### Update: 2026-05-29 ChatGPT Pro Graphics Performance Context Bundle
 

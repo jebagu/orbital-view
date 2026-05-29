@@ -122,7 +122,7 @@ flowchart LR
   Stress --> Objects["128 source objects with capped trails"]
   Stress --> Meters["120 FPS incoming meter cadence"]
   Meters --> Latest["Latest complete display snapshot"]
-  Latest --> Viewport["60 FPS active viewport"]
+  Latest --> Viewport["120 FPS active viewport, 30 FPS displayed meters"]
   Meters --> Drops["Stale display frame drops"]
   Drops --> Diagnostics["Overload diagnostics only"]
 ```

@@ -5,7 +5,7 @@ public enum OrbitalViewVisualTelemetryStressScene {
     public static let speakerCount = 30
     public static let objectCount = OrbitalViewObjectFrameSet.maxObjectCount
     public static let maxTrailPointsPerObject = 16
-    public static let activeMotionFramesPerSecond = 60
+    public static let activeMotionFramesPerSecond = 120
     public static let incomingMeterFramesPerSecond = 120
     public static let diagnosticsAreOpen = true
     public static let localGeneratorProfileName = "32-object-should-pass-stress"
@@ -14,7 +14,7 @@ public enum OrbitalViewVisualTelemetryStressScene {
         try OrbitalViewTelemetrySourceDescriptor(
             kind: .localLivestreamTestGenerator,
             label: "Wavefield local generator stress",
-            detail: "profile=\(localGeneratorProfileName); incoming=120fps; display=60fps"
+            detail: "profile=\(localGeneratorProfileName); incoming=120fps; display=30fps"
         )
     }
 

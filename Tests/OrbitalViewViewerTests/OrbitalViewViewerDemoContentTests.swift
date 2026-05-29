@@ -88,11 +88,12 @@ final class OrbitalViewViewerDemoContentTests: XCTestCase {
         )
         XCTAssertEqual(objectMeters.source, source)
 
-        XCTAssertEqual(performance.activeViewportFramesPerSecond, 60)
-        XCTAssertEqual(
-            OrbitalViewVisualTelemetryStressScene.incomingMeterFramesPerSecond,
-            performance.activeViewportFramesPerSecond * 2
-        )
+        XCTAssertEqual(performance.activeViewportFramesPerSecond, 120)
+        XCTAssertEqual(performance.meterOnlyViewportFramesPerSecond, 30)
+        XCTAssertEqual(performance.inspectorRefreshFramesPerSecond, 10)
+        XCTAssertEqual(OrbitalViewVisualTelemetryStressScene.incomingMeterFramesPerSecond, 120)
+        XCTAssertEqual(source.detail?.contains("incoming=120fps"), true)
+        XCTAssertEqual(source.detail?.contains("display=30fps"), true)
         XCTAssertTrue(OrbitalViewVisualTelemetryStressScene.diagnosticsAreOpen)
     }
 

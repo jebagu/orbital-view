@@ -128,7 +128,7 @@ docs/visual-telemetry-stress-gates.md
 Sources/OrbitalViewViewerSupport/OrbitalViewVisualTelemetryStressScene.swift
 ```
 
-It proves viewport no-backpressure behavior with 30 physical speakers, 128 source objects, capped trails, 60 FPS active motion, 120 FPS incoming meter cadence, local livestream generator provenance, and overload diagnostics for stale display drops.
+It proves viewport no-backpressure behavior with 30 physical speakers, 128 source objects, capped trails, 120 FPS active motion, 120 FPS incoming meter cadence, 30 FPS displayed meter cadence, local livestream generator provenance, and overload diagnostics for stale display drops.
 
 It does not prove host callback p99, callback deadline, allocation-free callback behavior, route repair timing, device I/O timing, MIDI/OSC timing, or host meter-extraction timing.
 

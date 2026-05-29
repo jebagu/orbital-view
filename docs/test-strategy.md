@@ -207,7 +207,7 @@ Current stress tests cover:
 - object trails capped at 16 points per object;
 - local livestream generator provenance for speaker and object meter frames;
 - `32-object-should-pass-stress` source metadata;
-- 120 FPS incoming meter cadence versus 60 FPS active viewport cadence;
+- 120 FPS incoming meter cadence, 120 FPS active viewport cadence, and 30 FPS displayed meter cadence;
 - diagnostics-open stress profile intent;
 - dropped display frames represented by overload actions only, without fabricated input/audio failure fields.
 

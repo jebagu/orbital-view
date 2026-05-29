@@ -57,6 +57,8 @@ else
   echo "$APP_ICON_SOURCE"
 fi
 
+codesign --force --deep --sign - "$APP_DIR"
+
 echo "Opening latest Orbital View Kit review app..."
 echo "$APP_DIR"
 

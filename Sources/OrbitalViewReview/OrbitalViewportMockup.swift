@@ -26,8 +26,8 @@ public struct OrbitalViewportMockup: View {
     public static let controlSkinSource = "orbisonic-design-language"
     static let usesRootAnimationTimeline = false
     static let tuningTrayHitTargetPattern = "full-width-header-button"
-    static let viewportAnimationFramesPerSecond = OrbitalViewportFrameRate.sixty.framesPerSecond
-    static let meterOnlyViewportFramesPerSecond = 10
+    static let viewportAnimationFramesPerSecond = OrbitalViewportFrameRate.oneTwenty.framesPerSecond
+    static let meterOnlyViewportFramesPerSecond = 30
     static let inspectorRefreshFramesPerSecond = 10
     public static let speakerCount = OrbitalViewportSpeaker.referenceSpeakers.count
     static let leftRailTitleText = "Orbital View"
@@ -251,8 +251,8 @@ public struct OrbitalViewportMockup: View {
     static let meterSourceControlLocation = "inside-right-panel-input-tray"
     static let motionFPSControlLocation = "right-performance-tray"
     static let fpsMeterLocation = "viewport-bottom-right"
-    static let fpsMeterTargetFramesPerSecond = 60
-    static let fpsMeterUnderTargetFramesPerSecond = 30
+    static let fpsMeterTargetFramesPerSecond = OrbitalViewportFrameRate.oneTwenty.framesPerSecond
+    static let fpsMeterUnderTargetFramesPerSecond = OrbitalViewportFrameRate.oneTwenty.framesPerSecond / 2
     static let fpsMeterLogSamplesPerSecond = 5
     static let removedRightPanelCards = [
         "Scene",
@@ -270,7 +270,7 @@ public struct OrbitalViewportMockup: View {
     static let defaultRibbedSphereVerticalRibs = 16
     static let defaultRibbedSphereHorizontalRings = 8
     static let defaultSpeakerShape: OrbitalViewportSpeakerShape = .cubeVU
-    static let defaultViewportFrameRate: OrbitalViewportFrameRate = .sixty
+    static let defaultViewportFrameRate: OrbitalViewportFrameRate = .oneTwenty
     static let defaultSourceMode: OrbitalViewportSourceMode = .telemetry
     static let defaultTelemetryAdvertisers: [OrbitalViewportTelemetryAdvertiser] = []
     static let defaultCubeVUPreset: OrbitalViewportCubeVUPreset = .hotCoreBloom
@@ -464,6 +464,8 @@ public struct OrbitalViewportMockup: View {
             meterSource: activeMeterSource,
             cubeVUSettings: cubeVUSettings,
             activeViewportFramesPerSecond: viewportFrameRate.framesPerSecond,
+            meterOnlyViewportFramesPerSecond: Self.meterOnlyViewportFramesPerSecond,
+            inspectorRefreshFramesPerSecond: Self.inspectorRefreshFramesPerSecond,
             speakerLabelFont: speakerLabelFont,
             speakerLabelSizeScale: speakerLabelSizeScale,
             showSpeakerNumbers: showSpeakerNumbers,
@@ -2903,10 +2905,21 @@ enum OrbitalViewportFrameRateStatus: String, Equatable {
     case underTarget = "under target"
 
     static func status(for framesPerSecond: Double) -> OrbitalViewportFrameRateStatus {
-        if framesPerSecond < Double(OrbitalViewportMockup.fpsMeterUnderTargetFramesPerSecond) {
+        status(
+            for: framesPerSecond,
+            targetFramesPerSecond: OrbitalViewportMockup.fpsMeterTargetFramesPerSecond
+        )
+    }
+
+    static func status(
+        for framesPerSecond: Double,
+        targetFramesPerSecond: Int
+    ) -> OrbitalViewportFrameRateStatus {
+        let target = Double(max(1, targetFramesPerSecond))
+        if framesPerSecond < target * 0.5 {
             return .underTarget
         }
-        if framesPerSecond < Double(OrbitalViewportMockup.fpsMeterTargetFramesPerSecond) {
+        if framesPerSecond < target * 0.9 {
             return .belowTarget
         }
         return .target
@@ -2956,9 +2969,14 @@ struct OrbitalViewportFrameRateMonitor {
     private static let sampleWindowMS = 1_000.0
     private static let emitIntervalMS = 1_000.0 / Double(OrbitalViewportMockup.fpsMeterLogSamplesPerSecond)
 
+    private let targetFramesPerSecond: Int
     private var frameTimesMS: [Double] = []
     private var lastEmitTimeMS: Double?
     private var lastStatus: OrbitalViewportFrameRateStatus?
+
+    init(targetFramesPerSecond: Int = OrbitalViewportMockup.fpsMeterTargetFramesPerSecond) {
+        self.targetFramesPerSecond = max(1, targetFramesPerSecond)
+    }
 
     mutating func recordFrame(at timeMS: Double) -> OrbitalViewportFrameRateSample? {
         frameTimesMS.append(timeMS)
@@ -2973,7 +2991,10 @@ struct OrbitalViewportFrameRateMonitor {
         let elapsedMS = max(1, timeMS - firstFrameTimeMS)
         let rawFramesPerSecond = Double(frameTimesMS.count - 1) * 1_000 / elapsedMS
         let framesPerSecond = (rawFramesPerSecond * 10).rounded() / 10
-        let status = OrbitalViewportFrameRateStatus.status(for: framesPerSecond)
+        let status = OrbitalViewportFrameRateStatus.status(
+            for: framesPerSecond,
+            targetFramesPerSecond: targetFramesPerSecond
+        )
         let statusChanged = lastStatus.map { $0 != status } ?? true
         let outsideThrottleWindow = lastEmitTimeMS.map { timeMS - $0 >= Self.emitIntervalMS - 0.000_001 } ?? true
 
@@ -2986,7 +3007,7 @@ struct OrbitalViewportFrameRateMonitor {
         return OrbitalViewportFrameRateSample(
             timestampMS: timeMS,
             framesPerSecond: framesPerSecond,
-            targetFramesPerSecond: OrbitalViewportMockup.fpsMeterTargetFramesPerSecond,
+            targetFramesPerSecond: targetFramesPerSecond,
             status: status,
             shouldLog: true
         )
@@ -2997,6 +3018,34 @@ struct OrbitalViewportFrameRateMonitor {
         lastEmitTimeMS = nil
         lastStatus = nil
     }
+}
+
+struct OrbitalViewportRenderInstrumentationSnapshot: Equatable {
+    var renderAnimationFrameAttemptCount = 0
+    var renderAnimationFrameDrawCount = 0
+    var renderAnimationFrameSkippedForCadenceCount = 0
+    var renderSceneCount = 0
+    var cameraUpdateCount = 0
+    var gridPlaneUpdateCount = 0
+    var ribbedSphereTopologyBuildCount = 0
+    var ribbedSphereMaterialUpdateCount = 0
+    var speakerVisibilityUpdateCount = 0
+    var speakerMaterialUpdateCount = 0
+    var speakerMaterialSpeakerVisitCount = 0
+    var speakerLabelMaterialUpdateCount = 0
+    var sourcePoseOrVisibilityUpdateCount = 0
+    var sourceMaterialUpdateCount = 0
+    var fogUpdateCount = 0
+    var cubeVUMaterialUpdateCount = 0
+    var cubeVUFaceTextureCacheHitCount = 0
+    var cubeVUFaceTextureCacheMissCount = 0
+    var cubeVUFaceTextureGenerationCount = 0
+    var cubeVUFaceTextureEvictionCount = 0
+    var cubeVUUniformWriteCount = 0
+    var cubeVUTextureAssignmentCount = 0
+    var cubeOutlineMaterialUpdateCount = 0
+    var needsDisplayCount = 0
+    var frameRateSampleCount = 0
 }
 
 struct OrbitalViewportAudioDiagnosticEvent: Equatable {
@@ -6075,6 +6124,17 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
 
     private static var faceTextureCache: [FaceTextureKey: NSImage] = [:]
     private static var faceTextureOrder: [FaceTextureKey] = []
+    private static var diagnostics = DiagnosticsSnapshot()
+
+    struct DiagnosticsSnapshot: Equatable {
+        var materialUpdateCount = 0
+        var faceTextureCacheHitCount = 0
+        var faceTextureCacheMissCount = 0
+        var faceTextureGenerationCount = 0
+        var faceTextureEvictionCount = 0
+        var uniformWriteCount = 0
+        var textureAssignmentCount = 0
+    }
 
     static let surfaceShader = """
     #pragma arguments
@@ -6159,6 +6219,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         guard let material else {
             return
         }
+        diagnostics.materialUpdateCount += 1
         let vuNSColor = resolvedColor(vuColor)
         let hotNSColor = resolvedColor(hotColor)
         let texture = faceTexture(
@@ -6168,31 +6229,69 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
             vuColor: vuNSColor,
             hotColor: hotNSColor
         )
-        material.diffuse.contents = texture
-        material.emission.contents = texture
-        material.emission.intensity = CGFloat(
-            OrbitalViewportMath.clamp01(
-                0.24 +
-                Double(scalars.displayVuScalar) * 0.46 +
-                Double(scalars.hotScalar) * 0.24 +
-                (clip ? 0.36 : 0)
-            )
+        assignTexture(texture, to: material.diffuse)
+        assignTexture(texture, to: material.emission)
+        setCGFloat(
+            CGFloat(
+                OrbitalViewportMath.clamp01(
+                    0.24 +
+                    Double(scalars.displayVuScalar) * 0.46 +
+                    Double(scalars.hotScalar) * 0.24 +
+                    (clip ? 0.36 : 0)
+                )
+            ),
+            to: material.emission,
+            keyPath: \.intensity
         )
-        material.transparency = alpha
-        material.setValue(NSNumber(value: scalars.displayVuScalar), forKey: "displayVuScalar")
-        material.setValue(NSNumber(value: scalars.hotScalar), forKey: "hotScalar")
-        material.setValue(NSNumber(value: clip ? 1 : 0), forKey: "clipState")
-        material.setValue(NSNumber(value: settings.bloomMin), forKey: "bloomMin")
-        material.setValue(NSNumber(value: settings.bloomMax), forKey: "bloomMax")
-        material.setValue(NSNumber(value: settings.bloomEdge), forKey: "bloomEdge")
-        material.setValue(NSNumber(value: settings.rimHaloEdge), forKey: "rimHaloEdge")
-        material.setValue(NSNumber(value: settings.responseCurve), forKey: "responseCurve")
-        material.setValue(NSNumber(value: settings.idleTint), forKey: "idleTint")
-        material.setValue(NSNumber(value: settings.checkerContrast), forKey: "checkerContrast")
-        material.setValue(NSNumber(value: settings.hotFillStrength), forKey: "hotFillStrength")
-        material.setValue(NSNumber(value: settings.hotThreshold), forKey: "hotThreshold")
-        material.setValue(NSNumber(value: settings.facePixels), forKey: "facePixels")
-        material.setValue(NSNumber(value: alpha), forKey: "alphaValue")
+        setCGFloat(CGFloat(alpha), to: material, keyPath: \.transparency)
+        setNumericValue(scalars.displayVuScalar, forKey: "displayVuScalar", on: material)
+        setNumericValue(scalars.hotScalar, forKey: "hotScalar", on: material)
+        setNumericValue(clip ? 1.0 : 0.0, forKey: "clipState", on: material)
+        setNumericValue(settings.bloomMin, forKey: "bloomMin", on: material)
+        setNumericValue(settings.bloomMax, forKey: "bloomMax", on: material)
+        setNumericValue(settings.bloomEdge, forKey: "bloomEdge", on: material)
+        setNumericValue(settings.rimHaloEdge, forKey: "rimHaloEdge", on: material)
+        setNumericValue(settings.responseCurve, forKey: "responseCurve", on: material)
+        setNumericValue(settings.idleTint, forKey: "idleTint", on: material)
+        setNumericValue(settings.checkerContrast, forKey: "checkerContrast", on: material)
+        setNumericValue(settings.hotFillStrength, forKey: "hotFillStrength", on: material)
+        setNumericValue(settings.hotThreshold, forKey: "hotThreshold", on: material)
+        setNumericValue(Double(settings.facePixels), forKey: "facePixels", on: material)
+        setNumericValue(alpha, forKey: "alphaValue", on: material)
+    }
+
+    private static func assignTexture(_ texture: NSImage, to property: SCNMaterialProperty) {
+        if let current = property.contents as? NSImage,
+           current === texture {
+            return
+        }
+        property.contents = texture
+        diagnostics.textureAssignmentCount += 1
+    }
+
+    private static func setNumericValue(_ value: Float, forKey key: String, on material: SCNMaterial) {
+        setNumericValue(Double(value), forKey: key, on: material)
+    }
+
+    private static func setNumericValue(_ value: Double, forKey key: String, on material: SCNMaterial) {
+        if let current = material.value(forKey: key) as? NSNumber,
+           abs(current.doubleValue - value) < 0.000_001 {
+            return
+        }
+        material.setValue(NSNumber(value: value), forKey: key)
+        diagnostics.uniformWriteCount += 1
+    }
+
+    private static func setCGFloat<Root: AnyObject>(
+        _ value: CGFloat,
+        to object: Root,
+        keyPath: ReferenceWritableKeyPath<Root, CGFloat>
+    ) {
+        if abs(object[keyPath: keyPath] - value) < 0.000_001 {
+            return
+        }
+        object[keyPath: keyPath] = value
+        diagnostics.uniformWriteCount += 1
     }
 
     static func rampColor(heat: Double) -> Color {
@@ -6252,8 +6351,10 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         )
 
         if let cached = faceTextureCache[key] {
+            diagnostics.faceTextureCacheHitCount += 1
             return cached
         }
+        diagnostics.faceTextureCacheMissCount += 1
 
         let image = makeFaceTextureImage(
             key: key,
@@ -6268,6 +6369,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         while faceTextureOrder.count > faceTextureCacheLimit, let oldest = faceTextureOrder.first {
             faceTextureOrder.removeFirst()
             faceTextureCache.removeValue(forKey: oldest)
+            diagnostics.faceTextureEvictionCount += 1
         }
         return image
     }
@@ -6279,6 +6381,15 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     static func resetFaceTextureCacheForTests() {
         faceTextureCache.removeAll()
         faceTextureOrder.removeAll()
+        resetDiagnosticsForTests()
+    }
+
+    static func diagnosticsSnapshotForTests() -> DiagnosticsSnapshot {
+        diagnostics
+    }
+
+    static func resetDiagnosticsForTests() {
+        diagnostics = DiagnosticsSnapshot()
     }
 
     private static func makeFaceTextureImage(
@@ -6289,6 +6400,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         vuColor: NSColor,
         hotColor: NSColor
     ) -> NSImage {
+        diagnostics.faceTextureGenerationCount += 1
         let facePixels = key.facePixels
         let tilePixels = faceTexturePixelsPerFacePixel
         let imagePixels = facePixels * tilePixels
@@ -6492,6 +6604,7 @@ struct OrbitalViewportObjectTuning: Equatable, Sendable {
 enum OrbitalViewportFrameRate: Int, CaseIterable, Identifiable, Equatable {
     case thirty = 30
     case sixty = 60
+    case oneTwenty = 120
 
     var id: Int { rawValue }
 
@@ -6502,7 +6615,7 @@ enum OrbitalViewportFrameRate: Int, CaseIterable, Identifiable, Equatable {
     }
 
     static func option(for framesPerSecond: Int) -> OrbitalViewportFrameRate {
-        allCases.first(where: { $0.framesPerSecond == framesPerSecond }) ?? .sixty
+        allCases.first(where: { $0.framesPerSecond == framesPerSecond }) ?? .oneTwenty
     }
 
     static func normalized(_ framesPerSecond: Int) -> Int {
@@ -6751,6 +6864,50 @@ struct OrbitalViewportCameraBasis: Equatable {
     }
 }
 
+struct OrbitalViewportFrameCadence: Equatable {
+    let activeFramesPerSecond: Int
+    let meterDisplayFramesPerSecond: Int
+    let inspectorFramesPerSecond: Int
+
+    init(
+        activeFramesPerSecond: Int,
+        meterDisplayFramesPerSecond: Int,
+        inspectorFramesPerSecond: Int
+    ) {
+        self.activeFramesPerSecond = OrbitalViewportFrameRate.normalized(activeFramesPerSecond)
+        self.meterDisplayFramesPerSecond = max(1, min(30, meterDisplayFramesPerSecond))
+        self.inspectorFramesPerSecond = max(1, min(30, inspectorFramesPerSecond))
+    }
+
+    func activeFrameIndex(timeMS: Double) -> Int {
+        frameIndex(timeMS: timeMS, framesPerSecond: activeFramesPerSecond)
+    }
+
+    func meterDisplayFrameIndex(timeMS: Double) -> Int {
+        frameIndex(timeMS: timeMS, framesPerSecond: meterDisplayFramesPerSecond)
+    }
+
+    func inspectorFrameIndex(timeMS: Double) -> Int {
+        frameIndex(timeMS: timeMS, framesPerSecond: inspectorFramesPerSecond)
+    }
+
+    private func frameIndex(timeMS: Double, framesPerSecond: Int) -> Int {
+        Int(floor((timeMS * Double(max(1, framesPerSecond)) / 1_000.0) + 0.000_001))
+    }
+}
+
+enum OrbitalViewportRenderScheduler {
+    static func targetFramesPerSecond(
+        activeFramesPerSecond: Int,
+        meterOnlyFramesPerSecond: Int,
+        isActiveMotion: Bool
+    ) -> Int {
+        isActiveMotion
+            ? OrbitalViewportFrameRate.normalized(activeFramesPerSecond)
+            : max(1, min(30, meterOnlyFramesPerSecond))
+    }
+}
+
 struct OrbitalViewportRenderConfiguration: Equatable {
     let size: CGSize
     let timeMS: Double
@@ -6772,6 +6929,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let meterSource: OrbitalViewportMeterSource
     let cubeVUSettings: OrbitalViewportCubeVUSettings
     let activeViewportFramesPerSecond: Int
+    let meterOnlyViewportFramesPerSecond: Int
+    let inspectorRefreshFramesPerSecond: Int
     let speakerLabelFont: OrbitalViewportSpeakerLabelFont
     let speakerLabelSizeScale: Double
     let showSpeakerNumbers: Bool
@@ -6810,6 +6969,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         meterSource: OrbitalViewportMeterSource = .telemetryNoProvider,
         cubeVUSettings: OrbitalViewportCubeVUSettings = .default,
         activeViewportFramesPerSecond: Int = OrbitalViewportMockup.viewportAnimationFramesPerSecond,
+        meterOnlyViewportFramesPerSecond: Int = OrbitalViewportMockup.meterOnlyViewportFramesPerSecond,
+        inspectorRefreshFramesPerSecond: Int = OrbitalViewportMockup.inspectorRefreshFramesPerSecond,
         speakerLabelFont: OrbitalViewportSpeakerLabelFont = .systemDefault,
         speakerLabelSizeScale: Double = 1,
         showSpeakerNumbers: Bool,
@@ -6847,6 +7008,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.meterSource = meterSource
         self.cubeVUSettings = cubeVUSettings
         self.activeViewportFramesPerSecond = OrbitalViewportFrameRate.normalized(activeViewportFramesPerSecond)
+        self.meterOnlyViewportFramesPerSecond = max(1, min(30, meterOnlyViewportFramesPerSecond))
+        self.inspectorRefreshFramesPerSecond = max(1, min(30, inspectorRefreshFramesPerSecond))
         self.speakerLabelFont = speakerLabelFont
         self.speakerLabelSizeScale = max(0.1, speakerLabelSizeScale)
         self.showSpeakerNumbers = showSpeakerNumbers
@@ -6879,6 +7042,14 @@ struct OrbitalViewportRenderConfiguration: Equatable {
 
     var gridPlaneTheme: OrbitalViewportTheme {
         OrbitalViewportTheme(style: gridPlaneRenderStyle)
+    }
+
+    var frameCadence: OrbitalViewportFrameCadence {
+        OrbitalViewportFrameCadence(
+            activeFramesPerSecond: activeViewportFramesPerSecond,
+            meterDisplayFramesPerSecond: meterOnlyViewportFramesPerSecond,
+            inspectorFramesPerSecond: inspectorRefreshFramesPerSecond
+        )
     }
 
     func geodesicColor(_ color: Color) -> Color {
@@ -7015,6 +7186,8 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             meterSource: meterSource,
             cubeVUSettings: cubeVUSettings,
             activeViewportFramesPerSecond: activeViewportFramesPerSecond,
+            meterOnlyViewportFramesPerSecond: meterOnlyViewportFramesPerSecond,
+            inspectorRefreshFramesPerSecond: inspectorRefreshFramesPerSecond,
             speakerLabelFont: speakerLabelFont,
             speakerLabelSizeScale: speakerLabelSizeScale,
             showSpeakerNumbers: showSpeakerNumbers,
@@ -7068,18 +7241,16 @@ struct OrbitalViewportRibbedSpeakerSphereTopologyKey: Equatable {
 }
 
 struct OrbitalViewportRibbedSpeakerSphereUpdateKey: Equatable {
-    let yaw: Double
-    let pitch: Double
-    let cameraView: OrbitalViewportCameraView
+    let cameraKey: OrbitalViewportCameraUpdateKey?
     let showRibbedSpeakerSphere: Bool
     let geodesicRenderStyle: OrbitalViewportRenderStyle
     let geodesicSaturation: Double
     let showHiddenLines: Bool
 
     init(configuration: OrbitalViewportRenderConfiguration) {
-        self.yaw = configuration.yaw
-        self.pitch = configuration.pitch
-        self.cameraView = configuration.cameraView
+        self.cameraKey = configuration.showRibbedSpeakerSphere
+            ? OrbitalViewportCameraUpdateKey(configuration: configuration)
+            : nil
         self.showRibbedSpeakerSphere = configuration.showRibbedSpeakerSphere
         self.geodesicRenderStyle = configuration.geodesicRenderStyle
         self.geodesicSaturation = configuration.geodesicSaturation
@@ -7163,16 +7334,16 @@ struct OrbitalViewportGridPlaneUpdateKey: Equatable {
 }
 
 struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
-    let meterFrame: Int
-    let activeFramesPerSecond: Int
+    let meterDisplayFrame: Int
+    let meterDisplayFramesPerSecond: Int
     let renderStyle: OrbitalViewportRenderStyle
     let meterSourceMode: OrbitalViewportMeterSource.Mode
     let cubeVUSettings: OrbitalViewportCubeVUSettings
     let selectedChannel: Int?
 
     init(configuration: OrbitalViewportRenderConfiguration) {
-        self.activeFramesPerSecond = configuration.activeViewportFramesPerSecond
-        self.meterFrame = Int(configuration.timeMS / (1000 / Double(configuration.activeViewportFramesPerSecond)))
+        self.meterDisplayFramesPerSecond = configuration.meterOnlyViewportFramesPerSecond
+        self.meterDisplayFrame = configuration.frameCadence.meterDisplayFrameIndex(timeMS: configuration.timeMS)
         self.renderStyle = configuration.renderStyle
         self.meterSourceMode = configuration.meterSource.mode
         var materialSettings = configuration.cubeVUSettings
@@ -7182,26 +7353,38 @@ struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
     }
 }
 
-struct OrbitalViewportSourceUpdateKey: Equatable {
+struct OrbitalViewportSourcePoseUpdateKey: Equatable {
     let yaw: Double
     let pitch: Double
     let cameraView: OrbitalViewportCameraView
     let showHiddenLines: Bool
-    let sourceSpeakerRenderStyle: OrbitalViewportRenderStyle
-    let meterSourceMode: OrbitalViewportMeterSource.Mode
-    let meterFrame: Int
-    let activeFramesPerSecond: Int
     let sources: [OrbitalViewportSourceMarker]
+    let sceneCenter: OVVector3
+    let sceneHalfExtent: Double
 
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.yaw = configuration.yaw
         self.pitch = configuration.pitch
         self.cameraView = configuration.cameraView
         self.showHiddenLines = configuration.showHiddenLines
+        self.sources = configuration.sources
+        self.sceneCenter = configuration.sceneCenter
+        self.sceneHalfExtent = configuration.sceneHalfExtent
+    }
+}
+
+struct OrbitalViewportSourceMaterialUpdateKey: Equatable {
+    let sourceSpeakerRenderStyle: OrbitalViewportRenderStyle
+    let meterSourceMode: OrbitalViewportMeterSource.Mode
+    let meterDisplayFrame: Int
+    let meterDisplayFramesPerSecond: Int
+    let sources: [OrbitalViewportSourceMarker]
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
         self.sourceSpeakerRenderStyle = configuration.sourceSpeakerRenderStyle
         self.meterSourceMode = configuration.meterSource.mode
-        self.meterFrame = Int(configuration.timeMS / (1000 / Double(configuration.activeViewportFramesPerSecond)))
-        self.activeFramesPerSecond = configuration.activeViewportFramesPerSecond
+        self.meterDisplayFrame = configuration.frameCadence.meterDisplayFrameIndex(timeMS: configuration.timeMS)
+        self.meterDisplayFramesPerSecond = configuration.meterOnlyViewportFramesPerSecond
         self.sources = configuration.sources
     }
 }
@@ -7646,12 +7829,16 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastSpeakerLabelGeometryKey: OrbitalViewportSpeakerLabelGeometryUpdateKey?
         private var lastSpeakerVisibilityKey: OrbitalViewportSpeakerVisibilityUpdateKey?
         private var lastSpeakerMaterialKey: OrbitalViewportSpeakerMaterialUpdateKey?
-        private var lastSourceUpdateKey: OrbitalViewportSourceUpdateKey?
+        private var lastSourcePoseUpdateKey: OrbitalViewportSourcePoseUpdateKey?
+        private var lastSourceMaterialUpdateKey: OrbitalViewportSourceMaterialUpdateKey?
         private var lastFogKey: OrbitalViewportFogUpdateKey?
         private var lastRenderedAnimationTimeMS: Double?
         private var gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.defaultSpacing
         private var activeFramesPerSecond = OrbitalViewport3DSceneView.sceneFramesPerSecond
-        private var frameRateMonitor = OrbitalViewportFrameRateMonitor()
+        private var frameRateMonitor = OrbitalViewportFrameRateMonitor(
+            targetFramesPerSecond: OrbitalViewport3DSceneView.sceneFramesPerSecond
+        )
+        private var instrumentation = OrbitalViewportRenderInstrumentationSnapshot()
         var onFrameRateSample: (OrbitalViewportFrameRateSample) -> Void = { _ in }
 
         private(set) var gridPlaneBuildCount = 0
@@ -7659,6 +7846,24 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private(set) var speakerRebuildCount = 0
         private(set) var sourceUpdateCount = 0
         private(set) var labelRebuildCount = 0
+
+        var instrumentationSnapshotForTests: OrbitalViewportRenderInstrumentationSnapshot {
+            var snapshot = instrumentation
+            let cubeVUSnapshot = OrbitalViewportCubeVUSceneKitMaterial.diagnosticsSnapshotForTests()
+            snapshot.cubeVUMaterialUpdateCount = cubeVUSnapshot.materialUpdateCount
+            snapshot.cubeVUFaceTextureCacheHitCount = cubeVUSnapshot.faceTextureCacheHitCount
+            snapshot.cubeVUFaceTextureCacheMissCount = cubeVUSnapshot.faceTextureCacheMissCount
+            snapshot.cubeVUFaceTextureGenerationCount = cubeVUSnapshot.faceTextureGenerationCount
+            snapshot.cubeVUFaceTextureEvictionCount = cubeVUSnapshot.faceTextureEvictionCount
+            snapshot.cubeVUUniformWriteCount = cubeVUSnapshot.uniformWriteCount
+            snapshot.cubeVUTextureAssignmentCount = cubeVUSnapshot.textureAssignmentCount
+            return snapshot
+        }
+
+        func resetInstrumentationForTests() {
+            instrumentation = OrbitalViewportRenderInstrumentationSnapshot()
+            OrbitalViewportCubeVUSceneKitMaterial.resetDiagnosticsForTests()
+        }
 
         init() {
             scene.rootNode.addChildNode(rootNode)
@@ -7703,7 +7908,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
             activeFramesPerSecond = normalizedFramesPerSecond
             lastRenderedAnimationTimeMS = nil
-            frameRateMonitor.reset()
+            frameRateMonitor = OrbitalViewportFrameRateMonitor(targetFramesPerSecond: normalizedFramesPerSecond)
             restartAnimationTimer()
         }
 
@@ -7759,24 +7964,30 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func renderAnimationFrame() {
+            instrumentation.renderAnimationFrameAttemptCount += 1
             guard let latestConfiguration else {
                 return
             }
             let frameTimeMS = currentTimeMS()
-            let framesPerSecond = latestConfiguration.spin
-                ? activeFramesPerSecond
-                : OrbitalViewportMockup.meterOnlyViewportFramesPerSecond
+            let framesPerSecond = OrbitalViewportRenderScheduler.targetFramesPerSecond(
+                activeFramesPerSecond: activeFramesPerSecond,
+                meterOnlyFramesPerSecond: latestConfiguration.meterOnlyViewportFramesPerSecond,
+                isActiveMotion: latestConfiguration.spin
+            )
             let minimumFrameIntervalMS = 1000 / Double(framesPerSecond)
             if let lastRenderedAnimationTimeMS,
                frameTimeMS - lastRenderedAnimationTimeMS < minimumFrameIntervalMS {
+                instrumentation.renderAnimationFrameSkippedForCadenceCount += 1
                 return
             }
 
             lastRenderedAnimationTimeMS = frameTimeMS
+            instrumentation.renderAnimationFrameDrawCount += 1
             renderScene(configuration: latestConfiguration.frameConfiguration(timeMS: frameTimeMS))
         }
 
         private func renderScene(configuration: OrbitalViewportRenderConfiguration) {
+            instrumentation.renderSceneCount += 1
             let snapshot = OrbitalViewportSnapshot(configuration: configuration)
             let cameraKey = OrbitalViewportCameraUpdateKey(configuration: configuration)
             let gridPlaneKey = OrbitalViewportGridPlaneUpdateKey(configuration: configuration)
@@ -7784,7 +7995,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             let ribbedSphereUpdateKey = OrbitalViewportRibbedSpeakerSphereUpdateKey(configuration: configuration)
             let visibilityKey = OrbitalViewportSpeakerVisibilityUpdateKey(configuration: configuration)
             let materialKey = OrbitalViewportSpeakerMaterialUpdateKey(configuration: configuration)
-            let sourceKey = OrbitalViewportSourceUpdateKey(configuration: configuration)
+            let sourcePoseKey = OrbitalViewportSourcePoseUpdateKey(configuration: configuration)
+            let sourceMaterialKey = OrbitalViewportSourceMaterialUpdateKey(configuration: configuration)
             let fogKey = OrbitalViewportFogUpdateKey(configuration: configuration)
 
             SCNTransaction.begin()
@@ -7831,9 +8043,14 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 lastSpeakerMaterialKey = materialKey
             }
 
-            if lastSourceUpdateKey != sourceKey {
-                updateSources(configuration: configuration, snapshot: snapshot)
-                lastSourceUpdateKey = sourceKey
+            if lastSourcePoseUpdateKey != sourcePoseKey {
+                updateSourcePoseAndVisibility(configuration: configuration, snapshot: snapshot)
+                lastSourcePoseUpdateKey = sourcePoseKey
+            }
+
+            if lastSourceMaterialUpdateKey != sourceMaterialKey {
+                updateSourceMaterial(configuration: configuration, snapshot: snapshot)
+                lastSourceMaterialUpdateKey = sourceMaterialKey
             }
 
             if lastFogKey != fogKey {
@@ -7841,9 +8058,11 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 lastFogKey = fogKey
             }
 
+            instrumentation.needsDisplayCount += 1
             view?.needsDisplay = true
             if view != nil,
                let sample = frameRateMonitor.recordFrame(at: currentTimeMS()) {
+                instrumentation.frameRateSampleCount += 1
                 onFrameRateSample(sample)
             }
         }
@@ -7888,6 +8107,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private func buildGridPlane(spacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing) {
             gridPlaneBuildCount += 1
+            instrumentation.gridPlaneUpdateCount += 1
             gridPlaneNode.childNodes.forEach { $0.removeFromParentNode() }
             gridPlaneLineNodes.removeAll()
             gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.normalizedSpacing(spacing)
@@ -7913,6 +8133,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func updateGridPlane(configuration: OrbitalViewportRenderConfiguration) {
+            instrumentation.gridPlaneUpdateCount += 1
             gridPlaneNode.isHidden = !configuration.showGridPlane
             guard configuration.showGridPlane else {
                 return
@@ -7943,6 +8164,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func updateCamera(configuration: OrbitalViewportRenderConfiguration) {
+            instrumentation.cameraUpdateCount += 1
             let basis = configuration.orbitState.cameraBasis
             let cameraDistance = basis.viewDirection * (basis.distance * configuration.sceneScale)
             cameraNode.camera?.orthographicScale = (2.25 * configuration.sceneScale) / configuration.zoom
@@ -7963,6 +8185,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             fallbackRadius: Double
         ) {
             ribbedSphereBuildCount += 1
+            instrumentation.ribbedSphereTopologyBuildCount += 1
             ribbedSphereNode.childNodes.forEach { $0.removeFromParentNode() }
             ribbedSphereSegmentNodes.removeAll()
             ribbedSphereNode.name = "ribbed-speaker-sphere"
@@ -8273,6 +8496,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             guard configuration.showRibbedSpeakerSphere else {
                 return
             }
+            instrumentation.ribbedSphereMaterialUpdateCount += 1
 
             let segments = OrbitalViewportRibbedSpeakerSphereGeometry.segments(
                 for: configuration.speakers,
@@ -8321,6 +8545,12 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             updateVisibility: Bool,
             updateMaterial: Bool
         ) {
+            if updateVisibility {
+                instrumentation.speakerVisibilityUpdateCount += 1
+            }
+            if updateMaterial {
+                instrumentation.speakerMaterialUpdateCount += 1
+            }
             for speaker in snapshot.speakers {
                 guard let node = speakerNodes[speaker.channel] else {
                     continue
@@ -8337,6 +8567,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 }
 
                 if updateMaterial {
+                    instrumentation.speakerMaterialSpeakerVisitCount += 1
                     let alpha = configuration.speakerAlpha(depth: speaker.depth, selected: selected)
                     let emissionScale = configuration.speakerEmissionScale(depth: speaker.depth)
                     let scalars = SpeakerCubeVUScalars(
@@ -8395,6 +8626,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                     label.isHidden = !configuration.showSpeakerNumbers || (!visible && !selected)
                 }
                 if updateMaterial {
+                    instrumentation.speakerLabelMaterialUpdateCount += 1
                     let labelColor = selected ? configuration.theme.selectedLabel : configuration.theme.text
                     if configuration.speakerLabelFont.usesTextureBackedSceneKitLabel {
                         setTextureBackedLabelMaterial(
@@ -8414,11 +8646,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             }
         }
 
-        private func updateSources(
-            configuration: OrbitalViewportRenderConfiguration,
-            snapshot: OrbitalViewportSnapshot
-        ) {
-            sourceUpdateCount += 1
+        private func ensureSourceNodes(configuration: OrbitalViewportRenderConfiguration) {
             let activeIDs = Set(configuration.sources.map(\.sourceID))
             let staleIDs = sourceNodes.keys.filter { !activeIDs.contains($0) }
             for sourceID in staleIDs {
@@ -8439,6 +8667,15 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                     sourceNodes[source.sourceID] = node
                 }
             }
+        }
+
+        private func updateSourcePoseAndVisibility(
+            configuration: OrbitalViewportRenderConfiguration,
+            snapshot: OrbitalViewportSnapshot
+        ) {
+            sourceUpdateCount += 1
+            instrumentation.sourcePoseOrVisibilityUpdateCount += 1
+            ensureSourceNodes(configuration: configuration)
 
             for source in snapshot.sources {
                 guard let node = sourceNodes[source.sourceID] else {
@@ -8446,6 +8683,21 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 }
                 node.position = OVVector3(source.source).scn
                 node.isHidden = !source.visible
+            }
+        }
+
+        private func updateSourceMaterial(
+            configuration: OrbitalViewportRenderConfiguration,
+            snapshot: OrbitalViewportSnapshot
+        ) {
+            sourceUpdateCount += 1
+            instrumentation.sourceMaterialUpdateCount += 1
+            ensureSourceNodes(configuration: configuration)
+
+            for source in snapshot.sources {
+                guard let node = sourceNodes[source.sourceID] else {
+                    continue
+                }
                 let color = source.source.color(theme: configuration.sourceSpeakerTheme)
                 let alpha = configuration.speakerAlpha(depth: source.depth, selected: false)
                 let bloom = 0.24 + (source.peak * 0.55)
@@ -8459,6 +8711,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func updateFog(configuration: OrbitalViewportRenderConfiguration) {
+            instrumentation.fogUpdateCount += 1
             let fog = configuration.fogConfiguration
             scene.fogColor = NSColor(configuration.theme.fog)
             scene.fogStartDistance = fog.startDistance
@@ -8533,6 +8786,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             strength: Double,
             selected: Bool
         ) {
+            if nodes?.isEmpty == false {
+                instrumentation.cubeOutlineMaterialUpdateCount += 1
+            }
             let strength = OrbitalViewportMath.clamp01(strength)
             let alphaMultiplier = selected
                 ? OrbitalViewportCubeVUSceneKitMaterial.cubeOutlineSelectedAlphaMultiplier
