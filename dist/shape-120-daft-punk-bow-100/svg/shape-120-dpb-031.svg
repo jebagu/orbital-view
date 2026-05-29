@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="icon-031-fill" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0.70">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="20%" stop-color="#34D399"/>
+      <stop offset="34%" stop-color="#FDE047"/>
+      <stop offset="48%" stop-color="#FB923C"/>
+      <stop offset="64%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#EF4444"/>
+    </linearGradient>
+    <linearGradient id="icon-031-bg" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#080A0D"/><stop offset="100%" stop-color="#000000"/></linearGradient>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#000000" flood-opacity="0.35"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#icon-031-bg)"/>
+  
+    <g opacity="0.16" stroke="#2A2E38" stroke-width="2">
+      <line x1="128" y1="96" x2="128" y2="928"/><line x1="96" y1="128" x2="928" y2="128"/><line x1="192" y1="96" x2="192" y2="928"/><line x1="96" y1="192" x2="928" y2="192"/><line x1="256" y1="96" x2="256" y2="928"/><line x1="96" y1="256" x2="928" y2="256"/><line x1="320" y1="96" x2="320" y2="928"/><line x1="96" y1="320" x2="928" y2="320"/><line x1="384" y1="96" x2="384" y2="928"/><line x1="96" y1="384" x2="928" y2="384"/><line x1="448" y1="96" x2="448" y2="928"/><line x1="96" y1="448" x2="928" y2="448"/><line x1="512" y1="96" x2="512" y2="928"/><line x1="96" y1="512" x2="928" y2="512"/><line x1="576" y1="96" x2="576" y2="928"/><line x1="96" y1="576" x2="928" y2="576"/><line x1="640" y1="96" x2="640" y2="928"/><line x1="96" y1="640" x2="928" y2="640"/><line x1="704" y1="96" x2="704" y2="928"/><line x1="96" y1="704" x2="928" y2="704"/><line x1="768" y1="96" x2="768" y2="928"/><line x1="96" y1="768" x2="928" y2="768"/><line x1="832" y1="96" x2="832" y2="928"/><line x1="96" y1="832" x2="928" y2="832"/><line x1="896" y1="96" x2="896" y2="928"/><line x1="96" y1="896" x2="928" y2="896"/>
+    </g>
+  <circle cx="282" cy="250" r="180" fill="#22D3EE" opacity="0.13"/><circle cx="490" cy="342" r="220" fill="#FDE047" opacity="0.08"/>
+  <style>
+    .main path { fill: url(#icon-031-fill); fill-rule: nonzero; stroke: none; }
+    .main { filter: url(#softShadow); }
+    .ghost path { fill: #22D3EE; fill-rule: nonzero; stroke: none; opacity: 0.35; }
+    .outline path { fill: none; stroke: #F8FAFC; stroke-width: 3; stroke-linejoin: round; opacity: 0.55; }
+    .overlay path { fill: url(#icon-031-overlay); fill-rule: nonzero; stroke: none; opacity: 0.22; mix-blend-mode: screen; }
+  </style>
+  <g class="main" transform="translate(512 512) rotate(-12) translate(-512 -512) translate(130.960 152.960) scale(4.7872)"><path d="M79.318,20.105c-1.425-0.111-2.865-0.167-4.318-0.167c-0.017,0-0.033,0-0.05,0C44.597,19.965,20,44.579,20,74.938
+	c0,30.376,24.624,55,55,55c30.376,0,55-24.624,55-55C130,46.015,107.675,22.308,79.318,20.105z M53.992,28.639
+	c0.118-0.051,0.236-0.102,0.354-0.152c6.508-2.753-28.762,18.952,20.552,18.952c49.313,0,14.043-21.704,20.551-18.952
+	c0.118,0.05,0.236,0.101,0.354,0.152C188.166,68.488-37.432,68.084,53.992,28.639z"/></g>
+</svg>
