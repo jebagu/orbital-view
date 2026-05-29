@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="shape-120 daft punk bow edge fade 22">
+  <defs><radialGradient id="bowBg22" cx="45%" cy="60%" r="92%" fx="42%" fy="70%"><stop offset="0%" stop-color="#19c8d8"/><stop offset="25%" stop-color="#38d66b"/><stop offset="50%" stop-color="#ffe14a"/><stop offset="75%" stop-color="#ff7a1a"/><stop offset="100%" stop-color="#ff3030"/></radialGradient>
+    <linearGradient id="fadeLeft22" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#000" stop-opacity="0.82"/><stop offset="56%" stop-color="#000" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fadeRight22" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="#000" stop-opacity="0.82"/><stop offset="56%" stop-color="#000" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fadeTop22" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#000" stop-opacity="0.82"/><stop offset="52%" stop-color="#000" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fadeBottom22" x1="0%" y1="100%" x2="0%" y2="0%"><stop offset="0%" stop-color="#000" stop-opacity="0.82"/><stop offset="52%" stop-color="#000" stop-opacity="0"/></linearGradient>
+    <radialGradient id="fadeVignette22" cx="50%" cy="48%" r="72%"><stop offset="46%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.8799999999999999"/></radialGradient></defs>
+  <rect width="1024" height="1024" fill="url(#bowBg22)"/>
+  <rect width="1024" height="1024" fill="url(#fadeRight22)"/>
+  <rect width="1024" height="1024" fill="url(#fadeTop22)"/>
+  <rect width="1024" height="1024" fill="url(#fadeVignette22)"/>
+  <g transform="translate(96 96) scale(5.5466666667)">
+    <path d="M79.318,20.105c-1.425-0.111-2.865-0.167-4.318-0.167c-0.017,0-0.033,0-0.05,0C44.597,19.965,20,44.579,20,74.938 c0,30.376,24.624,55,55,55c30.376,0,55-24.624,55-55C130,46.015,107.675,22.308,79.318,20.105z M53.992,28.639 c0.118-0.051,0.236-0.102,0.354-0.152c6.508-2.753-28.762,18.952,20.552,18.952c49.313,0,14.043-21.704,20.551-18.952 c0.118,0.05,0.236,0.101,0.354,0.152C188.166,68.488-37.432,68.084,53.992,28.639z" fill="#c8fff5"/>
+  </g>
+</svg>
