@@ -167,6 +167,23 @@ flowchart LR
 
 Splat owns edit commands, project/session state, renderer-kernel analysis, file formats, persistence, neutral geometry import/export decisions, and any later handoff to an audio/render host. Orbital View Kit can visualize virtual speakers, source objects, overlays, and diagnostics through prepared snapshots labeled with `splatPreparedAnalysis`. Canonical 3D coordinates remain canonical; permanent flattened screen coordinates are not valid spatial state.
 
+## Current SpatGRIS Layout Flow
+
+```mermaid
+flowchart LR
+  SpeakerXML["SpatGRIS SPEAKER_SETUP XML"] --> Parser["OrbitalViewSpatGRIS parser"]
+  SourceXML["Second SPEAKER_SETUP as source positions"] --> Parser
+  ProjectXML["SPAT_GRIS_PROJECT_DATA"] --> Project["Source metadata"]
+  Parser --> Stores["Review saved layout stores"]
+  Stores --> Review["Speaker and Source Layout trays"]
+  Project --> Review
+  Review --> Scene["Layout-derived SceneKit speakers, sources, and bounds"]
+  OSC["/spat/serv OSC source movement"] --> ReviewOSC["Review-only UDP listener"]
+  ReviewOSC --> Scene
+```
+
+Receiver and source setup files are normalized to current SpatGRIS `SPEAKER_SETUP` XML when saved. Saved rows follow the review theme workflow: refresh, load, set default, manual rename recovery, and invalid-file display. The review UDP listener defaults to port `18032` and validates `1024...65535`; production hosts should pass parsed source-position messages directly and should not depend on review networking.
+
 ## Current Renderer Invariant Flow
 
 ```mermaid
@@ -204,11 +221,12 @@ flowchart TD
   Viewer["OrbitalViewViewer"] --> Review["OrbitalViewReview"]
   Review --> Mockup["OrbitalViewportMockup SceneKit surface"]
   Review --> LocalAudio["Review-only local audio and impulse sources"]
-  Review --> Themes["Review-only app-bundle themes and PNG export"]
+  Review --> Themes["Review-only app-bundle themes, SpatGRIS layouts, and PNG export"]
+  Review --> OSC["Review-only SpatGRIS OSC listening"]
   Mockup --> Core["OrbitalViewCore display contracts"]
 ```
 
-`OrbitalViewReview` owns the review/demo SceneKit surface and its local file playback, PNG export, bundled font, and theme behavior. Production host apps import `OrbitalViewSwiftUI` instead.
+`OrbitalViewReview` owns the review/demo SceneKit surface and its local file playback, PNG export, bundled font, theme behavior, SpatGRIS layout persistence, and review-only OSC listener. Production host apps import `OrbitalViewSwiftUI` instead.
 
 ## Current Tuning Tray Flow
 
@@ -222,7 +240,7 @@ flowchart LR
   PerfSettings --> MTKView["MTKView FPS and draw-on-demand config"]
 ```
 
-Saved themes, speaker shape, speaker pattern, label font and font size, speaker color palette, cube surface, bloom style, sphere geometry, geodesic appearance, meter source, meter response, performance, and diagnostics are review-facing controls in the current SceneKit review surface. They tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing. The review-only impulse drives are deterministic synthetic meter sources for visual stress testing and do not change production host meter contracts. Audio-excited render types use the already-computed mono audio RMS/peak sample as a lightweight spatial-pattern envelope. Dice-icon randomizers are local to Cube Surface, Bloom Style, and Meter Response and do not save themes automatically.
+Input, Roll the dice on looks, saved themes, speaker shape, speaker pattern, label font and font size, Sonic Sphere speaker palette, Source Speaker palette, cube surface, bloom style, sphere geometry, geodesic appearance, ground appearance, meter response, performance, and diagnostics are review-facing controls in the current SceneKit review surface. The right panel starts with a `Sound Metering Input` header above one expandable `Input` tray; when expanded it chooses `Telemetry`, `Local Song`, or `Impulse Test` and owns telemetry details, local song file/transport/render controls, impulse pattern controls, and `Meter Source` status rows. `Speaker and Source Layout` contains the `Sonic Sphere Speakers` tray with `Speaker layout in SPAT XML format.` and the `Source Speakers` tray with `Source speaker layout in SPAT XML format.` These controls tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing. The review-only impulse drives are deterministic synthetic meter sources for visual stress testing and do not change production host meter contracts. Audio-excited render types use the already-computed mono audio RMS/peak sample as a lightweight spatial-pattern envelope. `Sphere Geometry` owns the independent default-off ribbed speaker sphere overlay plus rib thickness/rib/ring controls; `Geodesic Appearance` owns only the geodesic palette and saturation that style the ribbed sphere. The old imported/Fey shell is not rendered in the SceneKit or canvas review paths. Dice-icon randomizers are local to Cube Surface, Bloom Style, and Meter Response, and the global `Roll the dice on looks` action is a centered icon-only button that randomizes view/visual state, including Source Speaker Palette and every current Sphere Appearance control, while preserving Input state and not saving themes automatically.
 
 ## Current Saved Themes Flow
 
@@ -237,7 +255,7 @@ flowchart LR
   Default --> Launch["Apply default on next app launch"]
 ```
 
-View themes are review-app visual settings only. Loading a theme restores viewport styling, camera/view-detail, speaker label font and font size, Cube VU tuning, drive mode, and performance FPS, but it does not restore a local audio file, playback state, or selected speaker.
+View themes are review-app visual settings only. Loading a theme restores viewport styling, camera/view-detail, speaker label font and font size, Cube VU tuning, source mode, remembered impulse pattern, ribbed speaker sphere visibility/settings, and performance FPS, but it does not restore a local audio file, playback state, telemetry provider, or selected speaker. Legacy `hideSphereStructure` keys decode harmlessly and are ignored.
 
 ## Current Offscreen Harness Flow
 

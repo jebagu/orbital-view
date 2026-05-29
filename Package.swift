@@ -16,6 +16,10 @@ let package = Package(
             targets: ["OrbitalViewWavefield"]
         ),
         .library(
+            name: "OrbitalViewSpatGRIS",
+            targets: ["OrbitalViewSpatGRIS"]
+        ),
+        .library(
             name: "OrbitalViewRender",
             targets: ["OrbitalViewRender"]
         ),
@@ -41,6 +45,10 @@ let package = Package(
             dependencies: ["OrbitalViewCore"]
         ),
         .target(
+            name: "OrbitalViewSpatGRIS",
+            dependencies: ["OrbitalViewCore"]
+        ),
+        .target(
             name: "OrbitalViewRender",
             dependencies: ["OrbitalViewCore"]
         ),
@@ -54,7 +62,8 @@ let package = Package(
         .target(
             name: "OrbitalViewReview",
             dependencies: [
-                "OrbitalViewCore"
+                "OrbitalViewCore",
+                "OrbitalViewSpatGRIS"
             ],
             resources: [
                 .process("Resources")
@@ -87,6 +96,13 @@ let package = Package(
             ]
         ),
         .testTarget(
+            name: "OrbitalViewSpatGRISTests",
+            dependencies: [
+                "OrbitalViewCore",
+                "OrbitalViewSpatGRIS"
+            ]
+        ),
+        .testTarget(
             name: "OrbitalViewRenderTests",
             dependencies: [
                 "OrbitalViewCore",
@@ -99,6 +115,7 @@ let package = Package(
                 "OrbitalViewCore",
                 "OrbitalViewRender",
                 "OrbitalViewReview",
+                "OrbitalViewSpatGRIS",
                 "OrbitalViewSwiftUI"
             ]
         ),

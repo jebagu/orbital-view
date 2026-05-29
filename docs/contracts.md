@@ -36,6 +36,19 @@ Every displayed speaker or object meter frame must carry an `OrbitalViewTelemetr
 
 Display telemetry is latest-complete-frame-wins. Orbital View Kit may drop stale frames, decimate display refresh, keep only the latest complete snapshot, and set diagnostics flags outside realtime paths. It must not make audio wait for the viewport, allocate more display queue from an audio callback, log or post UI from a callback, or send raw packets directly into the renderer.
 
+## SpatGRIS Layout Contract
+
+`OrbitalViewSpatGRIS` imports and exports SpatGRIS `SPEAKER_SETUP` XML for receiver speaker layouts and source-position layouts. It accepts current `4.0.0` files, legacy `SPEAKER_N` files, and fixture-covered import-only older speaker setup XML. Export always writes normalized current `SPEAKER_SETUP` XML.
+
+The target also imports `SPAT_GRIS_PROJECT_DATA` source metadata and parses SpatGRIS source-position OSC payloads at `/spat/serv`. It does not own UDP sockets; production hosts must feed parsed source-position messages explicitly. The review app may run a review-only UDP listener on the SpatGRIS default input port `18032`, constrained to valid user UDP ports `1024...65535`.
+
+Guard rails:
+
+- reject malformed XML, DTD/entity declarations, files larger than the importer limit, invalid coordinate tuples, duplicate patch/source IDs, IDs outside `1...256`, invalid SpatGRIS modes, and invalid OSC ports
+- preserve receiver speaker IDs as physical channel IDs
+- keep source positions and source/project metadata read-only in the review UI
+- place parse warnings, file paths, and raw diagnostics in Diagnostics, not in the primary control panel
+
 ## Visual Stress Gate Contract
 
 The display stress gate is defined in `docs/visual-telemetry-stress-gates.md`.
@@ -122,6 +135,10 @@ OrbitalViewObjectFrameSet
 OrbitalViewObjectFrame
 ObjectMeterFrame
 ObjectMeterLevel
+OrbitalViewSourceLayout
+OrbitalViewSource
+SourceMeterFrame
+SourceMeterLevel
 ObjectVisualSettings
 OrbitalViewPerformanceSettings
 OrbitalViewCameraState
@@ -172,6 +189,8 @@ Core must not output audio, routing changes, playback state mutations, or UI nav
 - Shape dimensions must be positive and finite. Sonic Sphere speaker defaults use cube geometry.
 - Cube VU control ranges must stay finite and within the browser-derived contract: input calibration `0.25...2`, level compression `1...4`, display ceiling `0.5...1`, hot response `0.5...3`, hot threshold `0.35...0.98`, hot fill strength `0...1`, palette drive `0.5...4`, idle tint `0...1`, checker contrast `0...0.4`, and face pixels `4...64`.
 - Edge anchor `t` must be in `0...1`.
+- Cartesian speaker anchors must contain finite canonical Z-up coordinates.
+- Source IDs must be unique and in `1...256`; source positions must be finite.
 - Dynamic object IDs must be `1...128`, object trails must stay within frame/settings caps, and object render bounds must be positive.
 - Default object render/effect bounds are fixed at `-5...+5` on x, y, and z through `OrbitalViewObjectRenderBounds(halfExtent: 5)`.
 - Performance settings must keep active viewport FPS to `30` or `60`, meter-only viewport cadence in `1...30`, inspector refresh cadence in `1...30`, and draw-on-demand enabled by default.
@@ -413,7 +432,10 @@ The review target owns the SceneKit surface, local file playback for visual test
 ### Tests Required
 
 - review-app identity and window contract remain intact
+- single right-panel `Input` tray source selector inventory remains exactly `Telemetry`, `Local Song`, and `Impulse Test`
+- telemetry mode remains silent when no provider is connected and must not fake live telemetry
 - local audio file metering remains review-only and mono-reduced
+- local song transport controls and impulse pattern controls remain scoped to their source trays
 - theme JSON persistence round trips visual settings without restoring local audio file state
 - PNG export remains available from the review surface
 - SceneKit material and label rebuild invariants stay separate from production renderer contracts

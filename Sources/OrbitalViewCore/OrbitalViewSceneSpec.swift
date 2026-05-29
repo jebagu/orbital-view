@@ -62,6 +62,8 @@ public struct OrbitalViewSceneSpec: Equatable, Sendable {
         switch (shell, anchor) {
         case (_, .direction):
             return
+        case (_, .cartesian):
+            return
         case (.imported(let geometry), .node(let nodeID, _)):
             guard geometry.nodes.contains(where: { $0.id == nodeID }) else {
                 throw OrbitalViewValidationError.unknownNodeID(nodeID)

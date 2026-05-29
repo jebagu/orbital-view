@@ -18,7 +18,7 @@ Sources/OrbitalViewReview/
 Tests/OrbitalViewSwiftUITests/
 ```
 
-`OrbitalViewCore` and `OrbitalViewWavefield` source changes are governed by normal task scope and tests. `OrbitalViewReview` is protected because it owns review-only local audio, SceneKit, file-dialog, PNG export, and app-bundle resource behavior that must not leak back into the production wrapper.
+`OrbitalViewCore`, `OrbitalViewWavefield`, and `OrbitalViewSpatGRIS` source changes are governed by normal task scope and tests. `OrbitalViewSpatGRIS` may parse SpatGRIS XML and OSC payload bytes but must not open sockets or own UI. `OrbitalViewReview` is protected because it owns review-only local audio, SceneKit, file-dialog, SpatGRIS layout persistence, review-only OSC listening, PNG export, and app-bundle resource behavior that must not leak back into the production wrapper.
 
 `OrbitalViewViewerSupport` may hold deterministic review and stress fixtures when an active task allows it. Stress fixture changes do not grant permission to edit protected renderer, SwiftUI, or review source paths unless the task explicitly names those paths.
 
@@ -90,6 +90,8 @@ MetalKit / MTKView renderer with SwiftUI wrapper
 - Speaker geometry must not resize for VU behavior.
 - Camera target must remain center-locked in monitor mode.
 - Rendering must preserve physical speaker channel identity.
+- Imported receiver speaker layouts may change review geometry and scene bounds, but must preserve SpatGRIS patch IDs as channel IDs.
+- Review-only source markers must stay separate from receiver speaker nodes and must not rewrite receiver channel order.
 - Renderer source must not own audio callbacks or host app meter timing.
 - Renderer source changes are allowed only when the active task explicitly permits `Sources/OrbitalViewRender/`.
 - SwiftUI wrapper changes are allowed only when the active task explicitly permits `Sources/OrbitalViewSwiftUI/`.

@@ -19,6 +19,7 @@ Once implementation starts, the test suite should prove:
 - canonical coordinates stay Z-up: `x = right`, `y = front`, `z = up`
 - local Wavefield JSON adapter rejects invalid layout shape explicitly
 - local Wavefield meter adapter rejects duplicate channels and invalid levels explicitly
+- SpatGRIS layout import rejects unsafe XML, invalid tuples, duplicate/out-of-range IDs, invalid modes, invalid ports, and oversized files explicitly
 
 ## Unit Tests
 
@@ -100,13 +101,15 @@ Current wrapper skeleton tests cover:
 
 Current review-surface tests cover `OrbitalViewReview` through the existing SwiftUI test target:
 
-- the confirmed SceneKit `OrbitalViewportMockup` viewer identity, left rail options, right tuning panel inventory, geodesic shell counts, and adaptive FPS constants remain intact
+- the confirmed SceneKit `OrbitalViewportMockup` viewer identity, full-height desktop left rail, `Orbital View` title text with Wavefield Receiver player-title font treatment, left rail options focused on `Camera` and `View Detail`, top-aligned Camera/View Detail panel, right tuning panel inventory, geodesic shell counts, and adaptive FPS constants remain intact
 - SceneKit review-app `View Detail` stays focused on Speaker Size, Fog Density, Speaker Numbers, and Hidden Lines
-- SceneKit review-app audio source uses native transport icon buttons for Play and Pause
-- SceneKit review-app right panel includes Theme, Speaker Appearance, Sphere Appearance, Ground Appearance, Meter Behavior, and Diagnostics section headers with the active tray order `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Ground Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics`
+- SceneKit review-app source selector inventory is exactly `Telemetry`, `Local Song`, and `Impulse Test`
+- SceneKit review-app source tray shows telemetry provider/status metadata only in `Telemetry`, local song choose-file/transport/render controls only in `Local Song`, and impulse pattern controls only in `Impulse Test`
+- SceneKit review-app right panel starts with a `Sound Metering Input` header above one expandable `Input` tray, followed by `Speaker and Source Layout`, `Roll the dice on looks`, and `Theme`, then Speaker Appearance, Sphere Appearance, Ground Appearance, Meter Behavior, and Diagnostics; the active tray order starts with `Input`, `Sonic Sphere Speakers`, `Source Speakers`, `Roll the dice on looks`, and `Saved Themes` before the visual tuning trays
+- SceneKit review-app `Sonic Sphere Speakers` tray exposes the kicker `Speaker layout in SPAT XML format.`, and `Source Speakers` exposes `Source speaker layout in SPAT XML format.`
 - SceneKit review-app `Ground Appearance` exposes Ground Palette, Grid Plane, Grid Visibility, Grid Spacing, and Grid Size controls
 - SceneKit review-app right panel includes the `Saved Themes` tray, app-resource theme directory, and Save/Refresh/Load/Set Default controls
-- SceneKit review-app `Color Palette` tray uses full-width custom theme buttons, includes the Orbisonic family palette list from `orbisonic-palette-brief`, and does not use a native segmented picker
+- SceneKit review-app `Sonic Sphere Speaker Palette` and `Source Speaker Palette` trays use full-width custom theme buttons, include the Orbisonic family palette list from `orbisonic-palette-brief`, and do not use native segmented pickers
 - SceneKit review-app startup defaults are pinned to the exported settings JSON values without mutating the Core cube settings default contract
 - SceneKit review-app meter-only ticks update material cadence without rebuilding shell or speaker geometry
 - SceneKit review-app Cube VU controls preserve Core scalar defaults, default to 9x9 face pixels, default Cube Outline to invisible, keep outline constants delicate, and ignore old speaker-height values for geometry/material keys
@@ -116,21 +119,31 @@ Current review-surface tests cover `OrbitalViewReview` through the existing Swif
 - SceneKit review-app speaker type options include `Prism`, `Sphere`, and `Cube VU`, with full-width tray header hit targets for collapsible tuning sections
 - SceneKit review-app `Label Font` tray exposes grouped Normie, Nerd, and Nostromo font options plus a Font Size slider; bundled fonts resolve from SwiftPM resources, removed unavailable fonts are absent from the selector and decode to System Default from older JSON, commercial install-only options fall back safely, and font/font-size changes rebuild label geometry but not shell or speaker body geometry
 - SceneKit review-app Jost speaker labels use the static regular TTF resource, render through the texture-backed label path instead of `SCNText`, and preserve readable numeric labels for channels containing 6 and 9
-- SceneKit review-app speaker `Color Palette` drives speaker colors and app skin, while `Geodesic Appearance` has an independent palette plus Geodesic Saturation that updates only the shell/geodesic material key
-- SceneKit review-app grid-plane visibility, spacing, and ground palette changes stay isolated from shell, speaker geometry, speaker material, and label update keys
+- SceneKit review-app `Sonic Sphere Speaker Palette` drives physical speaker colors and app skin, `Source Speaker Palette` drives only source marker colors, and `Geodesic Appearance` has an independent palette plus Geodesic Saturation that updates only the ribbed-sphere material key
+- SceneKit review-app `Sphere Geometry` exposes `Ribbed Speaker Sphere`, `Rib Thickness`, `Vertical Ribs`, and `Horizontal Rings`, defaults the ribbed overlay off, derives deterministic fitted rib segments from active receiver speaker centers, and uses evenly spaced symmetrical ribs/rings
+- SceneKit review-app `Geodesic Appearance` exposes only `Geodesic Palette` and `Geodesic Saturation`; both apply to the ribbed sphere in SceneKit and canvas fallback
+- SceneKit review-app saved theme/settings payload omits new exports of the deprecated `hideSphereStructure` key, ignores legacy values on decode, and keeps legacy `showSpeakerCenterStruts` fallback for ribbed sphere visibility
+- SceneKit review-app grid-plane visibility, spacing, and ground palette changes stay isolated from ribbed sphere, speaker geometry, speaker material, and label update keys
 - SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state
-- SceneKit review-app `Meter Source` exposes Music, Impulse Test Ripple, Impulse Test Waves, and Impulse Test Orbiting Comets, with deterministic spatial patterns instead of random or uniform channel values; orbiting comets are exactly two broader hot trails
-- SceneKit review-app left audio source exposes All Mono, Excite Ripple, Excite Waves, and Excite Comets render types that reuse the mono RMS/peak sample as a cheap spatial-pattern envelope
+- SceneKit review-app `Input` tray owns the selector, mode-specific source controls, and `Meter Source` status rows without nested source trays or a duplicate global source picker
+- SceneKit review-app telemetry advertiser handling covers zero, one, and multiple review advertisers, with multi-advertiser selection preserved by advertiser ID
+- SceneKit review-app `Impulse Test` source exposes Ripple, Waves, and Orbiting Comets, with deterministic spatial patterns instead of random or uniform channel values; orbiting comets are exactly two broader hot trails
+- SceneKit review-app `Local Song` source exposes All Mono, Excite Ripple, Excite Waves, and Excite Comets render types that reuse the mono RMS/peak sample as a cheap spatial-pattern envelope
 - SceneKit review-app `Bloom Style` exposes Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without reset/export controls or a four-up preview, and its dice randomizer chooses a different preset when possible
 - SceneKit review-app `Meter Response` keeps its dice randomizer scoped to meter response sliders
-- SceneKit review-app saved theme/settings payload includes speaker palette, geodesic palette, speaker type, speaker label font and font size, meter source, audio render type, Cube VU preset/settings, performance cadence values, and the full left-panel audio/camera/view-detail state
+- SceneKit review-app global `Roll the dice on looks` icon-only action randomizes view/visual state ranges, including Source Speaker Palette and all current `Sphere Appearance` controls, while preserving source mode, telemetry advertiser selection, local song fields, local-song render type, impulse pattern, saved/default theme metadata, selected speaker, and diagnostics
+- SceneKit review-app saved theme/settings schema `9` payload includes speaker palette, source speaker palette, geodesic palette/saturation, ribbed speaker sphere visibility/thickness/rib/ring settings, speaker type, speaker label font and font size, source mode, legacy meter source/impulse pattern, audio render type, Cube VU preset/settings, performance cadence values, and the full left-panel audio/camera/view-detail state
+- SceneKit review-app saved theme/settings payload decodes older JSON without `sourceMode` by inferring `Local Song` from legacy Music drive mode and `Impulse Test` from legacy impulse drive modes
 - SceneKit review-app saved theme/settings payload round-trips top-level `groundAppearance.showGridPlane`, `gridPlaneVisibilitySlider`, `gridPlaneSpacing`, and `gridPlaneRenderStyle`, while decoding older `leftPanel.viewDetail` grid fields and defaulting missing older JSON values to `false`, `70`, default spacing, and the fallback palette
 - SceneKit review-app grid-plane geometry keeps the canonical `z = -1.2` offset, default `0.5` spacing, 10 x 10 bounds, deterministic default line count, alternate spacing line counts, and default opacity mapping
 - SceneKit review-app camera projection maps canonical `+X = right` to screen right and `-X = left` to screen left for Plan, Elevation, and Isometric; horizontal drag control also uses the corrected left/right yaw sign
 - SceneKit review-app `Saved Themes` storage generates unique two-word filenames, displays manual filename renames, round-trips selected fonts/font size, survives default-theme filename changes by `themeID`, and falls back safely for missing or invalid defaults
-- SceneKit review-app `Sphere Geometry` and `Speaker Pattern` trays exist as future placeholders and expose only `Future work`
+- SceneKit review-app SpatGRIS speaker/source layout storage generates unique no-overwrite filenames, displays manual filename renames, shows invalid XML rows, survives default-layout filename changes by stable layout ID, and falls back safely for missing or invalid defaults
+- SceneKit review-app layout-derived bounds include imported receivers and sources, and source markers render separately from receiver speakers
+- SceneKit review-app `Hide Sphere` is absent from current controls; `Speaker Pattern` still exists as a future placeholder and exposes only `Future work`
 - SceneKit review-app hidden diagnostics expose raw RMS, raw peak, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source
 - SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
+- SceneKit review-app FPS diagnostics classify actual review viewport render/update cadence against target `60`, below-target `30..<60`, and under-target `<30`, throttle steady logs to five samples per second, emit status transitions immediately, and keep FPS entries inside the same capped diagnostics log
 - SceneKit review-app object/trail/glow/bounds trays are inactive while the review surface focuses on speakers
 
 The production wrapper and review surface intentionally share a test target for now, but they import separate package targets. Production wrapper assertions should exercise `OrbitalViewSwiftUI`; review/demo assertions should exercise `OrbitalViewReview`.
@@ -213,6 +226,18 @@ Current viewer tests cover:
 - object trail caps
 - Cube VU diagnostics and object trails enabled for visual review
 - the display-only stress fixture preserves physical speaker identity, source object identity, capped trails, local generator provenance, and display-drop diagnostics
+
+## SpatGRIS Tests
+
+`Tests/OrbitalViewSpatGRISTests/` covers:
+
+- current SpatGRIS `SPEAKER_SETUP` `4.0.0` receiver import
+- legacy `SPEAKER_N` import
+- `SPAT_GRIS_PROJECT_DATA` source metadata import
+- `/spat/serv` OSC text parsing for `car`, `deg`, and `pol`
+- normalized round-trip export to current `SPEAKER_SETUP`
+- unsafe XML, duplicate IDs, and invalid port diagnostics
+- layout-derived scene bounds for large receiver layouts
 
 Launch the viewer for manual review with:
 

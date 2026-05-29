@@ -16,6 +16,12 @@ public struct OrbitalViewCoordinateSystem: Equatable, Codable, Sendable {
         zAxis: .up
     )
 
+    public static let spatGRIS = OrbitalViewCoordinateSystem(
+        xAxis: .right,
+        yAxis: .front,
+        zAxis: .up
+    )
+
     public let xAxis: AxisMeaning
     public let yAxis: AxisMeaning
     public let zAxis: AxisMeaning

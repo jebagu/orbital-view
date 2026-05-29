@@ -18,9 +18,9 @@ The active review app is the existing `OrbitalViewViewer` executable in this pac
 
 Canonical 3D coordinates in this package are now Z-up: `x = right`, `y = front`, and `z = up`. Wavefield/Fey channel order remains physical channel order `1...30`; renderer and review surfaces transform canonical vectors into their own Y-up spaces only at render boundaries.
 
-The confirmed review app preserves the original left control rail sections and defaults for Camera and View Detail. `Song Audio Source` now sits at the top of the left rail with side-by-side transport icon buttons for Play and Pause plus a cheap `Render Type` selector for mono audio or audio-excited spatial patterns. Speaker Type moved to the right `Speaker Shape` tray. The right panel is organized by use into Theme, Speaker Appearance, Sphere Appearance, Ground Appearance, Meter Behavior, and Diagnostics sections with `Saved Themes`, `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Color Palette`, `Cube Surface`, `Bloom Style`, `Sphere Geometry`, `Geodesic Appearance`, `Ground Appearance`, `Meter Source`, `Meter Response`, `Performance`, and `Diagnostics` trays. Label Font now groups fonts by Normie, Nerd, and Nostromo families and includes a review-only font size slider. Local dice randomizers live inside Cube Surface, Bloom Style, and Meter Response. The app skin follows the speaker color palette, while the geodesic shell has its own independent palette and saturation controls. The review-only `Ground Appearance` tray owns the optional display-only `Grid Plane` toggle, `Grid Visibility`, `Grid Spacing`, and ground palette controls for the 10 x 10 line grid below the sphere without changing speaker geometry, labels, Cube VU materials, shell style, or meter state. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
+The confirmed review app keeps the left control rail focused on product identity, Camera, and View Detail. The visible rail now fills the full desktop window height, shows the plain `Orbital View` title near the top using the Wavefield Receiver player-title font treatment, and places Camera/View Detail directly underneath. The right panel now starts with a `Sound Metering Input` header above the single expandable `Input` tray, followed by `Speaker and Source Layout`, `Roll the dice on looks`, `Theme`, Speaker Appearance, Sphere Appearance, Ground Appearance, Meter Behavior, and Diagnostics. `Speaker and Source Layout` has title-only `Sonic Sphere Speakers` and `Source Speakers` trays for SpatGRIS receiver speaker setup import/save/defaults, source setup import/save/defaults, source project metadata import, and review-only `/spat/serv` OSC listening on a validated UDP port; the trays include the SPAT XML kicker copy for receiver and source layouts. The `Input` tray begins with the Orbisonic-style `Telemetry` / `Local Song` / `Impulse Test` selector and folds all input behavior into one surface: telemetry provider/status/track details with selectable advertiser buttons when multiple review advertisers exist, local song choose-file/transport/render-type controls, impulse pattern controls, and `Meter Source` status. Speaker Type lives in the right `Speaker Shape` tray. `Roll the dice on looks` is a global review-only dice action with a centered icon-only dice button that randomizes view/visual state, including Source Speaker Palette and every current Sphere Appearance control, while preserving Input state, saved/default theme metadata, selected speaker, and diagnostics. Label Font now groups fonts by Normie, Nerd, and Nostromo families and includes a review-only font size slider. Local dice randomizers still live inside Cube Surface, Bloom Style, and Meter Response. The app skin follows the Sonic Sphere speaker palette, the separate Source Speaker Palette styles source markers only, and `Sphere Geometry` owns the default-off `Ribbed Speaker Sphere` overlay plus Rib Thickness, Vertical Ribs, and Horizontal Rings controls. `Geodesic Appearance` now owns only the independent geodesic palette/saturation styling, and saturation applies to the ribbed sphere in SceneKit and canvas fallback. The old imported/Fey shell and `Hide Sphere` control are removed from the live review workflow. The review-only `Ground Appearance` tray owns the optional display-only `Grid Plane` toggle, `Grid Visibility`, `Grid Spacing`, and ground palette controls for the 10 x 10 line grid below the sphere without changing speaker geometry, labels, Cube VU materials, source markers, ribbed sphere style, or meter state. Object overlay, trails, glow trails, and bounds controls are hidden for the current review pass while the underlying object contracts remain in the package.
 
-The SceneKit review app can load a local audio file for visual testing. Local file playback uses a simple choose-file plus separate play/pause transport and reduces the file meter to one mono RMS/peak sample applied equally to all speakers. This is a review-app input mode only; production hosts still provide real `SpeakerMeterFrame` values keyed by physical speaker channel.
+The SceneKit review app can load a local audio file for visual testing only when `Local Song` is selected. Local file playback uses a simple choose-file plus separate play/pause transport and reduces the file meter to one mono RMS/peak sample applied equally to all speakers. `Telemetry` defaults to `No Provider` and displays silent meters until a real Orbisonic telemetry publisher exists. This is review-app input selection only; production hosts still provide real `SpeakerMeterFrame` values keyed by physical speaker channel.
 
 `Cube VU` speaker type now uses the VU Kit scalar center-bloom contract in the SceneKit surface with a retained 9x9 face-pixel material texture applied to the actual cube faces, selected Orbisonic theme colors, RMS-driven center bloom, peak/hot fill, clip flash, and a material-only cube outline strength control. The old review-app `Speaker Height` control is no longer visible; older saved values still decode but are normalized to the current flat cube/prism geometry path. Prism and Sphere keep the existing simpler material tint behavior while inheriting the selected viewport theme.
 
@@ -95,6 +95,8 @@ main tree
 - Added review-only `Grid Visibility` tuning and expanded the ground plane to 10 x 10 canonical units.
 - Moved review-only ground plane controls into the right-panel `Ground Appearance` section and added grid spacing plus ground palette controls.
 - Restored the review app icon to the archived previous gradient option 02 icon assets in the repo.
+- Moved the review-app Input selector, source-specific trays, and Meter Source status to the top of the right panel; added multi-advertiser telemetry selection plus global Roll the Dice view randomization while preserving input state.
+- Added `OrbitalViewSpatGRIS`, SpatGRIS speaker/source layout stores, source/project import, review-only `/spat/serv` OSC listening, layout-derived scene bounds, and separate review source markers.
 
 ## In Progress
 
@@ -115,6 +117,97 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-29 ChatGPT Pro Graphics Performance Context Bundle
+
+- Added `CHATGPT_PRO_GRAPHICS_PERFORMANCE_GUIDE.md` as the first-read handoff for ChatGPT Pro to write a focused graphical-performance implementation prompt.
+- Added `CHATGPT_PRO_GRAPHICS_PERFORMANCE_UPLOAD_MANIFEST.md` documenting included files, exclusions, performance targets, and verification commands.
+- Created `OrbitalViewKit-chatgpt-pro-graphics-performance-context-2026-05-29.zip` as an upload-ready context bundle for the current working tree.
+- The guide makes the future graphics target explicit: active viewport/interaction target `120 FPS`, meter display target `30 FPS`, while noting current implementation reality still centers around `60 FPS` active motion and lower meter/inspector cadences.
+- The bundle includes current docs, source, tests, OpenSpec realtime-family context, work-package context, review checklists, the browser mockup, visual media, and the Fey/DomeLab configuration reference; it excludes `.git`, `.build`, `.swiftpm`, previous zip artifacts, `dist/`, app bundles, packages, and broad generated icon batches.
+- Verification: `unzip -t OrbitalViewKit-chatgpt-pro-graphics-performance-context-2026-05-29.zip` passed with no archive errors; `zipinfo -1` confirmed the guide, manifest, key source files, and visual media are present; an exclusion scan found no `.git`, `.build`, `.swiftpm`, `dist/`, prior zip, app, or pkg entries. Archive size is `8.4M`.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 151 tests and 0 failures, and `git diff --check` passed.
+
+### Update: 2026-05-29 Review FPS Meter And Diagnostics Logging
+
+- Added a review-only FPS monitor inside the SceneKit viewport coordinator so samples reflect actual review viewport render/update cadence instead of telemetry cadence.
+- Added bottom-right FPS chip overlay in the review viewport. The visible chip intentionally shows only the status color dot and current `FPS` value; target/status words stay out of the viewport chrome.
+- Added internal target/status constants: target `60`, below target `30..<60`, under target `<30`, and steady FPS diagnostics throttled to five samples per second with immediate status-transition entries.
+- Routed FPS diagnostics through the existing capped `OrbitalViewportDiagnosticLog` with messages like `FPS 58.7 target=60 status=below target`; no saved theme/settings JSON, OSLog, or file logging was added.
+- Updated SwiftUI/review tests for FPS status classification, throttled sample emission, immediate status transitions, diagnostics cap behavior, and source-level UI constants.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 76 tests, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 151 tests, and `git diff --check` passed. `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/opened the current app; `pgrep -fl OrbitalViewViewer` confirmed pid `12226`. Screenshot inspection confirmed the simplified bottom-right chip with a colored status dot and `FPS 31.1` only.
+
+### Update: 2026-05-29 Dice Icon, Split Speaker Appearance, And Sphere Dice
+
+- Changed the global `Roll the dice on looks` action to a centered icon-only dice button while preserving the section headline and accessibility/help text.
+- Split speaker appearance palettes into `Sonic Sphere Speaker Palette` for physical speakers/app skin and `Source Speaker Palette` for source markers.
+- Added persisted `sourceSpeakerRenderStyle` to review theme/settings schema `9`; older JSON without the field falls back to the decoded Sonic Sphere speaker palette.
+- Extended global dice randomization to include Source Speaker Palette and every current Sphere Appearance control: ribbed sphere visibility, rib thickness, vertical ribs, horizontal rings, geodesic palette, and geodesic saturation.
+- Updated SceneKit and canvas fallback source-marker rendering so source palette changes are isolated from physical speaker geometry/material, labels, grid, ribbed sphere, and meter state.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 72 tests, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 147 tests, and `git diff --check` passed. `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/opened the current app. Screenshot inspection confirmed the icon-only dice button, the separate `Sonic Sphere Speaker Palette` and `Source Speaker Palette` trays, `Sphere Geometry` / `Geodesic Appearance`, visible themed ribbed sphere, and source markers.
+
+### Update: 2026-05-28 Review App Copy And Dice Labels
+
+- Added a `Sound Metering Input` header above the existing top `Input` tray.
+- Renamed the SpatGRIS receiver/source layout trays to `Sonic Sphere Speakers` and `Source Speakers`.
+- Added tray kicker copy: `Speaker layout in SPAT XML format.` and `Source speaker layout in SPAT XML format.`
+- Renamed the global dice headline/action to `Roll the dice on looks`.
+- Tightened the global dice randomizer so it explicitly changes both current `Geodesic Appearance` controls: `Geodesic Palette` and `Geodesic Saturation`.
+- Updated review UI inventory tests and documentation for the new copy and dice coverage.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 69 tests, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 144 tests, and `git diff --check` passed. `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/opened the current app; `pgrep -fl OrbitalViewViewer` confirmed the refreshed process. Screenshot inspection confirmed `Sound Metering Input`, `Sonic Sphere Speakers`, the speaker SPAT XML kicker, `Roll the dice on looks`, and the themed ribbed-sphere/geodesic appearance in the current app.
+
+### Update: 2026-05-28 Deprecate Old Shell And Promote Ribbed Sphere Controls
+
+- Removed `Hide Sphere` and the sphere/speaker sync future-work row from visible review controls; `Sphere Geometry` now owns `Ribbed Speaker Sphere`, `Rib Thickness`, `Vertical Ribs`, and `Horizontal Rings`.
+- Kept `Geodesic Appearance` as the styling tray with only `Geodesic Palette` and `Geodesic Saturation`; SceneKit and canvas rib rendering now use those controls, with chromatic vertical ribs so saturation changes are visible.
+- Deprecated the old imported/Fey shell from live review rendering by removing active shell state, update keys, SceneKit shell nodes, canvas shell drawing, diagnostics rows, and old shell geometry code.
+- Made ribbed sphere geometry symmetrical: the fit still uses active speaker centroid plus median radius, but vertical ribs and horizontal rings are evenly spaced rather than speaker-biased.
+- Bumped review settings/theme JSON schema to `8`, exports only current ribbed sphere fields, ignores legacy `hideSphereStructure` on decode, and still maps legacy `showSpeakerCenterStruts` to ribbed sphere visibility when the new key is missing.
+- Updated tests for control inventory, schema/export/decode compatibility, symmetrical rib geometry, update-key isolation, SceneKit rib toggling, and SceneKit geodesic saturation material updates.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 69 tests, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 144 tests, and `git diff --check` passed. `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` still delegates to the project launcher and rebuilt/opened the current app; `pgrep -fl OrbitalViewViewer` confirmed the refreshed process. Computer Use inspection confirmed `Sphere Geometry` owns the ribbed sphere controls, `Geodesic Appearance` contains only palette/saturation styling, `Hide Sphere` is absent, and dragging `Geodesic Saturation` from 27% to 99% visibly warmed the ribbed sphere.
+
+### Update: 2026-05-28 Ribbed Speaker Sphere Overlay
+
+- Replaced the visible `Speaker Center Struts` overlay with a default-off `Ribbed Speaker Sphere` switch under `Sphere Appearance` > `Geodesic Appearance`.
+- Added review controls for `Rib Thickness`, `Vertical Ribs`, and `Horizontal Rings`, with the ribbed overlay still using the existing Geodesic palette and Geodesic Saturation controls.
+- Fit the ribbed sphere from active receiver speaker centers, including imported SpatGRIS speaker layouts, using the speaker centroid plus median speaker radius and biasing rib/ring angles toward active speaker positions before filling regular rib/ring slots.
+- Added SceneKit retained rib nodes plus Canvas fallback drawing from the same ribbed-sphere segment generator. `Hide Sphere` still controls only the old Fey/imported shell.
+- Persisted `showRibbedSpeakerSphere`, `ribbedSphereThickness`, `ribbedSphereVerticalRibs`, and `ribbedSphereHorizontalRings` in review theme/settings JSON, bumped the review payload schema to `7`, defaulted missing fields to hidden/default controls, and kept legacy `showSpeakerCenterStruts` decode compatibility.
+- Added tests for control inventory, JSON export/decode/default fallback/legacy fallback, deterministic ribbed-sphere topology, endpoint-on-fit behavior, speaker-biased rib/ring angles, update-key isolation from old shell/speaker/grid state, and SceneKit toggling/rebuilding without speaker or label rebuilds.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 70 tests, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 145 tests, and `git diff --check` passed. `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/opened the current app, `pgrep -fl OrbitalViewViewer` confirmed the refreshed process, and Computer Use visual inspection confirmed the Geodesic Appearance tray shows `Ribbed Speaker Sphere`, `Rib Thickness`, `Vertical Ribs`, and `Horizontal Rings` with the themed ribbed sphere visible around the active speaker layout.
+
+### Update: 2026-05-28 Hide Sphere Structure By Default
+
+- Added a review-only `Hide Sphere` switch under `Sphere Appearance` > `Sphere Geometry`, defaulting on so the current Fey geodesic shell is hidden until sphere structure and active speaker layout stay in sync.
+- Kept speakers, source markers, labels, fog, ground grid, meters, and geodesic appearance palette/saturation controls available; hiding the sphere affects only shell/boundary rendering.
+- Added visible tray copy: `Future work: sync sphere structure with the active speaker layout before showing the shell by default.`
+- Persisted `hideSphereStructure` in review settings/theme JSON, bumped the review payload schema to `5`, and default older JSON without the field to hidden.
+- Updated review-surface tests for control inventory, default and missing-field decode behavior, JSON export, update-key isolation, and SceneKit shell hide/show behavior without rebuilding speaker geometry.
+- Verification: `swift test --filter OrbitalViewSwiftUITests` passed with 63 tests, `swift build` passed, `swift test` passed with 138 tests, `git diff --check` passed, and `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/opened the current app. Computer Use inspection confirmed the geodesic shell is hidden by default, `Hide Sphere` is on under `Sphere Appearance` > `Sphere Geometry`, and the future-work note is visible.
+
+### Update: 2026-05-28 SpatGRIS Speaker And Source Layouts
+
+- Added the `OrbitalViewSpatGRIS` target for SpatGRIS `SPEAKER_SETUP` import/export, `SPAT_GRIS_PROJECT_DATA` source metadata import, `/spat/serv` source-position parsing, and validation diagnostics.
+- Extended Core with cartesian speaker anchors, SpatGRIS coordinate metadata, layout-derived bounds helpers, and source layout/source meter frame value types.
+- Added right-panel `Speaker and Source Layout` directly after `Input`, with `Speakers` and `Source` trays matching saved-theme save/refresh/load/default row behavior.
+- Added review-only saved layout stores in `Speaker Layouts` and `Source Layouts`, default metadata files, no-overwrite generated names, invalid XML rows, and manual rename default recovery.
+- Added review-only source project import plus `/spat/serv` OSC listening with default port `18032` and port range `1024...65535`.
+- Updated SceneKit and Canvas review rendering to use imported receiver speakers, imported/live source markers, and layout-derived scene bounds while keeping sources in a separate marker layer.
+- Updated tests for SpatGRIS fixture import/export/project/OSC/diagnostics, saved layout store behavior, right-panel section/tray controls, and layout-derived bounds.
+
+### Update: 2026-05-27 Right-Panel Input And Global Dice UI
+
+- Moved the review source controls out of the left rail and into a single expandable right-panel `Input` tray above `Roll the Dice` and `Theme`.
+- Kept the left rail focused on product identity, `Camera`, and `View Detail`.
+- Corrected the desktop left rail so its visible background/border fills the full window height, with top-aligned content instead of a vertically centered floating block.
+- Changed the rail title from `OrbitalViewKit` to `Orbital View` and matched the Wavefield Receiver player-panel title treatment: system font, 16 pt, black weight.
+- Made `Input` start with the Orbisonic-style `Telemetry`, `Local Song`, and `Impulse Test` selector and folded telemetry details, local song choose-file/transport/render-type controls, impulse pattern controls, and `Meter Source` status into that one tray.
+- Added review-only telemetry advertiser handling: zero advertisers shows `No Provider`, one advertiser shows details, and multiple advertisers render selectable full-width buttons while preserving the selected advertiser by ID.
+- Added a global `Roll the Dice` panel with a dice icon and full-width action button that randomizes camera/view-detail/visual tuning, fog, speaker-number visibility, palettes, ground/grid, speaker shape, label font/size, Cube VU, bloom, meter response, and performance FPS.
+- Preserved Input state during global dice rolls, including source mode, telemetry advertiser selection, local song file/playback/status/render type, and impulse pattern. Saved/default theme metadata, selected speaker, and diagnostic log also remain unchanged.
+- Kept the existing review settings JSON shape for the relocation; `leftPanel.audioSource` and legacy source inference remain compatible.
+- Updated review-surface tests for left/right section order, Input selector/source trays, `Meter Source` placement, multi-advertiser selection, global dice ranges, dice accessibility labels, and input-state preservation.
+- Verification for the latest left-rail title/height correction: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 123 tests, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `git diff --check` passed, and `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt and opened `OrbitalViewViewer` from this checkout. `pgrep -fl OrbitalViewViewer` confirmed the refreshed process. Pixel-level visual confirmation was blocked because the captured screen was the macOS lock screen.
 
 ### Update: 2026-05-25 Fix Review Left/Right Projection And Control Axis
 

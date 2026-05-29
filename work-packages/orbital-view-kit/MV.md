@@ -24,11 +24,11 @@ The completed slices are small enough for the main tree.
 
 ## Product Summary
 
-OrbitalViewKit should eventually render a beautiful, center-locked, orbitable 3D Sonic Sphere-style viewport. Speakers remain physical objects while RMS, peak, and clip state appear through material, glow, rings, and bloom rather than geometry resizing.
+OrbitalViewKit should eventually render a beautiful, center-locked, orbitable 3D Sonic Sphere-style viewport. Speakers remain physical objects while RMS, peak, and clip state appear through material, glow, rings, and bloom rather than geometry resizing. The current review shell is hidden by default; future sphere work must make the sphere structure and active speaker layout stay in sync before the shell is default-visible again.
 
 ## Architecture Summary
 
-Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam, offscreen smoke-tested draw path, and static draw-input invariant tests. Full production visuals, SwiftUI controls, DomeLab import, Splat overlays, and downstream app adapters are later slices.
+Start with `OrbitalViewCore`: pure Swift contracts and validation. The renderer now has an initial MetalKit seam, offscreen smoke-tested draw path, and static draw-input invariant tests. Full production visuals, SwiftUI controls, DomeLab import, sphere/speaker layout sync, Splat overlays, and downstream app adapters are later slices.
 
 ## Related OpenSpec Change
 

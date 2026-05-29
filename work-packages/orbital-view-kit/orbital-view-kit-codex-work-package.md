@@ -182,6 +182,8 @@ The new module should either adapt these existing meter structures or accept an 
 
 `OrbitalViewKit` is a beautiful, real-time 3D viewport for visualizing a Sonic Sphere-style speaker shell. It renders a geodesic or lamella spherical structure with struts, nodes, optional shell/faces, mounted speakers, and live per-speaker VU activity. The user can drag the model freely, but the sphere always remains locked to the center of the viewport. One-click camera modes switch between plan, elevation, side, and isometric views.
 
+Current planning note: the review app hides the Fey geodesic shell by default because that structure does not reliably match active speaker layouts. Future sphere work must make sphere structure and speaker layout stay in sync before the shell is shown by default again.
+
 For Wavefield and Orbisonic, the first purpose is monitoring: a musician or operator sees which physical Sonic Sphere speakers are being driven and how hard they are being driven. The speakers do not become bar meters and do not resize like a normal VU meter. They remain physical solid objects; their material, ring, bloom, and glow react to the current RMS/peak level.
 
 For Splat, the same viewport becomes an authoring environment. The Sonic Sphere stays as the physical speaker target, while virtual stereo, 5.1, Atmos, or arbitrary speaker/source layouts can be placed around or inside the scene. Splat can then visualize renderer kernels such as nearest-neighbor, VBAP, or future matrix/gain renderers.
@@ -289,11 +291,13 @@ B. Imported shell geometry from DomeLab
 C. Explicit production shell geometry from a future Sonic Sphere source
 ```
 
-For Wavefield's first version, importing or hardcoding a validated shell is safer than exposing full editing controls. Splat can later enable editing.
+For Wavefield's first version, importing or hardcoding a validated shell is safer than exposing full editing controls. Splat can later enable editing. The shell source and speaker layout must be validated together; do not treat the current review Fey geodesic as a valid default-visible shell for arbitrary active speaker layouts.
 
 ### 8.2 Physical speaker objects
 
 Speakers are mounted to the shell surface and displayed as real 3D solids.
+
+Future shell visibility depends on a synchronized shell/speaker contract: each active layout must either derive from the same sphere geometry as the visible shell or explicitly map speakers to stable shell nodes, struts, faces, or directions before the shell is default-visible again.
 
 Speaker visual shapes:
 

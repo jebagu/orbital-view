@@ -694,6 +694,13 @@ final class OrbitalViewMetalDrawPipeline {
         switch speaker.anchor {
         case .direction(let direction, _):
             return projectedPosition(for: direction)
+        case .cartesian(let position, _):
+            let normal = normalizeNonZero(SIMD3<Float>(
+                Float(position.x),
+                Float(position.z),
+                Float(position.y)
+            ))
+            return SIMD2<Float>(normal.x * projectionScale, normal.y * projectionScale)
         case .node, .edge, .face:
             return SIMD2<Float>(0, 0)
         }
@@ -711,6 +718,12 @@ final class OrbitalViewMetalDrawPipeline {
                 Float(direction.x),
                 Float(direction.z),
                 Float(direction.y)
+            ))
+        case .cartesian(let position, _):
+            normal = normalizeNonZero(SIMD3<Float>(
+                Float(position.x),
+                Float(position.z),
+                Float(position.y)
             ))
         case .node, .edge, .face:
             normal = SIMD3<Float>(0, 0, 1)

@@ -45,6 +45,7 @@ public struct OrbitalViewSpeaker: Identifiable, Equatable, Codable, Sendable {
 
 public enum SpeakerAnchor: Equatable, Codable, Sendable {
     case direction(UnitSphereDirection, offsetM: Double)
+    case cartesian(OrbitalViewVector3, offsetM: Double)
     case node(nodeID: String, offsetM: Double)
     case edge(edgeID: String, t: Double, offsetM: Double)
     case face(faceID: String, barycentric: OrbitalViewVector3, offsetM: Double)
@@ -52,6 +53,9 @@ public enum SpeakerAnchor: Equatable, Codable, Sendable {
     public func validate() throws {
         switch self {
         case .direction(_, let offsetM):
+            try validateOffset(offsetM)
+        case .cartesian(let position, let offsetM):
+            try position.validate(fieldPrefix: "speaker.anchor.cartesian")
             try validateOffset(offsetM)
         case .node(let nodeID, let offsetM):
             guard !nodeID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
