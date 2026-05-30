@@ -926,6 +926,37 @@ If SceneKit shader modifiers are too risky, leave SceneKit with a reduced write 
 
 This option is acceptable only if SceneKit tests still prove no Cube VU work on camera-only active frames and production Metal tests prove retained-resource behavior.
 
+Future-work direction:
+
+```text
+Move the approved Cube VU face visual into the production Metal renderer instead
+of continuing to animate SceneKit by generating and assigning NSImage textures.
+```
+
+Why:
+
+- The live visible-app profile showed the slow path was Cube VU face texture generation, `SCNMaterialProperty` texture assignment, and SceneKit/CoreGraphics/vImage image conversion, not physical speaker count or audio work.
+- Metal is already the accepted production renderer backend and already owns the retained-buffer seam for static speaker geometry, display-only material payloads, object overlays, camera state, and offscreen tests.
+- A Metal shader can keep the same visible contract while updating per-speaker scalar data instead of replacing image contents: 9x9 face grid, pixel fill, idle checker, RMS center bloom, peak/hot fill, rim halo edge, clip flash, palette ramp, alpha, and the existing twelve-edge outline look.
+- The path scales better for 30 speakers now, future 52-speaker layouts, 128 source objects, trails, host telemetry, and 120 FPS active camera motion because meter updates become small per-instance buffer/uniform writes rather than CPU-created image uploads.
+
+How:
+
+1. Keep SceneKit as the review surface only long enough to preserve visual parity and operator controls; do not import SceneKit review code into production hosts.
+2. Add a bounded protected-path slice for `Sources/OrbitalViewRender/` and `Tests/OrbitalViewRenderTests/`.
+3. Define a Metal Cube VU material payload that mirrors `SpeakerCubeVUScalars` plus visual settings: display scalar, hot scalar, palette heat, clip, pixel fill, checker opacity, bloom min/max/edge, rim edge, response curve, hot threshold/fill, idle tint, face-pixel count, alpha, selected state, and palette identifiers/colors.
+4. Keep speaker geometry static and instanced. Meter changes must update only dynamic material payload buffers, never speaker positions, channel order, mesh dimensions, or static identity buffers.
+5. Implement the cube-face shader so UVs are quantized into the same face-pixel grid used by the SceneKit texture generator. Use shader math for center bloom, checker, hot fill, rim halo, and clip flash.
+6. Keep the approved outline treatment visually equivalent. Start by preserving the current separate outline visual in Metal as either a lightweight edge pass or instanced edge geometry; do not repeat the rejected packed/single-node SceneKit outline look if it changes the speaker face read.
+7. Add parity tests before manual tuning: offscreen pixel probes for nonblank Cube VU faces, static draw-input invariant tests across meter/camera changes, retained-buffer allocation tests, 30/52 speaker fixtures if available, 128-object stress retention, and source-level 120 active / 30 meter cadence tests.
+8. Launch the review app only after the production renderer has a verified preview path, and compare against the approved SceneKit Cube VU look with screenshot evidence. If visual parity is not close, keep the Metal path behind an explicit development switch until tuned.
+
+Acceptance notes:
+
+- This is the strongest long-term performance path, but it is larger than SceneKit hot-path containment and should not be mixed with fog, UI cleanup, telemetry, or audio work.
+- It requires OpenSpec/protected-path review if the task changes public renderer behavior, renderer contracts, or the visible review-app path.
+- Success should be measured by retained-resource tests and visible review evidence, not by claiming host realtime callback performance.
+
 ## Required Changes Regardless Of Option
 
 - Add material-state deduplication so unchanged material values do not cause repeated SceneKit writes.

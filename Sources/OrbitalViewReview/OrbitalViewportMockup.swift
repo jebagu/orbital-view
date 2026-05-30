@@ -7304,6 +7304,18 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         OrbitalViewportFogConfiguration.make(density: fogDensity, cameraDistance: orbitState.distance)
     }
 
+    func depthFogAmount(_ depth: Double) -> Double {
+        let fogStrength = fogConfiguration.normalizedDensity
+        guard fogStrength > 0 else {
+            return 0
+        }
+
+        let nearToFar = OrbitalViewportMath.clamp01((sceneScale - depth) / (sceneScale * 2))
+        let depthCurve = pow(nearToFar, 1.18)
+        let densityCurve = pow(fogStrength, 0.72)
+        return OrbitalViewportMath.clamp01(depthCurve * densityCurve)
+    }
+
     func rotate(_ vector: OVVector3) -> OVVector3 {
         orbitState.cameraBasis.transform(vector - sceneCenter)
     }
@@ -7316,7 +7328,46 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     }
 
     func hiddenDepthFade(_ depth: Double) -> Double {
-        depth >= frontClipPlane ? 1 : 0.34
+        guard depth < frontClipPlane else {
+            return 1
+        }
+
+        let rear = rearDepthAmount(depth)
+        let fogStrength = fogConfiguration.normalizedDensity
+        let baseFade = 0.38 - rear * 0.12
+        let fogLoss = fogStrength * (0.12 + rear * 0.22)
+        return max(0.04, baseFade - fogLoss)
+    }
+
+    func sphereGeometryFogAlpha(depth: Double) -> Double {
+        let fogAmount = depthFogAmount(depth)
+        guard fogAmount > 0 else {
+            return 1
+        }
+
+        let base = max(0.22, 1 - fogAmount * 0.86)
+        guard depth < frontClipPlane else {
+            return base
+        }
+
+        let rear = rearDepthAmount(depth)
+        return max(0.04, base * max(0.18, 1 - rear * 0.58))
+    }
+
+    var ribbedSphereSceneMaterialFogDepth: Double {
+        frontClipPlane - (sceneScale * 0.58)
+    }
+
+    var ribbedSphereSceneMaterialAlpha: Double {
+        sphereGeometryFogAlpha(depth: ribbedSphereSceneMaterialFogDepth)
+    }
+
+    func ribbedSphereCutawayPlaneOffset(radius: Double) -> Double {
+        guard fogConfiguration.isEnabled else {
+            return 0
+        }
+
+        return radius * 0.22 * pow(fogConfiguration.normalizedDensity, 0.82)
     }
 
     var hiddenLinesVisible: Bool {
@@ -7331,8 +7382,21 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         showSpeakerNumbers && (selected || isVisibleDepth(depth))
     }
 
+    func speakerLabelAlpha(depth: Double, selected: Bool) -> Double {
+        guard !selected else {
+            return 1
+        }
+        return max(0.18, 0.94 * (1 - depthFogAmount(depth) * 0.72))
+    }
+
     func foggedAlpha(depth: Double, baseAlpha: Double) -> Double {
-        baseAlpha
+        let fogAmount = depthFogAmount(depth)
+        guard fogAmount > 0 else {
+            return baseAlpha
+        }
+
+        let floor = depth < frontClipPlane ? baseAlpha * 0.12 : baseAlpha * 0.42
+        return max(floor, baseAlpha * (1 - fogAmount * 0.78))
     }
 
     func rearDepthAmount(_ depth: Double) -> Double {
@@ -7346,24 +7410,22 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         guard !selected else {
             return 1
         }
-        guard depth < frontClipPlane else {
-            return 0.94
+        if depth >= frontClipPlane {
+            return max(0.34, foggedAlpha(depth: depth, baseAlpha: 0.94))
         }
 
+        let fogAmount = depthFogAmount(depth)
         let rear = rearDepthAmount(depth)
-        let fogStrength = fogConfiguration.normalizedDensity
-        let attenuation = max(0.2, 1 - rear * (0.38 + fogStrength * 0.42))
-        return max(0.14, 0.42 * attenuation)
+        let rearAttenuation = max(0.24, 1 - rear * (0.16 + fogAmount * 0.22))
+        return max(0.055, foggedAlpha(depth: depth, baseAlpha: 0.42) * rearAttenuation)
     }
 
     func speakerEmissionScale(depth: Double) -> Double {
-        guard depth < frontClipPlane else {
-            return 1
-        }
-
         let rear = rearDepthAmount(depth)
-        let fogStrength = fogConfiguration.normalizedDensity
-        return max(0.12, 1 - rear * (0.58 + fogStrength * 0.34))
+        let fogAmount = depthFogAmount(depth)
+        let fogAttenuation = pow(max(0, 1 - fogAmount), 1.45)
+        let rearAttenuation = max(0.34, 1 - rear * 0.48)
+        return max(0.06, fogAttenuation * rearAttenuation)
     }
 
     func ribbedSphereSegmentVisible(startDepth: Double, endDepth: Double) -> Bool {
@@ -7375,19 +7437,30 @@ struct OrbitalViewportRenderConfiguration: Equatable {
 
     func ribbedSphereDepthAlpha(startDepth: Double, endDepth: Double) -> Double {
         let averageDepth = (startDepth + endDepth) * 0.5
+        let fogAlpha = sphereGeometryFogAlpha(depth: averageDepth)
         guard averageDepth < frontClipPlane else {
-            return 1
+            return fogAlpha
         }
 
-        let rear = rearDepthAmount(averageDepth)
+        let hiddenAlpha = min(hiddenDepthFade(averageDepth), fogAlpha)
         if hiddenLinesVisible {
-            return max(0.18, 0.42 - rear * 0.12)
+            return hiddenAlpha
         }
         guard fogConfiguration.isEnabled else {
             return 0
         }
-        return max(0.13, 0.32 - rear * (0.1 + fogConfiguration.normalizedDensity * 0.08))
+        return max(0.025, hiddenAlpha * 0.72)
     }
+
+    func foggedColor(_ color: Color, depth: Double) -> Color {
+        OrbitalViewportColorTools.blend(color, with: theme.fog, amount: depthFogAmount(depth) * 0.68)
+    }
+
+    #if os(macOS)
+    func foggedNSColor(_ color: NSColor, depth: Double) -> NSColor {
+        OrbitalViewportColorTools.blend(color, with: NSColor(theme.fog), amount: depthFogAmount(depth) * 0.68)
+    }
+    #endif
 
     func frameConfiguration(timeMS frameTimeMS: Double) -> OrbitalViewportRenderConfiguration {
         let frameYaw: Double
@@ -7479,12 +7552,14 @@ struct OrbitalViewportRibbedSpeakerSphereUpdateKey: Equatable {
     let geodesicRenderStyle: OrbitalViewportRenderStyle
     let geodesicSaturation: Double
     let showHiddenLines: Bool
+    let fogDensity: Double
 
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.showRibbedSpeakerSphere = configuration.showRibbedSpeakerSphere
         self.geodesicRenderStyle = configuration.geodesicRenderStyle
         self.geodesicSaturation = configuration.geodesicSaturation
         self.showHiddenLines = configuration.showHiddenLines
+        self.fogDensity = configuration.showRibbedSpeakerSphere ? configuration.fogDensity : 0
     }
 }
 
@@ -7557,12 +7632,14 @@ struct OrbitalViewportSpeakerMaterialVisualSignature: Equatable {
     let channel: Int
     let selected: Bool
     let visible: Bool
+    let fogAmount: Int
     let rms: Int
     let peak: Int
     let display: Int
     let hot: Int
     let heat: Int
     let alpha: Int
+    let labelAlpha: Int
     let emissionOpacity: Int
 
     init(
@@ -7580,6 +7657,8 @@ struct OrbitalViewportSpeakerMaterialVisualSignature: Equatable {
         let display = Double(scalars.displayVuScalar)
         let hot = Double(scalars.hotScalar)
         let heat = Double(scalars.paletteHeat)
+        let fogAmount = configuration.depthFogAmount(speaker.depth)
+        let labelAlpha = configuration.speakerLabelAlpha(depth: speaker.depth, selected: selected)
         let hotMix = OrbitalViewportMath.clamp01(
             (hot - configuration.cubeVUSettings.hotThreshold) /
             max(0.001, 1 - configuration.cubeVUSettings.hotThreshold)
@@ -7594,12 +7673,14 @@ struct OrbitalViewportSpeakerMaterialVisualSignature: Equatable {
         self.channel = speaker.channel
         self.selected = selected
         self.visible = configuration.isVisibleDepth(speaker.depth)
+        self.fogAmount = OrbitalViewportVisualSignatureBucket.normalized(fogAmount)
         self.rms = OrbitalViewportVisualSignatureBucket.normalized(speaker.rms)
         self.peak = OrbitalViewportVisualSignatureBucket.normalized(speaker.peak)
         self.display = OrbitalViewportVisualSignatureBucket.normalized(display)
         self.hot = OrbitalViewportVisualSignatureBucket.normalized(hot)
         self.heat = OrbitalViewportVisualSignatureBucket.normalized(heat)
         self.alpha = OrbitalViewportVisualSignatureBucket.normalized(alpha)
+        self.labelAlpha = OrbitalViewportVisualSignatureBucket.normalized(labelAlpha)
         self.emissionOpacity = OrbitalViewportVisualSignatureBucket.normalized(emissionOpacity)
     }
 }
@@ -7635,6 +7716,7 @@ struct OrbitalViewportSourceMaterialVisualSignature: Equatable {
     let sourceID: Int
     let state: SpatGRISSliceState
     let isDirectOut: Bool
+    let fogAmount: Int
     let rms: Int
     let peak: Int
     let alpha: Int
@@ -7647,12 +7729,18 @@ struct OrbitalViewportSourceMaterialVisualSignature: Equatable {
         self.sourceID = source.sourceID
         self.state = source.source.state
         self.isDirectOut = source.source.isDirectOut
+        self.fogAmount = OrbitalViewportVisualSignatureBucket.normalized(
+            configuration.depthFogAmount(source.depth)
+        )
         self.rms = OrbitalViewportVisualSignatureBucket.normalized(source.rms)
         self.peak = OrbitalViewportVisualSignatureBucket.normalized(source.peak)
         self.alpha = OrbitalViewportVisualSignatureBucket.normalized(
             configuration.speakerAlpha(depth: source.depth, selected: false)
         )
-        self.bloom = OrbitalViewportVisualSignatureBucket.normalized(0.24 + (source.peak * 0.55))
+        self.bloom = OrbitalViewportVisualSignatureBucket.normalized(
+            (0.24 + (source.peak * 0.55)) *
+            configuration.speakerEmissionScale(depth: source.depth)
+        )
     }
 }
 
@@ -7721,6 +7809,7 @@ struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
     let meterSourceMode: OrbitalViewportMeterSource.Mode
     let cubeVUSettings: OrbitalViewportCubeVUSettings
     let selectedChannel: Int?
+    let fogDensity: Double
 
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.meterDisplayFramesPerSecond = configuration.meterOnlyViewportFramesPerSecond
@@ -7731,6 +7820,7 @@ struct OrbitalViewportSpeakerMaterialUpdateKey: Equatable {
         materialSettings.speakerHeight = 1
         self.cubeVUSettings = materialSettings
         self.selectedChannel = configuration.selectedChannel
+        self.fogDensity = configuration.fogDensity
     }
 }
 
@@ -7766,6 +7856,7 @@ struct OrbitalViewportSourceMaterialUpdateKey: Equatable {
     let meterSourceMode: OrbitalViewportMeterSource.Mode
     let meterDisplayFrame: Int
     let meterDisplayFramesPerSecond: Int
+    let fogDensity: Double
     let sources: [OrbitalViewportSourceMarker]
 
     init(configuration: OrbitalViewportRenderConfiguration) {
@@ -7773,6 +7864,7 @@ struct OrbitalViewportSourceMaterialUpdateKey: Equatable {
         self.meterSourceMode = configuration.meterSource.mode
         self.meterDisplayFrame = configuration.frameCadence.meterDisplayFrameIndex(timeMS: configuration.timeMS)
         self.meterDisplayFramesPerSecond = configuration.meterOnlyViewportFramesPerSecond
+        self.fogDensity = configuration.fogDensity
         self.sources = configuration.sources
     }
 }
@@ -8076,11 +8168,13 @@ struct OrbitalViewportFogUpdateKey: Equatable {
     let fogDensity: Double
     let zoom: Double
     let cameraView: OrbitalViewportCameraView
+    let renderStyle: OrbitalViewportRenderStyle
 
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.fogDensity = configuration.fogDensity
         self.zoom = configuration.zoom
         self.cameraView = configuration.cameraView
+        self.renderStyle = configuration.renderStyle
     }
 }
 
@@ -8108,14 +8202,14 @@ struct OrbitalViewportFogConfiguration: Equatable {
             return .disabled
         }
 
-        let startDistance = max(0.1, cameraDistance - (0.24 + normalized * 0.18))
-        let endDistance = cameraDistance + max(0.42, 2.55 - (normalized * 2.12))
+        let startDistance = max(0.1, cameraDistance - (0.46 + normalized * 1.08))
+        let endDistance = cameraDistance + max(0.22, 2.35 - (normalized * 2.12))
         return OrbitalViewportFogConfiguration(
             isEnabled: true,
             normalizedDensity: normalized,
             startDistance: startDistance,
             endDistance: max(startDistance + 0.1, endDistance),
-            densityExponent: 0.62 + normalized * 1.95
+            densityExponent: 0.72 + normalized * 2.45
         )
     }
 }
@@ -8265,7 +8359,7 @@ private struct OrbitalViewportRibbedSphereCutawayUniforms: Equatable {
     ) {
         self.clipNormal = simd_normalize(configuration.orbitState.cameraBasis.viewDirection.simdSCN)
         self.sceneCenter = fit.center.simdSCN
-        self.frontClipPlane = 0
+        self.frontClipPlane = Float(configuration.ribbedSphereCutawayPlaneOffset(radius: fit.radius))
     }
 
     func depth(for point: OVVector3) -> Double {
@@ -8287,6 +8381,7 @@ private struct OrbitalViewportRibbedSphereCutawayPlaneState: Equatable {
     let sceneCenterX: Int
     let sceneCenterY: Int
     let sceneCenterZ: Int
+    let frontClipPlane: Int
     let planeSize: Int
 
     init(
@@ -8301,6 +8396,7 @@ private struct OrbitalViewportRibbedSphereCutawayPlaneState: Equatable {
         self.sceneCenterX = Self.bucket(Double(uniforms.sceneCenter.x))
         self.sceneCenterY = Self.bucket(Double(uniforms.sceneCenter.y))
         self.sceneCenterZ = Self.bucket(Double(uniforms.sceneCenter.z))
+        self.frontClipPlane = Self.bucket(Double(uniforms.frontClipPlane))
         self.planeSize = Self.bucket(planeSize)
     }
 
@@ -8482,6 +8578,10 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         var firstRibbedSphereCutawayHiddenLinesVisibleForTests: Bool? {
             lastRibbedSphereCutawayShowHiddenLines
+        }
+
+        var firstRibbedSphereCutawayFrontClipPlaneForTests: Double? {
+            lastRibbedSphereCutawayUniforms.map { Double($0.frontClipPlane) }
         }
 
         func firstRibbedSphereCutawayDepthForTests(point: OVVector3) -> Double? {
@@ -9385,20 +9485,28 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             instrumentation.ribbedSphereMaterialUpdateCount += 1
 
             let theme = configuration.geodesicTheme
-            let verticalRibColor = sceneColor(configuration.geodesicColor(theme.equator))
-            let horizontalRingColor = sceneColor(configuration.geodesicColor(theme.structure))
+            let materialFogDepth = configuration.ribbedSphereSceneMaterialFogDepth
+            let materialFogAlpha = configuration.ribbedSphereSceneMaterialAlpha
+            let verticalRibColor = configuration.foggedNSColor(
+                sceneColor(configuration.geodesicColor(theme.equator)),
+                depth: materialFogDepth
+            )
+            let horizontalRingColor = configuration.foggedNSColor(
+                sceneColor(configuration.geodesicColor(theme.structure)),
+                depth: materialFogDepth
+            )
             let visibilityAlpha = configuration.showHiddenLines
                 ? 0.92
                 : OrbitalViewportRibbedSpeakerSphereGeometry.frontLineAlpha
             didMutate = updateRibbedSpeakerSphereBatchMaterial(
                 ribbedSphereVerticalNode,
                 color: verticalRibColor,
-                alpha: 0.74 * visibilityAlpha
+                alpha: 0.74 * visibilityAlpha * materialFogAlpha
             ) || didMutate
             didMutate = updateRibbedSpeakerSphereBatchMaterial(
                 ribbedSphereHorizontalNode,
                 color: horizontalRingColor,
-                alpha: 0.64 * visibilityAlpha
+                alpha: 0.64 * visibilityAlpha * materialFogAlpha
             ) || didMutate
             return didMutate
         }
@@ -9453,7 +9561,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 plane.height = cgPlaneSize
             }
             ribbedSphereCutawayPlaneNode.isHidden = isHidden
-            ribbedSphereCutawayPlaneNode.simdPosition = uniforms.sceneCenter
+            ribbedSphereCutawayPlaneNode.simdPosition = uniforms.sceneCenter +
+                uniforms.clipNormal * uniforms.frontClipPlane
             ribbedSphereCutawayPlaneNode.simdOrientation = simd_quatf(
                 from: SIMD3<Float>(0, 0, 1),
                 to: uniforms.clipNormal
@@ -9523,8 +9632,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                         configuration.cubeVUSettings.hotFillStrength * hotMix * 0.38
                     ) * emissionScale
                     if configuration.speakerShape == .cubeVU {
-                        let vuColor = configuration.theme.cubeVUNSColor(heat: heat)
-                        let hotColor = configuration.theme.cubeVUHotNSColor
+                        let vuColor = configuration.foggedNSColor(
+                            configuration.theme.cubeVUNSColor(heat: heat),
+                            depth: speaker.depth
+                        )
+                        let hotColor = selected
+                            ? configuration.theme.cubeVUHotNSColor
+                            : configuration.foggedNSColor(configuration.theme.cubeVUHotNSColor, depth: speaker.depth)
                         OrbitalViewportCubeVUSceneKitMaterial.update(
                             material: node.geometry?.firstMaterial,
                             settings: configuration.cubeVUSettings,
@@ -9539,14 +9653,19 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                             channel: speaker.channel,
                             speakerOutlineNodes[speaker.channel],
                             renderStyle: configuration.renderStyle,
-                            theme: configuration.theme,
+                            color: selected
+                                ? configuration.theme.selectedLabelNSColor
+                                : configuration.foggedNSColor(configuration.theme.cubeOutlineNSColor, depth: speaker.depth),
                             alpha: alpha,
                             strength: configuration.cubeVUSettings.cubeOutlineStrength,
                             selected: selected,
                             visible: visible
                         ) || didMutate
                     } else {
-                        let color = configuration.theme.vuNSColor(heat: heat)
+                        let color = configuration.foggedNSColor(
+                            configuration.theme.vuNSColor(heat: heat),
+                            depth: speaker.depth
+                        )
                         didMutate = setMaterial(
                             node.geometry?.firstMaterial,
                             color: color,
@@ -9568,7 +9687,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 }
                 if updateMaterial {
                     let textureBacked = configuration.speakerLabelFont.usesTextureBackedSceneKitLabel
-                    let labelAlpha = selected ? 1.0 : 0.94
+                    let labelAlpha = configuration.speakerLabelAlpha(depth: speaker.depth, selected: selected)
                     let labelMaterialKey = OrbitalViewportSpeakerLabelMaterialUpdateKey(
                         renderStyle: configuration.renderStyle,
                         selected: selected,
@@ -9581,7 +9700,10 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
                     speakerLabelMaterialKeys[speaker.channel] = labelMaterialKey
                     instrumentation.speakerLabelMaterialUpdateCount += 1
-                    let labelColor = selected ? configuration.theme.selectedLabel : configuration.theme.text
+                    let baseLabelColor = selected ? configuration.theme.selectedLabel : configuration.theme.text
+                    let labelColor = selected
+                        ? baseLabelColor
+                        : configuration.foggedColor(baseLabelColor, depth: speaker.depth)
                     if textureBacked {
                         didMutate = setTextureBackedLabelMaterial(
                             label.geometry?.firstMaterial,
@@ -9671,9 +9793,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 guard let node = sourceNodes[source.sourceID] else {
                     continue
                 }
-                let color = source.source.nsColor(theme: configuration.sourceSpeakerTheme)
+                let color = configuration.foggedNSColor(
+                    source.source.nsColor(theme: configuration.sourceSpeakerTheme),
+                    depth: source.depth
+                )
                 let alpha = configuration.speakerAlpha(depth: source.depth, selected: false)
-                let bloom = 0.24 + (source.peak * 0.55)
+                let bloom = (0.24 + (source.peak * 0.55)) *
+                    configuration.speakerEmissionScale(depth: source.depth)
                 didMutate = setMaterial(
                     node.geometry?.firstMaterial,
                     color: color,
@@ -10095,7 +10221,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             channel: Int,
             _ nodes: [SCNNode]?,
             renderStyle: OrbitalViewportRenderStyle,
-            theme: OrbitalViewportTheme,
+            color: NSColor,
             alpha: Double,
             strength: Double,
             selected: Bool,
@@ -10123,7 +10249,6 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             if nodes?.isEmpty == false {
                 instrumentation.cubeOutlineMaterialUpdateCount += 1
             }
-            let color = selected ? theme.selectedLabelNSColor : theme.cubeOutlineNSColor
             nodes?.forEach { node in
                 if node.isHidden != isHidden {
                     node.isHidden = isHidden
@@ -10456,7 +10581,10 @@ private struct OrbitalViewportPainter {
                 guard let clipped = clipSegmentToFront(start: start, end: end) else {
                     return nil
                 }
-                let fade = min(configuration.hiddenDepthFade(clipped.start.z), configuration.hiddenDepthFade(clipped.end.z))
+                let fade = configuration.ribbedSphereDepthAlpha(
+                    startDepth: clipped.start.z,
+                    endDepth: clipped.end.z
+                )
                 guard fade > 0.02 else {
                     return nil
                 }
@@ -10519,7 +10647,8 @@ private struct OrbitalViewportPainter {
             let baseAlpha = far ? 0.42 : 0.94
             let alpha = configuration.foggedAlpha(depth: speaker.depth, baseAlpha: baseAlpha)
             let selected = configuration.selectedChannel == speaker.channel
-            let color = theme.colorForPeak(speaker.peak)
+            let baseColor = theme.colorForPeak(speaker.peak)
+            let color = selected ? baseColor : configuration.foggedColor(baseColor, depth: speaker.depth)
 
             switch configuration.speakerShape {
             case .sphere:
@@ -10606,9 +10735,13 @@ private struct OrbitalViewportPainter {
                 width: radius * 2,
                 height: radius * 2
             )
-            let color = source.source.color(theme: sourceSpeakerTheme)
-            context.fill(Path(ellipseIn: rect), with: .color(color.opacity(0.32 + source.peak * 0.42)))
-            context.stroke(Path(ellipseIn: rect), with: .color(theme.selectedLabel.opacity(0.58)), lineWidth: 1)
+            let color = configuration.foggedColor(
+                source.source.color(theme: sourceSpeakerTheme),
+                depth: source.depth
+            )
+            let alpha = configuration.speakerAlpha(depth: source.depth, selected: false)
+            context.fill(Path(ellipseIn: rect), with: .color(color.opacity((0.32 + source.peak * 0.42) * alpha)))
+            context.stroke(Path(ellipseIn: rect), with: .color(theme.selectedLabel.opacity(0.58 * alpha)), lineWidth: 1)
         }
     }
 
@@ -10654,11 +10787,13 @@ private struct OrbitalViewportPainter {
 
     mutating private func drawLabel(for speaker: OrbitalViewportProjectedSpeaker, selected: Bool) {
         let offset = labelOffset(for: speaker)
-        let color = configuration.renderStyle == .bw ? Color(hex: "#111111") : (selected ? theme.selectedLabel : theme.label)
+        let baseColor = configuration.renderStyle == .bw ? Color(hex: "#111111") : (selected ? theme.selectedLabel : theme.label)
+        let color = selected ? baseColor : configuration.foggedColor(baseColor, depth: speaker.depth)
+        let alpha = configuration.speakerLabelAlpha(depth: speaker.depth, selected: selected)
         context.draw(
             Text(String(format: "%02d", speaker.channel))
                 .font(.system(size: 11))
-                .foregroundColor(color),
+                .foregroundColor(color.opacity(alpha)),
             at: CGPoint(x: speaker.screen.x + offset.x, y: speaker.screen.y + offset.y),
             anchor: .center
         )
@@ -11106,6 +11241,39 @@ private struct OrbitalViewportPrismFace {
 }
 
 enum OrbitalViewportColorTools {
+    static func blend(_ color: Color, with target: Color, amount: Double) -> Color {
+        let amount = OrbitalViewportMath.clamp01(amount)
+        guard amount > 0.001 else {
+            return color
+        }
+
+        #if os(macOS)
+        return Color(blend(NSColor(color), with: NSColor(target), amount: amount))
+        #else
+        return color
+        #endif
+    }
+
+    #if os(macOS)
+    static func blend(_ color: NSColor, with target: NSColor, amount: Double) -> NSColor {
+        let amount = CGFloat(OrbitalViewportMath.clamp01(amount))
+        guard amount > 0.001 else {
+            return color
+        }
+
+        guard let base = color.usingColorSpace(.deviceRGB) ?? color.usingColorSpace(.sRGB),
+              let fog = target.usingColorSpace(.deviceRGB) ?? target.usingColorSpace(.sRGB) else {
+            return color
+        }
+        return NSColor(
+            deviceRed: base.redComponent + (fog.redComponent - base.redComponent) * amount,
+            green: base.greenComponent + (fog.greenComponent - base.greenComponent) * amount,
+            blue: base.blueComponent + (fog.blueComponent - base.blueComponent) * amount,
+            alpha: base.alphaComponent
+        )
+    }
+    #endif
+
     static func withSaturation(_ color: Color, _ saturation: Double) -> Color {
         let clamped = OrbitalViewportMath.clamp01(saturation)
         guard clamped < 0.999 else {

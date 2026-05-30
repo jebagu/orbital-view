@@ -1058,6 +1058,58 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertGreaterThan(high.densityExponent, low.densityExponent)
     }
 
+    func testCorrectViewerFogCreatesAtmosphericDepthRamp() {
+        let clear = makeViewportConfiguration(fogDensity: 0, showHiddenLines: true)
+        let heavy = makeViewportConfiguration(fogDensity: 100, showHiddenLines: true)
+        let frontDepth = heavy.sceneScale
+        let middleDepth = 0.0
+        let rearDepth = -heavy.sceneScale
+
+        XCTAssertEqual(clear.depthFogAmount(rearDepth), 0, accuracy: 0.000_001)
+        XCTAssertLessThan(heavy.depthFogAmount(frontDepth), heavy.depthFogAmount(middleDepth))
+        XCTAssertLessThan(heavy.depthFogAmount(middleDepth), heavy.depthFogAmount(rearDepth))
+        XCTAssertLessThan(
+            heavy.foggedAlpha(depth: rearDepth, baseAlpha: 0.94),
+            heavy.foggedAlpha(depth: middleDepth, baseAlpha: 0.94)
+        )
+        XCTAssertLessThan(
+            heavy.speakerAlpha(depth: rearDepth, selected: false),
+            lowFogSpeakerAlpha(at: rearDepth)
+        )
+        XCTAssertLessThan(
+            heavy.speakerEmissionScale(depth: rearDepth),
+            heavy.speakerEmissionScale(depth: middleDepth)
+        )
+        XCTAssertLessThan(
+            heavy.speakerLabelAlpha(depth: rearDepth, selected: false),
+            heavy.speakerLabelAlpha(depth: middleDepth, selected: false)
+        )
+        XCTAssertLessThan(
+            heavy.sphereGeometryFogAlpha(depth: rearDepth),
+            heavy.sphereGeometryFogAlpha(depth: middleDepth)
+        )
+        XCTAssertLessThan(
+            heavy.sphereGeometryFogAlpha(depth: middleDepth),
+            heavy.sphereGeometryFogAlpha(depth: frontDepth)
+        )
+        XCTAssertLessThan(
+            heavy.ribbedSphereDepthAlpha(startDepth: rearDepth, endDepth: rearDepth),
+            heavy.ribbedSphereDepthAlpha(startDepth: middleDepth, endDepth: middleDepth)
+        )
+        XCTAssertLessThan(heavy.ribbedSphereSceneMaterialAlpha, clear.ribbedSphereSceneMaterialAlpha)
+        XCTAssertGreaterThan(
+            heavy.ribbedSphereCutawayPlaneOffset(radius: 2),
+            clear.ribbedSphereCutawayPlaneOffset(radius: 2)
+        )
+        XCTAssertEqual(heavy.speakerAlpha(depth: rearDepth, selected: true), 1)
+        XCTAssertEqual(heavy.speakerLabelAlpha(depth: rearDepth, selected: true), 1)
+
+        func lowFogSpeakerAlpha(at depth: Double) -> Double {
+            makeViewportConfiguration(fogDensity: 20, showHiddenLines: true)
+                .speakerAlpha(depth: depth, selected: false)
+        }
+    }
+
     func testCorrectViewerImpulseVariantsAreDeterministicAndDistinct() {
         let ripple = OrbitalViewportMeterSource.impulse(.ripple)
         let waves = OrbitalViewportMeterSource.impulse(.waves)
@@ -2498,7 +2550,29 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertNotEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: base), OrbitalViewportSpeakerMaterialUpdateKey(configuration: nextMeterBucket))
     }
 
-    func testSourcePoseAndSourceMaterialKeysSeparateCadence() throws {
+    func testSpeakerMaterialKeyRefreshesFogWithoutBreakingActiveSpinCadence() {
+        let base = makeViewportConfiguration(timeMS: 1_000, showRibbedSpeakerSphere: true, fogDensity: 20)
+        let fogOnly = makeViewportConfiguration(timeMS: 1_000, showRibbedSpeakerSphere: true, fogDensity: 100)
+        let spinning = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true,
+            fogDensity: 20,
+            spin: true,
+            spinStartYaw: 0,
+            spinStartTimeMS: 1_000
+        )
+        let sameSpinBucket = spinning.frameConfiguration(timeMS: 1_008)
+        let nextSpinBucket = spinning.frameConfiguration(timeMS: 1_034)
+
+        XCTAssertNotEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: base), OrbitalViewportSpeakerMaterialUpdateKey(configuration: fogOnly))
+        XCTAssertNotEqual(OrbitalViewportRibbedSpeakerSphereUpdateKey(configuration: base), OrbitalViewportRibbedSpeakerSphereUpdateKey(configuration: fogOnly))
+        XCTAssertEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: spinning), OrbitalViewportSpeakerMaterialUpdateKey(configuration: sameSpinBucket))
+        XCTAssertEqual(OrbitalViewportRibbedSpeakerSphereUpdateKey(configuration: spinning), OrbitalViewportRibbedSpeakerSphereUpdateKey(configuration: sameSpinBucket))
+        XCTAssertNotEqual(OrbitalViewportSpeakerMaterialUpdateKey(configuration: spinning), OrbitalViewportSpeakerMaterialUpdateKey(configuration: nextSpinBucket))
+        XCTAssertEqual(OrbitalViewportRibbedSpeakerSphereUpdateKey(configuration: spinning), OrbitalViewportRibbedSpeakerSphereUpdateKey(configuration: nextSpinBucket))
+    }
+
+    func testSourcePoseAndSourceMaterialKeysTrackDepthAndCadence() throws {
         let source = OrbitalViewportSourceMarker(
             sourceID: 1,
             label: "Source 01",
@@ -2968,6 +3042,43 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(snapshot.ribbedSphereSegmentVisitCount, 0)
         XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 1)
         XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
+    }
+
+    func testCorrectViewerFogUpdatesRibbedSphereMaterialAndCutawayWithoutTopologyRebuild() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true,
+            fogDensity: 20,
+            showHiddenLines: false
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+        let basePlane = try XCTUnwrap(coordinator.firstRibbedSphereCutawayFrontClipPlaneForTests)
+
+        coordinator.resetInstrumentationForTests()
+        let dense = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true,
+            fogDensity: 100,
+            showHiddenLines: false
+        )
+        coordinator.update(
+            configuration: dense,
+            snapshot: OrbitalViewportSnapshot(configuration: dense)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+        let densePlane = try XCTUnwrap(coordinator.firstRibbedSphereCutawayFrontClipPlaneForTests)
+
+        XCTAssertGreaterThan(densePlane, basePlane)
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentVisitCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
+        XCTAssertEqual(snapshot.ribbedSphereHiddenStateWriteCount, 0)
+        XCTAssertEqual(snapshot.fogUpdateCount, 1)
     }
 
     func testCorrectViewerVisibleRibbedSphereCameraMotionUpdatesOnlyCutawayPlane() {
@@ -3550,8 +3661,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         snapshot = coordinator.instrumentationSnapshotForTests
         XCTAssertEqual(snapshot.sourcePoseOrVisibilityUpdateCount, 0)
-        XCTAssertEqual(snapshot.sourceMaterialUpdateCount, 0)
-        XCTAssertEqual(snapshot.sourceMaterialUnchangedFrameSkipCount, 1)
+        XCTAssertEqual(snapshot.sourceMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.sourceMaterialUnchangedFrameSkipCount, 0)
     }
 
     func testChangedSourceMeterBucketUpdatesSourceMaterial() throws {

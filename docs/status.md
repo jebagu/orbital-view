@@ -109,7 +109,6 @@ none
 ## Pending
 
 ```text
-- Tune fog behavior/visual quality; current fog still needs another pass.
 - Remove the two old speaker types (`Prism` and `Sphere`) if the next UI cleanup slice accepts `Cube VU` as the only retained current speaker type.
 - Add a new radial-fountain VU speaker type.
 - Plan a future protected Metal Cube VU visual migration when SceneKit texture churn is the limiting factor: keep the approved Cube VU look, but move face-grid bloom/hot/clip math into `OrbitalViewRender` shader/material payloads instead of generating and assigning SceneKit `NSImage` textures at meter cadence.
@@ -123,6 +122,24 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-31 Fog Sphere Geometry Parity
+
+- Rebalanced the fog pass so the Ribbed Speaker Sphere geometry reacts alongside speakers and labels instead of staying mostly constant.
+- Added a sphere-geometry fog alpha, fog-tinted/dimmed SceneKit rib materials, and a dense-fog cutaway-plane advance so higher Fog Density leaves a shallower, more atmospheric visible sphere cap.
+- Included fog density in the visible ribbed-sphere material key while preserving the existing camera-only cutaway update path during active motion.
+- Updated the SwiftUI fallback rib drawing to use the same sphere fog alpha instead of the older hidden-line-only fade.
+- Added regression coverage for sphere front/mid/rear fog ramp behavior, ribbed material/cutaway updates without topology rebuilds, and the camera-motion material-skip guard.
+- Verification: `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerFogCreatesAtmosphericDepthRamp` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerFogUpdatesRibbedSphereMaterialAndCutawayWithoutTopologyRebuild` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerVisibleRibbedSphereCameraMotionUpdatesOnlyCutawayPlane` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testSpeakerMaterialKeyRefreshesFogWithoutBreakingActiveSpinCadence` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 121 tests and 0 failures; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 201 tests and 0 failures; `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/re-signed/opened the review app; `pgrep -fl OrbitalViewViewer` confirmed PID `63317` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`.
+
+### Update: 2026-05-31 Atmospheric Fog Depth Pass
+
+- Reworked the review-app fog behavior from a mostly global SceneKit distance-fog setting into a camera-depth atmospheric ramp across the speaker sphere.
+- Fog now attenuates rear speaker alpha, source alpha, VU emission, hidden-line/rib fade, speaker/source color contrast, and speaker label opacity while keeping selected speakers and selected labels fully readable.
+- Added fog-aware speaker and source material update keys so fog-slider changes refresh depth materials immediately, while camera motion and active spin still bucket material updates at the existing meter-display cadence.
+- Retuned SceneKit fog start/end/exponent values so maximum fog has a stronger depth envelope, and palette changes refresh the SceneKit fog color.
+- Added regression coverage for the atmospheric front/mid/rear depth ramp and fog material refresh semantics without breaking active camera cadence.
+- Verification: `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerFog` passed with 2 tests and 0 failures; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testSpeakerMaterialKey` passed with 2 tests and 0 failures; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testSourcePoseAndSourceMaterialKeysTrackDepthAndCadence` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 120 tests and 0 failures; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 200 tests and 0 failures; `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/refreshed and opened the review app; `pgrep -fl OrbitalViewViewer` confirmed PID `61214` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`.
 
 ### Update: 2026-05-31 Rib Thickness Stable Minimum
 
