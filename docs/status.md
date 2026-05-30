@@ -123,6 +123,13 @@ none
 
 ## Recent Changes
 
+### Update: 2026-05-30 Orbital View README Rewrite
+
+- Rewrote `README.md` around the current Orbital View product story: a native 3D spherical speaker and VU meter viewport that can run standalone for local-song/visual review and is designed to connect to SonicSphere family host apps.
+- Added README coverage for SpatGRIS/SPAT speaker and source layout XML support, standalone modes, current 60 FPS operator status on an M1 MacBook, host-owned audio/realtime boundaries, and current known gaps for fog, legacy speaker types, radial-fountain VU, and unproven live Orbisonic telemetry.
+- Corrected the README to use `Orbital View` as the canonical head project name instead of carrying over a misread voice-note phrase.
+- Verification: `git diff --check` passed. `swift build` and `swift test` were not rerun because this change is documentation-only and does not touch package source, manifests, tests, launchers, or resources.
+
 ### Update: 2026-05-30 Orbital View 1.0 Head Rename
 
 - Renamed the current head project identity to `Orbital View 1.0` in README/product/status/operator docs while keeping Swift target names stable with the `OrbitalView*` prefix.
