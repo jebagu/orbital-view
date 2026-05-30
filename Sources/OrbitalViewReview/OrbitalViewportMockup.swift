@@ -8334,6 +8334,99 @@ private struct OrbitalViewportSceneMaterialState: Equatable {
     }
 }
 
+private struct OrbitalViewportRibbedSphereDepthFogState: Equatable {
+    let colorRed: Float
+    let colorGreen: Float
+    let colorBlue: Float
+    let colorAlpha: Float
+    let startDistance: Float
+    let endDistance: Float
+    let densityExponent: Float
+    let normalizedDensity: Float
+    let colorMix: Float
+    let brightnessLoss: Float
+    let minimumBrightness: Float
+
+    var colorVector: SCNVector4 {
+        SCNVector4(colorRed, colorGreen, colorBlue, colorAlpha)
+    }
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        let fog = configuration.fogConfiguration
+        let color = NSColor(configuration.theme.fog)
+            .usingColorSpace(.deviceRGB)
+            ?? NSColor(configuration.theme.fog)
+            .usingColorSpace(.sRGB)
+            ?? .black
+        let sceneScale = Float(configuration.sceneScale)
+        self.colorRed = Float(color.redComponent)
+        self.colorGreen = Float(color.greenComponent)
+        self.colorBlue = Float(color.blueComponent)
+        self.colorAlpha = Float(color.alphaComponent)
+        self.startDistance = Float(fog.startDistance) * sceneScale
+        self.endDistance = Float(fog.endDistance) * sceneScale
+        self.densityExponent = Float(fog.densityExponent)
+        self.normalizedDensity = Float(fog.normalizedDensity)
+        self.colorMix = 0.78
+        self.brightnessLoss = 0.88
+        self.minimumBrightness = 0.12
+    }
+}
+
+private enum OrbitalViewportRibbedSphereDepthFogShader {
+    static let geometry = """
+    #pragma varyings
+    float orbitalRibbedFogDistance;
+    #pragma body
+    vec4 orbitalRibbedViewPosition = u_modelViewTransform * vec4(_geometry.position.xyz, 1.0);
+    orbitalRibbedFogDistance = max(0.0, -orbitalRibbedViewPosition.z);
+    """
+
+    static let surface = """
+    #pragma arguments
+    float orbitalRibbedFogStartDistance;
+    float orbitalRibbedFogEndDistance;
+    float orbitalRibbedFogDensityExponent;
+    float orbitalRibbedFogNormalizedDensity;
+    float orbitalRibbedFogColorMix;
+    float orbitalRibbedFogBrightnessLoss;
+    float orbitalRibbedFogMinimumBrightness;
+    vec4 orbitalRibbedFogColor;
+    #pragma varyings
+    float orbitalRibbedFogDistance;
+    #pragma body
+    float orbitalRibbedFogRange = max(0.001, orbitalRibbedFogEndDistance - orbitalRibbedFogStartDistance);
+    float orbitalRibbedFogLinear = clamp(
+        (orbitalRibbedFogDistance - orbitalRibbedFogStartDistance) / orbitalRibbedFogRange,
+        0.0,
+        1.0
+    );
+    float orbitalRibbedFogAmount = pow(
+        orbitalRibbedFogLinear,
+        max(0.001, orbitalRibbedFogDensityExponent)
+    ) * orbitalRibbedFogNormalizedDensity;
+    float orbitalRibbedFogMix = clamp(
+        orbitalRibbedFogAmount * orbitalRibbedFogColorMix * orbitalRibbedFogColor.a,
+        0.0,
+        1.0
+    );
+    float orbitalRibbedFogBrightness = max(
+        orbitalRibbedFogMinimumBrightness,
+        1.0 - (orbitalRibbedFogAmount * orbitalRibbedFogBrightnessLoss)
+    );
+    _surface.diffuse.rgb = mix(
+        _surface.diffuse.rgb,
+        orbitalRibbedFogColor.rgb,
+        orbitalRibbedFogMix
+    ) * orbitalRibbedFogBrightness;
+    _surface.emission.rgb = mix(
+        _surface.emission.rgb,
+        orbitalRibbedFogColor.rgb,
+        orbitalRibbedFogMix * 0.42
+    ) * orbitalRibbedFogBrightness;
+    """
+}
+
 private struct OrbitalViewportRibbedSphereCutawayUniforms: Equatable {
     let clipNormal: SIMD3<Float>
     let sceneCenter: SIMD3<Float>
@@ -8529,6 +8622,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastSourceMaterialVisualSignatureKey: OrbitalViewportSourceMaterialVisualSignatureKey?
         private var lastFogKey: OrbitalViewportFogUpdateKey?
         private var sceneMaterialStates: [ObjectIdentifier: OrbitalViewportSceneMaterialState] = [:]
+        private var ribbedSphereDepthFogMaterialStates: [ObjectIdentifier: OrbitalViewportRibbedSphereDepthFogState] = [:]
         private var lastRibbedSphereCutawayPlaneState: OrbitalViewportRibbedSphereCutawayPlaneState?
         private var lastRibbedSphereCutawayUniforms: OrbitalViewportRibbedSphereCutawayUniforms?
         private var lastRibbedSphereCutawayShowHiddenLines: Bool?
@@ -9466,6 +9560,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             node.geometry?.materials.forEach {
                 let materialID = ObjectIdentifier($0)
                 sceneMaterialStates.removeValue(forKey: materialID)
+                ribbedSphereDepthFogMaterialStates.removeValue(forKey: materialID)
             }
             node.childNodes.forEach { forgetMaterialStates(in: $0) }
         }
@@ -9495,18 +9590,21 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 sceneColor(configuration.geodesicColor(theme.structure)),
                 depth: materialFogDepth
             )
+            let depthFogState = OrbitalViewportRibbedSphereDepthFogState(configuration: configuration)
             let visibilityAlpha = configuration.showHiddenLines
                 ? 0.92
                 : OrbitalViewportRibbedSpeakerSphereGeometry.frontLineAlpha
             didMutate = updateRibbedSpeakerSphereBatchMaterial(
                 ribbedSphereVerticalNode,
                 color: verticalRibColor,
-                alpha: 0.74 * visibilityAlpha * materialFogAlpha
+                alpha: 0.74 * visibilityAlpha * materialFogAlpha,
+                depthFogState: depthFogState
             ) || didMutate
             didMutate = updateRibbedSpeakerSphereBatchMaterial(
                 ribbedSphereHorizontalNode,
                 color: horizontalRingColor,
-                alpha: 0.64 * visibilityAlpha * materialFogAlpha
+                alpha: 0.64 * visibilityAlpha * materialFogAlpha,
+                depthFogState: depthFogState
             ) || didMutate
             return didMutate
         }
@@ -10032,7 +10130,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private func updateRibbedSpeakerSphereBatchMaterial(
             _ node: SCNNode?,
             color: NSColor,
-            alpha: Double
+            alpha: Double,
+            depthFogState: OrbitalViewportRibbedSphereDepthFogState
         ) -> Bool {
             guard let material = node?.geometry?.firstMaterial else {
                 return false
@@ -10041,15 +10140,19 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             let brightness = OrbitalViewportMath.clamp01(alpha)
             let diffuse = ribbedSphereMaterialColor(color, brightness: brightness)
             let emission = ribbedSphereMaterialColor(color, brightness: brightness * 0.28)
-            let didWrite = setOpaqueRibbedSphereMaterial(
+            let didWriteMaterial = setOpaqueRibbedSphereMaterial(
                 material,
                 diffuse: diffuse,
                 emission: emission
             )
-            if didWrite {
+            let didWriteShader = setRibbedSphereDepthFogShader(
+                material,
+                state: depthFogState
+            )
+            if didWriteMaterial || didWriteShader {
                 instrumentation.ribbedSphereMaterialWriteCount += 1
             }
-            return didWrite
+            return didWriteMaterial || didWriteShader
         }
 
         private func ribbedSphereMaterialColor(
@@ -10091,6 +10194,36 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             material.readsFromDepthBuffer = true
             material.writesToDepthBuffer = true
             sceneMaterialStates[materialID] = state
+            instrumentation.sceneMaterialWriteCount += 1
+            return true
+        }
+
+        @discardableResult
+        private func setRibbedSphereDepthFogShader(
+            _ material: SCNMaterial,
+            state: OrbitalViewportRibbedSphereDepthFogState
+        ) -> Bool {
+            let materialID = ObjectIdentifier(material)
+            let shaderModifiers: [SCNShaderModifierEntryPoint: String] = [
+                .geometry: OrbitalViewportRibbedSphereDepthFogShader.geometry,
+                .surface: OrbitalViewportRibbedSphereDepthFogShader.surface
+            ]
+            guard ribbedSphereDepthFogMaterialStates[materialID] != state ||
+                material.shaderModifiers != shaderModifiers else {
+                instrumentation.sceneMaterialSkipCount += 1
+                return false
+            }
+
+            material.shaderModifiers = shaderModifiers
+            material.setValue(NSNumber(value: state.startDistance), forKey: "orbitalRibbedFogStartDistance")
+            material.setValue(NSNumber(value: state.endDistance), forKey: "orbitalRibbedFogEndDistance")
+            material.setValue(NSNumber(value: state.densityExponent), forKey: "orbitalRibbedFogDensityExponent")
+            material.setValue(NSNumber(value: state.normalizedDensity), forKey: "orbitalRibbedFogNormalizedDensity")
+            material.setValue(NSNumber(value: state.colorMix), forKey: "orbitalRibbedFogColorMix")
+            material.setValue(NSNumber(value: state.brightnessLoss), forKey: "orbitalRibbedFogBrightnessLoss")
+            material.setValue(NSNumber(value: state.minimumBrightness), forKey: "orbitalRibbedFogMinimumBrightness")
+            material.setValue(NSValue(scnVector4: state.colorVector), forKey: "orbitalRibbedFogColor")
+            ribbedSphereDepthFogMaterialStates[materialID] = state
             instrumentation.sceneMaterialWriteCount += 1
             return true
         }

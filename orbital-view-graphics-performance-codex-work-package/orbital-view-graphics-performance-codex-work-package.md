@@ -957,6 +957,32 @@ Acceptance notes:
 - It requires OpenSpec/protected-path review if the task changes public renderer behavior, renderer contracts, or the visible review-app path.
 - Success should be measured by retained-resource tests and visible review evidence, not by claiming host realtime callback performance.
 
+Future-work direction:
+
+```text
+Move the approved camera-depth fog model into the production Metal renderer as
+a shared shader function for all scene primitives.
+```
+
+Why:
+
+- The SceneKit shader preview is useful for visual review, but production host integration is already accepted as MetalKit / MTKView.
+- Fog should be one scene-depth rule, not separate hand-tuned alpha paths for ribs, speakers, source markers, labels, glows, and hidden-line treatment.
+- A Metal implementation can compute camera-depth fog per fragment while keeping shell/speaker geometry static and updating only view/fog uniforms plus small display material payloads.
+
+How:
+
+1. Add a bounded protected-path slice for `Sources/OrbitalViewRender/` and `Tests/OrbitalViewRenderTests/`.
+2. Define shared fog uniforms: fog color, density, start/end response, exponent, readability floors for labels/selected elements, and hidden-line response.
+3. Route shell geometry, speaker materials, source markers, labels, glows, and any future trails through the same fog function.
+4. Preserve static geometry identity: fog changes must not reorder channels, resize speaker meshes, rebuild static buffers, or change host meter values.
+5. Add offscreen pixel probes that compare near/mid/far geometry under low and dense fog, plus invariant tests proving fog-only changes update dynamic uniforms/material payloads rather than static geometry.
+
+Acceptance notes:
+
+- This is approach 2 from the fog-depth brainstorm and should remain future work until the SceneKit preview is accepted visually.
+- It should not be mixed with Cube VU texture migration, UI cleanup, telemetry, audio, or downstream host integration.
+
 ## Required Changes Regardless Of Option
 
 - Add material-state deduplication so unchanged material values do not cause repeated SceneKit writes.

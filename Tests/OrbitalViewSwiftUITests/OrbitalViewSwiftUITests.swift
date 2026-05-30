@@ -2921,6 +2921,14 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(rgb.alphaComponent, 1, accuracy: 0.000_001)
         XCTAssertTrue(material.readsFromDepthBuffer)
         XCTAssertTrue(material.writesToDepthBuffer)
+        XCTAssertTrue(
+            material.shaderModifiers?[.geometry]?.contains("orbitalRibbedFogDistance") == true
+        )
+        XCTAssertTrue(
+            material.shaderModifiers?[.surface]?.contains("orbitalRibbedFogAmount") == true
+        )
+        XCTAssertNotNil(material.value(forKey: "orbitalRibbedFogStartDistance"))
+        XCTAssertNotNil(material.value(forKey: "orbitalRibbedFogColor"))
         XCTAssertEqual(coordinator.ribbedSphereCutawayPlaneHiddenForTests, false)
     }
 
@@ -3000,8 +3008,12 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
 
         let ribbedSphereBuildCount = coordinator.ribbedSphereBuildCount
-        XCTAssertNil(coordinator.firstRibbedSphereCutawayShaderForTests)
-        XCTAssertNil(coordinator.firstRibbedSphereCutawayGeometryShaderForTests)
+        XCTAssertTrue(
+            coordinator.firstRibbedSphereCutawayShaderForTests?.contains("orbitalRibbedFogAmount") == true
+        )
+        XCTAssertTrue(
+            coordinator.firstRibbedSphereCutawayGeometryShaderForTests?.contains("orbitalRibbedFogDistance") == true
+        )
         XCTAssertEqual(coordinator.firstRibbedSphereCutawayHiddenLinesVisibleForTests, false)
         XCTAssertEqual(coordinator.ribbedSphereCutawayPlaneHiddenForTests, false)
         XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)

@@ -112,6 +112,7 @@ none
 - Remove the two old speaker types (`Prism` and `Sphere`) if the next UI cleanup slice accepts `Cube VU` as the only retained current speaker type.
 - Add a new radial-fountain VU speaker type.
 - Plan a future protected Metal Cube VU visual migration when SceneKit texture churn is the limiting factor: keep the approved Cube VU look, but move face-grid bloom/hot/clip math into `OrbitalViewRender` shader/material payloads instead of generating and assigning SceneKit `NSImage` textures at meter cadence.
+- Plan a future protected Metal unified fog model: move the approved SceneKit camera-depth fog behavior into `OrbitalViewRender` as a shared shader function for shell geometry, speakers, source markers, labels, glows, and hidden-line treatment.
 - Prove live Orbisonic telemetry end-to-end with a real publisher/consumer run; current telemetry is wired and tested at source level but not proven in the visible review app.
 ```
 
@@ -122,6 +123,14 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-31 SceneKit Per-Fragment Ribbed Fog Preview
+
+- Added SceneKit shader modifiers to the two batched Ribbed Speaker Sphere materials so each rib fragment receives camera-distance fog inside the material instead of relying only on one batch-wide tint/alpha.
+- Preserved the existing invisible cutaway-plane Hidden Lines path, opaque depth-writing rib material, two-node ribbed-sphere batching, and camera-only material-skip behavior.
+- Kept the change in `OrbitalViewReview`; the production MetalKit renderer remains future protected-path work.
+- Added regression coverage proving the ribbed sphere material owns the depth-fog shader modifiers/uniforms and that Hidden Lines still uses the cutaway plane without rebuilding topology.
+- Verification: `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; focused SceneKit ribbed material/cutaway tests passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 201 tests and 0 failures; `.build/debug/OrbitalViewHeadlessBenchmark --mode both --ribbed --fog-density 100 --warmup 2 --frames 4 --target 120` rendered without shader failure and reported idle `65.4 FPS`, active `1261.6 FPS`; `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/re-signed/opened the review app; `pgrep -fl OrbitalViewViewer` confirmed PID `67251` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`.
 
 ### Update: 2026-05-31 Fog Sphere Geometry Parity
 
