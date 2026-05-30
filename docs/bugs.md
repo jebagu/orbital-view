@@ -3,12 +3,31 @@
 ## Open Bugs
 
 ```text
-none
+2026-05-30: Visible SceneKit review app performance remains below target after 120/30 hot-path work.
+
+Current status: prior 120/30 and Cube VU hot-path work did not produce a sufficient user-visible performance improvement. The dense ribbed dome root cause is now addressed in code by replacing thousands of per-segment SceneKit cylinder nodes with two batched mesh nodes, but this bug remains open until the normal visible review app is relaunched from the Turbo checkout and the user-visible FPS/feel is confirmed.
+
+Latest verification: the 2026-05-30 ribbed batching pass relaunched through `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command`, and `pgrep -fl OrbitalViewViewer` confirmed PID `8456` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`. The remaining open condition is user-visible interactive confirmation, especially with the ribbed sphere visible at default, medium, and max density.
+
+Failed attempts and non-representative evidence to avoid repeating:
+- 120/30 cadence contract work did not produce the user-visible performance improvement: instrumentation, 120 FPS active settings, 30 FPS meter cadence, source/material key splitting, and Cube VU material cadence decoupling improved source-level behavior but did not make the visible app feel faster enough.
+- Cube VU material-write reduction did not solve visible FPS: caching material keys, skipping repeated texture assignments/uniform writes, removing unused KVC shader-uniform writes, and avoiding camera-only Cube VU texture requests reduced known hot paths but left visible performance unsatisfactory.
+- Moving the FPS chip out of SwiftUI did not solve the visible issue: SwiftUI layout samples improved, but the user still reported roughly `35-37 FPS`, with sampling pointing at SceneKit render queue cost.
+- Disabling SceneKit multisampling did not produce enough visible improvement, even though it reduced one renderer setting.
+- Headless/offscreen benchmark results were not representative of user-visible performance: active offscreen SceneKit rendered around `200 FPS`, but the actual windowed app still felt slow.
+- `--headed-benchmark` showed an active-spin FPS chip around `120`, but that did not prove normal interactive/default review-app performance was fixed.
+- Packed/single-node cube-outline and softer backing-scale visual experiments were rejected because they changed the approved Cube VU speaker look; the app was restored to the twelve-edge outline look.
+- A live process check found `OrbitalViewViewer` running from sibling `orbital-view-with-objects`, so future performance verification must first prove the running app path is `/Orbital View Turbo/`.
+
+Next required verification gate:
+- Test normal interactive/default review-app behavior with the ribbed sphere visible at default, medium, and max density before closing this bug.
 ```
 
 ## Fixed Bugs
 
 ```text
+2026-05-30: Dense Ribbed Speaker Sphere caused avoidable SceneKit render/update cost. Root cause was the review app modeling the ribbed dome as one SceneKit cylinder node per generated rib/ring segment, with default density about 1,152 segments and max density about 8,192 segments. Fixed the source-level model by batching ribs into two SceneKit mesh nodes, one for vertical ribs and one for horizontal rings, and by removing camera state from the ribbed material update key so camera-only motion no longer loops through segment visibility/material writes. Added benchmark flags for ribbed default/medium/max density and regression tests for segment counts, two-node batching, camera-only update skips, topology rebuilds, and batched material writes.
+
 2026-05-27: The native SceneKit review app's left rail could clip the `Source` header and first source-selector segment at the physical window edge after adding the top-left Telemetry / Local Song / Impulse Test selector. Root cause was that the hidden-titlebar review window kept the left rail tight to the window edge while the new three-segment selector needed more horizontal room than the old local-song block. Fixed by widening the review rail and adding an explicit left window-edge inset before rail controls render. Regression coverage now asserts the wider rail and edge inset constants.
 
 2026-05-27: The refreshed app could reopen on `Impulse Test` even though the new review default source is `Telemetry`, because the default saved theme was older JSON without `sourceMode` and its legacy impulse `driveMode` was used as the source fallback during startup. Fixed by tracking whether `sourceMode` was explicit in decoded settings and preferring the review default only for missing-source default-theme startup, while preserving legacy inference for explicit old-theme loads. Regression coverage now asserts both paths.

@@ -34,6 +34,10 @@ let package = Package(
         .executable(
             name: "OrbitalViewViewer",
             targets: ["OrbitalViewViewer"]
+        ),
+        .executable(
+            name: "OrbitalViewHeadlessBenchmark",
+            targets: ["OrbitalViewHeadlessBenchmark"]
         )
     ],
     targets: [
@@ -79,6 +83,12 @@ let package = Package(
                 "OrbitalViewCore",
                 "OrbitalViewReview",
                 "OrbitalViewViewerSupport"
+            ]
+        ),
+        .executableTarget(
+            name: "OrbitalViewHeadlessBenchmark",
+            dependencies: [
+                "OrbitalViewReview"
             ]
         ),
         .testTarget(

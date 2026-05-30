@@ -5,7 +5,9 @@ import SwiftUI
 struct OrbitalViewViewerApp: App {
     var body: some Scene {
         WindowGroup(OrbitalViewportMockup.correctReviewAppName) {
-            OrbitalViewportMockup()
+            OrbitalViewportMockup(
+                startWithSpin: OrbitalViewportMockup.shouldStartHeadedBenchmarkSpin()
+            )
                 .frame(
                     minWidth: OrbitalViewportMockup.nativeMinimumWindowSize.width,
                     idealWidth: OrbitalViewportMockup.nativeDefaultWindowSize.width,

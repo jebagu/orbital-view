@@ -3,6 +3,7 @@ import SwiftUI
 import XCTest
 #if os(macOS)
 import AppKit
+import SceneKit
 #endif
 @testable import OrbitalViewCore
 @testable import OrbitalViewRender
@@ -37,6 +38,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.fpsMeterTargetFramesPerSecond, 120)
         XCTAssertEqual(OrbitalViewportMockup.fpsMeterUnderTargetFramesPerSecond, 60)
         XCTAssertEqual(OrbitalViewportMockup.fpsMeterLogSamplesPerSecond, 5)
+        #if os(macOS)
+        XCTAssertEqual(OrbitalViewport3DSceneView.antialiasingMode, .none)
+        #endif
         XCTAssertEqual(OrbitalViewportMockup.speakerCount, 30)
         XCTAssertEqual(OrbitalViewportMockup.rightPanelPurpose, "tuning-debug-panel")
     }
@@ -841,6 +845,104 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(entries.first?.message, "FPS 23.9 target=120 status=under target")
         XCTAssertEqual(entries.last?.message, "FPS 14.0 target=120 status=under target")
     }
+
+    #if os(macOS)
+    func testCorrectViewerFrameRateMeterUpdatesInsideSceneKitView() {
+        let view = OrbitalViewportSceneNSView(frame: NSRect(x: 0, y: 0, width: 320, height: 240))
+        let sample = OrbitalViewportFrameRateSample(
+            timestampMS: 1_000,
+            framesPerSecond: 118.4,
+            targetFramesPerSecond: 120,
+            status: .target,
+            shouldLog: true
+        )
+
+        XCTAssertTrue(OrbitalViewport3DSceneView.usesContinuousRenderDuringActiveMotion)
+        view.configureFrameRateMeter(theme: OrbitalViewportTheme(style: .purple), sample: .pending)
+        XCTAssertEqual(view.frameRateMeterTextForTests, "FPS --")
+
+        view.updateFrameRateMeter(sample: sample)
+
+        XCTAssertEqual(view.frameRateMeterTextForTests, "FPS 118.4")
+        XCTAssertEqual(view.frameRateMeterAccessibilityValueForTests, sample.accessibilityValue)
+    }
+
+    func testHeadlessBenchmarkUsesReviewCubeVUConfigurationWithoutChangingSpeakerLook() {
+        let activeOptions = OrbitalViewportHeadlessBenchmarkOptions(
+            mode: .active,
+            warmupFrames: 1,
+            measuredFrames: 1,
+            width: 320,
+            height: 240,
+            targetFramesPerSecond: 120
+        )
+        let activeConfiguration = OrbitalViewportHeadlessBenchmark.makeConfiguration(
+            options: activeOptions,
+            timeMS: 0
+        )
+
+        XCTAssertEqual(activeConfiguration.speakerShape, OrbitalViewportMockup.defaultSpeakerShape)
+        XCTAssertEqual(activeConfiguration.speakerSize, OrbitalViewportMath.speakerSize(fromSlider: 50))
+        XCTAssertEqual(activeConfiguration.renderStyle, OrbitalViewportMockup.defaultRenderStyle)
+        XCTAssertEqual(activeConfiguration.cubeVUSettings, OrbitalViewportMockup.defaultCubeVUSettings)
+        XCTAssertTrue(activeConfiguration.spin)
+        XCTAssertEqual(activeConfiguration.activeViewportFramesPerSecond, 120)
+        XCTAssertEqual(activeConfiguration.meterOnlyViewportFramesPerSecond, 30)
+
+        let idleConfiguration = OrbitalViewportHeadlessBenchmark.makeConfiguration(
+            options: OrbitalViewportHeadlessBenchmarkOptions(mode: .idle),
+            timeMS: 0
+        )
+        XCTAssertFalse(idleConfiguration.spin)
+
+        let ribbedConfiguration = OrbitalViewportHeadlessBenchmark.makeConfiguration(
+            options: OrbitalViewportHeadlessBenchmarkOptions(
+                mode: .active,
+                showRibbedSpeakerSphere: true,
+                ribbedSphereVerticalRibs: 32,
+                ribbedSphereHorizontalRings: 16,
+                showHiddenLines: true,
+                fogDensity: 42
+            ),
+            timeMS: 0
+        )
+        XCTAssertTrue(ribbedConfiguration.showRibbedSpeakerSphere)
+        XCTAssertEqual(ribbedConfiguration.ribbedSphereVerticalRibs, 32)
+        XCTAssertEqual(ribbedConfiguration.ribbedSphereHorizontalRings, 16)
+        XCTAssertTrue(ribbedConfiguration.showHiddenLines)
+        XCTAssertEqual(ribbedConfiguration.fogDensity, 42)
+    }
+
+    func testHeadedBenchmarkSpinRequiresExplicitLaunchFlag() {
+        XCTAssertFalse(
+            OrbitalViewportMockup.shouldStartHeadedBenchmarkSpin(
+                environment: [:],
+                arguments: ["OrbitalViewViewer"]
+            )
+        )
+        XCTAssertTrue(
+            OrbitalViewportMockup.shouldStartHeadedBenchmarkSpin(
+                environment: [:],
+                arguments: [
+                    "OrbitalViewViewer",
+                    OrbitalViewportMockup.headedBenchmarkLaunchArgument
+                ]
+            )
+        )
+        XCTAssertTrue(
+            OrbitalViewportMockup.shouldStartHeadedBenchmarkSpin(
+                environment: [OrbitalViewportMockup.headedBenchmarkEnvironmentKey: "1"],
+                arguments: ["OrbitalViewViewer"]
+            )
+        )
+        XCTAssertFalse(
+            OrbitalViewportMockup.shouldStartHeadedBenchmarkSpin(
+                environment: [OrbitalViewportMockup.headedBenchmarkEnvironmentKey: "0"],
+                arguments: ["OrbitalViewViewer"]
+            )
+        )
+    }
+    #endif
 
     func testCorrectViewerLocalAudioMeterConvertsToEqualMonoSample() {
         XCTAssertEqual(OrbitalViewportMeterSample.displayScalar(powerDB: -80), 0)
@@ -1826,6 +1928,31 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertTrue(segments.allSatisfy { ($0.end - $0.start).length > 0.000_001 })
     }
 
+    func testCorrectViewerRibbedSpeakerSphereSegmentCountsMatchDefaultMediumAndMaxDensities() {
+        let defaultCounts = OrbitalViewportRibbedSpeakerSphereGeometry.segmentCounts(
+            verticalRibs: 16,
+            horizontalRings: 8
+        )
+        let mediumCounts = OrbitalViewportRibbedSpeakerSphereGeometry.segmentCounts(
+            verticalRibs: 32,
+            horizontalRings: 16
+        )
+        let maxCounts = OrbitalViewportRibbedSpeakerSphereGeometry.segmentCounts(
+            verticalRibs: 64,
+            horizontalRings: 32
+        )
+
+        XCTAssertEqual(defaultCounts.vertical, 768)
+        XCTAssertEqual(defaultCounts.horizontal, 384)
+        XCTAssertEqual(defaultCounts.total, 1_152)
+        XCTAssertEqual(mediumCounts.vertical, 2_304)
+        XCTAssertEqual(mediumCounts.horizontal, 1_536)
+        XCTAssertEqual(mediumCounts.total, 3_840)
+        XCTAssertEqual(maxCounts.vertical, 5_120)
+        XCTAssertEqual(maxCounts.horizontal, 3_072)
+        XCTAssertEqual(maxCounts.total, 8_192)
+    }
+
     func testCorrectViewerRibbedSpeakerSphereCountsUseEvenSymmetricSpacing() {
         let asymmetricSpeakers = [
             OrbitalViewportSpeaker(channel: 1, label: "Near E", x: 1.2, y: 0.1, z: 0.4),
@@ -2290,6 +2417,28 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportSpeakerLabelFont.sevastopolInterface.nsFont(pointSize: 12).fontName, "Sevastopol-Interface")
     }
 
+    func testCorrectViewerFontRegistryUsesDirectResourceBundlePaths() throws {
+        let baseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fontsURL = baseURL.appendingPathComponent("Fonts", isDirectory: true)
+        try FileManager.default.createDirectory(at: fontsURL, withIntermediateDirectories: true)
+        try Data("font".utf8).write(to: fontsURL.appendingPathComponent("Nested-Regular.ttf"))
+        try Data("root".utf8).write(to: baseURL.appendingPathComponent("Root-Regular.ttf"))
+        defer {
+            try? FileManager.default.removeItem(at: baseURL)
+        }
+
+        XCTAssertEqual(
+            OrbitalViewportFontRegistry.resourceURL(fileName: "Nested-Regular.ttf", baseURL: baseURL),
+            fontsURL.appendingPathComponent("Nested-Regular.ttf")
+        )
+        XCTAssertEqual(
+            OrbitalViewportFontRegistry.resourceURL(fileName: "Root-Regular.ttf", baseURL: baseURL),
+            baseURL.appendingPathComponent("Root-Regular.ttf")
+        )
+        XCTAssertNil(OrbitalViewportFontRegistry.resourceURL(fileName: "Missing-Regular.ttf", baseURL: baseURL))
+    }
+
     func testCorrectViewerCommercialSpeakerLabelFontsAreInstallOnlyAndFallbackSafe() {
         let installOnlyFonts: [OrbitalViewportSpeakerLabelFont] = [
             .helveticaBlack,
@@ -2458,6 +2607,129 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(coordinator.labelRebuildCount, labelRebuildCount)
     }
 
+    func testCorrectViewerSceneKitRibbedSphereUsesBatchedSceneNodes() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let shown = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true
+        )
+
+        coordinator.resetInstrumentationForTests()
+        coordinator.update(
+            configuration: shown,
+            snapshot: OrbitalViewportSnapshot(configuration: shown)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertFalse(coordinator.ribbedSphereNode.isHidden)
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+        XCTAssertEqual(coordinator.ribbedSphereSegmentCountForTests, 1_152)
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentNodeBuildCount, 2)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
+    }
+
+    func testCorrectViewerVisibleRibbedSphereCameraMotionDoesNotVisitSegmentsOrRewriteMaterials() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            yaw: 0,
+            showRibbedSpeakerSphere: true,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let cameraOnly = makeViewportConfiguration(
+            timeMS: 1_008,
+            yaw: 0.04,
+            showRibbedSpeakerSphere: true,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30
+        )
+        coordinator.update(
+            configuration: cameraOnly,
+            snapshot: OrbitalViewportSnapshot(configuration: cameraOnly)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.cameraUpdateCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentVisitCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereHiddenStateWriteCount, 0)
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+    }
+
+    func testCorrectViewerRibbedSphereDensityChangeRebuildsBatchedTopologyOnce() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let medium = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true,
+            ribbedSphereVerticalRibs: 32,
+            ribbedSphereHorizontalRings: 16
+        )
+        coordinator.update(
+            configuration: medium,
+            snapshot: OrbitalViewportSnapshot(configuration: medium)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentNodeBuildCount, 2)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+        XCTAssertEqual(coordinator.ribbedSphereSegmentCountForTests, 3_840)
+    }
+
+    func testCorrectViewerGeodesicPaletteUpdatesOnlyBatchedRibbedMaterials() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            geodesicRenderStyle: .purple,
+            showRibbedSpeakerSphere: true
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let palette = makeViewportConfiguration(
+            timeMS: 1_000,
+            geodesicRenderStyle: .rackBlue,
+            geodesicSaturation: 0.42,
+            showRibbedSpeakerSphere: true
+        )
+        coordinator.update(
+            configuration: palette,
+            snapshot: OrbitalViewportSnapshot(configuration: palette)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentVisitCount, 0)
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+    }
+
     func testCorrectViewerSceneKitSourceSpeakerPaletteUpdatesOnlySourceMaterial() throws {
         let coordinator = OrbitalViewport3DSceneView.Coordinator()
         let source = OrbitalViewportSourceMarker(
@@ -2617,6 +2889,48 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(snapshot.cubeVUTextureAssignmentCount, 0)
     }
 
+    func testActiveSpinFrameDoesNotUpdateSpeakerVisibilityInsideMeterBucket() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            yaw: 0,
+            speakerShape: .cubeVU,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30,
+            spin: true,
+            spinStartYaw: 0,
+            spinStartTimeMS: 1_000
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let sameMeterBucket = base.frameConfiguration(timeMS: 1_008)
+        coordinator.update(
+            configuration: sameMeterBucket,
+            snapshot: OrbitalViewportSnapshot(configuration: sameMeterBucket)
+        )
+        var snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.cameraUpdateCount, 1)
+        XCTAssertEqual(snapshot.speakerVisibilityUpdateCount, 0)
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 0)
+
+        coordinator.resetInstrumentationForTests()
+        let nextMeterBucket = base.frameConfiguration(timeMS: 1_034)
+        coordinator.update(
+            configuration: nextMeterBucket,
+            snapshot: OrbitalViewportSnapshot(configuration: nextMeterBucket)
+        )
+        snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.cameraUpdateCount, 1)
+        XCTAssertEqual(snapshot.speakerVisibilityUpdateCount, 1)
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 1)
+    }
+
     func testMeterDisplayBucketUpdatesSpeakerMaterialWithoutStaticRebuild() {
         let coordinator = OrbitalViewport3DSceneView.Coordinator()
         let base = makeViewportConfiguration(
@@ -2648,6 +2962,43 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(coordinator.labelRebuildCount, labelRebuildCount)
         XCTAssertEqual(coordinator.gridPlaneBuildCount, gridPlaneBuildCount)
         XCTAssertEqual(coordinator.ribbedSphereBuildCount, ribbedSphereBuildCount)
+    }
+
+    func testCubeVUOutlineMaterialSkipsUnchangedMeterBuckets() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            speakerShape: .cubeVU,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let nextMeterBucket = base.frameConfiguration(timeMS: 1_034)
+        coordinator.update(
+            configuration: nextMeterBucket,
+            snapshot: OrbitalViewportSnapshot(configuration: nextMeterBucket)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 1)
+        XCTAssertGreaterThan(snapshot.cubeVUMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.speakerLabelMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.cubeOutlineMaterialUpdateCount, 0)
+    }
+
+    func testCubeVUResolvedMaterialColorsMatchThemeRamp() throws {
+        let theme = OrbitalViewportTheme(style: .daftPunkBow)
+        let heat = 0.42
+        let referenceColor = NSColor(theme.cubeVUColor(heat: heat))
+        let referenceHotColor = NSColor(theme.cubeVUHotColor)
+
+        XCTAssertLessThan(try rgbDistance(theme.cubeVUNSColor(heat: heat), referenceColor), 0.000_001)
+        XCTAssertLessThan(try rgbDistance(theme.cubeVUHotNSColor, referenceHotColor), 0.000_001)
     }
 
     func testSourcePoseAndSourceMaterialCadenceAreSeparatedByCoordinator() throws {
@@ -2750,6 +3101,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             hotColor: .pink
         )
         let first = OrbitalViewportCubeVUSceneKitMaterial.diagnosticsSnapshotForTests()
+
+        XCTAssertFalse(OrbitalViewportCubeVUSceneKitMaterial.usesSceneKitShaderModifier)
+        XCTAssertLessThanOrEqual(first.uniformWriteCount, 2)
 
         OrbitalViewportCubeVUSceneKitMaterial.update(
             material: material,
