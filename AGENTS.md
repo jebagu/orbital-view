@@ -2,9 +2,9 @@
 
 ## Project
 
-Orbital View Kit is a docs-first scaffold for a reusable spherical speaker viewport module named `OrbitalViewKit`.
+Orbital View is the canonical head project for the reusable spherical speaker viewport. The historical names `Orbital View Kit`, `Orbital View VU Kit`, `Orbital View Turbo`, and `orbital-view-with-objects` are non-head variation labels.
 
-The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewRender`, and the compile-only `OrbitalViewSwiftUI` wrapper skeleton. The production renderer backend decision is accepted as MetalKit / MTKView, and `OrbitalViewRender` now has a minimal offscreen smoke-test draw path plus static draw-input invariant tests. Production visual rendering, SwiftUI controls/gestures, Wavefield app integration, Orbisonic integration, and Splat integration remain deferred until explicit tasks are opened.
+The current implemented Swift package targets are `OrbitalViewCore`, `OrbitalViewWavefield`, `OrbitalViewSpatGRIS`, `OrbitalViewRender`, `OrbitalViewTelemetry`, `OrbitalViewSwiftUI`, `OrbitalViewReview`, `OrbitalViewViewerSupport`, and `OrbitalViewViewer`. The production renderer backend decision is accepted as MetalKit / MTKView. The native SceneKit review app is the current visible review surface; production host integration still goes through `OrbitalViewSwiftUI` and `OrbitalViewRender`.
 
 ## Local Hosting
 
@@ -19,7 +19,7 @@ not applicable yet
 If a future mockup or local web tool is hosted, use a stable project path:
 
 ```text
-http://127.0.0.1:<port>/OrbitalViewKit/
+http://127.0.0.1:<port>/OrbitalView/
 ```
 
 Pin the port in this file before treating that URL as permanent.
@@ -27,6 +27,12 @@ Pin the port in this file before treating that URL as permanent.
 ## Launchers
 
 The project launcher is:
+
+```text
+Open Orbital View.command
+```
+
+The legacy compatibility launcher is:
 
 ```text
 Open Orbital View Kit.command
@@ -38,9 +44,9 @@ The stable launcher in the parent `vibecode projects` folder is:
 /Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
 ```
 
-Keep the parent launcher as a thin wrapper that delegates to this checkout's project launcher. The project launcher is the source of truth and must rebuild `OrbitalViewViewer`, refresh the native review `.app` executable and `OrbitalViewKit_OrbitalViewReview.bundle`, restart any stale `OrbitalViewViewer` process, and open the latest app.
+Keep the parent launcher as a thin wrapper that delegates to this checkout's project launcher. The project launcher is the source of truth and must rebuild `OrbitalViewViewer`, refresh the native review `.app` executable and current review resource bundle, restart any stale `OrbitalViewViewer` process, and open the latest app.
 
-Whenever source, resource, bundled theme, app-bundle, or launch-flow changes affect the visible review app, update `Open Orbital View Kit.command`, confirm the parent launcher still points to it, and launch through the parent launcher before reporting the change complete.
+Whenever source, resource, bundled theme, app-bundle, or launch-flow changes affect the visible review app, update `Open Orbital View.command`, keep `Open Orbital View Kit.command` as a compatibility wrapper, confirm the parent launcher still points to a working launcher path, and launch through the parent launcher before reporting the change complete.
 
 ## Read First
 
@@ -56,6 +62,7 @@ docs/implementation-map.md
 docs/test-strategy.md
 docs/status.md
 docs/bugs.md
+docs/project-identity.md
 work-packages/orbital-view-kit/MV.md
 ```
 

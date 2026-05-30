@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "OrbitalViewKit",
+    name: "OrbitalView",
     platforms: [
         .macOS(.v13)
     ],

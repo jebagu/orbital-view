@@ -3,4 +3,4 @@ Minecraft.ttf
 Source: https://www.dafont.com/minecraft.font
 Author: Craftron Gaming
 DaFont listing: 100% Free
-Downloaded for bundled offline speaker-label rendering in Orbital View VU.
+Downloaded for bundled offline speaker-label rendering in Orbital View.

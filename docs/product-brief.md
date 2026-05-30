@@ -2,11 +2,11 @@
 
 ## Project Name
 
-Orbital View Kit
+Orbital View
 
 ## One-Sentence Description
 
-A reusable, native 3D spherical speaker viewport for monitoring and authoring spatial speaker arrays across Wavefield, Orbisonic, and Splat.
+The canonical head project for a reusable, native 3D spherical speaker viewport for monitoring and authoring spatial speaker arrays across Wavefield, Orbisonic, and Splat.
 
 ## Problem
 
@@ -88,3 +88,9 @@ The first usable implementation already:
 - Physical speaker channels are 1-based and must not be reordered.
 - DomeLab is a reference and future geometry-export source, not a dependency.
 - `OrbitalViewCore` should stay portable and independent of downstream app targets.
+
+## Project Identity
+
+`Orbital View` is the active head project name for version `1.0`.
+
+The Swift package and target symbols intentionally keep the `OrbitalView*` prefix for source compatibility. Historical labels such as `Orbital View Kit`, `Orbital View VU Kit`, `Orbital View Turbo`, and `orbital-view-with-objects` are non-head variation labels and should not be used as the current product name.

@@ -4,7 +4,7 @@
 
 This project inherits the Realtime Audio Family Standards Package. The Bencina Realtime Callback Doctrine is mandatory for every callback and every callback-reachable function. Project-specific requirements may add stricter rules but may not weaken the family standard.
 
-Orbital View Kit currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane. Protected renderer and SwiftUI paths must remain display-rate code and must not become callback-reachable without an explicit future task, OpenSpec change, and specialty review.
+Orbital View currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane. Protected renderer and SwiftUI paths must remain display-rate code and must not become callback-reachable without an explicit future task, OpenSpec change, and specialty review.
 
 ## Current Scaffold
 

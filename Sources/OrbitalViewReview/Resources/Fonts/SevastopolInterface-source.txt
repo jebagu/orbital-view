@@ -2,4 +2,4 @@ Source: DaFont
 URL: https://www.dafont.com/sevastopol-interface.font
 File: Sevastopol-Interface.ttf
 License note from source page: 100% Free
-Use in Orbital View VU: bundled Alien: Isolation-inspired pixel display option for speaker labels.
+Use in Orbital View: bundled Alien: Isolation-inspired pixel display option for speaker labels.

@@ -6,20 +6,22 @@ Contracts are binding once implemented. If a task needs to change a contract, do
 
 This project inherits the Realtime Audio Family Standards Package. The Bencina Realtime Callback Doctrine is mandatory for every callback and every callback-reachable function. Project-specific requirements may add stricter rules but may not weaken the family standard.
 
-Orbital View Kit currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane. Public contracts consume host-prepared telemetry and must not be treated as realtime-callback-safe unless a future OpenSpec change explicitly defines and verifies that guarantee.
+Orbital View currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane. Public contracts consume host-prepared telemetry and must not be treated as realtime-callback-safe unless a future OpenSpec change explicitly defines and verifies that guarantee.
+
+The current head project name is `Orbital View`. `Orbital View Kit`, `Orbital View VU Kit`, `Orbital View Turbo`, and `orbital-view-with-objects` are non-head variation labels. Target/type names keep the `OrbitalView*` prefix for source compatibility.
 
 The final adoption audit is `docs/realtime-family-compliance-audit.md`. That audit is the current closeout record for plane ownership, callback inventory, review-only separation, OpenSpec status, host integration boundaries, UI guideline status, and explicit remaining risks.
 
 ## Plane Ownership Contract
 
 - Host applications own realtime callbacks, callback-safe queues, routing, playback timing, MIDI, OSC, and meter extraction.
-- Orbital View Kit owns validated display contracts for scenes, speaker/object meter snapshots, camera state, selection state, renderer state, and UI diagnostics.
+- Orbital View owns validated display contracts for scenes, speaker/object meter snapshots, camera state, selection state, renderer state, and UI diagnostics.
 - `OrbitalViewCore` and host adapters may normalize prepared data before rendering, but they must not block or allocate on behalf of a host audio callback.
 - `OrbitalViewRender`, `OrbitalViewSwiftUI`, and `OrbitalViewReview` are Control / UI / Telemetry Plane code. They may visualize measured levels and test harness input sources, but they must not fake production meter data or reorder physical speaker channels.
 
 ## Final Compliance Contract
 
-Orbital View Kit may be described as realtime-family compliant only in this scope:
+Orbital View may be described as realtime-family compliant only in this scope:
 
 - it is a visual telemetry and preparation package;
 - it owns no realtime callback entry points;
@@ -34,7 +36,7 @@ Orbital View Kit may be described as realtime-family compliant only in this scop
 
 Every displayed speaker or object meter frame must carry an `OrbitalViewTelemetrySourceDescriptor`. Supported source kinds are `speakerBus`, `objectBus`, `finalOutput`, `hardwareTap`, `localLivestreamTestGenerator`, `externalWavefieldStream`, `orbisonicPreparedMeterTap`, `splatPreparedAnalysis`, `reviewLocalAudio`, and `syntheticVisualStress`.
 
-Display telemetry is latest-complete-frame-wins. Orbital View Kit may drop stale frames, decimate display refresh, keep only the latest complete snapshot, and set diagnostics flags outside realtime paths. It must not make audio wait for the viewport, allocate more display queue from an audio callback, log or post UI from a callback, or send raw packets directly into the renderer.
+Display telemetry is latest-complete-frame-wins. Orbital View may drop stale frames, decimate display refresh, keep only the latest complete snapshot, and set diagnostics flags outside realtime paths. It must not make audio wait for the viewport, allocate more display queue from an audio callback, log or post UI from a callback, or send raw packets directly into the renderer.
 
 ## SpatGRIS Layout Contract
 
@@ -61,7 +63,7 @@ Passing the stress gate proves viewport no-backpressure behavior only. It does n
 
 UI and review-surface work must follow `docs/orbisonic-design-language.md` and the referenced Orbisonic design-language source files. This contract applies to shell layout, visible tuning controls, diagnostics, palette behavior, and visual meter treatment only.
 
-Orbital View Kit must preserve its own module responsibilities and host ownership boundaries. The design language must not be used to import Orbisonic playback, routing, source, transport, or product-specific semantics into this package.
+Orbital View must preserve its own module responsibilities and host ownership boundaries. The design language must not be used to import Orbisonic playback, routing, source, transport, or product-specific semantics into this package.
 
 Review criteria for UI changes:
 
@@ -78,9 +80,9 @@ Daft Punk Bow remains display-only VU color/material behavior and the canonical 
 
 Orbisonic and Splat host profiles are defined in `docs/integrations/orbisonic-splat-host-profiles.md`.
 
-Orbisonic receives Orbital View Kit as a prepared viewport for bus, object, and speaker meter snapshots from explicit host tap points. Orbisonic keeps ownership of playback, transport, Core Audio device I/O, route discovery, route repair, channel mapping, output routing, render/control engines, meter extraction, operator state, and realtime performance gates. Orbital View Kit must treat Orbisonic tap-point names as source metadata only and should label prepared meter frames with `OrbitalViewTelemetrySourceDescriptor.orbisonicPreparedMeterTap` or a validated descriptor with the same ownership boundary.
+Orbisonic receives Orbital View as a prepared viewport for bus, object, and speaker meter snapshots from explicit host tap points. Orbisonic keeps ownership of playback, transport, Core Audio device I/O, route discovery, route repair, channel mapping, output routing, render/control engines, meter extraction, operator state, and realtime performance gates. Orbital View must treat Orbisonic tap-point names as source metadata only and should label prepared meter frames with `OrbitalViewTelemetrySourceDescriptor.orbisonicPreparedMeterTap` or a validated descriptor with the same ownership boundary.
 
-Splat receives Orbital View Kit as a preparation/control viewport for virtual speakers, source objects, renderer-kernel overlays, neutral geometry review, camera, selection, and diagnostics. Splat owns authoring/edit commands, project/session state, kernel analysis, geometry import/export decisions, file formats, persistence, and any eventual handoff to an audio/render host. Orbital View Kit should label Splat analysis snapshots with `OrbitalViewTelemetrySourceDescriptor.splatPreparedAnalysis`.
+Splat receives Orbital View as a preparation/control viewport for virtual speakers, source objects, renderer-kernel overlays, neutral geometry review, camera, selection, and diagnostics. Splat owns authoring/edit commands, project/session state, kernel analysis, geometry import/export decisions, file formats, persistence, and any eventual handoff to an audio/render host. Orbital View should label Splat analysis snapshots with `OrbitalViewTelemetrySourceDescriptor.splatPreparedAnalysis`.
 
 Splat edit/export behavior remains preparation/control behavior until a host applies a prepared snapshot. Canonical 3D coordinates must not be replaced by permanent flattened screen coordinates, and neutral geometry import/export must stay separate from browser or DomeLab runtime code.
 
@@ -499,7 +501,7 @@ speakers[] channel, label, position
 
 `SpeakerMeterFrame` source `.externalWavefieldStream` by default, or a more specific caller-provided Wavefield-compatible source such as `.localLivestreamTestGenerator`.
 
-Wavefield realtime integration is defined in `docs/integrations/wavefield-realtime-connection.md`. Wavefield owns external live stream parsing, the local livestream test generator, MIDI streams, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View Kit receives only prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots.
+Wavefield realtime integration is defined in `docs/integrations/wavefield-realtime-connection.md`. Wavefield owns external live stream parsing, the local livestream test generator, MIDI streams, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View receives only prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots.
 
 Wavefield object IDs remain source-object identity for `OrbitalViewObjectFrame.objectID` and `ObjectMeterFrame.levelsByObjectID`. Physical speaker channels remain speaker identity for `OrbitalViewSpeaker.channel` and `SpeakerMeterFrame.levelsByChannel`. Generator profile names are source metadata only, not audio path branches. Object disappear is represented by omitting that object ID from the next prepared `OrbitalViewObjectFrameSet.activeObjects` snapshot. Missing or stale display frames may be dropped under the telemetry overload contract.
 

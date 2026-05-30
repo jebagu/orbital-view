@@ -15,7 +15,7 @@ import UniformTypeIdentifiers
 import SwiftUI
 
 public struct OrbitalViewportMockup: View {
-    public static let correctReviewAppName = "Orbital View VU Kit Native SceneKit Geodesic Viewport Review App With Preserved Control Rail, Right Tuning Panel, Motion FPS Toggle, Full-Window PNG Export, and Cube VU Speaker Surface"
+    public static let correctReviewAppName = "Orbital View 1.0 Native SceneKit Review App With Preserved Control Rail, Right Tuning Panel, Motion FPS Toggle, Full-Window PNG Export, and Cube VU Speaker Surface"
     public static let sourceMockupPath = "mockups/orbital-view-viewport/index.html"
     public static let desktopSize = CGSize(width: 1512, height: 850)
     public static let nativeDefaultWindowSize = CGSize(width: 1180, height: 760)
@@ -267,7 +267,7 @@ public struct OrbitalViewportMockup: View {
         "30-channel VU list"
     ]
     static let rightPanelPurpose = "tuning-debug-panel"
-    static let defaultSettingsSourceFileName = "Orbital View VU Kit Settings 2026-05-21-171537.json"
+    static let defaultSettingsSourceFileName = "Orbital View Settings 2026-05-21-171537.json"
     static let defaultRenderStyle: OrbitalViewportRenderStyle = .purple
     static let defaultSourceSpeakerRenderStyle: OrbitalViewportRenderStyle = defaultRenderStyle
     static let defaultGeodesicRenderStyle: OrbitalViewportRenderStyle = .purple
@@ -3797,7 +3797,7 @@ enum OrbitalViewportPNGExporter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-        return "Orbital View VU Kit \(formatter.string(from: date)) \(style.title).png"
+        return "Orbital View \(formatter.string(from: date)) \(style.title).png"
     }
 
     static func destinationURL(
@@ -4379,7 +4379,7 @@ struct OrbitalViewportGroundAppearanceExportSettings: Codable, Equatable {
 }
 
 enum OrbitalViewportSettingsJSONExporter {
-    static let filePrefix = "Orbital View VU Kit Settings"
+    static let filePrefix = "Orbital View Settings"
 
     static func timestampString(date: Date) -> String {
         ISO8601DateFormatter().string(from: date)
@@ -5754,6 +5754,7 @@ enum OrbitalViewportFontRegistry {
             return []
         }
         return [
+            resourceURL.appendingPathComponent("OrbitalView_OrbitalViewReview.bundle", isDirectory: true),
             resourceURL.appendingPathComponent("OrbitalViewKit_OrbitalViewReview.bundle", isDirectory: true),
             resourceURL
         ]

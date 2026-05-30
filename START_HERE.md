@@ -1,6 +1,6 @@
 # Start Here
 
-Orbital View Kit starts as a docs-first project-control repository.
+Orbital View is the canonical head project for the native spherical speaker viewport.
 
 ## First Read
 
@@ -41,6 +41,14 @@ The root launcher opens that live mockup file:
 ```text
 Open Orbital View Kit.command
 ```
+
+The canonical project launcher is:
+
+```text
+Open Orbital View.command
+```
+
+`Open Orbital View Kit.command` remains as a compatibility wrapper for older notes and shortcuts.
 
 The accepted production renderer backend is documented at:
 

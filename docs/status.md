@@ -3,18 +3,20 @@
 ## Current Phase
 
 ```text
-Realtime audio family compliance baseline complete
+Orbital View 1.0 head identity checkpoint
 ```
 
 ## Current Milestone
 
 ```text
-Final realtime-family compliance audit
+Canonical project rename and GitHub publish
 ```
 
 ## Summary
 
-The active review app is the existing `OrbitalViewViewer` executable in this package, now hosting the confirmed VU Kit native SceneKit geodesic viewport surface through `OrbitalViewportMockup`. It is not the rejected bare MTKView demo surface and does not create a second standalone copied app.
+The active head project is now `Orbital View 1.0`. Historical labels including `Orbital View Kit`, `Orbital View VU Kit`, `Orbital View Turbo`, and `orbital-view-with-objects` are non-head variation labels documented in `docs/project-identity.md`.
+
+The active review app is the existing `OrbitalViewViewer` executable in this package, now hosting the confirmed native SceneKit geodesic viewport surface through `OrbitalViewportMockup`. It is not the rejected bare MTKView demo surface and does not create a second standalone copied app.
 
 Canonical 3D coordinates in this package are now Z-up: `x = right`, `y = front`, and `z = up`. Wavefield/Fey channel order remains physical channel order `1...30`; renderer and review surfaces transform canonical vectors into their own Y-up spaces only at render boundaries.
 
@@ -36,7 +38,7 @@ The Slice 9 visual telemetry stress gate is now specified in `docs/visual-teleme
 
 The final realtime-family adoption audit is now recorded in `docs/realtime-family-compliance-audit.md`. The package can be described as standards-aligned as a visual telemetry/preparation package: it inherits the Realtime Audio Family Standards Package, owns no callback entry points, keeps review-only code separated, uses OpenSpec for future audio-facing or architecture-facing changes, treats the Wavefield local livestream generator as a host source, and uses the Orbisonic design language as UI guidance only. Remaining risks are explicit in the audit.
 
-The project launcher `Open Orbital View Kit.command` rebuilds the latest `OrbitalViewViewer`, refreshes the native review `.app` executable and `OrbitalViewKit_OrbitalViewReview.bundle`, restarts stale `OrbitalViewViewer` processes, and opens the refreshed review app. The parent-folder launcher `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` delegates to the project launcher so Finder access from the `vibecode projects` root stays current.
+The project launcher `Open Orbital View.command` rebuilds the latest `OrbitalViewViewer`, refreshes the native review `.app` executable and current review resource bundle, restarts stale `OrbitalViewViewer` processes, and opens the refreshed review app. `Open Orbital View Kit.command` remains a compatibility wrapper. The parent-folder launcher `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` still delegates into this checkout so Finder access from the `vibecode projects` root stays current.
 
 ## Current Work Package
 
@@ -120,6 +122,15 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-30 Orbital View 1.0 Head Rename
+
+- Renamed the current head project identity to `Orbital View 1.0` in README/product/status/operator docs while keeping Swift target names stable with the `OrbitalView*` prefix.
+- Added `docs/project-identity.md` to mark `Orbital View Kit`, `Orbital View VU Kit`, `Orbital View Turbo`, `orbital-view-with-objects`, and the old verbose SceneKit review-app label as non-head variation labels.
+- Renamed the Swift package manifest identity from `OrbitalViewKit` to `OrbitalView`.
+- Added the canonical `Open Orbital View.command` launcher and kept `Open Orbital View Kit.command` as a compatibility wrapper.
+- Updated review-app exported PNG/settings names and window identity strings from the old VU Kit label to `Orbital View`.
+- Verification: `git diff --check` passed; `zsh -n Open Orbital View.command` and `zsh -n Open Orbital View Kit.command` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 194 tests and 0 failures; `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt and opened the refreshed app through the compatibility wrapper; `pgrep -fl OrbitalViewViewer` confirmed PID `49992` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`; the refreshed app resources contain `OrbitalView_OrbitalViewReview.bundle`; and the local app bundle now reports `CFBundleName` / `CFBundleDisplayName` as `Orbital View 1.0`.
 
 ### Update: 2026-05-30 Operator Status Checkpoint
 

@@ -1,6 +1,14 @@
-# Orbital View Kit
+# Orbital View
 
-Orbital View Kit is a Swift package for rendering and reviewing spherical speaker viewports for spatial audio systems. It keeps spatial scene data, speaker identity, meter telemetry, rendering, host wrappers, and review tooling separated so host applications can feed prepared viewport snapshots without giving the viewport ownership of playback, routing, or realtime audio callbacks.
+Orbital View is the canonical head project for the native spherical speaker viewport. It is a Swift package for rendering and reviewing spatial-audio speaker viewports while keeping scene data, speaker identity, meter telemetry, rendering, host wrappers, and review tooling separated so host applications can feed prepared viewport snapshots without giving the viewport ownership of playback, routing, or realtime audio callbacks.
+
+Current release identity:
+
+```text
+Orbital View 1.0
+```
+
+Historical names such as Orbital View Kit, Orbital View VU Kit, Orbital View Turbo, and orbital-view-with-objects are now non-head variation labels. The canonical project identity is tracked in `docs/project-identity.md`.
 
 The package currently includes:
 
@@ -142,14 +150,14 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift run OrbitalViewVi
 For the local packaged review app, use:
 
 ```sh
-./Open\ Orbital\ View\ Kit.command
+./Open\ Orbital\ View.command
 ```
 
-That launcher rebuilds `OrbitalViewViewer`, refreshes the local `.app` executable and `OrbitalViewKit_OrbitalViewReview.bundle`, restarts stale viewer processes, and opens the latest review app.
+That launcher rebuilds `OrbitalViewViewer`, refreshes the local `.app` executable and review resource bundle, restarts stale viewer processes, and opens the latest review app. `Open Orbital View Kit.command` remains as a compatibility wrapper only.
 
 ## Coordinate System
 
-Orbital View Kit uses canonical Z-up coordinates:
+Orbital View uses canonical Z-up coordinates:
 
 ```text
 x = right / left
@@ -161,7 +169,7 @@ Renderer and review targets may map canonical coordinates into framework-specifi
 
 ## Telemetry And Realtime Boundary
 
-Orbital View Kit is a viewport package, not an audio engine.
+Orbital View is a viewport package, not an audio engine.
 
 It can consume prepared display snapshots such as:
 

@@ -4,7 +4,7 @@
 
 ## Current Package
 
-The Swift package exists and is verified with the full Xcode toolchain.
+The Swift package is now named `OrbitalView` and is verified with the full Xcode toolchain. Test target names retain the `OrbitalView*` prefix for source compatibility.
 
 ## Testing Goals
 
@@ -249,7 +249,7 @@ Current viewer tests cover:
 Launch the viewer for manual review with:
 
 ```text
-/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Latest.command
 ```
 
 The viewer imports `OrbitalViewReview` for the SceneKit/local-audio review surface. Production host apps should import `OrbitalViewSwiftUI` instead.
@@ -271,7 +271,7 @@ Current package:
 ```text
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
-/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
+/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Latest.command
 ```
 
 Current mockup:

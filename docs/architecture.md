@@ -2,13 +2,13 @@
 
 ## Overview
 
-Orbital View Kit will become a layered Swift module family for spherical speaker visualization. The first layer is `OrbitalViewCore`, a pure data and validation target. Rendering, SwiftUI wrapping, and downstream app adapters are future layers.
+Orbital View is the canonical head project for the layered Swift module family for spherical speaker visualization. The first layer is `OrbitalViewCore`, a pure data and validation target. Rendering, SwiftUI wrapping, review tooling, and downstream app adapters are separate layers. `Orbital View Kit` is now a non-head historical label.
 
 ## Realtime Audio Family Standards Inheritance
 
 This project inherits the Realtime Audio Family Standards Package. The Bencina Realtime Callback Doctrine is mandatory for every callback and every callback-reachable function. Project-specific requirements may add stricter rules but may not weaken the family standard.
 
-Orbital View Kit currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane, no audio callback entry point, no playback scheduler, no output routing, and no MIDI or OSC transport. Its public package APIs consume host-prepared scene, meter, object, and camera state for display-rate rendering.
+Orbital View currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane, no audio callback entry point, no playback scheduler, no output routing, and no MIDI or OSC transport. Its public package APIs consume host-prepared scene, meter, object, and camera state for display-rate rendering.
 
 The shared standards package is referenced from `/Users/jeremyguillory/Documents/vibecode projects/All projects assets/realtime-audio-family-standards`; it is not copied into this repository.
 
@@ -88,17 +88,17 @@ Long-term renderer source should not be SceneKit-first, RealityKit-first, WebVie
 
 ## Audio Architecture
 
-Orbital View Kit does not own audio behavior.
+Orbital View does not own audio behavior.
 
 Current plane fit:
 
 ```text
-Realtime Plane: none owned by Orbital View Kit
+Realtime Plane: none owned by Orbital View
 Preparation Plane: scene, layout, meter, object, and host-adapter normalization
 Control / UI / Telemetry Plane: renderer state, SwiftUI wrapper, camera/selection events, diagnostics, and review surfaces
 ```
 
-Host applications must extract meters and publish prepared snapshots from their own realtime-safe paths. Orbital View Kit may coalesce, drop, or interpolate display updates, but it must not be called directly from an audio callback unless a future task establishes an explicit callback-safe contract.
+Host applications must extract meters and publish prepared snapshots from their own realtime-safe paths. Orbital View may coalesce, drop, or interpolate display updates, but it must not be called directly from an audio callback unless a future task establishes an explicit callback-safe contract.
 
 It may consume already-computed meter frames:
 
@@ -118,7 +118,7 @@ It must not:
 
 The Wavefield realtime connection is specified in `docs/integrations/wavefield-realtime-connection.md`.
 
-Wavefield owns external live stream parsing, the local livestream test generator, local MIDI streams, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View Kit receives prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots only.
+Wavefield owns external live stream parsing, the local livestream test generator, local MIDI streams, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View receives prepared scene, speaker meter, object frame, object meter, diagnostics, and source metadata snapshots only.
 
 The local livestream test generator is a normal Wavefield host source. Generator profile names such as `smoke`, `moving-pose`, `sustained-moving-object`, `burst-reorder`, `16-object-stress`, and `32-object-should-pass-stress` are source metadata and stress inputs only, not alternate audio paths.
 
@@ -128,21 +128,21 @@ The canonical display stress gate is specified in `docs/visual-telemetry-stress-
 
 `OrbitalViewVisualTelemetryStressScene` defines a display-only fixture with 30 physical speakers, 128 source objects, capped object trails, 120 FPS active motion, 120 FPS incoming meter cadence, 30 FPS displayed meter cadence, open diagnostics, local livestream generator provenance, and stale display frame diagnostics. This fixture proves Control / UI / Telemetry Plane no-backpressure behavior only.
 
-Host callback p99, callback deadline, route repair timing, device I/O timing, MIDI/OSC timing, and meter extraction timing remain host-owned performance gates. Orbital View Kit cannot claim host realtime callback compliance because it owns no callback entry point.
+Host callback p99, callback deadline, route repair timing, device I/O timing, MIDI/OSC timing, and meter extraction timing remain host-owned performance gates. Orbital View cannot claim host realtime callback compliance because it owns no callback entry point.
 
 ## Orbisonic And Splat Host Profiles
 
 The Orbisonic and Splat host profiles are specified in `docs/integrations/orbisonic-splat-host-profiles.md`.
 
-Orbisonic connects through prepared bus, object, and speaker meter snapshots from explicit tap points. Orbisonic owns playback, transport, Core Audio device I/O, route discovery, route repair, channel mapping, output routing, render/control engines, meter extraction, operator state, and realtime performance gates. Orbital View Kit labels the prepared provenance, preserves physical channel/object identity, and follows the Orbisonic design-language palette grammar without becoming an Orbisonic source selector, route validator, or live mixer.
+Orbisonic connects through prepared bus, object, and speaker meter snapshots from explicit tap points. Orbisonic owns playback, transport, Core Audio device I/O, route discovery, route repair, channel mapping, output routing, render/control engines, meter extraction, operator state, and realtime performance gates. Orbital View labels the prepared provenance, preserves physical channel/object identity, and follows the Orbisonic design-language palette grammar without becoming an Orbisonic source selector, route validator, or live mixer.
 
-Splat connects through prepared virtual speaker/source/object layouts, renderer-kernel overlays, neutral geometry review snapshots, diagnostics, camera, and selection. Splat owns project/session state, authoring commands, kernel analysis, file formats, persistence, neutral geometry import/export, and any later handoff to an audio/render host. Orbital View Kit must not store permanent flattened screen coordinates as canonical spatial state or import browser/DomeLab runtime code.
+Splat connects through prepared virtual speaker/source/object layouts, renderer-kernel overlays, neutral geometry review snapshots, diagnostics, camera, and selection. Splat owns project/session state, authoring commands, kernel analysis, file formats, persistence, neutral geometry import/export, and any later handoff to an audio/render host. Orbital View must not store permanent flattened screen coordinates as canonical spatial state or import browser/DomeLab runtime code.
 
 ## UI Architecture
 
 Orbital View UI and review surfaces follow `docs/orbisonic-design-language.md`. Future UI work must read the Orbisonic design-language references before changing shell layout, tuning trays, diagnostics, palette behavior, or visible meter treatment.
 
-The design-language rule is intentionally visual and ergonomic. Orbital View Kit should reuse Orbisonic-family shell grammar, compact technical panels, palette behavior, title-only panel headers, diagnostics separation, and Daft Punk Bow meter treatment without importing Orbisonic product semantics, playback controls, routing ownership, or realtime behavior.
+The design-language rule is intentionally visual and ergonomic. Orbital View should reuse Orbisonic-family shell grammar, compact technical panels, palette behavior, title-only panel headers, diagnostics separation, and Daft Punk Bow meter treatment without importing Orbisonic product semantics, playback controls, routing ownership, or realtime behavior.
 
 The production wrapper now includes an optional native tuning surface. Hosts can keep the renderer as a plain viewport or opt into collapsible trays for:
 
@@ -221,7 +221,7 @@ The current native review executable is a deliberately separate visual-review su
 
 In the SceneKit review executable, the desktop left rail is a full-height always-on operator rail with plain product identity, Camera, and View Detail only. Its title reads `Orbital View` and uses the Wavefield Receiver player-panel title treatment; Camera and View Detail sit directly underneath near the top. The right panel starts with a `Sound Metering Input` header above one expanded `Input` tray containing the `Telemetry`, `Local Song`, and `Impulse Test` selector, source-specific controls, and `Meter Source` rows. `Speaker and Source Layout` follows with `Sonic Sphere Speakers` and `Source Speakers` trays, each carrying SPAT XML kicker copy; `Roll the dice on looks` follows as a global view/visual randomizer with a centered icon-only dice button; `Theme` contains `Saved Themes`; `Speaker Appearance` contains `Speaker Shape`, `Speaker Pattern`, `Label Font`, `Sonic Sphere Speaker Palette`, `Source Speaker Palette`, `Cube Surface`, and `Bloom Style`; `Sphere Appearance` contains `Sphere Geometry` and `Geodesic Appearance`; `Ground Appearance` contains grid/ground controls; `Meter Behavior` contains `Meter Response` and `Performance`; `Diagnostics` contains the `Diagnostics` tray. `Sphere Geometry` owns the default-off `Ribbed Speaker Sphere` switch plus `Rib Thickness`, `Vertical Ribs`, and `Horizontal Rings`. `Geodesic Appearance` owns only the independent geodesic palette and saturation styling controls, and the global dice action changes every current `Sphere Appearance` control plus both speaker/source palette selectors. `Speaker Pattern` remains an empty future-work placeholder for now. `Cube Surface`, `Bloom Style`, and `Meter Response` each include a local dice-icon randomizer. Source-object overlay/trail controls are hidden in this review surface until the Wavefield object work resumes.
 
-The review app startup defaults are pinned to the exported tuning payload `Orbital View VU Kit Settings 2026-05-21-171537.json`: Purple speaker/app palette, Source Speaker palette falling back to the speaker palette for older JSON, Purple geodesic palette, hidden ribbed speaker sphere, Rib Thickness `100%`, `16` vertical ribs, `8` horizontal rings, Cube VU speaker type, Hot Core Bloom preset, Impulse Test Ripple drive, grayscale geodesic saturation, 86% pixel fill, muted idle checker opacity, cube outline strength `0.64`, and 60 fps active motion.
+The review app startup defaults are pinned to the exported tuning payload `Orbital View Settings 2026-05-21-171537.json`: Purple speaker/app palette, Source Speaker palette falling back to the speaker palette for older JSON, Purple geodesic palette, hidden ribbed speaker sphere, Rib Thickness `100%`, `16` vertical ribs, `8` horizontal rings, Cube VU speaker type, Hot Core Bloom preset, Impulse Test Ripple drive, grayscale geodesic saturation, 86% pixel fill, muted idle checker opacity, cube outline strength `0.64`, and 60 fps active motion.
 
 The SceneKit review app's Cube VU speaker type uses the shared Core cube scalar contract but implements the visible face skin locally with a retained SceneKit material. The material uses a retained 9x9 pixelated face texture cache applied directly to the actual six `SCNBox` cube faces and a Cube-VU-only readable face scale so the face grid is visible at small speaker sizes. The `Cube Surface` tray exposes `Pixel Fill` so the same material can tune from the older separated-pixel look to edge-to-edge reference-style pixels, and `Surface Checker Opacity` so the idle/unlit checkerboard can be faded without changing face count or bloom. It maps RMS to face-center bloom, maps peak/hot energy to hot fill, supports a material-only Rim Halo Edge highlight, and uses the selected Sonic Sphere speaker palette for panels, controls, fog, labels, cube VU ramp, hot fill, outline colors, and the app skin. The separate `Source Speaker Palette` tray applies only to source-marker rendering in SceneKit and the canvas fallback while preserving source layout/project metadata. Both palette trays use full-width Orbisonic button rows, not native segmented pickers, and include the current family palette set from `orbisonic-palette-brief`. The `Bloom Style` tray exposes only Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom as one-speaker-surface presets. Cube outlines are retained edge `SCNBox` child nodes whose material alpha is controlled by the Cube Outline slider; changing outline strength does not rebuild the speaker body. Speaker height is not an active review-app control and old saved values are ignored for geometry/material keys. This does not change the production MetalKit renderer contract.
 

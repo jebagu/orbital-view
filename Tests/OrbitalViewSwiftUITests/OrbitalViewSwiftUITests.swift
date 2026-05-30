@@ -17,7 +17,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let view = OrbitalViewportMockup()
 
         XCTAssertNotNil(view)
-        XCTAssertTrue(OrbitalViewportMockup.correctReviewAppName.contains("Native SceneKit Geodesic Viewport Review App"))
+        XCTAssertTrue(OrbitalViewportMockup.correctReviewAppName.contains("Orbital View 1.0"))
+        XCTAssertTrue(OrbitalViewportMockup.correctReviewAppName.contains("Native SceneKit Review App"))
         XCTAssertTrue(OrbitalViewportMockup.correctReviewAppName.contains("Preserved Control Rail"))
         XCTAssertEqual(OrbitalViewportMockup.sourceMockupPath, "mockups/orbital-view-viewport/index.html")
         XCTAssertEqual(OrbitalViewportMockup.controlSkinSource, "orbisonic-design-language")
@@ -51,7 +52,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(
             OrbitalViewportMockup.defaultSettingsSourceFileName,
-            "Orbital View VU Kit Settings 2026-05-21-171537.json"
+            "Orbital View Settings 2026-05-21-171537.json"
         )
         XCTAssertEqual(OrbitalViewportMockup.defaultRenderStyle, .purple)
         XCTAssertEqual(OrbitalViewportMockup.defaultGeodesicRenderStyle, .purple)

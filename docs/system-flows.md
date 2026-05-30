@@ -4,17 +4,17 @@
 
 This project inherits the Realtime Audio Family Standards Package. The Bencina Realtime Callback Doctrine is mandatory for every callback and every callback-reachable function. Project-specific requirements may add stricter rules but may not weaken the family standard.
 
-Orbital View Kit currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane and receives host-prepared snapshots rather than direct callback data.
+Orbital View currently fits the Control / UI / Telemetry Plane plus Preparation Plane adapters. It owns no Realtime Plane and receives host-prepared snapshots rather than direct callback data.
 
 ```mermaid
 flowchart LR
   HostCallback["Host Realtime Plane callback"] --> HostBridge["Host callback-safe bridge"]
   HostBridge --> Prepared["Prepared scene / meter / object snapshot"]
-  Prepared --> Orbital["Orbital View Kit Control / UI / Telemetry Plane"]
+  Prepared --> Orbital["Orbital View Control / UI / Telemetry Plane"]
   Orbital --> HostUI["Host diagnostics and selection handling"]
 ```
 
-The callback-safe bridge is owned by the host app, not this package. Orbital View Kit must not block, allocate, route audio, schedule playback, or emit MIDI/OSC from a callback path.
+The callback-safe bridge is owned by the host app, not this package. Orbital View must not block, allocate, route audio, schedule playback, or emit MIDI/OSC from a callback path.
 
 ## Current Compliance Audit Flow
 
@@ -29,7 +29,7 @@ flowchart TD
   Audit --> Risks["Explicit remaining risks"]
 ```
 
-The audit records compliance for Orbital View Kit as a visual telemetry/preparation package. It does not convert renderer, SwiftUI, review, or fixture APIs into callback-safe APIs.
+The audit records compliance for Orbital View as a visual telemetry/preparation package. It does not convert renderer, SwiftUI, review, or fixture APIs into callback-safe APIs.
 
 ## Current Scaffold Flow
 
@@ -137,11 +137,11 @@ flowchart LR
   Generator["Local livestream test generator"] --> Wavefield
   MIDI["Local MIDI streams"] --> Wavefield
   Wavefield --> Prepared["Prepared scene, speaker meters, object frames, object meters, diagnostics, source metadata"]
-  Prepared --> Orbital["Orbital View Kit display contracts"]
+  Prepared --> Orbital["Orbital View display contracts"]
   Orbital --> Viewport["Renderer / SwiftUI / review viewport"]
 ```
 
-Wavefield owns stream parsing, generator timing, MIDI, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View Kit receives prepared snapshots only. Wavefield object IDs remain object identity, speaker channels remain physical speaker identity, generator profile names remain source metadata, disappeared objects are omitted from active object snapshots, and stale display frames may be dropped.
+Wavefield owns stream parsing, generator timing, MIDI, realtime event queues, object lifecycle, sample-time scheduling, audio rendering, route validation, meter extraction, and performance gates. Orbital View receives prepared snapshots only. Wavefield object IDs remain object identity, speaker channels remain physical speaker identity, generator profile names remain source metadata, disappeared objects are omitted from active object snapshots, and stale display frames may be dropped.
 
 ## Current Orbisonic Host Profile Flow
 
@@ -149,11 +149,11 @@ Wavefield owns stream parsing, generator timing, MIDI, realtime event queues, ob
 flowchart LR
   Playback["Orbisonic playback / route / render ownership"] --> Taps["Explicit Orbisonic tap points"]
   Taps --> Prepared["Prepared bus, object, speaker meter snapshots + diagnostics + source metadata"]
-  Prepared --> Orbital["Orbital View Kit viewport"]
+  Prepared --> Orbital["Orbital View viewport"]
   Orbital --> UIEvents["Camera / selection / diagnostics UI state"]
 ```
 
-Orbisonic owns playback, transport, device I/O, route discovery, channel mapping, output routing, render/control engines, meter extraction, tap-point selection, operator state, and realtime performance gates. Orbital View Kit receives prepared snapshots, preserves physical channel and object identity, labels Orbisonic meter provenance with `orbisonicPreparedMeterTap`, and follows the Orbisonic design-language palette grammar without owning Orbisonic product behavior.
+Orbisonic owns playback, transport, device I/O, route discovery, channel mapping, output routing, render/control engines, meter extraction, tap-point selection, operator state, and realtime performance gates. Orbital View receives prepared snapshots, preserves physical channel and object identity, labels Orbisonic meter provenance with `orbisonicPreparedMeterTap`, and follows the Orbisonic design-language palette grammar without owning Orbisonic product behavior.
 
 ## Current Splat Host Profile Flow
 
@@ -161,11 +161,11 @@ Orbisonic owns playback, transport, device I/O, route discovery, channel mapping
 flowchart LR
   Project["Splat project / authoring state"] --> Prep["Splat preparation and analysis"]
   Prep --> Snapshots["Virtual speakers, source objects, renderer-kernel overlays, neutral geometry, diagnostics"]
-  Snapshots --> Orbital["Orbital View Kit viewport"]
+  Snapshots --> Orbital["Orbital View viewport"]
   Orbital --> Events["Camera / selection events"]
 ```
 
-Splat owns edit commands, project/session state, renderer-kernel analysis, file formats, persistence, neutral geometry import/export decisions, and any later handoff to an audio/render host. Orbital View Kit can visualize virtual speakers, source objects, overlays, and diagnostics through prepared snapshots labeled with `splatPreparedAnalysis`. Canonical 3D coordinates remain canonical; permanent flattened screen coordinates are not valid spatial state.
+Splat owns edit commands, project/session state, renderer-kernel analysis, file formats, persistence, neutral geometry import/export decisions, and any later handoff to an audio/render host. Orbital View can visualize virtual speakers, source objects, overlays, and diagnostics through prepared snapshots labeled with `splatPreparedAnalysis`. Canonical 3D coordinates remain canonical; permanent flattened screen coordinates are not valid spatial state.
 
 ## Current SpatGRIS Layout Flow
 
@@ -279,4 +279,4 @@ flowchart TD
   Selection --> HostUI["Host UI diagnostics"]
 ```
 
-Orbital View Kit consumes measured state and emits UI-facing events. It does not own audio timing, playback, routing, MIDI, OSC, or output behavior.
+Orbital View consumes measured state and emits UI-facing events. It does not own audio timing, playback, routing, MIDI, OSC, or output behavior.
