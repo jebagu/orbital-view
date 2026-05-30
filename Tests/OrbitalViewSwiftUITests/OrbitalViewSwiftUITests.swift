@@ -10,6 +10,7 @@ import SceneKit
 @testable import OrbitalViewReview
 @testable import OrbitalViewSpatGRIS
 @testable import OrbitalViewSwiftUI
+@testable import OrbitalViewTelemetry
 
 final class OrbitalViewSwiftUITests: XCTestCase {
     func testCorrectViewerKeepsNativeSceneKitViewportContract() {
@@ -209,6 +210,14 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Diagnostics"
             ]
         )
+        XCTAssertEqual(OrbitalViewportMockup.defaultExpandedRightPanelTrayTitles, [])
+        XCTAssertEqual(
+            OrbitalViewportMockup.tuningTrayTitles.filter(OrbitalViewportMockup.defaultRightPanelTrayExpanded),
+            []
+        )
+        XCTAssertFalse(OrbitalViewportMockup.defaultRightPanelTrayExpanded(OrbitalViewportMockup.inputTrayTitle))
+        XCTAssertFalse(OrbitalViewportMockup.defaultRightPanelTrayExpanded(OrbitalViewportMockup.speakerLayoutTrayTitle))
+        XCTAssertFalse(OrbitalViewportMockup.defaultRightPanelTrayExpanded(OrbitalViewportMockup.sourceLayoutTrayTitle))
         XCTAssertEqual(
             OrbitalViewportMockup.rightPanelSectionTitles,
             ["Sound Metering Input", "Speaker and Source Layout", "Roll the dice on looks", "Theme", "Speaker Appearance", "Sphere Appearance", "Ground Appearance", "Meter Behavior", "Diagnostics"]
@@ -360,6 +369,21 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMeterSource.telemetryNoProvider.meter(channel: 1, timeMS: 0),
             .silent
         )
+        let telemetryMeters = OrbitalViewTelemetryMeterSnapshot(
+            sequence: 9,
+            producerHostTime: 10,
+            levelsByChannel: [
+                3: OrbitalViewTelemetryMeterLevel(rms: 0.25, peak: 0.75)
+            ]
+        )
+        XCTAssertEqual(
+            OrbitalViewportMeterSource.telemetry(telemetryMeters).meter(channel: 3, timeMS: 0),
+            OrbitalViewportMeterSample(rms: 0.25, peak: 0.75)
+        )
+        XCTAssertEqual(
+            OrbitalViewportMeterSource.telemetry(telemetryMeters).meter(channel: 4, timeMS: 0),
+            .silent
+        )
         XCTAssertEqual(
             OrbitalViewportMeterSource.localSongNoFile.meter(channel: 1, timeMS: 0),
             .silent
@@ -411,10 +435,49 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
     }
 
+    func testCorrectViewerIsometricPresetUsesTrueCanonicalDirection() {
+        let basis = OrbitalViewportOrbitState.preset(.isometric).cameraBasis
+        let expected = OVVector3(x: 1, y: 1, z: 1).normalized()
+
+        XCTAssertEqual(basis.viewDirection.x, expected.x, accuracy: 0.000_001)
+        XCTAssertEqual(basis.viewDirection.y, expected.y, accuracy: 0.000_001)
+        XCTAssertEqual(basis.viewDirection.z, expected.z, accuracy: 0.000_001)
+    }
+
+    func testCorrectViewerCameraPresetBasesAreOrthonormal() {
+        for view in OrbitalViewportCameraView.allCases {
+            let basis = OrbitalViewportOrbitState.preset(view).cameraBasis
+
+            XCTAssertEqual(basis.viewDirection.length, 1, accuracy: 0.000_001, "\(view.title) view length")
+            XCTAssertEqual(basis.right.length, 1, accuracy: 0.000_001, "\(view.title) right length")
+            XCTAssertEqual(basis.up.length, 1, accuracy: 0.000_001, "\(view.title) up length")
+            XCTAssertEqual(abs(basis.viewDirection.dot(basis.right)), 0, accuracy: 0.000_001, "\(view.title) view/right")
+            XCTAssertEqual(abs(basis.viewDirection.dot(basis.up)), 0, accuracy: 0.000_001, "\(view.title) view/up")
+            XCTAssertEqual(abs(basis.right.dot(basis.up)), 0, accuracy: 0.000_001, "\(view.title) right/up")
+        }
+    }
+
+    func testCorrectViewerIsometricSpinKeepsCanonicalZAxisElevation() {
+        let base = OrbitalViewportOrbitState.preset(.isometric)
+        let spun = base.spinning(deltaMS: 2_000)
+
+        XCTAssertNotEqual(spun.yaw, base.yaw)
+        XCTAssertEqual(spun.pitch, base.pitch, accuracy: 0.000_001)
+        XCTAssertEqual(spun.cameraBasis.viewDirection.z, base.cameraBasis.viewDirection.z, accuracy: 0.000_001)
+        XCTAssertEqual(
+            hypot(spun.cameraBasis.viewDirection.x, spun.cameraBasis.viewDirection.y),
+            hypot(base.cameraBasis.viewDirection.x, base.cameraBasis.viewDirection.y),
+            accuracy: 0.000_001
+        )
+    }
+
     func testCorrectViewerProjectsCanonicalXRightToScreenRight() {
         for view in OrbitalViewportCameraView.allCases {
+            let preset = OrbitalViewportOrbitState.preset(view)
             let configuration = makeViewportConfiguration(
                 size: CGSize(width: 1_000, height: 800),
+                yaw: preset.yaw,
+                pitch: preset.pitch,
                 cameraView: view
             )
             let centerX = configuration.size.width * 0.5
@@ -1201,6 +1264,51 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(decoded.speakerLabelFont, .pressStart2P)
         XCTAssertEqual(decoded.speakerLabelFontSizeSlider, 72)
         XCTAssertEqual(decoded.speakerLabelFontSizeScale, 1.17, accuracy: 0.000_001)
+    }
+
+    func testCorrectViewerUnadjustedLegacyIsometricCameraResolvesToPresetOrbit() throws {
+        let legacyCamera = OrbitalViewportCameraExportSettings(
+            cameraView: .isometric,
+            yaw: 0,
+            pitch: 0,
+            zoom: 1,
+            spin: true,
+            cameraAdjusted: false
+        )
+        let payload = makeViewThemePayload(
+            themeID: "legacy-isometric",
+            leftPanel: OrbitalViewportLeftPanelSettings(
+                audioSource: .default,
+                camera: legacyCamera,
+                speakerType: .cubeVU,
+                viewDetail: .default,
+                selectedChannel: nil
+            )
+        )
+        let data = try OrbitalViewportSettingsJSONExporter.jsonData(payload: payload)
+        let decoded = try JSONDecoder().decode(OrbitalViewportSettingsExportPayload.self, from: data)
+        let resolved = decoded.leftPanel.camera.resolvedOrbitState
+        let preset = OrbitalViewportOrbitState.preset(.isometric)
+
+        XCTAssertEqual(resolved.yaw, preset.yaw, accuracy: 0.000_001)
+        XCTAssertEqual(resolved.pitch, preset.pitch, accuracy: 0.000_001)
+        XCTAssertTrue(decoded.leftPanel.camera.spin)
+        XCTAssertFalse(decoded.leftPanel.camera.cameraAdjusted)
+    }
+
+    func testCorrectViewerAdjustedSavedCameraPreservesStoredOrbitWithPitchClamp() {
+        let adjustedCamera = OrbitalViewportCameraExportSettings(
+            cameraView: .isometric,
+            yaw: 0.42,
+            pitch: Double.pi,
+            zoom: 1,
+            spin: false,
+            cameraAdjusted: true
+        )
+        let resolved = adjustedCamera.resolvedOrbitState
+
+        XCTAssertEqual(resolved.yaw, 0.42, accuracy: 0.000_001)
+        XCTAssertEqual(resolved.pitch, OrbitalViewportOrbitState.maxPitch, accuracy: 0.000_001)
     }
 
     func testCorrectViewerSettingsJSONRoundTripsEverySpeakerLabelFont() throws {
@@ -2629,7 +2737,127 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
     }
 
-    func testCorrectViewerVisibleRibbedSphereCameraMotionDoesNotVisitSegmentsOrRewriteMaterials() {
+    func testCorrectViewerHiddenLinesToggleControlsRearSceneKitSpeakersAndLabels() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let hidden = makeViewportConfiguration(
+            timeMS: 1_000,
+            showSpeakerNumbers: true,
+            showHiddenLines: false
+        )
+        let hiddenSnapshot = OrbitalViewportSnapshot(configuration: hidden)
+        let rearSpeaker = try XCTUnwrap(
+            hiddenSnapshot.speakers.first { $0.depth < hidden.frontClipPlane - 0.02 }
+        )
+        coordinator.update(configuration: hidden, snapshot: hiddenSnapshot)
+
+        XCTAssertEqual(coordinator.speakerNodeHiddenForTests(channel: rearSpeaker.channel), true)
+        XCTAssertEqual(coordinator.speakerLabelNodeHiddenForTests(channel: rearSpeaker.channel), true)
+        XCTAssertFalse(hidden.speakerLabelVisible(depth: rearSpeaker.depth, selected: false))
+
+        coordinator.resetInstrumentationForTests()
+        let shown = makeViewportConfiguration(
+            timeMS: 1_000,
+            showSpeakerNumbers: true,
+            showHiddenLines: true
+        )
+        coordinator.update(
+            configuration: shown,
+            snapshot: OrbitalViewportSnapshot(configuration: shown)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(coordinator.speakerNodeHiddenForTests(channel: rearSpeaker.channel), false)
+        XCTAssertEqual(coordinator.speakerLabelNodeHiddenForTests(channel: rearSpeaker.channel), false)
+        XCTAssertTrue(shown.speakerLabelVisible(depth: rearSpeaker.depth, selected: false))
+        XCTAssertEqual(snapshot.speakerVisibilityUpdateCount, 1)
+        XCTAssertEqual(snapshot.needsDisplayCount, 1)
+    }
+
+    func testCorrectViewerSelectedRearSpeakerLabelStaysVisibleWhenHiddenLinesAreOff() throws {
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            showSpeakerNumbers: true,
+            showHiddenLines: false
+        )
+        let rearSpeaker = try XCTUnwrap(
+            OrbitalViewportSnapshot(configuration: base).speakers.first { $0.depth < base.frontClipPlane - 0.02 }
+        )
+
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let selected = makeViewportConfiguration(
+            timeMS: 1_000,
+            showSpeakerNumbers: true,
+            showHiddenLines: false,
+            selectedChannel: rearSpeaker.channel
+        )
+        coordinator.update(
+            configuration: selected,
+            snapshot: OrbitalViewportSnapshot(configuration: selected)
+        )
+
+        XCTAssertEqual(coordinator.speakerNodeHiddenForTests(channel: rearSpeaker.channel), true)
+        XCTAssertEqual(coordinator.speakerLabelNodeHiddenForTests(channel: rearSpeaker.channel), false)
+        XCTAssertTrue(selected.speakerLabelVisible(depth: rearSpeaker.depth, selected: true))
+    }
+
+    func testCorrectViewerHiddenLinesToggleUpdatesRibbedSphereCutawayWithoutTopologyRebuild() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let hidden = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true,
+            showHiddenLines: false
+        )
+        coordinator.update(
+            configuration: hidden,
+            snapshot: OrbitalViewportSnapshot(configuration: hidden)
+        )
+
+        let ribbedSphereBuildCount = coordinator.ribbedSphereBuildCount
+        XCTAssertNil(coordinator.firstRibbedSphereCutawayShaderForTests)
+        XCTAssertNil(coordinator.firstRibbedSphereCutawayGeometryShaderForTests)
+        XCTAssertEqual(coordinator.firstRibbedSphereCutawayHiddenLinesVisibleForTests, false)
+        XCTAssertEqual(coordinator.ribbedSphereCutawayPlaneHiddenForTests, false)
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+
+        let viewDirection = hidden.orbitState.cameraBasis.viewDirection
+        let fit = OrbitalViewportRibbedSpeakerSphereGeometry.fit(
+            for: hidden.speakers,
+            fallbackRadius: hidden.sceneScale
+        )
+        let frontPoint = fit.center + (viewDirection * fit.radius)
+        let rearPoint = fit.center - (viewDirection * fit.radius)
+        let frontDepth = try XCTUnwrap(coordinator.firstRibbedSphereCutawayDepthForTests(point: frontPoint))
+        let rearDepth = try XCTUnwrap(coordinator.firstRibbedSphereCutawayDepthForTests(point: rearPoint))
+
+        XCTAssertGreaterThan(frontDepth, 0)
+        XCTAssertLessThan(rearDepth, 0)
+        XCTAssertEqual(coordinator.firstRibbedSphereCutawayVisibleForTests(point: frontPoint), true)
+        XCTAssertEqual(coordinator.firstRibbedSphereCutawayVisibleForTests(point: rearPoint), false)
+
+        coordinator.resetInstrumentationForTests()
+        let shown = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true,
+            showHiddenLines: true
+        )
+        coordinator.update(
+            configuration: shown,
+            snapshot: OrbitalViewportSnapshot(configuration: shown)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(coordinator.firstRibbedSphereCutawayHiddenLinesVisibleForTests, true)
+        XCTAssertEqual(coordinator.ribbedSphereCutawayPlaneHiddenForTests, true)
+        XCTAssertEqual(coordinator.firstRibbedSphereCutawayVisibleForTests(point: rearPoint), true)
+        XCTAssertEqual(coordinator.ribbedSphereBuildCount, ribbedSphereBuildCount)
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentVisitCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
+    }
+
+    func testCorrectViewerVisibleRibbedSphereCameraMotionUpdatesOnlyCutawayPlane() {
         let coordinator = OrbitalViewport3DSceneView.Coordinator()
         let base = makeViewportConfiguration(
             timeMS: 1_000,
@@ -2664,6 +2892,71 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 0)
         XCTAssertEqual(snapshot.ribbedSphereHiddenStateWriteCount, 0)
         XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+    }
+
+    func testCorrectViewerActiveRenderFrameDoesNotEnterRibbedMaterialPath() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            yaw: 0,
+            showRibbedSpeakerSphere: true,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30,
+            showHiddenLines: false,
+            spin: true,
+            spinStartYaw: 0,
+            spinStartTimeMS: 1_000
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let didRender = coordinator.renderActiveFrameForTests(configuration: base, timeMS: 1_008)
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertTrue(didRender)
+        XCTAssertEqual(snapshot.cameraUpdateCount, 1)
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentVisitCount, 0)
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+        XCTAssertEqual(coordinator.ribbedSphereCutawayPlaneHiddenForTests, false)
+    }
+
+    func testCorrectViewerActiveRenderFrameSkipsWhenSceneMutationIsInProgress() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            yaw: 0,
+            showRibbedSpeakerSphere: true,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30,
+            showHiddenLines: false,
+            spin: true,
+            spinStartYaw: 0,
+            spinStartTimeMS: 1_000
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        var didRender = true
+        coordinator.withSceneMutationLockHeldByBackgroundThreadForTests {
+            didRender = coordinator.renderActiveFrameForTests(configuration: base, timeMS: 1_008)
+        }
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertFalse(didRender)
+        XCTAssertEqual(snapshot.cameraUpdateCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 0)
+        XCTAssertEqual(snapshot.ribbedSphereSegmentVisitCount, 0)
     }
 
     func testCorrectViewerRibbedSphereDensityChangeRebuildsBatchedTopologyOnce() {
@@ -2807,7 +3100,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(repeated.renderSceneCount, 2)
         XCTAssertEqual(repeated.cameraUpdateCount, first.cameraUpdateCount)
         XCTAssertEqual(repeated.speakerMaterialUpdateCount, first.speakerMaterialUpdateCount)
-        XCTAssertEqual(repeated.needsDisplayCount, 2)
+        XCTAssertEqual(repeated.needsDisplayCount, 1)
+        XCTAssertEqual(repeated.needsDisplaySkippedCount, 1)
+        XCTAssertEqual(repeated.renderSceneNoOpCount, 1)
         XCTAssertEqual(entries, beforeEntries)
     }
 
@@ -2846,10 +3141,99 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             snapshot: OrbitalViewportSnapshot(configuration: nextBucket)
         )
         snapshot = coordinator.instrumentationSnapshotForTests
-        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.speakerMaterialUnchangedFrameSkipCount, 1)
+        XCTAssertEqual(snapshot.needsDisplayCount, 0)
         XCTAssertEqual(coordinator.speakerRebuildCount, speakerRebuildCount)
         XCTAssertEqual(coordinator.labelRebuildCount, labelRebuildCount)
         XCTAssertEqual(coordinator.ribbedSphereBuildCount, ribbedSphereBuildCount)
+    }
+
+    func testSceneKitSelectedChannelChangeStillUpdatesSpeakerMaterialImmediately() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            selectedChannel: nil
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let selected = makeViewportConfiguration(
+            timeMS: 1_000,
+            selectedChannel: 1
+        )
+        coordinator.update(
+            configuration: selected,
+            snapshot: OrbitalViewportSnapshot(configuration: selected)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 1)
+        XCTAssertGreaterThan(snapshot.sceneMaterialWriteCount, 0)
+        XCTAssertEqual(snapshot.speakerMaterialUnchangedFrameSkipCount, 0)
+        XCTAssertEqual(snapshot.needsDisplayCount, 1)
+    }
+
+    func testSceneKitSpeakerPaletteChangeStillUpdatesSpeakerMaterialImmediately() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            renderStyle: .purple
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let palette = makeViewportConfiguration(
+            timeMS: 1_000,
+            renderStyle: .rackBlue
+        )
+        coordinator.update(
+            configuration: palette,
+            snapshot: OrbitalViewportSnapshot(configuration: palette)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 1)
+        XCTAssertGreaterThan(snapshot.sceneMaterialWriteCount, 0)
+        XCTAssertEqual(snapshot.speakerMaterialUnchangedFrameSkipCount, 0)
+        XCTAssertEqual(snapshot.needsDisplayCount, 1)
+    }
+
+    func testSceneKitGridPlaneMaterialStateCacheSkipsEquivalentWrites() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            showGridPlane: true,
+            gridPlaneVisibility: 0.5
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let equivalent = makeViewportConfiguration(
+            timeMS: 1_000,
+            showGridPlane: true,
+            gridPlaneVisibility: 0.500_000_000_001
+        )
+        coordinator.update(
+            configuration: equivalent,
+            snapshot: OrbitalViewportSnapshot(configuration: equivalent)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.gridPlaneUpdateCount, 1)
+        XCTAssertEqual(snapshot.sceneMaterialWriteCount, 0)
+        XCTAssertGreaterThan(snapshot.sceneMaterialSkipCount, 0)
+        XCTAssertEqual(snapshot.needsDisplayCount, 0)
+        XCTAssertEqual(snapshot.needsDisplaySkippedCount, 1)
     }
 
     func testCameraOnlyActiveFrameDoesNotUpdateSpeakerMaterialAt120() {
@@ -2937,7 +3321,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             timeMS: 1_000,
             speakerShape: .cubeVU,
             activeViewportFramesPerSecond: 120,
-            meterOnlyViewportFramesPerSecond: 30
+            meterOnlyViewportFramesPerSecond: 30,
+            meterSource: .sphereImpulseTest
         )
         coordinator.update(
             configuration: base,
@@ -2985,10 +3370,12 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         let snapshot = coordinator.instrumentationSnapshotForTests
 
-        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 1)
-        XCTAssertGreaterThan(snapshot.cubeVUMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.speakerMaterialUnchangedFrameSkipCount, 1)
+        XCTAssertEqual(snapshot.cubeVUMaterialUpdateCount, 0)
         XCTAssertEqual(snapshot.speakerLabelMaterialUpdateCount, 0)
         XCTAssertEqual(snapshot.cubeOutlineMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.needsDisplayCount, 0)
     }
 
     func testCubeVUResolvedMaterialColorsMatchThemeRamp() throws {
@@ -2997,7 +3384,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let referenceColor = NSColor(theme.cubeVUColor(heat: heat))
         let referenceHotColor = NSColor(theme.cubeVUHotColor)
 
-        XCTAssertLessThan(try rgbDistance(theme.cubeVUNSColor(heat: heat), referenceColor), 0.000_001)
+        XCTAssertLessThan(try rgbDistance(theme.cubeVUNSColor(heat: heat), referenceColor), 0.000_1)
         XCTAssertLessThan(try rgbDistance(theme.cubeVUHotNSColor, referenceHotColor), 0.000_001)
     }
 
@@ -3050,7 +3437,47 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         snapshot = coordinator.instrumentationSnapshotForTests
         XCTAssertEqual(snapshot.sourcePoseOrVisibilityUpdateCount, 0)
+        XCTAssertEqual(snapshot.sourceMaterialUpdateCount, 0)
+        XCTAssertEqual(snapshot.sourceMaterialUnchangedFrameSkipCount, 1)
+    }
+
+    func testChangedSourceMeterBucketUpdatesSourceMaterial() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let source = OrbitalViewportSourceMarker(
+            sourceID: 1,
+            label: "Source 01",
+            position: try OrbitalViewVector3(x: 0.25, y: 0.15, z: 0.7)
+        )
+        let base = makeViewportConfiguration(
+            timeMS: 1_000,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30,
+            meterSource: .sphereImpulseTest,
+            sources: [source]
+        )
+        coordinator.update(
+            configuration: base,
+            snapshot: OrbitalViewportSnapshot(configuration: base)
+        )
+
+        coordinator.resetInstrumentationForTests()
+        let changedBucket = makeViewportConfiguration(
+            timeMS: 1_200,
+            activeViewportFramesPerSecond: 120,
+            meterOnlyViewportFramesPerSecond: 30,
+            meterSource: .sphereImpulseTest,
+            sources: [source]
+        )
+        coordinator.update(
+            configuration: changedBucket,
+            snapshot: OrbitalViewportSnapshot(configuration: changedBucket)
+        )
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.sourcePoseOrVisibilityUpdateCount, 0)
         XCTAssertEqual(snapshot.sourceMaterialUpdateCount, 1)
+        XCTAssertGreaterThan(snapshot.sceneMaterialWriteCount, 0)
+        XCTAssertEqual(snapshot.sourceMaterialUnchangedFrameSkipCount, 0)
     }
 
     func testHiddenRibbedSphereDoesNotDoSegmentMaterialLoopDuringCameraOnlyMotion() {
@@ -3524,9 +3951,34 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         themeID: String,
         renderStyle: OrbitalViewportRenderStyle = .purple,
         speakerLabelFont: OrbitalViewportSpeakerLabelFont = .pressStart2P,
-        speakerLabelFontSizeSlider: Double = 64
+        speakerLabelFontSizeSlider: Double = 64,
+        leftPanel: OrbitalViewportLeftPanelSettings? = nil
     ) -> OrbitalViewportSettingsExportPayload {
-        OrbitalViewportSettingsExportPayload(
+        let panel = leftPanel ?? OrbitalViewportLeftPanelSettings(
+            audioSource: .default,
+            camera: OrbitalViewportCameraExportSettings(
+                cameraView: .isometric,
+                yaw: 0.2,
+                pitch: -0.1,
+                zoom: 1.12,
+                spin: false,
+                cameraAdjusted: true
+            ),
+            speakerType: .cubeVU,
+            viewDetail: OrbitalViewportViewDetailExportSettings(
+                speakerSizeSlider: 58,
+                speakerSize: 2.1,
+                fogDensitySlider: 44,
+                fogDensity: 28,
+                showSpeakerNumbers: true,
+                showHiddenLines: false,
+                showGridPlane: false,
+                gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
+            ),
+            selectedChannel: nil
+        )
+
+        return OrbitalViewportSettingsExportPayload(
             themeID: themeID,
             renderStyle: renderStyle,
             geodesicRenderStyle: .rackBlue,
@@ -3535,29 +3987,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             speakerLabelFont: speakerLabelFont,
             speakerLabelFontSizeSlider: speakerLabelFontSizeSlider,
             speakerLabelFontSizeScale: OrbitalViewportMath.speakerLabelSizeScale(fromSlider: speakerLabelFontSizeSlider),
-            leftPanel: OrbitalViewportLeftPanelSettings(
-                audioSource: .default,
-                camera: OrbitalViewportCameraExportSettings(
-                    cameraView: .isometric,
-                    yaw: 0.2,
-                    pitch: -0.1,
-                    zoom: 1.12,
-                    spin: false,
-                    cameraAdjusted: true
-                ),
-                speakerType: .cubeVU,
-                viewDetail: OrbitalViewportViewDetailExportSettings(
-                    speakerSizeSlider: 58,
-                    speakerSize: 2.1,
-                    fogDensitySlider: 44,
-                    fogDensity: 28,
-                    showSpeakerNumbers: true,
-                    showHiddenLines: false,
-                    showGridPlane: false,
-                    gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
-                ),
-                selectedChannel: nil
-            ),
+            leftPanel: panel,
             groundAppearance: OrbitalViewportGroundAppearanceExportSettings(
                 showGridPlane: false,
                 gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider,

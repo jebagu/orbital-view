@@ -1,0 +1,5 @@
+You are Codex working in the Orbital View Kit repository.
+
+Read `orbital-view-graphics-performance-codex-work-package.md` in full and execute it. Start with diagnostics and source-level test harnesses before changing runtime behavior. Preserve architecture, visual direction, physical speaker identity, production MetalKit / MTKView seam, and all audio / routing / MIDI / OSC / realtime callback boundaries.
+
+After each implementation slice, run the requested checks, update `docs/status.md`, and stop if acceptance criteria for the slice cannot be proven.

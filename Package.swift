@@ -24,6 +24,10 @@ let package = Package(
             targets: ["OrbitalViewRender"]
         ),
         .library(
+            name: "OrbitalViewTelemetry",
+            targets: ["OrbitalViewTelemetry"]
+        ),
+        .library(
             name: "OrbitalViewSwiftUI",
             targets: ["OrbitalViewSwiftUI"]
         ),
@@ -39,6 +43,9 @@ let package = Package(
             name: "OrbitalViewHeadlessBenchmark",
             targets: ["OrbitalViewHeadlessBenchmark"]
         )
+    ],
+    dependencies: [
+        .package(path: "/Users/jeremyguillory/Documents/orbisonic telemetry")
     ],
     targets: [
         .target(
@@ -57,6 +64,14 @@ let package = Package(
             dependencies: ["OrbitalViewCore"]
         ),
         .target(
+            name: "OrbitalViewTelemetry",
+            dependencies: [
+                "OrbitalViewCore",
+                .product(name: "OrbisonicTelemetryDashboard", package: "orbisonic telemetry"),
+                .product(name: "OrbisonicTelemetryKit", package: "orbisonic telemetry")
+            ]
+        ),
+        .target(
             name: "OrbitalViewSwiftUI",
             dependencies: [
                 "OrbitalViewCore",
@@ -67,7 +82,8 @@ let package = Package(
             name: "OrbitalViewReview",
             dependencies: [
                 "OrbitalViewCore",
-                "OrbitalViewSpatGRIS"
+                "OrbitalViewSpatGRIS",
+                "OrbitalViewTelemetry"
             ],
             resources: [
                 .process("Resources")
@@ -126,7 +142,15 @@ let package = Package(
                 "OrbitalViewRender",
                 "OrbitalViewReview",
                 "OrbitalViewSpatGRIS",
-                "OrbitalViewSwiftUI"
+                "OrbitalViewSwiftUI",
+                "OrbitalViewTelemetry"
+            ]
+        ),
+        .testTarget(
+            name: "OrbitalViewTelemetryTests",
+            dependencies: [
+                "OrbitalViewTelemetry",
+                .product(name: "OrbisonicTelemetryKit", package: "orbisonic telemetry")
             ]
         ),
         .testTarget(
