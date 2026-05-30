@@ -58,6 +58,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.defaultGeodesicRenderStyle, .purple)
         XCTAssertEqual(OrbitalViewportMockup.defaultGeodesicSaturation, 0)
         XCTAssertFalse(OrbitalViewportMockup.defaultShowRibbedSpeakerSphere)
+        XCTAssertEqual(OrbitalViewportRibbedSpeakerSphereGeometry.thicknessRange.lowerBound, 0.70, accuracy: 0.000_001)
         XCTAssertEqual(OrbitalViewportMockup.defaultRibbedSphereThickness, 1, accuracy: 0.000_001)
         XCTAssertEqual(OrbitalViewportMockup.defaultRibbedSphereVerticalRibs, 16)
         XCTAssertEqual(OrbitalViewportMockup.defaultRibbedSphereHorizontalRings, 8)
@@ -490,15 +491,21 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         }
     }
 
-    func testCorrectViewerRightwardDragMovesHorizontalOrbitRight() {
+    func testCorrectViewerDragUsesDomeLabOrbitDirections() {
         let base = OrbitalViewportOrbitState.preset(.isometric)
         let draggedRight = base.applyingDrag(translation: CGSize(width: 24, height: 0))
         let draggedLeft = base.applyingDrag(translation: CGSize(width: -24, height: 0))
+        let draggedDown = base.applyingDrag(translation: CGSize(width: 0, height: 24))
+        let draggedUp = base.applyingDrag(translation: CGSize(width: 0, height: -24))
 
-        XCTAssertGreaterThan(draggedRight.yaw, base.yaw)
-        XCTAssertLessThan(draggedLeft.yaw, base.yaw)
+        XCTAssertLessThan(draggedRight.yaw, base.yaw)
+        XCTAssertGreaterThan(draggedLeft.yaw, base.yaw)
         XCTAssertEqual(draggedRight.pitch, base.pitch)
         XCTAssertEqual(draggedLeft.pitch, base.pitch)
+        XCTAssertGreaterThan(draggedDown.pitch, base.pitch)
+        XCTAssertLessThan(draggedUp.pitch, base.pitch)
+        XCTAssertEqual(draggedDown.yaw, base.yaw)
+        XCTAssertEqual(draggedUp.yaw, base.yaw)
     }
 
     func testCorrectViewerUsesCubeVUDefaultsFromCoreContract() {
@@ -1534,6 +1541,36 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(decoded.ribbedSphereHorizontalRings, 8)
     }
 
+    func testCorrectViewerSettingsJSONClampsLegacyThinRibbedSphereThickness() throws {
+        let payload = OrbitalViewportSettingsExportPayload(
+            renderStyle: .purple,
+            showRibbedSpeakerSphere: true,
+            ribbedSphereThickness: 1.8,
+            ribbedSphereVerticalRibs: 22,
+            ribbedSphereHorizontalRings: 14,
+            speakerShape: .cubeVU,
+            driveMode: .music,
+            cubePreset: .softCenterBloom,
+            cubeSettings: .default,
+            activeViewportFramesPerSecond: 60,
+            meterOnlyViewportFramesPerSecond: 10,
+            inspectorRefreshFramesPerSecond: 10,
+            drawsOnDemand: true,
+            exportedAt: Date(timeIntervalSince1970: 0)
+        )
+        let data = try OrbitalViewportSettingsJSONExporter.jsonData(payload: payload)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["ribbedSphereThickness"] = 0.25
+        let olderData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(
+            OrbitalViewportSettingsExportPayload.self,
+            from: olderData
+        )
+
+        XCTAssertEqual(decoded.ribbedSphereThickness, 0.70, accuracy: 0.000_001)
+    }
+
     func testCorrectViewerSettingsJSONFallsBackFromLegacySpeakerCenterStrutsVisibility() throws {
         let payload = OrbitalViewportSettingsExportPayload(
             renderStyle: .purple,
@@ -2060,6 +2097,30 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(maxCounts.vertical, 5_120)
         XCTAssertEqual(maxCounts.horizontal, 3_072)
         XCTAssertEqual(maxCounts.total, 8_192)
+    }
+
+    func testCorrectViewerRibbedSpeakerSphereCurvesPreserveDiagnosticSegmentCounts() {
+        let curves = OrbitalViewportRibbedSpeakerSphereGeometry.curves(
+            for: OrbitalViewportSpeaker.referenceSpeakers,
+            verticalRibs: 16,
+            horizontalRings: 8
+        )
+        let verticalCurves = curves.filter { $0.kind == .verticalRib }
+        let horizontalCurves = curves.filter { $0.kind == .horizontalRing }
+        let counts = OrbitalViewportRibbedSpeakerSphereGeometry.segmentCounts(
+            verticalRibs: 16,
+            horizontalRings: 8
+        )
+
+        XCTAssertEqual(verticalCurves.count, 16)
+        XCTAssertEqual(horizontalCurves.count, 8)
+        XCTAssertTrue(verticalCurves.allSatisfy { !$0.isClosed })
+        XCTAssertTrue(horizontalCurves.allSatisfy { $0.isClosed })
+        XCTAssertTrue(verticalCurves.allSatisfy { $0.points.count == 49 })
+        XCTAssertTrue(horizontalCurves.allSatisfy { $0.points.count == 48 })
+        XCTAssertEqual(verticalCurves.reduce(0) { $0 + $1.segmentCount }, counts.vertical)
+        XCTAssertEqual(horizontalCurves.reduce(0) { $0 + $1.segmentCount }, counts.horizontal)
+        XCTAssertEqual(curves.reduce(0) { $0 + $1.segmentCount }, counts.total)
     }
 
     func testCorrectViewerRibbedSpeakerSphereCountsUseEvenSymmetricSpacing() {
@@ -2736,6 +2797,57 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(snapshot.ribbedSphereTopologyBuildCount, 1)
         XCTAssertEqual(snapshot.ribbedSphereSegmentNodeBuildCount, 2)
         XCTAssertEqual(snapshot.ribbedSphereMaterialWriteCount, 2)
+    }
+
+    func testCorrectViewerSceneKitRibbedSphereUsesWeldedCurveTubeBatches() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let shown = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true
+        )
+
+        coordinator.update(
+            configuration: shown,
+            snapshot: OrbitalViewportSnapshot(configuration: shown)
+        )
+
+        let verticalNode = try XCTUnwrap(
+            coordinator.ribbedSphereNode.childNodes.first { $0.name == "ribbed-speaker-sphere-vertical-ribs" }
+        )
+        let horizontalNode = try XCTUnwrap(
+            coordinator.ribbedSphereNode.childNodes.first { $0.name == "ribbed-speaker-sphere-horizontal-rings" }
+        )
+        let verticalVertexCount = try XCTUnwrap(verticalNode.geometry?.sources(for: .vertex).first?.vectorCount)
+        let horizontalVertexCount = try XCTUnwrap(horizontalNode.geometry?.sources(for: .vertex).first?.vectorCount)
+
+        XCTAssertEqual(coordinator.ribbedSphereSceneNodeCountForTests, 2)
+        XCTAssertEqual(coordinator.ribbedSphereSegmentCountForTests, 1_152)
+        XCTAssertEqual(verticalVertexCount, 16 * ((49 * 6) + 2))
+        XCTAssertEqual(horizontalVertexCount, 8 * 48 * 6)
+    }
+
+    func testCorrectViewerSceneKitRibbedSphereUsesOpaqueBrightnessMaterialForCutawayDepth() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let shown = makeViewportConfiguration(
+            timeMS: 1_000,
+            showRibbedSpeakerSphere: true,
+            showHiddenLines: false
+        )
+
+        coordinator.update(
+            configuration: shown,
+            snapshot: OrbitalViewportSnapshot(configuration: shown)
+        )
+
+        let material = try XCTUnwrap(coordinator.ribbedSphereNode.childNodes.first?.geometry?.firstMaterial)
+        let diffuse = try XCTUnwrap(material.diffuse.contents as? NSColor)
+        let rgb = try XCTUnwrap(diffuse.usingColorSpace(.deviceRGB) ?? diffuse.usingColorSpace(.sRGB))
+
+        XCTAssertEqual(material.transparency, 1, accuracy: 0.000_001)
+        XCTAssertEqual(rgb.alphaComponent, 1, accuracy: 0.000_001)
+        XCTAssertTrue(material.readsFromDepthBuffer)
+        XCTAssertTrue(material.writesToDepthBuffer)
+        XCTAssertEqual(coordinator.ribbedSphereCutawayPlaneHiddenForTests, false)
     }
 
     func testCorrectViewerHiddenLinesToggleControlsRearSceneKitSpeakersAndLabels() throws {

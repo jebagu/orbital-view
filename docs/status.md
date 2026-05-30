@@ -112,6 +112,7 @@ none
 - Tune fog behavior/visual quality; current fog still needs another pass.
 - Remove the two old speaker types (`Prism` and `Sphere`) if the next UI cleanup slice accepts `Cube VU` as the only retained current speaker type.
 - Add a new radial-fountain VU speaker type.
+- Plan a future protected Metal Cube VU visual migration when SceneKit texture churn is the limiting factor: keep the approved Cube VU look, but move face-grid bloom/hot/clip math into `OrbitalViewRender` shader/material payloads instead of generating and assigning SceneKit `NSImage` textures at meter cadence.
 - Prove live Orbisonic telemetry end-to-end with a real publisher/consumer run; current telemetry is wired and tested at source level but not proven in the visible review app.
 ```
 
@@ -122,6 +123,31 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-31 Rib Thickness Stable Minimum
+
+- Changed the review-app `Rib Thickness` range from `25%...250%` to `70%...250%` so the slider cannot enter the visibly broken thin-rib region.
+- Kept the default at `100%`, and preserved existing theme/settings compatibility by clamping older saved `ribbedSphereThickness` values below `70%` up to the new minimum during decode.
+- Added regression coverage for the new `70%` lower bound and legacy thin-rib settings clamping.
+- Verification: `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerUsesExportedSettingsFileAsStartupDefaults` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerSettingsJSONClampsLegacyThinRibbedSphereThickness` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 118 tests; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 198 tests; `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/refreshed and opened the review app; `pgrep -fl OrbitalViewViewer` confirmed PID `57749` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`.
+
+### Update: 2026-05-31 Ribbed Sphere Continuous Line Repair
+
+- Rebuilt the SceneKit ribbed speaker sphere batch geometry around full rib/ring curves instead of independent open tube fragments. Default diagnostics still report `1,152` segments, medium still reports `3,840`, and max still reports `8,192`, but the visible SceneKit geometry now welds adjacent tube spans inside each curve.
+- Kept the two-node SceneKit batching contract: one mesh node for all vertical rib curves and one mesh node for all horizontal ring curves. Vertical ribs are open curves with capped endpoints; horizontal rings are closed loops without a duplicated visible seam ring.
+- Changed the ribbed-sphere material path so prior alpha values drive opaque constant-material brightness/emission. The rib tubes still read and write depth, so the existing invisible depth-only cutaway plane keeps hiding the rear frame when `Hidden Lines` is off without relying on transparent tube sorting.
+- Added regression coverage for the curve topology, welded vertex counts, vertical caps, horizontal ring closure, opaque rib material/depth behavior, two SceneKit nodes, unchanged diagnostic segment counts, camera-only cutaway-only updates, active-frame ribbed path skips, and Hidden Lines cutaway semantics.
+- Verification: `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerRibbedSpeakerSphereCurvesPreserveDiagnosticSegmentCounts` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerSceneKitRibbedSphere` passed with 4 tests; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests/testCorrectViewerSceneKitGeodesicSaturationUpdatesRibbedSphereMaterial` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 117 tests; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 197 tests.
+- Benchmark verification: `.build/debug/OrbitalViewHeadlessBenchmark --mode both --ribbed --warmup 30 --frames 120 --target 120` reported `segments=1152`, `nodes=2`, idle `57.2 FPS`, active `208.0 FPS`; medium `--vertical-ribs 32 --horizontal-rings 16` reported `segments=3840`, `nodes=2`, idle `58.6 FPS`, active `208.0 FPS`; max `--vertical-ribs 64 --horizontal-rings 32` reported `segments=8192`, `nodes=2`, idle `58.8 FPS`, active `207.3 FPS`.
+- Relaunch gate: `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt/refreshed and opened the review app on retry; `pgrep -fl OrbitalViewViewer` confirmed PID `55725` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`. Screenshot evidence `/private/tmp/orbital-view-ribbed-sphere-repair-parent-launch.png` shows the visible ribbed frame with `Hidden Lines` off reading as continuous and the FPS chip at `117.9`.
+
+### Update: 2026-05-30 Native Mouse Orbit Axis Sign Fix
+
+- Fixed the native SceneKit review app's mouse orbit signs so the accepted DomeLab-style drag behavior is restored: horizontal drag still controls yaw, vertical drag still controls pitch, and both directions are reversed from the previous native state.
+- Changed only `OrbitalViewportOrbitState.applyingDrag(translation:)`, leaving speaker coordinates, canonical Z-up semantics, the SceneKit coordinate bridge, camera presets, spin behavior, selection, and hit testing unchanged.
+- Updated regression coverage for both axes: right/left drag affect only yaw in the corrected directions, and up/down drag affect only pitch in the corrected directions.
+- Documentation updated: `docs/bugs.md`, `docs/implementation-map.md`, `docs/test-strategy.md`, and `docs/status.md`.
+- Verification: `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter OrbitalViewSwiftUITests` passed with 114 tests and 0 failures; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 194 tests and 0 failures; `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` rebuilt and opened the refreshed review app; `pgrep -fl OrbitalViewViewer` confirmed PID `53923` running from `/Users/jeremyguillory/Documents/vibecode projects/Orbital View Turbo/.../OrbitalViewViewer`.
 
 ### Update: 2026-05-30 Orbital View README Rewrite
 

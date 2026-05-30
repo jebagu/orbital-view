@@ -7030,8 +7030,8 @@ struct OrbitalViewportOrbitState: Equatable {
     func applyingDrag(translation: CGSize) -> OrbitalViewportOrbitState {
         OrbitalViewportOrbitState(
             view: view,
-            yaw: yaw + Double(translation.width) * 0.006,
-            pitch: Self.clampedPitch(pitch - Double(translation.height) * 0.006),
+            yaw: yaw - Double(translation.width) * 0.006,
+            pitch: Self.clampedPitch(pitch + Double(translation.height) * 0.006),
             distance: distance
         )
     }
@@ -7840,7 +7840,7 @@ struct OrbitalViewportGridPlaneGeometry {
 }
 
 struct OrbitalViewportRibbedSpeakerSphereGeometry {
-    static let thicknessRange = 0.25...2.5
+    static let thicknessRange = 0.70...2.5
     static let verticalRibRange = 3...64
     static let horizontalRingRange = 0...32
     static let baseStrutRadius = 0.0019
@@ -7865,6 +7865,17 @@ struct OrbitalViewportRibbedSpeakerSphereGeometry {
         let index: Int
         let start: OVVector3
         let end: OVVector3
+    }
+
+    struct Curve: Equatable {
+        let kind: SegmentKind
+        let index: Int
+        let points: [OVVector3]
+        let isClosed: Bool
+
+        var segmentCount: Int {
+            isClosed ? points.count : max(0, points.count - 1)
+        }
     }
 
     struct SegmentCounts: Equatable {
@@ -7960,6 +7971,51 @@ struct OrbitalViewportRibbedSpeakerSphereGeometry {
         horizontalRings: Int,
         fallbackRadius: Double = 1
     ) -> [Segment] {
+        let curves = curves(
+            for: speakers,
+            verticalRibs: verticalRibs,
+            horizontalRings: horizontalRings,
+            fallbackRadius: fallbackRadius
+        )
+        let capacity = curves.reduce(0) { $0 + $1.segmentCount }
+        var output: [Segment] = []
+        output.reserveCapacity(capacity)
+
+        for curve in curves {
+            guard curve.points.count >= 2 else {
+                continue
+            }
+            for index in 0..<(curve.points.count - 1) {
+                output.append(
+                    Segment(
+                        kind: curve.kind,
+                        index: curve.index,
+                        start: curve.points[index],
+                        end: curve.points[index + 1]
+                    )
+                )
+            }
+            if curve.isClosed, let first = curve.points.first, let last = curve.points.last {
+                output.append(
+                    Segment(
+                        kind: curve.kind,
+                        index: curve.index,
+                        start: last,
+                        end: first
+                    )
+                )
+            }
+        }
+
+        return output
+    }
+
+    static func curves(
+        for speakers: [OrbitalViewportSpeaker],
+        verticalRibs: Int,
+        horizontalRings: Int,
+        fallbackRadius: Double = 1
+    ) -> [Curve] {
         let fit = fit(for: speakers, fallbackRadius: fallbackRadius)
         let ribCount = normalizedVerticalRibs(verticalRibs)
         let ringCount = normalizedHorizontalRings(horizontalRings)
@@ -7968,37 +8024,23 @@ struct OrbitalViewportRibbedSpeakerSphereGeometry {
         let counts = segmentCounts(verticalRibs: verticalRibs, horizontalRings: horizontalRings)
         let meridianSteps = counts.vertical / ribCount
         let ringSteps = ringCount > 0 ? counts.horizontal / ringCount : 0
-        var output: [Segment] = []
-        output.reserveCapacity(counts.total)
+        var output: [Curve] = []
+        output.reserveCapacity(ribCount + ringCount)
 
         for (ribIndex, longitude) in longitudes.enumerated() {
-            for step in 0..<meridianSteps {
-                let startLatitude = (-Double.pi * 0.5) + (Double(step) / Double(meridianSteps)) * Double.pi
-                let endLatitude = (-Double.pi * 0.5) + (Double(step + 1) / Double(meridianSteps)) * Double.pi
-                output.append(
-                    Segment(
-                        kind: .verticalRib,
-                        index: ribIndex,
-                        start: point(center: fit.center, radius: fit.radius, longitude: longitude, latitude: startLatitude),
-                        end: point(center: fit.center, radius: fit.radius, longitude: longitude, latitude: endLatitude)
-                    )
-                )
+            let points = (0...meridianSteps).map { step in
+                let latitude = (-Double.pi * 0.5) + (Double(step) / Double(meridianSteps)) * Double.pi
+                return point(center: fit.center, radius: fit.radius, longitude: longitude, latitude: latitude)
             }
+            output.append(Curve(kind: .verticalRib, index: ribIndex, points: points, isClosed: false))
         }
 
         for (ringIndex, latitude) in latitudes.enumerated() {
-            for step in 0..<ringSteps {
-                let startLongitude = (Double(step) / Double(ringSteps)) * twoPi
-                let endLongitude = (Double(step + 1) / Double(ringSteps)) * twoPi
-                output.append(
-                    Segment(
-                        kind: .horizontalRing,
-                        index: ringIndex,
-                        start: point(center: fit.center, radius: fit.radius, longitude: startLongitude, latitude: latitude),
-                        end: point(center: fit.center, radius: fit.radius, longitude: endLongitude, latitude: latitude)
-                    )
-                )
+            let points = (0..<ringSteps).map { step in
+                let longitude = (Double(step) / Double(ringSteps)) * twoPi
+                return point(center: fit.center, radius: fit.radius, longitude: longitude, latitude: latitude)
             }
+            output.append(Curve(kind: .horizontalRing, index: ringIndex, points: points, isClosed: true))
         }
 
         return output
@@ -9004,17 +9046,17 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 for: speakers,
                 fallbackRadius: fallbackRadius
             )
-            let segments = OrbitalViewportRibbedSpeakerSphereGeometry.segments(
+            let curves = OrbitalViewportRibbedSpeakerSphereGeometry.curves(
                 for: speakers,
                 verticalRibs: verticalRibs,
                 horizontalRings: horizontalRings,
                 fallbackRadius: fallbackRadius
             )
-            ribbedSphereSegmentCount = segments.count
+            ribbedSphereSegmentCount = curves.reduce(0) { $0 + $1.segmentCount }
 
-            let verticalSegments = segments.filter { $0.kind == .verticalRib }
+            let verticalCurves = curves.filter { $0.kind == .verticalRib }
             if let verticalNode = makeRibbedSpeakerSphereBatchNode(
-                segments: verticalSegments,
+                curves: verticalCurves,
                 radius: radius,
                 name: "ribbed-speaker-sphere-vertical-ribs"
             ) {
@@ -9022,9 +9064,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 ribbedSphereVerticalNode = verticalNode
             }
 
-            let horizontalSegments = segments.filter { $0.kind == .horizontalRing }
+            let horizontalCurves = curves.filter { $0.kind == .horizontalRing }
             if let horizontalNode = makeRibbedSpeakerSphereBatchNode(
-                segments: horizontalSegments,
+                curves: horizontalCurves,
                 radius: radius,
                 name: "ribbed-speaker-sphere-horizontal-rings"
             ) {
@@ -9652,12 +9694,12 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func makeRibbedSpeakerSphereBatchNode(
-            segments: [OrbitalViewportRibbedSpeakerSphereGeometry.Segment],
+            curves: [OrbitalViewportRibbedSpeakerSphereGeometry.Curve],
             radius: Double,
             name: String
         ) -> SCNNode? {
             guard let geometry = makeRibbedSpeakerSphereBatchGeometry(
-                segments: segments,
+                curves: curves,
                 radius: radius
             ) else {
                 return nil
@@ -9666,6 +9708,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             let material = SCNMaterial()
             material.lightingModel = .constant
             material.isDoubleSided = true
+            material.readsFromDepthBuffer = true
+            material.writesToDepthBuffer = true
+            material.transparency = 1
             geometry.materials = [material]
 
             let node = SCNNode(geometry: geometry)
@@ -9674,23 +9719,24 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         private func makeRibbedSpeakerSphereBatchGeometry(
-            segments: [OrbitalViewportRibbedSpeakerSphereGeometry.Segment],
+            curves: [OrbitalViewportRibbedSpeakerSphereGeometry.Curve],
             radius: Double
         ) -> SCNGeometry? {
-            guard !segments.isEmpty else {
+            guard !curves.isEmpty else {
                 return nil
             }
 
             let sides = 6
             var vertices: [SCNVector3] = []
             var indices: [Int32] = []
-            vertices.reserveCapacity(segments.count * sides * 2)
-            indices.reserveCapacity(segments.count * sides * 6)
+            let segmentCount = curves.reduce(0) { $0 + $1.segmentCount }
+            let capCount = curves.filter { !$0.isClosed }.count * 2
+            vertices.reserveCapacity(curves.reduce(0) { $0 + $1.points.count * sides } + capCount)
+            indices.reserveCapacity((segmentCount * sides * 6) + (capCount * sides * 3))
 
-            for segment in segments {
-                appendTubeSegment(
-                    from: segment.start,
-                    to: segment.end,
+            for curve in curves {
+                appendTubeCurve(
+                    curve,
                     radius: radius,
                     sides: sides,
                     vertices: &vertices,
@@ -9704,48 +9750,157 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             )
         }
 
-        private func appendTubeSegment(
-            from start: OVVector3,
-            to end: OVVector3,
+        private func appendTubeCurve(
+            _ curve: OrbitalViewportRibbedSpeakerSphereGeometry.Curve,
             radius: Double,
             sides: Int,
             vertices: inout [SCNVector3],
             indices: inout [Int32]
         ) {
-            let startPoint = start.simdSCN
-            let endPoint = end.simdSCN
-            let axis = endPoint - startPoint
-            let length = simd_length(axis)
-            guard length > 0.000_001 else {
+            let points = curve.points.map(\.simdSCN)
+            guard sides >= 3,
+                points.count >= 2,
+                !curve.isClosed || points.count >= 3 else {
                 return
             }
 
-            let direction = axis / length
-            let reference = abs(simd_dot(direction, SIMD3<Float>(0, 1, 0))) > 0.96
-                ? SIMD3<Float>(1, 0, 0)
-                : SIMD3<Float>(0, 1, 0)
-            let normal = simd_normalize(simd_cross(direction, reference))
-            let binormal = simd_normalize(simd_cross(direction, normal))
             let baseIndex = Int32(vertices.count)
             let tubeRadius = Float(max(0.000_1, radius))
+            var previousNormal: SIMD3<Float>?
 
-            for side in 0..<sides {
-                let angle = (Float(side) / Float(sides)) * Float.pi * 2
-                let offset = normal * (cos(angle) * tubeRadius) + binormal * (sin(angle) * tubeRadius)
-                let startVertex = startPoint + offset
-                let endVertex = endPoint + offset
-                vertices.append(SCNVector3(startVertex.x, startVertex.y, startVertex.z))
-                vertices.append(SCNVector3(endVertex.x, endVertex.y, endVertex.z))
+            for pointIndex in points.indices {
+                let tangent = tubeCurveTangent(points: points, index: pointIndex, isClosed: curve.isClosed)
+                let normal: SIMD3<Float>
+                if let previousNormal {
+                    let projected = previousNormal - tangent * simd_dot(previousNormal, tangent)
+                    normal = normalizedTubeVector(projected, fallback: initialTubeNormal(for: tangent))
+                } else {
+                    normal = initialTubeNormal(for: tangent)
+                }
+                let binormal = normalizedTubeVector(
+                    simd_cross(tangent, normal),
+                    fallback: initialTubeNormal(for: tangent)
+                )
+                previousNormal = normal
+
+                for side in 0..<sides {
+                    let angle = (Float(side) / Float(sides)) * Float.pi * 2
+                    let offset = normal * (cos(angle) * tubeRadius) + binormal * (sin(angle) * tubeRadius)
+                    let vertex = points[pointIndex] + offset
+                    vertices.append(SCNVector3(vertex.x, vertex.y, vertex.z))
+                }
             }
 
+            let spanCount = curve.isClosed ? points.count : points.count - 1
+            for span in 0..<spanCount {
+                let currentRing = span
+                let nextRing = (span + 1) % points.count
+                appendTubeSpanIndices(
+                    currentRing: currentRing,
+                    nextRing: nextRing,
+                    sides: sides,
+                    baseIndex: baseIndex,
+                    indices: &indices
+                )
+            }
+
+            if !curve.isClosed {
+                appendTubeCap(
+                    center: points[0],
+                    ring: 0,
+                    sides: sides,
+                    baseIndex: baseIndex,
+                    reversed: true,
+                    vertices: &vertices,
+                    indices: &indices
+                )
+                appendTubeCap(
+                    center: points[points.count - 1],
+                    ring: points.count - 1,
+                    sides: sides,
+                    baseIndex: baseIndex,
+                    reversed: false,
+                    vertices: &vertices,
+                    indices: &indices
+                )
+            }
+        }
+
+        private func appendTubeSpanIndices(
+            currentRing: Int,
+            nextRing: Int,
+            sides: Int,
+            baseIndex: Int32,
+            indices: inout [Int32]
+        ) {
             for side in 0..<sides {
                 let nextSide = (side + 1) % sides
-                let a = baseIndex + Int32(side * 2)
-                let b = a + 1
-                let c = baseIndex + Int32(nextSide * 2)
-                let d = c + 1
+                let a = baseIndex + Int32(currentRing * sides + side)
+                let b = baseIndex + Int32(nextRing * sides + side)
+                let c = baseIndex + Int32(currentRing * sides + nextSide)
+                let d = baseIndex + Int32(nextRing * sides + nextSide)
                 indices.append(contentsOf: [a, b, c, c, b, d])
             }
+        }
+
+        private func appendTubeCap(
+            center: SIMD3<Float>,
+            ring: Int,
+            sides: Int,
+            baseIndex: Int32,
+            reversed: Bool,
+            vertices: inout [SCNVector3],
+            indices: inout [Int32]
+        ) {
+            let centerIndex = Int32(vertices.count)
+            vertices.append(SCNVector3(center.x, center.y, center.z))
+            for side in 0..<sides {
+                let nextSide = (side + 1) % sides
+                let current = baseIndex + Int32(ring * sides + side)
+                let next = baseIndex + Int32(ring * sides + nextSide)
+                if reversed {
+                    indices.append(contentsOf: [centerIndex, next, current])
+                } else {
+                    indices.append(contentsOf: [centerIndex, current, next])
+                }
+            }
+        }
+
+        private func tubeCurveTangent(
+            points: [SIMD3<Float>],
+            index: Int,
+            isClosed: Bool
+        ) -> SIMD3<Float> {
+            if isClosed {
+                let previous = points[(index - 1 + points.count) % points.count]
+                let next = points[(index + 1) % points.count]
+                return normalizedTubeVector(next - previous, fallback: SIMD3<Float>(0, 1, 0))
+            }
+            if index == 0 {
+                return normalizedTubeVector(points[1] - points[0], fallback: SIMD3<Float>(0, 1, 0))
+            }
+            if index == points.count - 1 {
+                return normalizedTubeVector(points[index] - points[index - 1], fallback: SIMD3<Float>(0, 1, 0))
+            }
+            return normalizedTubeVector(points[index + 1] - points[index - 1], fallback: SIMD3<Float>(0, 1, 0))
+        }
+
+        private func initialTubeNormal(for tangent: SIMD3<Float>) -> SIMD3<Float> {
+            let reference = abs(simd_dot(tangent, SIMD3<Float>(0, 1, 0))) > 0.96
+                ? SIMD3<Float>(1, 0, 0)
+                : SIMD3<Float>(0, 1, 0)
+            return normalizedTubeVector(simd_cross(tangent, reference), fallback: SIMD3<Float>(1, 0, 0))
+        }
+
+        private func normalizedTubeVector(
+            _ vector: SIMD3<Float>,
+            fallback: SIMD3<Float>
+        ) -> SIMD3<Float> {
+            let length = simd_length(vector)
+            guard length > 0.000_001 else {
+                return fallback
+            }
+            return vector / length
         }
 
         private func updateRibbedSpeakerSphereBatchMaterial(
@@ -9757,16 +9912,61 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 return false
             }
 
-            let didWrite = setMaterial(
+            let brightness = OrbitalViewportMath.clamp01(alpha)
+            let diffuse = ribbedSphereMaterialColor(color, brightness: brightness)
+            let emission = ribbedSphereMaterialColor(color, brightness: brightness * 0.28)
+            let didWrite = setOpaqueRibbedSphereMaterial(
                 material,
-                color: color,
-                alpha: alpha,
-                emission: color.withAlphaComponent(alpha * 0.28)
+                diffuse: diffuse,
+                emission: emission
             )
             if didWrite {
                 instrumentation.ribbedSphereMaterialWriteCount += 1
             }
             return didWrite
+        }
+
+        private func ribbedSphereMaterialColor(
+            _ color: NSColor,
+            brightness: Double
+        ) -> NSColor {
+            let resolved = color.usingColorSpace(.deviceRGB) ?? color
+            let brightness = CGFloat(OrbitalViewportMath.clamp01(brightness))
+            return NSColor(
+                deviceRed: resolved.redComponent * brightness,
+                green: resolved.greenComponent * brightness,
+                blue: resolved.blueComponent * brightness,
+                alpha: 1
+            )
+        }
+
+        @discardableResult
+        private func setOpaqueRibbedSphereMaterial(
+            _ material: SCNMaterial,
+            diffuse: NSColor,
+            emission: NSColor
+        ) -> Bool {
+            let state = OrbitalViewportSceneMaterialState(
+                diffuse: diffuse,
+                emission: emission,
+                transparency: 1,
+                isDoubleSided: true
+            )
+            let materialID = ObjectIdentifier(material)
+            guard sceneMaterialStates[materialID] != state else {
+                instrumentation.sceneMaterialSkipCount += 1
+                return false
+            }
+
+            material.diffuse.contents = diffuse
+            material.emission.contents = emission
+            material.transparency = 1
+            material.isDoubleSided = true
+            material.readsFromDepthBuffer = true
+            material.writesToDepthBuffer = true
+            sceneMaterialStates[materialID] = state
+            instrumentation.sceneMaterialWriteCount += 1
+            return true
         }
 
         private func cylinderNode(from start: OVVector3, to end: OVVector3, radius: Double) -> SCNNode {
