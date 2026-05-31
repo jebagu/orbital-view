@@ -298,7 +298,7 @@ struct OrbitalViewMeterSettingsTray: View {
             sliderRow(
                 "Input Calibration",
                 value: inputCalibrationBinding,
-                range: 0.25...2,
+                range: Double(SpeakerMeterVisualSettings.minInputCalibration)...Double(SpeakerMeterVisualSettings.maxInputCalibration),
                 step: 0.05,
                 valueText: "\(settings.inputCalibration.formatted(.number.precision(.fractionLength(2))))x"
             )

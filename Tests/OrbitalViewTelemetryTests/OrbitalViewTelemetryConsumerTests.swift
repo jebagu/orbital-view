@@ -6,6 +6,13 @@ import XCTest
 final class OrbitalViewTelemetryConsumerTests: XCTestCase {
     private var segments: [SharedTelemetrySegment] = []
     private var temporaryRoots: [URL] = []
+    private struct ExtendedSpeakerMeterFields {
+        var recordFlags: UInt8 = 0
+        var dvsChannel: UInt32
+        var stateFlags: UInt32 = 0
+        var vuNormalized: Float
+        var vuDbFS: Float
+    }
 
     override func tearDown() {
         segments.removeAll()
@@ -64,6 +71,125 @@ final class OrbitalViewTelemetryConsumerTests: XCTestCase {
         XCTAssertEqual(snapshot.meterSnapshot?.level(channel: 7)?.rms ?? -1, 0.7, accuracy: 0.000_001)
         XCTAssertEqual(snapshot.meterSnapshot?.level(channel: 7)?.peak ?? -1, 0.9, accuracy: 0.000_001)
         XCTAssertEqual(snapshot.meterSnapshot?.level(channel: 7)?.clip, true)
+    }
+
+    func testExtendedSpeakerMeterFieldsDecodeDisplayDriveAndDVSState() throws {
+        let bootID = "boot"
+        let root = try makeTemporaryRegistryRoot()
+        let provider = try makeProvider(
+            root: root,
+            bootID: bootID,
+            appName: "Orbisonic",
+            providerInstanceID: "orbisonic-main",
+            heartbeat: 1_000,
+            sequence: 43,
+            producerHostTime: 1_050,
+            meters: [
+                SpeakerMeterRecordModel(channelID: 2, rms: 0.1, peak: 0.4),
+                SpeakerMeterRecordModel(channelID: 4, rms: 0.6, peak: 0.9)
+            ],
+            extendedMeters: [
+                2: ExtendedSpeakerMeterFields(
+                    dvsChannel: 31,
+                    vuNormalized: 0.95,
+                    vuDbFS: -3.5
+                ),
+                4: ExtendedSpeakerMeterFields(
+                    dvsChannel: 32,
+                    stateFlags: 1 << 1,
+                    vuNormalized: 1,
+                    vuDbFS: -0.25
+                )
+            ]
+        )
+        try TelemetryRegistryStore(registryRootURL: root).writeProvider(provider)
+        let consumer = makeConsumer(root: root, bootID: bootID, now: 1_100)
+
+        let snapshot = consumer.poll()
+        let level = try XCTUnwrap(snapshot.meterSnapshot?.level(channel: 2))
+
+        XCTAssertEqual(level.rms, 0.1, accuracy: 0.000_001)
+        XCTAssertEqual(level.peak, 0.4, accuracy: 0.000_001)
+        XCTAssertEqual(level.dvsChannel, 31)
+        XCTAssertEqual(level.recordFlags, 0)
+        XCTAssertEqual(level.stateFlags, 0)
+        XCTAssertEqual(level.vuNormalized ?? -1, 0.95, accuracy: 0.000_001)
+        XCTAssertEqual(level.vuDbFS ?? 99, -3.5, accuracy: 0.000_001)
+        XCTAssertFalse(level.hasValidVUDisplayDrive)
+        XCTAssertEqual(level.displayDrive, 0.1, accuracy: 0.000_001)
+        XCTAssertNil(snapshot.meterSnapshot?.level(channel: 4))
+    }
+
+    func testExtendedSpeakerMeterFieldsUseExplicitVUValidRecordFlag() throws {
+        let bootID = "boot"
+        let root = try makeTemporaryRegistryRoot()
+        let provider = try makeProvider(
+            root: root,
+            bootID: bootID,
+            appName: "Orbisonic",
+            providerInstanceID: "orbisonic-main",
+            heartbeat: 1_000,
+            sequence: 44,
+            producerHostTime: 1_050,
+            meters: [
+                SpeakerMeterRecordModel(channelID: 2, rms: 0.2, peak: 0.4),
+                SpeakerMeterRecordModel(channelID: 3, rms: 0.3, peak: 0.5)
+            ],
+            extendedMeters: [
+                2: ExtendedSpeakerMeterFields(
+                    recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+                    dvsChannel: 31,
+                    vuNormalized: 0,
+                    vuDbFS: -80
+                ),
+                3: ExtendedSpeakerMeterFields(
+                    recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+                    dvsChannel: 32,
+                    vuNormalized: 0.8,
+                    vuDbFS: -3
+                )
+            ]
+        )
+        try TelemetryRegistryStore(registryRootURL: root).writeProvider(provider)
+        let consumer = makeConsumer(root: root, bootID: bootID, now: 1_100)
+
+        let snapshot = consumer.poll()
+
+        XCTAssertEqual(snapshot.meterSnapshot?.level(channel: 2)?.displayDrive ?? -1, 0, accuracy: 0.000_001)
+        XCTAssertEqual(snapshot.meterSnapshot?.level(channel: 3)?.displayDrive ?? -1, 0.8, accuracy: 0.000_001)
+    }
+
+    func testTelemetryDisplayDriveIgnoresUntrustedVUSlots() throws {
+        let absent = OrbitalViewTelemetryMeterLevel(rms: 0.2, peak: 0.45)
+        let zeroFilled = OrbitalViewTelemetryMeterLevel(rms: 0.2, peak: 0.45, vuNormalized: 0, vuDbFS: 0)
+        let nonzeroButUntrusted = OrbitalViewTelemetryMeterLevel(rms: 0.2, peak: 0.45, vuNormalized: 0.9)
+
+        XCTAssertNil(absent.vuNormalized)
+        XCTAssertEqual(absent.displayDrive, 0.2, accuracy: 0.000_001)
+        XCTAssertEqual(zeroFilled.vuNormalized, 0)
+        XCTAssertEqual(zeroFilled.displayDrive, 0.2, accuracy: 0.000_001)
+        XCTAssertEqual(nonzeroButUntrusted.displayDrive, 0.2, accuracy: 0.000_001)
+    }
+
+    func testTelemetryDisplayDriveUsesExplicitVUValidFlag() throws {
+        let silentByDisplayIntent = OrbitalViewTelemetryMeterLevel(
+            rms: 0.2,
+            peak: 0.45,
+            recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+            vuNormalized: 0,
+            vuDbFS: -80
+        )
+        let displayDriven = OrbitalViewTelemetryMeterLevel(
+            rms: 0.2,
+            peak: 0.45,
+            recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+            vuNormalized: 0.9,
+            vuDbFS: -1
+        )
+
+        XCTAssertTrue(silentByDisplayIntent.hasValidVUDisplayDrive)
+        XCTAssertEqual(silentByDisplayIntent.displayDrive, 0, accuracy: 0.000_001)
+        XCTAssertEqual(displayDriven.displayDrive, 0.9, accuracy: 0.000_001)
     }
 
     func testSelectedProviderIsHonoredWhenMultipleProvidersAreCompatible() throws {
@@ -154,7 +280,8 @@ final class OrbitalViewTelemetryConsumerTests: XCTestCase {
         heartbeat: UInt64,
         sequence: UInt64,
         producerHostTime: UInt64,
-        meters: [SpeakerMeterRecordModel]
+        meters: [SpeakerMeterRecordModel],
+        extendedMeters: [UInt32: ExtendedSpeakerMeterFields] = [:]
     ) throws -> TelemetryProviderRegistryRecord {
         _ = root
         let identity = TelemetryEndpointIdentity(
@@ -189,6 +316,13 @@ final class OrbitalViewTelemetryConsumerTests: XCTestCase {
                 payload.writeFloat32(meter.rms, at: offset + 4)
                 payload.writeFloat32(meter.peak, at: offset + 8)
                 payload.writeUInt8(meter.clip ? 1 : 0, at: offset + 12)
+                if let extended = extendedMeters[meter.channelID] {
+                    payload.writeUInt8(extended.recordFlags, at: offset + 13)
+                    payload.writeInteger(extended.dvsChannel, at: offset + 16)
+                    payload.writeInteger(extended.stateFlags, at: offset + 20)
+                    payload.writeFloat32(extended.vuNormalized, at: offset + 24)
+                    payload.writeFloat32(extended.vuDbFS, at: offset + 28)
+                }
             }
             return payloadByteSize
         }

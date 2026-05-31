@@ -443,6 +443,56 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMeterSource.telemetry(telemetryMeters).meter(channel: 3, timeMS: 0),
             OrbitalViewportMeterSample(rms: 0.25, peak: 0.75)
         )
+        let vuTelemetryMeters = OrbitalViewTelemetryMeterSnapshot(
+            sequence: 10,
+            producerHostTime: 11,
+            levelsByChannel: [
+                3: OrbitalViewTelemetryMeterLevel(
+                    rms: 0.1,
+                    peak: 0.4,
+                    recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+                    vuNormalized: 1,
+                    vuDbFS: -0.25
+                )
+            ]
+        )
+        XCTAssertEqual(
+            OrbitalViewportMeterSource.telemetry(vuTelemetryMeters).meter(channel: 3, timeMS: 0),
+            OrbitalViewportMeterSample(rms: 0.1, peak: 0.4, displayDrive: 1)
+        )
+        let untrustedVUTelemetryMeters = OrbitalViewTelemetryMeterSnapshot(
+            sequence: 11,
+            producerHostTime: 12,
+            levelsByChannel: [
+                3: OrbitalViewTelemetryMeterLevel(
+                    rms: 0.25,
+                    peak: 0.4,
+                    vuNormalized: 0,
+                    vuDbFS: 0
+                )
+            ]
+        )
+        XCTAssertEqual(
+            OrbitalViewportMeterSource.telemetry(untrustedVUTelemetryMeters).meter(channel: 3, timeMS: 0),
+            OrbitalViewportMeterSample(rms: 0.25, peak: 0.4)
+        )
+        let validZeroVUTelemetryMeters = OrbitalViewTelemetryMeterSnapshot(
+            sequence: 12,
+            producerHostTime: 13,
+            levelsByChannel: [
+                3: OrbitalViewTelemetryMeterLevel(
+                    rms: 0.25,
+                    peak: 0.4,
+                    recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+                    vuNormalized: 0,
+                    vuDbFS: -80
+                )
+            ]
+        )
+        XCTAssertEqual(
+            OrbitalViewportMeterSource.telemetry(validZeroVUTelemetryMeters).meter(channel: 3, timeMS: 0),
+            OrbitalViewportMeterSample(rms: 0.25, peak: 0.4, displayDrive: 0)
+        )
         XCTAssertEqual(
             OrbitalViewportMeterSource.telemetry(telemetryMeters).meter(channel: 4, timeMS: 0),
             .silent
@@ -1166,6 +1216,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(sample.rms, expectedRMS, accuracy: 0.000_001)
         XCTAssertEqual(sample.peak, OrbitalViewportMeterSample.displayScalar(powerDB: -3), accuracy: 0.000_001)
+        XCTAssertEqual(sample.displayDrive, sample.rms, accuracy: 0.000_001)
     }
 
     func testCorrectViewerSphereImpulseTestIsDeterministicAndSpatial() {
@@ -1332,8 +1383,59 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertEqual(diagnostics.channel, 7)
         XCTAssertGreaterThanOrEqual(diagnostics.rawPeak, diagnostics.rawRMS)
+        XCTAssertEqual(diagnostics.displayDrive, diagnostics.rawRMS, accuracy: 0.000_001)
         XCTAssertGreaterThanOrEqual(diagnostics.displayScalar, 0)
         XCTAssertGreaterThanOrEqual(diagnostics.hotScalar, 0)
+    }
+
+    func testCorrectViewerTelemetryDisplayDrivePreservesRawDiagnosticsAndChannelIdentity() {
+        let source = OrbitalViewportMeterSource.telemetry(
+            OrbitalViewTelemetryMeterSnapshot(
+                sequence: 20,
+                producerHostTime: 21,
+                levelsByChannel: [
+                    1: OrbitalViewTelemetryMeterLevel(
+                        rms: 0.1,
+                        peak: 0.4,
+                        recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+                        vuNormalized: 1,
+                        vuDbFS: -0.25
+                    ),
+                    2: OrbitalViewTelemetryMeterLevel(
+                        rms: 0.8,
+                        peak: 0.9,
+                        recordFlags: OrbitalViewTelemetryRecordFlags.vuNormalizedValid,
+                        vuNormalized: 0.2,
+                        vuDbFS: -18
+                    )
+                ]
+            )
+        )
+        let diagnostics = OrbitalViewportMeterDiagnostics.make(
+            channel: 1,
+            source: source,
+            settings: .default,
+            timeMS: 0
+        )
+        let configuration = makeViewportConfiguration(
+            speakerShape: .cubeVU,
+            meterSource: source,
+            selectedChannel: 1
+        )
+        let snapshot = OrbitalViewportSnapshot(configuration: configuration)
+        let projected = snapshot.speakers.first { $0.channel == 1 }
+
+        XCTAssertEqual(diagnostics.channel, 1)
+        XCTAssertEqual(diagnostics.rawRMS, 0.1, accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.rawPeak, 0.4, accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.displayDrive, 1, accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.calibratedRMS, 1, accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.displayScalar, 1, accuracy: 0.000_001)
+        XCTAssertEqual(projected?.id, 1)
+        XCTAssertEqual(projected?.rms ?? -1, 0.1, accuracy: 0.000_001)
+        XCTAssertEqual(projected?.peak ?? -1, 0.4, accuracy: 0.000_001)
+        XCTAssertEqual(projected?.displayDrive ?? -1, 1, accuracy: 0.000_001)
+        XCTAssertEqual(source.meter(channel: 2, timeMS: 0).displayDrive, 0.2, accuracy: 0.000_001)
     }
 
     func testCorrectViewerSettingsJSONExportPayloadContainsPresetDriveAndTheme() throws {

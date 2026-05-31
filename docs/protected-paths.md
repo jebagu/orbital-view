@@ -24,6 +24,8 @@ Tests/OrbitalViewSwiftUITests/
 
 The final realtime-family adoption audit is `docs/realtime-family-compliance-audit.md`. Updating that audit does not grant permission to edit protected renderer, SwiftUI, review, or downstream host paths.
 
+The Orbisonic telemetry meter-reach change is tracked in `openspec/changes/orbisonic-telemetry-display-drive/`. It permits a bounded review-surface display-drive update only: Cube VU, Pixel Jets, and Cell Jets may use `vuNormalized` for visual reach when the telemetry record has an explicit VU-normalized-valid flag, while untrusted VU slots fall back to raw `rms` and raw `peak`, `clip`, routing, channel order, and host audio behavior remain unchanged.
+
 ## Protected Path: Downstream Audio And Routing Integrations
 
 ### Applies When

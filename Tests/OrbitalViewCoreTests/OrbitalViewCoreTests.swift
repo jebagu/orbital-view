@@ -311,10 +311,16 @@ final class OrbitalViewCoreTests: XCTestCase {
             [.cubeScalarCenterBloom, .checkerPulseRingAndDiagonalWave, .prismGlow, .warmPulse, .coolPulse]
         )
 
-        let hot = try SpeakerMeterVisualSettings(visualGainDB: 24, style: .warmPulse, speakerZScale: 2)
+        let hot = try SpeakerMeterVisualSettings(
+            visualGainDB: 24,
+            style: .warmPulse,
+            inputCalibration: 8,
+            speakerZScale: 2
+        )
         XCTAssertEqual(hot.visualGainDB, 24)
         XCTAssertEqual(hot.style.displayName, "Warm Pulse")
         XCTAssertEqual(hot.colorScheme, .daftPunkBow)
+        XCTAssertEqual(hot.inputCalibration, 8)
         XCTAssertEqual(hot.speakerZScale, 2)
 
         let pixelJets = try SpeakerMeterVisualSettings(speakerType: .pixelJets, facePixels: 1, jetLengthPixels: 180)
@@ -357,7 +363,14 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertThrowsError(try SpeakerMeterVisualSettings(inputCalibration: 0.2)) { error in
             XCTAssertEqual(
                 error as? OrbitalViewValidationError,
-                .invalidRange(field: "meterVisual.inputCalibration", value: 0.20000000298023224, validRange: "0.25...2")
+                .invalidRange(field: "meterVisual.inputCalibration", value: 0.20000000298023224, validRange: "0.25...8")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(inputCalibration: 8.25)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "meterVisual.inputCalibration", value: 8.25, validRange: "0.25...8")
             )
         }
 
@@ -437,6 +450,7 @@ final class OrbitalViewCoreTests: XCTestCase {
         let identity = SpeakerCubeVUScalars(rawRms: 0.42, settings: defaults)
 
         XCTAssertEqual(identity.rawRms, 0.42, accuracy: 0.000_001)
+        XCTAssertEqual(identity.displayDrive, 0.42, accuracy: 0.000_001)
         XCTAssertEqual(identity.calibratedRms, 0.42, accuracy: 0.000_001)
         XCTAssertEqual(identity.displayVuScalar, 0.42, accuracy: 0.000_001)
         XCTAssertEqual(identity.hotScalar, 1 - powf(1 - 0.42, defaults.hotResponse), accuracy: 0.000_001)
@@ -452,6 +466,41 @@ final class OrbitalViewCoreTests: XCTestCase {
             settings: try SpeakerMeterVisualSettings(displayCeiling: 0.65)
         )
         XCTAssertEqual(capped.displayVuScalar, 0.65, accuracy: 0.000_001)
+    }
+
+    func testCubeVUScalarsCanUseDisplayDriveWithoutChangingRawRMS() throws {
+        let scalars = SpeakerCubeVUScalars(
+            rawRms: 0.1,
+            settings: try SpeakerMeterVisualSettings(vuPaletteDrive: 1),
+            paletteValue: 0.4,
+            displayDrive: 1
+        )
+
+        XCTAssertEqual(scalars.rawRms, 0.1, accuracy: 0.000_001)
+        XCTAssertEqual(scalars.displayDrive, 1, accuracy: 0.000_001)
+        XCTAssertEqual(scalars.calibratedRms, 1, accuracy: 0.000_001)
+        XCTAssertEqual(scalars.displayVuScalar, 1, accuracy: 0.000_001)
+        XCTAssertEqual(scalars.hotScalar, 1, accuracy: 0.000_001)
+        XCTAssertEqual(scalars.paletteHeat, 0.4, accuracy: 0.000_001)
+    }
+
+    func testCubeVUScalarsClampDisplayDriveSafely() throws {
+        let clipped = SpeakerCubeVUScalars(
+            rawRms: 0.1,
+            settings: .default,
+            displayDrive: 1.5
+        )
+        let nonFinite = SpeakerCubeVUScalars(
+            rawRms: 0.1,
+            settings: .default,
+            displayDrive: .nan
+        )
+
+        XCTAssertEqual(clipped.displayDrive, 1, accuracy: 0.000_001)
+        XCTAssertEqual(clipped.calibratedRms, 1, accuracy: 0.000_001)
+        XCTAssertEqual(nonFinite.displayDrive, 0, accuracy: 0.000_001)
+        XCTAssertEqual(nonFinite.calibratedRms, 0, accuracy: 0.000_001)
+        XCTAssertEqual(nonFinite.displayVuScalar, 0, accuracy: 0.000_001)
     }
 
     func testCubeVUHotFillUsesCalibratedRMSNotDisplayCompression() throws {

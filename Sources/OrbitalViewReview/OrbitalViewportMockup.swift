@@ -1133,7 +1133,7 @@ public struct OrbitalViewportMockup: View {
         level: OrbitalViewTelemetryMeterLevel
     ) -> some View {
         let dvsChannel = level.dvsChannel ?? channelID
-        let scalar = CGFloat(level.vuNormalized ?? level.rms)
+        let scalar = CGFloat(level.displayDrive)
 
         return VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 3) {
@@ -1394,7 +1394,7 @@ public struct OrbitalViewportMockup: View {
             tuningSliderRow(
                 "Input Calibration",
                 value: $cubeVUSettings.inputCalibration,
-                range: 0.25...2,
+                range: Double(SpeakerMeterVisualSettings.minInputCalibration)...Double(SpeakerMeterVisualSettings.maxInputCalibration),
                 step: 0.05,
                 valueText: "\(cubeVUSettings.inputCalibration.formatted(.number.precision(.fractionLength(2))))x"
             )
@@ -1639,6 +1639,7 @@ public struct OrbitalViewportMockup: View {
             tuningValueRow("Diagnostic Channel", value: String(format: "%02d", diagnostics.channel))
             tuningValueRow("Raw RMS", value: diagnostics.rawRMS.percentText)
             tuningValueRow("Raw Peak", value: diagnostics.rawPeak.percentText)
+            tuningValueRow("Display Drive", value: diagnostics.displayDrive.percentText)
             tuningValueRow("Calibrated RMS", value: diagnostics.calibratedRMS.percentText)
             tuningValueRow("Display Scalar", value: diagnostics.displayScalar.percentText)
             tuningValueRow("Hot Scalar", value: diagnostics.hotScalar.percentText)
@@ -3470,12 +3471,14 @@ struct OrbitalViewportSpatGRISOSCDiagnostic: Equatable {
 struct OrbitalViewportMeterSample: Equatable {
     let rms: Double
     let peak: Double
+    let displayDrive: Double
 
     static let silent = OrbitalViewportMeterSample(rms: 0, peak: 0)
 
-    init(rms: Double, peak: Double) {
+    init(rms: Double, peak: Double, displayDrive: Double? = nil) {
         self.rms = OrbitalViewportMath.clamp01(rms)
         self.peak = OrbitalViewportMath.clamp01(max(peak, rms))
+        self.displayDrive = OrbitalViewportMath.clamp01(displayDrive ?? self.rms)
     }
 
     static func displayScalar(powerDB: Float) -> Double {
@@ -3643,7 +3646,11 @@ struct OrbitalViewportMeterSource: Equatable {
             guard let level = snapshot.level(channel: channel) else {
                 return .silent
             }
-            return OrbitalViewportMeterSample(rms: level.rms, peak: level.peak)
+            return OrbitalViewportMeterSample(
+                rms: level.rms,
+                peak: level.peak,
+                displayDrive: level.displayDrive
+            )
         case .localAudio:
             return localAudio?.currentMeterSample() ?? .silent
         case .impulse(let kind):
@@ -3807,6 +3814,7 @@ struct OrbitalViewportMeterDiagnostics: Equatable {
     let channel: Int
     let rawRMS: Double
     let rawPeak: Double
+    let displayDrive: Double
     let calibratedRMS: Double
     let displayScalar: Double
     let hotScalar: Double
@@ -3823,12 +3831,14 @@ struct OrbitalViewportMeterDiagnostics: Equatable {
         let scalars = SpeakerCubeVUScalars(
             rawRms: Float(sample.rms),
             settings: settings.coreSettings,
-            paletteValue: Float(sample.peak)
+            paletteValue: Float(sample.peak),
+            displayDrive: Float(sample.displayDrive)
         )
         return OrbitalViewportMeterDiagnostics(
             channel: channel,
             rawRMS: sample.rms,
             rawPeak: sample.peak,
+            displayDrive: sample.displayDrive,
             calibratedRMS: Double(scalars.calibratedRms),
             displayScalar: Double(scalars.displayVuScalar),
             hotScalar: Double(scalars.hotScalar),
@@ -9131,7 +9141,8 @@ struct OrbitalViewportSpeakerMaterialVisualSignature: Equatable {
         let scalars = SpeakerCubeVUScalars(
             rawRms: Float(speaker.rms),
             settings: configuration.cubeVUSettings.coreSettings,
-            paletteValue: Float(speaker.peak)
+            paletteValue: Float(speaker.peak),
+            displayDrive: Float(speaker.displayDrive)
         )
         let display = Double(scalars.displayVuScalar)
         let hot = Double(scalars.hotScalar)
@@ -9732,6 +9743,7 @@ struct OrbitalViewportProjectedSpeaker: Identifiable, Equatable {
     let source: OrbitalViewportSpeaker
     let rms: Double
     let peak: Double
+    let displayDrive: Double
     let rotated: OVVector3
     let screen: CGPoint
     let scale: Double
@@ -9747,6 +9759,7 @@ struct OrbitalViewportProjectedSpeaker: Identifiable, Equatable {
         let meter = configuration.meterSource.meter(channel: source.channel, timeMS: configuration.timeMS)
         self.rms = meter.rms
         self.peak = meter.peak
+        self.displayDrive = meter.displayDrive
         let rotated = configuration.rotate(OVVector3(source))
         self.rotated = rotated
         self.screen = configuration.project(rotated)
@@ -11747,7 +11760,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                     let scalars = SpeakerCubeVUScalars(
                         rawRms: Float(speaker.rms),
                         settings: configuration.cubeVUSettings.coreSettings,
-                        paletteValue: Float(speaker.peak)
+                        paletteValue: Float(speaker.peak),
+                        displayDrive: Float(speaker.displayDrive)
                     )
                     let display = Double(scalars.displayVuScalar)
                     let hot = Double(scalars.hotScalar)

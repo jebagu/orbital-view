@@ -8,6 +8,7 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
     public var rms: Double
     public var peak: Double
     public var clip: Bool
+    public var recordFlags: UInt8
     public var dvsChannel: Int?
     public var stateFlags: UInt32
     public var vuNormalized: Double?
@@ -17,6 +18,7 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
         rms: Double,
         peak: Double,
         clip: Bool = false,
+        recordFlags: UInt8 = 0,
         dvsChannel: Int? = nil,
         stateFlags: UInt32 = 0,
         vuNormalized: Double? = nil,
@@ -25,16 +27,29 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
         self.rms = Self.clamp01(rms)
         self.peak = Self.clamp01(max(peak, rms))
         self.clip = clip
+        self.recordFlags = recordFlags
         self.dvsChannel = dvsChannel
         self.stateFlags = stateFlags
         self.vuNormalized = vuNormalized.map(Self.clamp01)
         self.vuDbFS = vuDbFS?.isFinite == true ? vuDbFS : nil
     }
 
+    public var hasValidVUDisplayDrive: Bool {
+        (recordFlags & OrbitalViewTelemetryRecordFlags.vuNormalizedValid) != 0
+    }
+
+    public var displayDrive: Double {
+        hasValidVUDisplayDrive ? (vuNormalized ?? rms) : rms
+    }
+
     private static func clamp01(_ value: Double) -> Double {
         guard value.isFinite else { return 0 }
         return min(1, max(0, value))
     }
+}
+
+public enum OrbitalViewTelemetryRecordFlags {
+    public static let vuNormalizedValid: UInt8 = 1 << 0
 }
 
 public struct OrbitalViewTelemetryMeterSnapshot: Equatable, Sendable {
@@ -359,6 +374,9 @@ public final class OrbitalViewTelemetryConsumer {
             let rms = Double(try payload.readFloat32(at: offset + 4))
             let peak = Double(try payload.readFloat32(at: offset + 8))
             let clip = (try payload.readUInt8(at: offset + 12)) != 0
+            let recordFlags = recordByteSize >= 14
+                ? try payload.readUInt8(at: offset + 13)
+                : 0
             let dvsChannel = recordByteSize >= 20
                 ? Int(try payload.readInteger(at: offset + 16, as: UInt32.self))
                 : nil
@@ -378,6 +396,7 @@ public final class OrbitalViewTelemetryConsumer {
                 rms: rms,
                 peak: peak,
                 clip: clip,
+                recordFlags: recordFlags,
                 dvsChannel: dvsChannel,
                 stateFlags: stateFlags,
                 vuNormalized: vuNormalized,

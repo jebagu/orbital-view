@@ -31,6 +31,7 @@ Use for:
 - meter frame identity
 - telemetry source descriptor defaults and validation
 - telemetry overload diagnostics round-trip and deduplication
+- display-drive scalar behavior, including raw-RMS fallback, explicit VU-valid display reach, intentional VU-valid silence, and safe clamping
 - camera preset state
 - scene builder behavior
 
@@ -76,6 +77,7 @@ Current renderer seam tests cover:
 - speaker draw inputs preserve ID/channel order and stable cube/prism dimensions
 - speaker draw inputs project canonical `x` horizontally and canonical `z` vertically, treating canonical `y` as depth/front
 - cube VU defaults, scalar math, range validation, material payloads, hot-fill independence, and palette-drive behavior stay separate from raw RMS
+- Cube VU scalar tests cover optional display drive so VU-normalized display reach can hit full scale while raw RMS remains raw evidence
 - Pixel Jets and Cell Jets defaults, legacy `jetsVU` / `solidJets` decode, Pixel Density `1...9` validation, Cell Jets idle opacity `0...1` validation, outward Metal prism rendering, color-ramp response, and meter-scalar response stay display-only without changing scene speaker shape or physical channel mapping
 - Pixel Jets uses the VU-gated axial/cross face-pixel texture branch and stays near-dark for silent/no-provider meters; Cell Jets uses the same display-only jet length with retained low-CPU five-face cell materials and no generated SceneKit textures or shader modifiers. Cell Jets idle opacity can hide silent cells while active meter cells still render, and the final Cell Jets end-capped cell remains idle/dark until full-scale display or clip.
 - dynamic object frame/meter/settings updates render through a separate object path and do not rebuild speaker static geometry
@@ -145,7 +147,8 @@ Current review-surface tests cover `OrbitalViewReview` through the existing Swif
 - SceneKit review-app SpatGRIS speaker/source layout storage generates unique no-overwrite filenames, displays manual filename renames, shows invalid XML rows, survives default-layout filename changes by stable layout ID, and falls back safely for missing or invalid defaults
 - SceneKit review-app layout-derived bounds include imported receivers and sources, and source markers render separately from receiver speakers
 - SceneKit review-app `Hide Sphere` is absent from current controls; the live `Speaker Pattern` future tray is also absent from the current right panel
-- SceneKit review-app hidden diagnostics expose raw RMS, raw peak, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source
+- SceneKit review-app hidden diagnostics expose raw RMS, raw peak, display drive, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source
+- SceneKit review-app telemetry diagnostics expose VU/display drive separately from raw RMS and raw peak, and Cube VU / Pixel Jets / Cell Jets use explicitly valid VU display drive without rekeying physical channels while untrusted VU slots fall back to raw RMS
 - SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
 - SceneKit review-app FPS diagnostics classify review viewport render/update cadence against the configured target, currently `120`, use `60` as the under-target threshold for the 120 FPS target, throttle steady logs to five samples per second, emit status transitions immediately, and keep FPS entries inside the same capped diagnostics log
 - SceneKit review-app headless benchmark coverage verifies the offscreen benchmark uses the same Cube VU speaker shape, speaker size, render style, Cube VU settings, 120 FPS active target, and 30 FPS idle/meter schedule without changing the approved speaker look; ribbed benchmark coverage verifies explicit ribbed enablement, density flags, hidden-line/fog flags, segment counts, SceneKit node counts, FPS, and CPU reporting

@@ -285,7 +285,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
     public static let minVisualGainDB: Float = -24
     public static let maxVisualGainDB: Float = 24
     public static let minInputCalibration: Float = 0.25
-    public static let maxInputCalibration: Float = 2
+    public static let maxInputCalibration: Float = 8
     public static let minLevelCompression: Float = 1
     public static let maxLevelCompression: Float = 4
     public static let minDisplayCeiling: Float = 0.5
@@ -638,7 +638,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
             field: "meterVisual.inputCalibration",
             value: inputCalibration,
             validRange: Self.minInputCalibration...Self.maxInputCalibration,
-            validRangeDescription: "0.25...2"
+            validRangeDescription: "0.25...8"
         )
         try validateFiniteRange(
             field: "meterVisual.levelCompression",
@@ -818,15 +818,23 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
 
 public struct SpeakerCubeVUScalars: Equatable, Sendable {
     public let rawRms: Float
+    public let displayDrive: Float
     public let calibratedRms: Float
     public let displayVuScalar: Float
     public let hotScalar: Float
     public let paletteHeat: Float
 
-    public init(rawRms: Float, settings: SpeakerMeterVisualSettings, paletteValue: Float? = nil) {
+    public init(
+        rawRms: Float,
+        settings: SpeakerMeterVisualSettings,
+        paletteValue: Float? = nil,
+        displayDrive: Float? = nil
+    ) {
         let raw = Self.clamp01(rawRms)
+        let drive = Self.clamp01(displayDrive ?? raw)
         self.rawRms = raw
-        calibratedRms = Self.clamp01(raw * settings.inputCalibration)
+        self.displayDrive = drive
+        calibratedRms = Self.clamp01(drive * settings.inputCalibration)
         displayVuScalar = min(Self.compress(calibratedRms, exponent: settings.levelCompression), settings.displayCeiling)
         hotScalar = Self.compress(calibratedRms, exponent: settings.hotResponse)
         paletteHeat = Self.compress(Self.clamp01(paletteValue ?? displayVuScalar), exponent: settings.vuPaletteDrive)

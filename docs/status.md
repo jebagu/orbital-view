@@ -118,7 +118,7 @@ none
 - Remove the two old speaker types (`Prism` and `Sphere`) if the next UI cleanup slice accepts `Cube VU` as the only retained current speaker type.
 - Plan a future protected Metal Cube VU visual migration when SceneKit texture churn is the limiting factor: keep the approved Cube VU look, but move face-grid bloom/hot/clip math into `OrbitalViewRender` shader/material payloads instead of generating and assigning SceneKit `NSImage` textures at meter cadence.
 - Plan a future protected Metal unified fog model: move the approved SceneKit camera-depth fog behavior into `OrbitalViewRender` as a shared shader function for shell geometry, speakers, source markers, labels, glows, and hidden-line treatment.
-- Prove live Orbisonic telemetry end-to-end with a real publisher/consumer run; current telemetry is wired and tested at source level but not proven in the visible review app.
+- Prove live Orbisonic telemetry end-to-end with a real publisher/consumer run, including Orbisonic publishing an explicit VU-normalized-valid record flag before Orbital View trusts `vuNormalized` / `vuDbFS`; current telemetry is wired and tested at source level but not proven in the visible review app with a live Orbisonic publisher.
 ```
 
 ## Blocked
@@ -128,6 +128,29 @@ none
 ```
 
 ## Recent Changes
+
+### Update: 2026-05-31 Complete App Package Refresh
+
+- Rebuilt the tracked `dist/Orbital View VU 1.0/Orbital View VU 1.0.pkg` and `dist/Orbital View VU 1.0/Orbital View VU 1.0.app.zip` from a refreshed, ad-hoc signed `Orbital View VU 1.0.app` staging copy.
+- The package payload now includes the current `OrbitalViewViewer` executable, `AppIcon.icns`, `OrbitalView_OrbitalViewReview.bundle`, bundled fonts, source layouts, speaker layouts, and saved view themes.
+- Verification: `swift build` passed; full `swift test` passed with 232 tests and 0 failures; the parent latest launcher rebuilt/re-signed/opened the review app; `pgrep -fl OrbitalViewViewer` confirmed pid `87418` running from this checkout; `codesign --verify --deep --strict --verbose=2` passed for the refreshed app and staging app; `otool -L` showed only system/Swift framework dynamic dependencies; `pkgutil --payload-files` and `unzip -l` confirmed the package and zip carry the executable, resource bundle, icon, fonts, layouts, and themes.
+- Remaining risk: `pkgutil --check-signature` reports `Status: no signature`; this local package is unsigned and not notarized.
+
+### Update: 2026-05-31 Orbisonic Telemetry Display Drive
+
+- Added a bounded OpenSpec change for Orbisonic telemetry meter reach and protected review-surface behavior.
+- Kept `Input Calibration` bounded and raised the cap to `8x`; the telemetry fix still uses host display intent instead of relying on calibration expansion.
+- Added `OrbitalViewTelemetryMeterLevel.displayDrive` as validity-aware display intent: it uses `vuNormalized` only when `OrbitalViewTelemetryRecordFlags.vuNormalizedValid` is set, otherwise it falls back to raw `rms`. Current Orbisonic Realtime 32-byte records publish raw `rms` / `peak` but zero-fill `recordFlags`, `stateFlags`, `vuNormalized`, and `vuDbFS`, so Orbital View treats those VU slots as untrusted and drives live visuals from raw RMS.
+- Added source-compatible `SpeakerCubeVUScalars.displayDrive` support so future explicitly valid VU display/hot scalars can reach full scale while `rawRms` stays raw.
+- Updated the SceneKit review telemetry path so Cube VU, Pixel Jets, Cell Jets, the DVS mini grid, material signatures, and diagnostics carry display drive separately from raw RMS and raw peak.
+- Added regression coverage for 32-byte speaker meter fields (`recordFlags`, `dvsChannel`, `stateFlags`, `vuNormalized`, `vuDbFS`), disabled DVS channel skipping, untrusted VU zero/nonzero fallback to raw RMS, explicit valid-VU silence, explicit valid-VU display drive, display-drive clamping, and channel-ID preservation.
+- Verification: focused telemetry consumer tests passed with 8 tests and 0 failures; focused Core settings validation passed; `swift build` passed; full `swift test` passed with 232 tests and 0 failures; `git diff --check` passed; `zsh -n Open\ Orbital\ View.command` passed; `command -v openspec` confirmed the OpenSpec CLI is unavailable; the parent latest launcher rebuilt/re-signed/opened the review app; `pgrep -fl OrbitalViewViewer` confirmed pid `81139` running from this checkout; live Orbisonic telemetry was user-confirmed moving in the visible review app after relaunch.
+- Remaining risk: future VU-intent publishing still needs shared agreement that `recordFlags` bit 0 means `vuNormalized` is valid; until then current Orbisonic records correctly use raw-RMS display drive.
+
+### Update: 2026-05-31 Input Calibration 8x Ceiling
+
+- Raised the native `Input Calibration` maximum from `2x` to `8x` in the Core visual-settings contract and both production SwiftUI/review-app meter response sliders, so faint telemetry can be boosted farther without editing saved settings by hand.
+- Verification: focused Core settings validation, `swift build`, full `swift test` (232 tests), and `zsh -n Open\ Orbital\ View.command` all pass; the parent latest launcher rebuilt/re-signed/opened the review app, and `OrbitalViewViewer` is running from this checkout as pid `81139`.
 
 ### Update: 2026-05-31 Cell Jets Five-Face Cells
 

@@ -153,7 +153,7 @@ flowchart LR
   Orbital --> UIEvents["Camera / selection / diagnostics UI state"]
 ```
 
-Orbisonic owns playback, transport, device I/O, route discovery, channel mapping, output routing, render/control engines, meter extraction, tap-point selection, operator state, and realtime performance gates. Orbital View receives prepared snapshots, preserves physical channel and object identity, labels Orbisonic meter provenance with `orbisonicPreparedMeterTap`, and follows the Orbisonic design-language palette grammar without owning Orbisonic product behavior.
+Orbisonic owns playback, transport, device I/O, route discovery, channel mapping, output routing, render/control engines, meter extraction, tap-point selection, operator state, and realtime performance gates. Orbital View receives prepared snapshots, preserves physical channel and object identity, labels Orbisonic meter provenance with `orbisonicPreparedMeterTap`, and follows the Orbisonic design-language palette grammar without owning Orbisonic product behavior. For live speaker telemetry, Orbisonic can publish VU display intent as `vuNormalized` and VU/display dB as `vuDbFS`; Orbital View uses `vuNormalized` for visual display drive only when the record carries an explicit VU-normalized-valid flag, not for raw RMS, peak, clip, routing, or channel-order decisions.
 
 ## Current Splat Host Profile Flow
 
@@ -189,7 +189,7 @@ Receiver and source setup files are normalized to current SpatGRIS `SPEAKER_SETU
 ```mermaid
 flowchart LR
   Scene["Scene speakers"] --> StaticInputs["ID, channel, position, cube/prism geometry"]
-  Meter["Meter frame"] --> ColorInputs["display VU scalar, hot scalar, palette heat, clip"]
+  Meter["Meter frame"] --> ColorInputs["display drive, display VU scalar, hot scalar, palette heat, clip"]
   Objects["Object frames/meters"] --> ObjectInputs["object overlay inputs"]
   Camera["Camera state"] --> State["renderer state"]
   DisplayType["Speaker display type / jet length"] --> ColorInputs
@@ -199,7 +199,7 @@ flowchart LR
   State --> Tests
 ```
 
-Meter, camera, cube/jet setting, and object-meter updates must not change static speaker draw inputs. Speaker meters affect display-only material values, Pixel Jets affects display-only shader geometry plus VU-gated axial/cross pixel color/emission, Cell Jets affects display-only shader geometry plus retained cell color/emission, and object frames/meters remain a separate renderer layer.
+Meter, camera, cube/jet setting, and object-meter updates must not change static speaker draw inputs. Speaker meters affect display-only material values, with trusted Orbisonic `vuNormalized` treated as display drive only when the record explicitly marks it valid while raw RMS/peak/clip remain raw diagnostics. Pixel Jets affects display-only shader geometry plus VU-gated axial/cross pixel color/emission, Cell Jets affects display-only shader geometry plus retained cell color/emission, and object frames/meters remain a separate renderer layer.
 
 ## Current SwiftUI Wrapper Flow
 

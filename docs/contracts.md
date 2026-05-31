@@ -38,6 +38,8 @@ Every displayed speaker or object meter frame must carry an `OrbitalViewTelemetr
 
 Display telemetry is latest-complete-frame-wins. Orbital View may drop stale frames, decimate display refresh, keep only the latest complete snapshot, and set diagnostics flags outside realtime paths. It must not make audio wait for the viewport, allocate more display queue from an audio callback, log or post UI from a callback, or send raw packets directly into the renderer.
 
+Orbisonic live telemetry may carry both raw signal facts and host display intent. Raw `rms`, raw `peak`, and `clip` remain signal facts; `clip` must continue to mean true peak/clip state, not "visual full scale." Review-surface Cube VU, Pixel Jets, and Cell Jets use `vuNormalized` as display drive only when the record carries an explicit VU-normalized-valid flag; missing or structurally present but untrusted VU slots fall back to raw `rms`. `vuDbFS` carries the VU/display dB value when available for diagnostics.
+
 ## SpatGRIS Layout Contract
 
 `OrbitalViewSpatGRIS` imports and exports SpatGRIS `SPEAKER_SETUP` XML for receiver speaker layouts and source-position layouts. It accepts current `4.0.0` files, legacy `SPEAKER_N` files, and fixture-covered import-only older speaker setup XML. Export always writes normalized current `SPEAKER_SETUP` XML.
@@ -190,8 +192,9 @@ Core must not output audio, routing changes, playback state mutations, or UI nav
 - Physical channels should be unique unless a future contract explicitly allows duplicates for non-physical roles.
 - Speaker labels must not be empty after trimming.
 - Shape dimensions must be positive and finite. Sonic Sphere speaker defaults use cube geometry.
-- Cube VU / jet surface control ranges must stay finite and within the browser-derived contract: input calibration `0.25...2`, level compression `1...4`, display ceiling `0.5...1`, hot response `0.5...3`, hot threshold `0.35...0.98`, hot fill strength `0...1`, palette drive `0.5...4`, idle tint `0...1`, checker contrast `0...0.4`, and face pixels / Pixel Density `1...9`.
+- Cube VU / jet surface control ranges must stay finite and within the browser-derived contract: input calibration `0.25...8`, level compression `1...4`, display ceiling `0.5...1`, hot response `0.5...3`, hot threshold `0.35...0.98`, hot fill strength `0...1`, palette drive `0.5...4`, idle tint `0...1`, checker contrast `0...0.4`, and face pixels / Pixel Density `1...9`.
 - Speaker meter display type defaults to `cubeVU`; older settings payloads without an explicit type or jet length must decode to `cubeVU` and `48` px. Legacy `jetsVU` and `solidJets` payloads decode to `pixelJets`; new payloads use `pixelJets` or `cellJets`. Jet length is display-only and must stay finite in `8...180` px. Pixel Jets renders VU-gated axial/cross face pixels from the selected VU ramp and stays near-dark with no provider/silence. Cell Jets renders coarse retained five-face cells from the selected VU ramp with no generated pixel textures, no shader modifiers, no per-meter geometry rebuild, and no clock-only pulse. Cell Jets idle opacity is a Cell Jets-specific display-only setting, defaults to `1`, decodes missing older payloads as `1`, and must stay finite in `0...1`; it affects only silent cells, not active meter cells. The final Cell Jets end-capped cell must stay idle/dark unless the effective display scalar reaches full-scale (`>= 0.995`) or the meter clips.
+- `SpeakerCubeVUScalars` keeps `rawRms` as raw evidence and may use an optional `displayDrive` value for calibrated RMS, display scalar, and hot scalar calculation. Missing display drive preserves raw-RMS behavior; non-finite or out-of-range display drive clamps safely to `0...1`.
 - Edge anchor `t` must be in `0...1`.
 - Cartesian speaker anchors must contain finite canonical Z-up coordinates.
 - Source IDs must be unique and in `1...256`; source positions must be finite.
