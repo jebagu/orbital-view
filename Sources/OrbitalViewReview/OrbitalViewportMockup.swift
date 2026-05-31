@@ -71,22 +71,27 @@ public struct OrbitalViewportMockup: View {
     ]
     static let themeControlPattern = "full-width-orbisonic-theme-buttons"
     static let themePaletteSource = "orbisonic-palette-brief"
+    static let sameAsMainThemeTitle = "Same as Main Theme"
     static let colorPaletteControlTitles = [
-        "Sonic Sphere Speaker Palette",
-        "Source Speaker Palette",
+        "Color Palette",
         "App Skin",
+        "Speaker Pixels",
+        "Source Pixels",
+        "Sphere Palette",
+        "Ground Palette",
         "Cube VU Ramp"
     ]
     static let globalDiceButtonStyle = "icon-only-centered-dice"
     static let viewDetailControlTitles = [
         "Speaker Size",
         "Fog Density",
-        "Speaker Numbers",
-        "Hidden Lines"
+        "Speaker Labels",
+        "Hidden Lines",
+        "Ground Plane"
     ]
     static let geodesicAppearanceControlTitles = [
-        "Geodesic Palette",
-        "Geodesic Saturation"
+        "Sphere Palette",
+        "Sphere Saturation"
     ]
     static let sphereGeometryControlTitles = [
         "Ribbed Speaker Sphere",
@@ -96,9 +101,9 @@ public struct OrbitalViewportMockup: View {
     ]
     static let groundAppearanceControlTitles = [
         "Ground Palette",
-        "Grid Plane",
         "Grid Visibility",
         "Grid Spacing",
+        "Grid Thickness",
         "Grid Size"
     ]
     static let audioRenderTypeTitles = OrbitalViewportAudioRenderMode.allCases.map(\.title)
@@ -161,25 +166,21 @@ public struct OrbitalViewportMockup: View {
         "Meter Behavior",
         "Diagnostics"
     ]
-    static let futureWorkTrayTitles = [
-        "Speaker Pattern"
-    ]
+    static let futureWorkTrayTitles: [String] = []
     static let futureWorkLabel = "Future work"
     static let tuningTrayTitles = [
         "Input",
         "Sonic Sphere Speakers",
         "Source Speakers",
         "Roll the dice on looks",
+        "Color Palette",
         "Saved Themes",
         "Speaker Shape",
-        "Speaker Pattern",
         "Label Font",
-        "Sonic Sphere Speaker Palette",
-        "Source Speaker Palette",
         "Cube Surface",
         "Bloom Style",
         "Sphere Geometry",
-        "Geodesic Appearance",
+        "Sphere Palette",
         "Ground Appearance",
         "Meter Response",
         "Performance",
@@ -195,17 +196,20 @@ public struct OrbitalViewportMockup: View {
         "Spin",
         "Speaker Size",
         "Fog Density",
-        "Speaker Numbers",
+        "Speaker Labels",
         "Hidden Lines",
-        "Sonic Sphere Speaker Palette",
-        "Source Speaker Palette",
+        "Color Palette",
         "Ribbed Speaker Sphere",
         "Rib Thickness",
         "Vertical Ribs",
         "Horizontal Rings",
-        "Geodesic Palette",
-        "Geodesic Saturation",
-        "Ground Appearance",
+        "Sphere Palette",
+        "Sphere Saturation",
+        "Ground Plane",
+        "Ground Palette",
+        "Grid Visibility",
+        "Grid Spacing",
+        "Grid Thickness",
         "Speaker Shape",
         "Label Font",
         "Cube Surface",
@@ -297,6 +301,7 @@ public struct OrbitalViewportMockup: View {
     @State private var renderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultRenderStyle
     @State private var sourceSpeakerRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultSourceSpeakerRenderStyle
     @State private var geodesicRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultGeodesicRenderStyle
+    @State private var geodesicPaletteFollowsMainTheme = true
     @State private var geodesicSaturation = OrbitalViewportMockup.defaultGeodesicSaturation
     @State private var showRibbedSpeakerSphere = OrbitalViewportMockup.defaultShowRibbedSpeakerSphere
     @State private var ribbedSphereThickness = OrbitalViewportMockup.defaultRibbedSphereThickness
@@ -313,6 +318,8 @@ public struct OrbitalViewportMockup: View {
     @State private var gridPlaneVisibilitySlider = OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider
     @State private var gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.defaultSpacing
     @State private var gridPlaneRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultGeodesicRenderStyle
+    @State private var gridPlanePaletteFollowsMainTheme = true
+    @State private var gridPlaneThickness = OrbitalViewportGridPlaneGeometry.defaultThickness
     @State private var selectedChannel: Int?
     @State private var dragStartYaw: Double?
     @State private var dragStartPitch: Double?
@@ -336,15 +343,13 @@ public struct OrbitalViewportMockup: View {
     @State private var speakerLabelFont: OrbitalViewportSpeakerLabelFont = .systemDefault
     @State private var speakerLabelFontSizeSlider = OrbitalViewportMath.speakerLabelFontSizeSliderCenter
     @State private var objectTuning = OrbitalViewportObjectTuning.default
-    @State private var themeExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Sonic Sphere Speaker Palette")
-    @State private var sourceThemeExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Source Speaker Palette")
+    @State private var colorPaletteExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Color Palette")
     @State private var viewThemeExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Saved Themes")
     @State private var speakerLayoutExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded(OrbitalViewportMockup.speakerLayoutTrayTitle)
     @State private var sourceLayoutExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded(OrbitalViewportMockup.sourceLayoutTrayTitle)
     @State private var speakerGeometryExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Speaker Shape")
     @State private var sphereGeometryExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Sphere Geometry")
-    @State private var speakerPatternExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Speaker Pattern")
-    @State private var geodesicAppearanceExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Geodesic Appearance")
+    @State private var geodesicAppearanceExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Sphere Palette")
     @State private var groundAppearanceExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Ground Appearance")
     @State private var speakerLabelsExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Label Font")
     @State private var meterCalibrationExpanded = OrbitalViewportMockup.defaultRightPanelTrayExpanded("Meter Response")
@@ -419,7 +424,12 @@ public struct OrbitalViewportMockup: View {
                 return
             }
             didLoadInitialViewThemes = true
-            refreshViewThemes(applyDefault: true)
+            #if DEBUG
+            let shouldApplyDefaultTheme = !OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_DISABLE_SAVED_THEME")
+            #else
+            let shouldApplyDefaultTheme = true
+            #endif
+            refreshViewThemes(applyDefault: shouldApplyDefaultTheme)
             refreshSpeakerLayouts(applyDefault: true)
             refreshSourceLayouts(applyDefault: true)
         }
@@ -448,6 +458,35 @@ public struct OrbitalViewportMockup: View {
         OrbitalViewportGridPlaneGeometry.visibility(fromSlider: gridPlaneVisibilitySlider)
     }
 
+    private var resolvedGeodesicRenderStyle: OrbitalViewportRenderStyle {
+        geodesicPaletteFollowsMainTheme ? renderStyle : geodesicRenderStyle
+    }
+
+    private var resolvedGridPlaneRenderStyle: OrbitalViewportRenderStyle {
+        gridPlanePaletteFollowsMainTheme ? renderStyle : gridPlaneRenderStyle
+    }
+
+    private var resolvedSpherePaletteTitle: String {
+        localPaletteTitle(
+            followsMainTheme: geodesicPaletteFollowsMainTheme,
+            resolvedStyle: resolvedGeodesicRenderStyle
+        )
+    }
+
+    private var resolvedGroundPaletteTitle: String {
+        localPaletteTitle(
+            followsMainTheme: gridPlanePaletteFollowsMainTheme,
+            resolvedStyle: resolvedGridPlaneRenderStyle
+        )
+    }
+
+    private var geodesicSaturationBinding: Binding<Double> {
+        Binding(
+            get: { geodesicSaturation },
+            set: { setGeodesicSaturation($0, source: "sphere_saturation_slider") }
+        )
+    }
+
     private var activeViewportSpeakers: [OrbitalViewportSpeaker] {
         guard let activeSpeakerSetup else {
             return OrbitalViewportSpeaker.referenceSpeakers
@@ -469,7 +508,14 @@ public struct OrbitalViewportMockup: View {
     private func configuration(size: CGSize, timeMS: Double) -> OrbitalViewportRenderConfiguration {
         let effectiveYaw = displayedYaw(timeMS: timeMS)
         let sceneBounds = activeSceneBounds
-        return OrbitalViewportRenderConfiguration(
+        #if DEBUG
+        let forceRibbedVisible = OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_FORCE_RIBBED_SPHERE_VISIBLE")
+        let disableRandomAnimation = OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_DISABLE_RANDOM_ANIMATION")
+        #else
+        let forceRibbedVisible = false
+        let disableRandomAnimation = false
+        #endif
+        let configuration = OrbitalViewportRenderConfiguration(
             size: size,
             timeMS: timeMS,
             yaw: effectiveYaw,
@@ -478,9 +524,9 @@ public struct OrbitalViewportMockup: View {
             zoom: zoom,
             renderStyle: renderStyle,
             sourceSpeakerRenderStyle: sourceSpeakerRenderStyle,
-            geodesicRenderStyle: geodesicRenderStyle,
+            geodesicRenderStyle: resolvedGeodesicRenderStyle,
             geodesicSaturation: geodesicSaturation,
-            showRibbedSpeakerSphere: showRibbedSpeakerSphere,
+            showRibbedSpeakerSphere: forceRibbedVisible || showRibbedSpeakerSphere,
             ribbedSphereThickness: ribbedSphereThickness,
             ribbedSphereVerticalRibs: ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: ribbedSphereHorizontalRings,
@@ -499,16 +545,21 @@ public struct OrbitalViewportMockup: View {
             showGridPlane: showGridPlane,
             gridPlaneVisibility: gridPlaneVisibility,
             gridPlaneSpacing: gridPlaneSpacing,
-            gridPlaneRenderStyle: gridPlaneRenderStyle,
+            gridPlaneRenderStyle: resolvedGridPlaneRenderStyle,
+            gridPlaneThickness: gridPlaneThickness,
             selectedChannel: selectedChannel,
             speakers: activeViewportSpeakers,
             sources: activeViewportSources,
             sceneCenter: sceneBounds.center,
             sceneHalfExtent: sceneBounds.halfExtent,
-            spin: spin && !isDragging,
+            spin: spin && !isDragging && !disableRandomAnimation,
             spinStartYaw: spinStartYaw,
             spinStartTimeMS: spinStartTimeMS
         )
+        #if DEBUG
+        OrbitalRenderTrace.log("configuration_built", configuration: configuration)
+        #endif
+        return configuration
     }
 
     private var activeMeterSource: OrbitalViewportMeterSource {
@@ -762,81 +813,211 @@ public struct OrbitalViewportMockup: View {
                 value: $fogDensitySlider,
                 accessibilityValue: fogDensity.formatted(.number.precision(.fractionLength(0)))
             )
-            toggleRow("Speaker Numbers", isOn: $showSpeakerNumbers)
+            toggleRow("Speaker Labels", isOn: $showSpeakerNumbers)
             toggleRow("Hidden Lines", isOn: $showHiddenLines)
+            toggleRow("Ground Plane", isOn: $showGridPlane)
         }
     }
 
-    private var orbisonicThemeTray: some View {
-        tuningTray("Sonic Sphere Speaker Palette", isExpanded: $themeExpanded) {
+    private var colorPaletteTray: some View {
+        tuningTray("Color Palette", isExpanded: $colorPaletteExpanded) {
             VStack(spacing: 6) {
                 ForEach(OrbitalViewportRenderStyle.allCases) { style in
                     paletteButton(style, selection: renderStyle) {
                         if renderStyle != style {
-                            renderStyle = style
-                            recordDiagnostic("Sonic Sphere speaker palette set to \(style.title)")
+                            setGlobalColorPalette(style, source: "color_palette_picker")
+                            recordDiagnostic("Color palette set to \(style.title)")
                         }
                     }
                 }
             }
-            tuningValueRow("Sonic Sphere Speaker Palette", value: renderStyle.title)
+            tuningValueRow("Color Palette", value: renderStyle.title)
             tuningValueRow("App Skin", value: renderStyle.title)
+            tuningValueRow("Speaker Pixels", value: renderStyle.title)
+            tuningValueRow("Source Pixels", value: sourceSpeakerRenderStyle.title)
+            tuningValueRow("Sphere Palette", value: resolvedSpherePaletteTitle)
+            tuningValueRow("Ground Palette", value: resolvedGroundPaletteTitle)
             tuningValueRow("Cube VU Ramp", value: renderStyle.title)
         }
     }
 
-    private var sourceSpeakerThemeTray: some View {
-        tuningTray("Source Speaker Palette", isExpanded: $sourceThemeExpanded) {
-            VStack(spacing: 6) {
-                ForEach(OrbitalViewportRenderStyle.allCases) { style in
-                    paletteButton(style, selection: sourceSpeakerRenderStyle) {
-                        if sourceSpeakerRenderStyle != style {
-                            sourceSpeakerRenderStyle = style
-                            recordDiagnostic("Source speaker palette set to \(style.title)")
-                        }
-                    }
-                }
-            }
-            tuningValueRow("Source Speaker Palette", value: sourceSpeakerRenderStyle.title)
-        }
-    }
-
     private var geodesicAppearanceTray: some View {
-        tuningTray("Geodesic Appearance", isExpanded: $geodesicAppearanceExpanded) {
+        tuningTray("Sphere Palette", isExpanded: $geodesicAppearanceExpanded) {
             VStack(spacing: 6) {
+                sameAsMainThemePaletteButton(active: geodesicPaletteFollowsMainTheme) {
+                    setGeodesicPaletteFollowsMainTheme(source: "sphere_palette_picker")
+                    ensureVisibleGeodesicSaturation(source: "sphere_palette_picker")
+                    recordDiagnostic("Sphere palette set to \(Self.sameAsMainThemeTitle)")
+                }
                 ForEach(OrbitalViewportRenderStyle.allCases) { style in
-                    paletteButton(style, selection: geodesicRenderStyle) {
-                        if geodesicRenderStyle != style {
-                            geodesicRenderStyle = style
-                            recordDiagnostic("Geodesic palette set to \(style.title)")
+                    paletteButton(
+                        style,
+                        selection: resolvedGeodesicRenderStyle,
+                        active: !geodesicPaletteFollowsMainTheme && resolvedGeodesicRenderStyle == style
+                    ) {
+                        if geodesicPaletteFollowsMainTheme || geodesicRenderStyle != style {
+                            setGeodesicRenderStyle(style, source: "sphere_palette_picker")
+                            ensureVisibleGeodesicSaturation(source: "sphere_palette_picker")
+                            #if DEBUG
+                            OrbitalRenderTrace.log(
+                                "ui_palette_click_\(style.rawValue)",
+                                configuration: configuration(size: .zero, timeMS: currentTimeMS())
+                            )
+                            #endif
+                            recordDiagnostic("Sphere palette set to \(style.title)")
                         }
                     }
                 }
             }
             tuningSliderRow(
-                "Geodesic Saturation",
-                value: $geodesicSaturation,
+                "Sphere Saturation",
+                value: geodesicSaturationBinding,
                 range: 0...1,
                 step: 0.01,
                 valueText: "\((geodesicSaturation * 100).formatted(.number.precision(.fractionLength(0))))%"
             )
-            tuningValueRow("Geodesic Palette", value: geodesicRenderStyle.title)
+            tuningValueRow("Sphere Palette", value: resolvedSpherePaletteTitle)
         }
+    }
+
+    private func setGlobalColorPalette(_ style: OrbitalViewportRenderStyle, source: String) {
+        let oldValue = renderStyle
+        renderStyle = style
+        let oldSourceValue = sourceSpeakerRenderStyle
+        sourceSpeakerRenderStyle = style
+        #if DEBUG
+        OrbitalRenderTrace.logWrite(
+            "renderStyle source=\(source)",
+            old: oldValue,
+            new: style
+        )
+        OrbitalRenderTrace.logWrite(
+            "sourceSpeakerRenderStyle source=\(source)",
+            old: oldSourceValue,
+            new: style
+        )
+        #endif
+
+        setGeodesicPaletteFollowsMainTheme(source: "\(source)_sphere")
+        setGridPlanePaletteFollowsMainTheme(source: "\(source)_ground")
+        ensureVisibleGeodesicSaturation(source: "\(source)_sphere")
+    }
+
+    private func setGeodesicPaletteFollowsMainTheme(source: String) {
+        let oldFollow = geodesicPaletteFollowsMainTheme
+        geodesicPaletteFollowsMainTheme = true
+        #if DEBUG
+        OrbitalRenderTrace.logWrite(
+            "geodesicPaletteFollowsMainTheme source=\(source)",
+            old: oldFollow,
+            new: geodesicPaletteFollowsMainTheme
+        )
+        #endif
+    }
+
+    private func setGeodesicRenderStyle(
+        _ style: OrbitalViewportRenderStyle,
+        source: String
+    ) {
+        let oldValue = geodesicRenderStyle
+        let oldFollow = geodesicPaletteFollowsMainTheme
+        geodesicPaletteFollowsMainTheme = false
+        geodesicRenderStyle = style
+        #if DEBUG
+        OrbitalRenderTrace.logWrite(
+            "geodesicPaletteFollowsMainTheme source=\(source)",
+            old: oldFollow,
+            new: geodesicPaletteFollowsMainTheme
+        )
+        OrbitalRenderTrace.logWrite(
+            "geodesicRenderStyle source=\(source)",
+            old: oldValue,
+            new: style
+        )
+        #endif
+    }
+
+    private func setGeodesicSaturation(
+        _ saturation: Double,
+        source: String
+    ) {
+        let normalizedSaturation = OrbitalViewportMath.clamp01(saturation)
+        let oldValue = geodesicSaturation
+        geodesicSaturation = normalizedSaturation
+        #if DEBUG
+        OrbitalRenderTrace.logWrite(
+            "geodesicSaturation source=\(source)",
+            old: oldValue,
+            new: normalizedSaturation
+        )
+        #endif
+    }
+
+    private func ensureVisibleGeodesicSaturation(source: String) {
+        let visibleSaturation = OrbitalViewportGeodesicAppearanceInteraction.saturationAfterPaletteSelection(
+            current: geodesicSaturation
+        )
+        guard abs(visibleSaturation - geodesicSaturation) > 0.000_001 else {
+            return
+        }
+
+        setGeodesicSaturation(visibleSaturation, source: "\(source)_auto_visible_saturation")
+    }
+
+    private func setGridPlanePaletteFollowsMainTheme(source: String) {
+        let oldFollow = gridPlanePaletteFollowsMainTheme
+        gridPlanePaletteFollowsMainTheme = true
+        #if DEBUG
+        OrbitalRenderTrace.logWrite(
+            "gridPlanePaletteFollowsMainTheme source=\(source)",
+            old: oldFollow,
+            new: gridPlanePaletteFollowsMainTheme
+        )
+        #endif
+    }
+
+    private func setGridPlaneRenderStyle(
+        _ style: OrbitalViewportRenderStyle,
+        source: String
+    ) {
+        let oldFollow = gridPlanePaletteFollowsMainTheme
+        let oldValue = gridPlaneRenderStyle
+        gridPlanePaletteFollowsMainTheme = false
+        gridPlaneRenderStyle = style
+        #if DEBUG
+        OrbitalRenderTrace.logWrite(
+            "gridPlanePaletteFollowsMainTheme source=\(source)",
+            old: oldFollow,
+            new: gridPlanePaletteFollowsMainTheme
+        )
+        OrbitalRenderTrace.logWrite(
+            "gridPlaneRenderStyle source=\(source)",
+            old: oldValue,
+            new: style
+        )
+        #endif
     }
 
     private var groundAppearanceTray: some View {
         tuningTray("Ground Appearance", isExpanded: $groundAppearanceExpanded) {
             VStack(spacing: 6) {
+                sameAsMainThemePaletteButton(active: gridPlanePaletteFollowsMainTheme) {
+                    setGridPlanePaletteFollowsMainTheme(source: "ground_palette_picker")
+                    recordDiagnostic("Ground palette set to \(Self.sameAsMainThemeTitle)")
+                }
                 ForEach(OrbitalViewportRenderStyle.allCases) { style in
-                    paletteButton(style, selection: gridPlaneRenderStyle) {
-                        if gridPlaneRenderStyle != style {
-                            gridPlaneRenderStyle = style
+                    paletteButton(
+                        style,
+                        selection: resolvedGridPlaneRenderStyle,
+                        active: !gridPlanePaletteFollowsMainTheme && resolvedGridPlaneRenderStyle == style
+                    ) {
+                        if gridPlanePaletteFollowsMainTheme || gridPlaneRenderStyle != style {
+                            setGridPlaneRenderStyle(style, source: "ground_palette_picker")
                             recordDiagnostic("Ground palette set to \(style.title)")
                         }
                     }
                 }
             }
-            toggleRow("Grid Plane", isOn: $showGridPlane)
             tuningSliderRow(
                 "Grid Visibility",
                 value: $gridPlaneVisibilitySlider,
@@ -851,7 +1032,14 @@ public struct OrbitalViewportMockup: View {
                 step: 0.05,
                 valueText: gridPlaneSpacing.formatted(.number.precision(.fractionLength(2)))
             )
-            tuningValueRow("Ground Palette", value: gridPlaneRenderStyle.title)
+            tuningSliderRow(
+                "Grid Thickness",
+                value: $gridPlaneThickness,
+                range: OrbitalViewportGridPlaneGeometry.thicknessRange,
+                step: 0.05,
+                valueText: "\((gridPlaneThickness * 100).formatted(.number.precision(.fractionLength(0))))%"
+            )
+            tuningValueRow("Ground Palette", value: resolvedGroundPaletteTitle)
             tuningValueRow("Grid Size", value: "10 x 10")
         }
     }
@@ -1049,12 +1237,6 @@ public struct OrbitalViewportMockup: View {
                 value: $ribbedSphereHorizontalRings,
                 range: OrbitalViewportRibbedSpeakerSphereGeometry.horizontalRingRange
             )
-        }
-    }
-
-    private var speakerPatternTray: some View {
-        tuningTray("Speaker Pattern", isExpanded: $speakerPatternExpanded) {
-            futureWorkRow()
         }
     }
 
@@ -1440,7 +1622,6 @@ public struct OrbitalViewportMockup: View {
         var generator = SystemRandomNumberGenerator()
         let roll = OrbitalViewportDiceRandomizer.globalViewRoll(
             currentBloomPreset: cubeVUPreset,
-            currentSourceSpeakerRenderStyle: sourceSpeakerRenderStyle,
             currentShowRibbedSpeakerSphere: showRibbedSpeakerSphere,
             currentRibbedSphereThickness: ribbedSphereThickness,
             currentRibbedSphereVerticalRibs: ribbedSphereVerticalRibs,
@@ -1471,18 +1652,26 @@ public struct OrbitalViewportMockup: View {
         showSpeakerNumbers = roll.showSpeakerNumbers
         showHiddenLines = roll.showHiddenLines
 
-        renderStyle = roll.renderStyle
-        sourceSpeakerRenderStyle = roll.sourceSpeakerRenderStyle
+        setGlobalColorPalette(roll.renderStyle, source: "global_dice")
         showRibbedSpeakerSphere = roll.showRibbedSpeakerSphere
         ribbedSphereThickness = roll.ribbedSphereThickness
         ribbedSphereVerticalRibs = roll.ribbedSphereVerticalRibs
         ribbedSphereHorizontalRings = roll.ribbedSphereHorizontalRings
-        geodesicRenderStyle = roll.geodesicRenderStyle
-        geodesicSaturation = roll.geodesicSaturation
-        gridPlaneRenderStyle = roll.gridPlaneRenderStyle
+        if roll.geodesicPaletteFollowsMainTheme {
+            setGeodesicPaletteFollowsMainTheme(source: "global_dice_sphere")
+        } else {
+            setGeodesicRenderStyle(roll.geodesicRenderStyle, source: "global_dice_sphere")
+        }
+        setGeodesicSaturation(roll.geodesicSaturation, source: "global_dice_sphere")
+        if roll.gridPlanePaletteFollowsMainTheme {
+            setGridPlanePaletteFollowsMainTheme(source: "global_dice_ground")
+        } else {
+            setGridPlaneRenderStyle(roll.gridPlaneRenderStyle, source: "global_dice_ground")
+        }
         showGridPlane = roll.showGridPlane
         gridPlaneVisibilitySlider = roll.gridPlaneVisibilitySlider
         gridPlaneSpacing = roll.gridPlaneSpacing
+        gridPlaneThickness = roll.gridPlaneThickness
 
         speakerShape = roll.speakerShape
         speakerLabelFont = roll.speakerLabelFont
@@ -1593,12 +1782,68 @@ public struct OrbitalViewportMockup: View {
         }
     }
 
+    private func localPaletteTitle(
+        followsMainTheme: Bool,
+        resolvedStyle: OrbitalViewportRenderStyle
+    ) -> String {
+        followsMainTheme
+            ? "\(Self.sameAsMainThemeTitle) (\(resolvedStyle.title))"
+            : resolvedStyle.title
+    }
+
+    private func sameAsMainThemePaletteButton(
+        active: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        let optionTheme = OrbitalViewportTheme(style: renderStyle)
+        return Button(action: action) {
+            HStack(spacing: 8) {
+                HStack(spacing: 3) {
+                    themeSwatch(optionTheme.accent)
+                    themeSwatch(optionTheme.accentSecondary)
+                    themeSwatch(optionTheme.vuHot)
+                }
+                .frame(width: 42, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(Self.sameAsMainThemeTitle)
+                        .font(.system(size: 11, weight: .heavy))
+                        .lineLimit(1)
+                    Text(renderStyle.title)
+                        .font(.system(size: 9, weight: .semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(active ? optionTheme.text.opacity(0.74) : theme.muted)
+                }
+
+                Spacer(minLength: 6)
+
+                if active {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundStyle(optionTheme.accent)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            .padding(.horizontal, 9)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(active ? optionTheme.text : theme.muted)
+        .background(active ? optionTheme.buttonActiveBackground : theme.buttonBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous)
+                .stroke(active ? optionTheme.buttonActiveBorder : theme.line, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: OrbitalViewportLabTheme.controlRadius, style: .continuous))
+    }
+
     private func paletteButton(
         _ style: OrbitalViewportRenderStyle,
         selection: OrbitalViewportRenderStyle,
+        active activeOverride: Bool? = nil,
         action: @escaping () -> Void
     ) -> some View {
-        let isActive = selection == style
+        let isActive = activeOverride ?? (selection == style)
         let optionTheme = OrbitalViewportTheme(style: style)
         return Button(action: action) {
             HStack(spacing: 8) {
@@ -2059,14 +2304,12 @@ public struct OrbitalViewportMockup: View {
                 rollTheDicePanel
 
                 rightPanelSectionHeader("Theme")
+                colorPaletteTray
                 viewThemeTray
 
                 rightPanelSectionHeader("Speaker Appearance")
                 speakerGeometryTray
-                speakerPatternTray
                 speakerLabelsTray
-                orbisonicThemeTray
-                sourceSpeakerThemeTray
                 surfaceBloomTray
                 presetsTray
 
@@ -2155,6 +2398,11 @@ public struct OrbitalViewportMockup: View {
     }
 
     private func displayedYaw(timeMS: Double) -> Double {
+        #if DEBUG
+        guard !OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_DISABLE_RANDOM_ANIMATION") else {
+            return yaw
+        }
+        #endif
         guard spin && !isDragging else {
             return yaw
         }
@@ -2325,8 +2573,9 @@ public struct OrbitalViewportMockup: View {
         OrbitalViewportSettingsExportPayload(
             themeID: themeID,
             renderStyle: renderStyle,
-            sourceSpeakerRenderStyle: sourceSpeakerRenderStyle,
-            geodesicRenderStyle: geodesicRenderStyle,
+            sourceSpeakerRenderStyle: renderStyle,
+            geodesicRenderStyle: resolvedGeodesicRenderStyle,
+            geodesicPaletteFollowsMainTheme: geodesicPaletteFollowsMainTheme,
             geodesicSaturation: geodesicSaturation,
             showRibbedSpeakerSphere: showRibbedSpeakerSphere,
             ribbedSphereThickness: ribbedSphereThickness,
@@ -2371,7 +2620,9 @@ public struct OrbitalViewportMockup: View {
                 showGridPlane: showGridPlane,
                 gridPlaneVisibilitySlider: gridPlaneVisibilitySlider,
                 gridPlaneSpacing: gridPlaneSpacing,
-                gridPlaneRenderStyle: gridPlaneRenderStyle
+                gridPlaneRenderStyle: resolvedGridPlaneRenderStyle,
+                gridPlanePaletteFollowsMainTheme: gridPlanePaletteFollowsMainTheme,
+                gridPlaneThickness: gridPlaneThickness
             ),
             sourceMode: sourceMode,
             driveMode: vuDriveMode,
@@ -2410,7 +2661,11 @@ public struct OrbitalViewportMockup: View {
                 metadata: defaultViewTheme
                ),
                let payload = defaultTheme.payload {
-                applyViewTheme(payload, preferDefaultSourceWhenMissing: true)
+                applyViewTheme(
+                    payload,
+                    preferDefaultSourceWhenMissing: true,
+                    source: "default_theme_restore"
+                )
                 recordDiagnostic("Default view theme loaded: \(defaultTheme.displayName)")
             }
         } catch {
@@ -2435,7 +2690,7 @@ public struct OrbitalViewportMockup: View {
             return
         }
 
-        applyViewTheme(payload)
+        applyViewTheme(payload, source: "saved_theme_load")
         exportStatus = OrbitalViewportExportStatus(message: "Loaded theme \(entry.displayName)", isError: false)
         recordDiagnostic("View theme loaded: \(entry.displayName)")
     }
@@ -2463,12 +2718,16 @@ public struct OrbitalViewportMockup: View {
 
     private func applyViewTheme(
         _ payload: OrbitalViewportSettingsExportPayload,
-        preferDefaultSourceWhenMissing: Bool = false
+        preferDefaultSourceWhenMissing: Bool = false,
+        source: String = "saved_theme_restore"
     ) {
-        renderStyle = payload.renderStyle
-        sourceSpeakerRenderStyle = payload.sourceSpeakerRenderStyle
-        geodesicRenderStyle = payload.geodesicRenderStyle
-        geodesicSaturation = OrbitalViewportMath.clamp01(payload.geodesicSaturation)
+        setGlobalColorPalette(payload.renderStyle, source: source)
+        if payload.geodesicPaletteFollowsMainTheme {
+            setGeodesicPaletteFollowsMainTheme(source: "\(source)_sphere")
+        } else {
+            setGeodesicRenderStyle(payload.geodesicRenderStyle, source: "\(source)_sphere")
+        }
+        setGeodesicSaturation(payload.geodesicSaturation, source: "\(source)_sphere")
         showRibbedSpeakerSphere = payload.showRibbedSpeakerSphere
         ribbedSphereThickness = payload.ribbedSphereThickness
         ribbedSphereVerticalRibs = payload.ribbedSphereVerticalRibs
@@ -2496,7 +2755,12 @@ public struct OrbitalViewportMockup: View {
         showGridPlane = payload.groundAppearance.showGridPlane
         gridPlaneVisibilitySlider = payload.groundAppearance.gridPlaneVisibilitySlider
         gridPlaneSpacing = payload.groundAppearance.gridPlaneSpacing
-        gridPlaneRenderStyle = payload.groundAppearance.gridPlaneRenderStyle
+        if payload.groundAppearance.gridPlanePaletteFollowsMainTheme {
+            setGridPlanePaletteFollowsMainTheme(source: "\(source)_ground")
+        } else {
+            setGridPlaneRenderStyle(payload.groundAppearance.gridPlaneRenderStyle, source: "\(source)_ground")
+        }
+        gridPlaneThickness = payload.groundAppearance.gridPlaneThickness
         vuDriveMode = payload.driveMode.impulseKind == nil ? Self.defaultVUDriveMode : payload.driveMode
         cubeVUPreset = payload.cubePreset
         cubeVUSettings = payload.cubeSettings
@@ -3928,6 +4192,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
     let renderStyle: OrbitalViewportRenderStyle
     let sourceSpeakerRenderStyle: OrbitalViewportRenderStyle
     let geodesicRenderStyle: OrbitalViewportRenderStyle
+    let geodesicPaletteFollowsMainTheme: Bool
     let geodesicSaturation: Double
     let showRibbedSpeakerSphere: Bool
     let ribbedSphereThickness: Double
@@ -3954,6 +4219,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         renderStyle: OrbitalViewportRenderStyle,
         sourceSpeakerRenderStyle: OrbitalViewportRenderStyle? = nil,
         geodesicRenderStyle: OrbitalViewportRenderStyle? = nil,
+        geodesicPaletteFollowsMainTheme: Bool? = nil,
         geodesicSaturation: Double = 1,
         showRibbedSpeakerSphere: Bool = OrbitalViewportMockup.defaultShowRibbedSpeakerSphere,
         ribbedSphereThickness: Double = OrbitalViewportMockup.defaultRibbedSphereThickness,
@@ -3981,7 +4247,10 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         self.exportedAt = OrbitalViewportSettingsJSONExporter.timestampString(date: date)
         self.renderStyle = renderStyle
         self.sourceSpeakerRenderStyle = sourceSpeakerRenderStyle ?? renderStyle
-        self.geodesicRenderStyle = geodesicRenderStyle ?? renderStyle
+        let resolvedGeodesicRenderStyle = geodesicRenderStyle ?? renderStyle
+        self.geodesicRenderStyle = resolvedGeodesicRenderStyle
+        self.geodesicPaletteFollowsMainTheme = geodesicPaletteFollowsMainTheme ??
+            (resolvedGeodesicRenderStyle == renderStyle)
         self.geodesicSaturation = OrbitalViewportMath.clamp01(geodesicSaturation)
         self.showRibbedSpeakerSphere = showRibbedSpeakerSphere
         self.ribbedSphereThickness = OrbitalViewportRibbedSpeakerSphereGeometry.normalizedThickness(ribbedSphereThickness)
@@ -4012,6 +4281,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         case renderStyle
         case sourceSpeakerRenderStyle
         case geodesicRenderStyle
+        case geodesicPaletteFollowsMainTheme
         case geodesicSaturation
         case showRibbedSpeakerSphere
         case ribbedSphereThickness
@@ -4043,6 +4313,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         try container.encode(renderStyle, forKey: .renderStyle)
         try container.encode(sourceSpeakerRenderStyle, forKey: .sourceSpeakerRenderStyle)
         try container.encode(geodesicRenderStyle, forKey: .geodesicRenderStyle)
+        try container.encode(geodesicPaletteFollowsMainTheme, forKey: .geodesicPaletteFollowsMainTheme)
         try container.encode(geodesicSaturation, forKey: .geodesicSaturation)
         try container.encode(showRibbedSpeakerSphere, forKey: .showRibbedSpeakerSphere)
         try container.encode(ribbedSphereThickness, forKey: .ribbedSphereThickness)
@@ -4079,6 +4350,10 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
             OrbitalViewportRenderStyle.self,
             forKey: .geodesicRenderStyle
         ) ?? renderStyle
+        geodesicPaletteFollowsMainTheme = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .geodesicPaletteFollowsMainTheme
+        ) ?? (geodesicRenderStyle == renderStyle)
         geodesicSaturation = OrbitalViewportMath.clamp01(
             try container.decodeIfPresent(Double.self, forKey: .geodesicSaturation) ?? 1
         )
@@ -4127,14 +4402,27 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
             OrbitalViewportLeftPanelSettings.self,
             forKey: .leftPanel
         ) ?? .default
-        groundAppearance = try container.decodeIfPresent(
+        let decodedGroundAppearance = try container.decodeIfPresent(
             OrbitalViewportGroundAppearanceExportSettings.self,
             forKey: .groundAppearance
         ) ?? OrbitalViewportGroundAppearanceExportSettings(
             showGridPlane: leftPanel.viewDetail.showGridPlane,
             gridPlaneVisibilitySlider: leftPanel.viewDetail.gridPlaneVisibilitySlider,
             gridPlaneSpacing: OrbitalViewportGridPlaneGeometry.defaultSpacing,
-            gridPlaneRenderStyle: geodesicRenderStyle
+            gridPlaneRenderStyle: geodesicRenderStyle,
+            gridPlanePaletteFollowsMainTheme: geodesicRenderStyle == renderStyle,
+            gridPlaneThickness: OrbitalViewportGridPlaneGeometry.defaultThickness
+        )
+        let inferredGroundPaletteFollowsMainTheme = decodedGroundAppearance.gridPlanePaletteFollowsMainThemeWasExplicit
+            ? decodedGroundAppearance.gridPlanePaletteFollowsMainTheme
+            : decodedGroundAppearance.gridPlaneRenderStyle == renderStyle
+        groundAppearance = OrbitalViewportGroundAppearanceExportSettings(
+            showGridPlane: decodedGroundAppearance.showGridPlane,
+            gridPlaneVisibilitySlider: decodedGroundAppearance.gridPlaneVisibilitySlider,
+            gridPlaneSpacing: decodedGroundAppearance.gridPlaneSpacing,
+            gridPlaneRenderStyle: decodedGroundAppearance.gridPlaneRenderStyle,
+            gridPlanePaletteFollowsMainTheme: inferredGroundPaletteFollowsMainTheme,
+            gridPlaneThickness: decodedGroundAppearance.gridPlaneThickness
         )
         let decodedSourceMode = try container.decodeIfPresent(
             OrbitalViewportSourceMode.self,
@@ -4331,24 +4619,34 @@ struct OrbitalViewportGroundAppearanceExportSettings: Codable, Equatable {
         showGridPlane: false,
         gridPlaneVisibilitySlider: OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider,
         gridPlaneSpacing: OrbitalViewportGridPlaneGeometry.defaultSpacing,
-        gridPlaneRenderStyle: OrbitalViewportMockup.defaultGeodesicRenderStyle
+        gridPlaneRenderStyle: OrbitalViewportMockup.defaultGeodesicRenderStyle,
+        gridPlanePaletteFollowsMainTheme: true,
+        gridPlaneThickness: OrbitalViewportGridPlaneGeometry.defaultThickness
     )
 
     let showGridPlane: Bool
     let gridPlaneVisibilitySlider: Double
     let gridPlaneSpacing: Double
     let gridPlaneRenderStyle: OrbitalViewportRenderStyle
+    let gridPlanePaletteFollowsMainTheme: Bool
+    let gridPlanePaletteFollowsMainThemeWasExplicit: Bool
+    let gridPlaneThickness: Double
 
     init(
         showGridPlane: Bool = false,
         gridPlaneVisibilitySlider: Double = OrbitalViewportGridPlaneGeometry.defaultVisibilitySlider,
         gridPlaneSpacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing,
-        gridPlaneRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultGeodesicRenderStyle
+        gridPlaneRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultGeodesicRenderStyle,
+        gridPlanePaletteFollowsMainTheme: Bool? = nil,
+        gridPlaneThickness: Double = OrbitalViewportGridPlaneGeometry.defaultThickness
     ) {
         self.showGridPlane = showGridPlane
         self.gridPlaneVisibilitySlider = min(100, max(0, gridPlaneVisibilitySlider))
         self.gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.normalizedSpacing(gridPlaneSpacing)
         self.gridPlaneRenderStyle = gridPlaneRenderStyle
+        self.gridPlanePaletteFollowsMainTheme = gridPlanePaletteFollowsMainTheme ?? false
+        self.gridPlanePaletteFollowsMainThemeWasExplicit = gridPlanePaletteFollowsMainTheme != nil
+        self.gridPlaneThickness = OrbitalViewportGridPlaneGeometry.normalizedThickness(gridPlaneThickness)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -4356,6 +4654,18 @@ struct OrbitalViewportGroundAppearanceExportSettings: Codable, Equatable {
         case gridPlaneVisibilitySlider
         case gridPlaneSpacing
         case gridPlaneRenderStyle
+        case gridPlanePaletteFollowsMainTheme
+        case gridPlaneThickness
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(showGridPlane, forKey: .showGridPlane)
+        try container.encode(gridPlaneVisibilitySlider, forKey: .gridPlaneVisibilitySlider)
+        try container.encode(gridPlaneSpacing, forKey: .gridPlaneSpacing)
+        try container.encode(gridPlaneRenderStyle, forKey: .gridPlaneRenderStyle)
+        try container.encode(gridPlanePaletteFollowsMainTheme, forKey: .gridPlanePaletteFollowsMainTheme)
+        try container.encode(gridPlaneThickness, forKey: .gridPlaneThickness)
     }
 
     init(from decoder: Decoder) throws {
@@ -4373,7 +4683,15 @@ struct OrbitalViewportGroundAppearanceExportSettings: Codable, Equatable {
             gridPlaneRenderStyle: try container.decodeIfPresent(
                 OrbitalViewportRenderStyle.self,
                 forKey: .gridPlaneRenderStyle
-            ) ?? OrbitalViewportMockup.defaultGeodesicRenderStyle
+            ) ?? OrbitalViewportMockup.defaultGeodesicRenderStyle,
+            gridPlanePaletteFollowsMainTheme: try container.decodeIfPresent(
+                Bool.self,
+                forKey: .gridPlanePaletteFollowsMainTheme
+            ),
+            gridPlaneThickness: try container.decodeIfPresent(
+                Double.self,
+                forKey: .gridPlaneThickness
+            ) ?? OrbitalViewportGridPlaneGeometry.defaultThickness
         )
     }
 }
@@ -6022,11 +6340,14 @@ struct OrbitalViewportGlobalDiceRoll: Equatable {
     let ribbedSphereVerticalRibs: Int
     let ribbedSphereHorizontalRings: Int
     let geodesicRenderStyle: OrbitalViewportRenderStyle
+    let geodesicPaletteFollowsMainTheme: Bool
     let geodesicSaturation: Double
     let gridPlaneRenderStyle: OrbitalViewportRenderStyle
+    let gridPlanePaletteFollowsMainTheme: Bool
     let showGridPlane: Bool
     let gridPlaneVisibilitySlider: Double
     let gridPlaneSpacing: Double
+    let gridPlaneThickness: Double
     let speakerShape: OrbitalViewportSpeakerShape
     let speakerLabelFont: OrbitalViewportSpeakerLabelFont
     let speakerLabelFontSizeSlider: Double
@@ -6038,7 +6359,6 @@ struct OrbitalViewportGlobalDiceRoll: Equatable {
 enum OrbitalViewportDiceRandomizer {
     static func globalViewRoll<R: RandomNumberGenerator>(
         currentBloomPreset: OrbitalViewportCubeVUPreset,
-        currentSourceSpeakerRenderStyle: OrbitalViewportRenderStyle = OrbitalViewportMockup.defaultSourceSpeakerRenderStyle,
         currentShowRibbedSpeakerSphere: Bool = OrbitalViewportMockup.defaultShowRibbedSpeakerSphere,
         currentRibbedSphereThickness: Double = OrbitalViewportMockup.defaultRibbedSphereThickness,
         currentRibbedSphereVerticalRibs: Int = OrbitalViewportMockup.defaultRibbedSphereVerticalRibs,
@@ -6052,18 +6372,25 @@ enum OrbitalViewportDiceRandomizer {
         cubeSettings = randomizedMeterResponseSettings(from: cubeSettings, using: &generator)
         cubeSettings.cubeOutlineStrength = Double.random(in: 0...1, using: &generator)
         cubeSettings.speakerHeight = 1
-        let geodesicRenderStyle = randomRenderStyle(
-            excluding: currentGeodesicRenderStyle,
-            using: &generator
-        )
+        let renderStyle = OrbitalViewportRenderStyle.allCases.randomElement(using: &generator) ?? OrbitalViewportMockup.defaultRenderStyle
+        let geodesicPaletteFollowsMainTheme = Bool.random(using: &generator)
+        let geodesicRenderStyle = geodesicPaletteFollowsMainTheme
+            ? renderStyle
+            : randomRenderStyle(
+                excluding: currentGeodesicRenderStyle,
+                using: &generator
+            )
         let geodesicSaturation = randomSaturation(
             excluding: currentGeodesicSaturation,
             using: &generator
         )
-        let sourceSpeakerRenderStyle = randomRenderStyle(
-            excluding: currentSourceSpeakerRenderStyle,
-            using: &generator
-        )
+        let gridPlanePaletteFollowsMainTheme = Bool.random(using: &generator)
+        let gridPlaneRenderStyle = gridPlanePaletteFollowsMainTheme
+            ? renderStyle
+            : (
+                OrbitalViewportRenderStyle.allCases.randomElement(using: &generator)
+                    ?? OrbitalViewportMockup.defaultGeodesicRenderStyle
+            )
         let ribbedSphereThickness = randomThickness(
             excluding: currentRibbedSphereThickness,
             using: &generator
@@ -6089,18 +6416,21 @@ enum OrbitalViewportDiceRandomizer {
             fogDensitySlider: Double.random(in: 0...100, using: &generator),
             showSpeakerNumbers: Bool.random(using: &generator),
             showHiddenLines: Bool.random(using: &generator),
-            renderStyle: OrbitalViewportRenderStyle.allCases.randomElement(using: &generator) ?? OrbitalViewportMockup.defaultRenderStyle,
-            sourceSpeakerRenderStyle: sourceSpeakerRenderStyle,
-            showRibbedSpeakerSphere: !currentShowRibbedSpeakerSphere,
+            renderStyle: renderStyle,
+            sourceSpeakerRenderStyle: renderStyle,
+            showRibbedSpeakerSphere: true,
             ribbedSphereThickness: ribbedSphereThickness,
             ribbedSphereVerticalRibs: ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: ribbedSphereHorizontalRings,
             geodesicRenderStyle: geodesicRenderStyle,
+            geodesicPaletteFollowsMainTheme: geodesicPaletteFollowsMainTheme,
             geodesicSaturation: geodesicSaturation,
-            gridPlaneRenderStyle: OrbitalViewportRenderStyle.allCases.randomElement(using: &generator) ?? OrbitalViewportMockup.defaultGeodesicRenderStyle,
+            gridPlaneRenderStyle: gridPlaneRenderStyle,
+            gridPlanePaletteFollowsMainTheme: gridPlanePaletteFollowsMainTheme,
             showGridPlane: Bool.random(using: &generator),
             gridPlaneVisibilitySlider: Double.random(in: 0...100, using: &generator),
             gridPlaneSpacing: Double.random(in: OrbitalViewportGridPlaneGeometry.spacingRange, using: &generator),
+            gridPlaneThickness: Double.random(in: OrbitalViewportGridPlaneGeometry.thicknessRange, using: &generator),
             speakerShape: OrbitalViewportSpeakerShape.allCases.randomElement(using: &generator) ?? OrbitalViewportMockup.defaultSpeakerShape,
             speakerLabelFont: OrbitalViewportSpeakerLabelFont.allCases.randomElement(using: &generator) ?? .systemDefault,
             speakerLabelFontSizeSlider: Double.random(in: 0...100, using: &generator),
@@ -7073,6 +7403,20 @@ struct OrbitalViewportOrbitState: Equatable {
     }
 }
 
+enum OrbitalViewportGeodesicAppearanceInteraction {
+    static let automaticVisibleSaturationThreshold = 0.05
+    static let automaticVisibleSaturation = 1.0
+
+    static func saturationAfterPaletteSelection(current saturation: Double) -> Double {
+        let normalized = OrbitalViewportMath.clamp01(saturation)
+        guard normalized <= automaticVisibleSaturationThreshold else {
+            return normalized
+        }
+
+        return automaticVisibleSaturation
+    }
+}
+
 struct OrbitalViewportCameraBasis: Equatable {
     let viewDirection: OVVector3
     let right: OVVector3
@@ -7167,6 +7511,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let gridPlaneVisibility: Double
     let gridPlaneSpacing: Double
     let gridPlaneRenderStyle: OrbitalViewportRenderStyle
+    let gridPlaneThickness: Double
     let selectedChannel: Int?
     let speakers: [OrbitalViewportSpeaker]
     let sources: [OrbitalViewportSourceMarker]
@@ -7207,6 +7552,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         gridPlaneVisibility: Double = OrbitalViewportGridPlaneGeometry.defaultVisibility,
         gridPlaneSpacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing,
         gridPlaneRenderStyle: OrbitalViewportRenderStyle? = nil,
+        gridPlaneThickness: Double = OrbitalViewportGridPlaneGeometry.defaultThickness,
         selectedChannel: Int?,
         speakers: [OrbitalViewportSpeaker] = OrbitalViewportSpeaker.referenceSpeakers,
         sources: [OrbitalViewportSourceMarker] = [],
@@ -7246,6 +7592,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.gridPlaneVisibility = OrbitalViewportMath.clamp01(gridPlaneVisibility)
         self.gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.normalizedSpacing(gridPlaneSpacing)
         self.gridPlaneRenderStyle = gridPlaneRenderStyle ?? OrbitalViewportMockup.defaultGeodesicRenderStyle
+        self.gridPlaneThickness = OrbitalViewportGridPlaneGeometry.normalizedThickness(gridPlaneThickness)
         self.selectedChannel = selectedChannel
         self.speakers = speakers.isEmpty ? OrbitalViewportSpeaker.referenceSpeakers : speakers
         self.sources = sources
@@ -7460,7 +7807,16 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     func foggedNSColor(_ color: NSColor, depth: Double) -> NSColor {
         OrbitalViewportColorTools.blend(color, with: NSColor(theme.fog), amount: depthFogAmount(depth) * 0.68)
     }
+
+    func foggedGeodesicNSColor(_ color: NSColor, depth: Double) -> NSColor {
+        let fogColor = NSColor(geodesicColor(geodesicTheme.fog))
+        return OrbitalViewportColorTools.blend(color, with: fogColor, amount: depthFogAmount(depth) * 0.68)
+    }
     #endif
+
+    func foggedGeodesicColor(_ color: Color, depth: Double) -> Color {
+        OrbitalViewportColorTools.blend(color, with: geodesicColor(geodesicTheme.fog), amount: depthFogAmount(depth) * 0.68)
+    }
 
     func frameConfiguration(timeMS frameTimeMS: Double) -> OrbitalViewportRenderConfiguration {
         let frameYaw: Double
@@ -7501,6 +7857,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             gridPlaneVisibility: gridPlaneVisibility,
             gridPlaneSpacing: gridPlaneSpacing,
             gridPlaneRenderStyle: gridPlaneRenderStyle,
+            gridPlaneThickness: gridPlaneThickness,
             selectedChannel: selectedChannel,
             speakers: speakers,
             sources: sources,
@@ -7512,6 +7869,72 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         )
     }
 }
+
+#if DEBUG
+enum OrbitalRenderTrace {
+    static let buildStamp = "ribbed-color-probe-2026-05-31-a"
+
+    static var isEnabled: Bool {
+        isEnvironmentFlagEnabled("ORB_DEBUG_RENDER_TRACE")
+    }
+
+    static func isEnvironmentFlagEnabled(
+        _ key: String,
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> Bool {
+        environment[key] == "1"
+    }
+
+    static func log(
+        _ stage: String,
+        configuration: OrbitalViewportRenderConfiguration,
+        extra: String = "",
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        guard isEnabled else {
+            return
+        }
+
+        print(
+            "[RIBBED_TRACE] stage=\(stage) style=\(configuration.geodesicRenderStyle.rawValue) saturation=\(configuration.geodesicSaturation) extra=\(extra) at=\(file):\(line)"
+        )
+    }
+
+    static func logWrite<Value>(
+        _ name: String,
+        old: Value,
+        new: Value,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        guard isEnabled else {
+            return
+        }
+
+        print(
+            """
+            [RIBBED_WRITE] \(name) old=\(old) new=\(new) at=\(file):\(line)
+            \(Thread.callStackSymbols.prefix(14).joined(separator: "\n"))
+            """
+        )
+    }
+}
+
+struct OrbitalViewportRibbedDebugState: Equatable {
+    let buildStamp: String
+    let lastApplySequence: Int
+    let lastWriter: String
+    let materialNames: String
+
+    static let empty = OrbitalViewportRibbedDebugState(
+        buildStamp: OrbitalRenderTrace.buildStamp,
+        lastApplySequence: 0,
+        lastWriter: "none",
+        materialNames: "none"
+    )
+}
+#endif
 
 struct OrbitalViewportCameraUpdateKey: Equatable {
     let yaw: Double
@@ -7552,14 +7975,12 @@ struct OrbitalViewportRibbedSpeakerSphereUpdateKey: Equatable {
     let geodesicRenderStyle: OrbitalViewportRenderStyle
     let geodesicSaturation: Double
     let showHiddenLines: Bool
-    let fogDensity: Double
 
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.showRibbedSpeakerSphere = configuration.showRibbedSpeakerSphere
         self.geodesicRenderStyle = configuration.geodesicRenderStyle
         self.geodesicSaturation = configuration.geodesicSaturation
         self.showHiddenLines = configuration.showHiddenLines
-        self.fogDensity = configuration.showRibbedSpeakerSphere ? configuration.fogDensity : 0
     }
 }
 
@@ -7793,12 +8214,14 @@ struct OrbitalViewportGridPlaneUpdateKey: Equatable {
     let gridPlaneVisibility: Double
     let gridPlaneSpacing: Double
     let gridPlaneRenderStyle: OrbitalViewportRenderStyle
+    let gridPlaneThickness: Double
 
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.showGridPlane = configuration.showGridPlane
         self.gridPlaneVisibility = configuration.gridPlaneVisibility
         self.gridPlaneSpacing = configuration.gridPlaneSpacing
         self.gridPlaneRenderStyle = configuration.gridPlaneRenderStyle
+        self.gridPlaneThickness = configuration.gridPlaneThickness
     }
 }
 
@@ -7876,6 +8299,8 @@ struct OrbitalViewportGridPlaneGeometry {
     static let spacingRange: ClosedRange<Double> = 0.25...1.0
     static let defaultVisibilitySlider = 70.0
     static let defaultVisibility = visibility(fromSlider: defaultVisibilitySlider)
+    static let defaultThickness = 1.0
+    static let thicknessRange: ClosedRange<Double> = 0.5...2.5
     static let minorLineRadius = 0.00115
     static let majorLineRadius = 0.00185
     static let minorLineAlpha = 0.45
@@ -7898,6 +8323,14 @@ struct OrbitalViewportGridPlaneGeometry {
 
     static func normalizedSpacing(_ value: Double) -> Double {
         min(spacingRange.upperBound, max(spacingRange.lowerBound, value))
+    }
+
+    static func normalizedThickness(_ value: Double) -> Double {
+        min(thicknessRange.upperBound, max(thicknessRange.lowerBound, value))
+    }
+
+    static func radius(for line: LineSegment, thickness: Double) -> Double {
+        (line.isMajor ? majorLineRadius : minorLineRadius) * normalizedThickness(thickness)
     }
 
     static func lineSegments(spacing rawSpacing: Double) -> [LineSegment] {
@@ -8313,6 +8746,7 @@ private struct OrbitalViewportSceneColorState: Equatable {
 }
 
 private struct OrbitalViewportSceneMaterialState: Equatable {
+    let name: String?
     let diffuse: OrbitalViewportSceneColorState?
     let emission: OrbitalViewportSceneColorState?
     let multiply: OrbitalViewportSceneColorState?
@@ -8320,111 +8754,20 @@ private struct OrbitalViewportSceneMaterialState: Equatable {
     let isDoubleSided: Bool
 
     init(
+        name: String? = nil,
         diffuse: NSColor? = nil,
         emission: NSColor? = nil,
         multiply: NSColor? = nil,
         transparency: Double,
         isDoubleSided: Bool
     ) {
+        self.name = name
         self.diffuse = diffuse.map(OrbitalViewportSceneColorState.init)
         self.emission = emission.map(OrbitalViewportSceneColorState.init)
         self.multiply = multiply.map(OrbitalViewportSceneColorState.init)
         self.transparency = Int((OrbitalViewportMath.clamp01(transparency) * 100_000).rounded())
         self.isDoubleSided = isDoubleSided
     }
-}
-
-private struct OrbitalViewportRibbedSphereDepthFogState: Equatable {
-    let colorRed: Float
-    let colorGreen: Float
-    let colorBlue: Float
-    let colorAlpha: Float
-    let startDistance: Float
-    let endDistance: Float
-    let densityExponent: Float
-    let normalizedDensity: Float
-    let colorMix: Float
-    let brightnessLoss: Float
-    let minimumBrightness: Float
-
-    var colorVector: SCNVector4 {
-        SCNVector4(colorRed, colorGreen, colorBlue, colorAlpha)
-    }
-
-    init(configuration: OrbitalViewportRenderConfiguration) {
-        let fog = configuration.fogConfiguration
-        let color = NSColor(configuration.theme.fog)
-            .usingColorSpace(.deviceRGB)
-            ?? NSColor(configuration.theme.fog)
-            .usingColorSpace(.sRGB)
-            ?? .black
-        let sceneScale = Float(configuration.sceneScale)
-        self.colorRed = Float(color.redComponent)
-        self.colorGreen = Float(color.greenComponent)
-        self.colorBlue = Float(color.blueComponent)
-        self.colorAlpha = Float(color.alphaComponent)
-        self.startDistance = Float(fog.startDistance) * sceneScale
-        self.endDistance = Float(fog.endDistance) * sceneScale
-        self.densityExponent = Float(fog.densityExponent)
-        self.normalizedDensity = Float(fog.normalizedDensity)
-        self.colorMix = 0.78
-        self.brightnessLoss = 0.88
-        self.minimumBrightness = 0.12
-    }
-}
-
-private enum OrbitalViewportRibbedSphereDepthFogShader {
-    static let geometry = """
-    #pragma varyings
-    float orbitalRibbedFogDistance;
-    #pragma body
-    vec4 orbitalRibbedViewPosition = u_modelViewTransform * vec4(_geometry.position.xyz, 1.0);
-    orbitalRibbedFogDistance = max(0.0, -orbitalRibbedViewPosition.z);
-    """
-
-    static let surface = """
-    #pragma arguments
-    float orbitalRibbedFogStartDistance;
-    float orbitalRibbedFogEndDistance;
-    float orbitalRibbedFogDensityExponent;
-    float orbitalRibbedFogNormalizedDensity;
-    float orbitalRibbedFogColorMix;
-    float orbitalRibbedFogBrightnessLoss;
-    float orbitalRibbedFogMinimumBrightness;
-    vec4 orbitalRibbedFogColor;
-    #pragma varyings
-    float orbitalRibbedFogDistance;
-    #pragma body
-    float orbitalRibbedFogRange = max(0.001, orbitalRibbedFogEndDistance - orbitalRibbedFogStartDistance);
-    float orbitalRibbedFogLinear = clamp(
-        (orbitalRibbedFogDistance - orbitalRibbedFogStartDistance) / orbitalRibbedFogRange,
-        0.0,
-        1.0
-    );
-    float orbitalRibbedFogAmount = pow(
-        orbitalRibbedFogLinear,
-        max(0.001, orbitalRibbedFogDensityExponent)
-    ) * orbitalRibbedFogNormalizedDensity;
-    float orbitalRibbedFogMix = clamp(
-        orbitalRibbedFogAmount * orbitalRibbedFogColorMix * orbitalRibbedFogColor.a,
-        0.0,
-        1.0
-    );
-    float orbitalRibbedFogBrightness = max(
-        orbitalRibbedFogMinimumBrightness,
-        1.0 - (orbitalRibbedFogAmount * orbitalRibbedFogBrightnessLoss)
-    );
-    _surface.diffuse.rgb = mix(
-        _surface.diffuse.rgb,
-        orbitalRibbedFogColor.rgb,
-        orbitalRibbedFogMix
-    ) * orbitalRibbedFogBrightness;
-    _surface.emission.rgb = mix(
-        _surface.emission.rgb,
-        orbitalRibbedFogColor.rgb,
-        orbitalRibbedFogMix * 0.42
-    ) * orbitalRibbedFogBrightness;
-    """
 }
 
 private struct OrbitalViewportRibbedSphereCutawayUniforms: Equatable {
@@ -8522,6 +8865,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> OrbitalViewportSceneNSView {
+        #if DEBUG
+        OrbitalRenderTrace.log("representable_makeNSView_enter", configuration: configuration)
+        #endif
         let view = OrbitalViewportSceneNSView(frame: .zero)
         view.allowsCameraControl = false
         view.antialiasingMode = Self.antialiasingMode
@@ -8545,11 +8891,20 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             configuration: configuration,
             snapshot: snapshot
         )
+        #if DEBUG
+        view.updateRibbedDebugOverlay(
+            configuration: configuration,
+            state: context.coordinator.ribbedDebugState
+        )
+        #endif
         updateContinuousRenderMode(view, configuration: configuration)
         return view
     }
 
     func updateNSView(_ nsView: OrbitalViewportSceneNSView, context: Context) {
+        #if DEBUG
+        OrbitalRenderTrace.log("representable_updateNSView_enter", configuration: configuration)
+        #endif
         nsView.onDragStarted = onDragStarted
         nsView.onDrag = onDrag
         nsView.onDragEnded = onDragEnded
@@ -8566,6 +8921,12 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             configuration: configuration,
             snapshot: snapshot
         )
+        #if DEBUG
+        nsView.updateRibbedDebugOverlay(
+            configuration: configuration,
+            state: context.coordinator.ribbedDebugState
+        )
+        #endif
         updateContinuousRenderMode(nsView, configuration: configuration)
     }
 
@@ -8573,7 +8934,15 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         _ view: OrbitalViewportSceneNSView,
         configuration: OrbitalViewportRenderConfiguration
     ) {
-        let shouldRenderContinuously = Self.usesContinuousRenderDuringActiveMotion && configuration.spin
+        #if DEBUG
+        let debugForcesContinuousRender =
+            OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_DEBUG_FORCE_CONTINUOUS_RENDER") ||
+            OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_DEBUG_FORCE_RIBBED_GREEN")
+        #else
+        let debugForcesContinuousRender = false
+        #endif
+        let shouldRenderContinuously = debugForcesContinuousRender ||
+            (Self.usesContinuousRenderDuringActiveMotion && configuration.spin)
         guard view.rendersContinuously != shouldRenderContinuously ||
             view.isPlaying != shouldRenderContinuously else {
             return
@@ -8622,18 +8991,25 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastSourceMaterialVisualSignatureKey: OrbitalViewportSourceMaterialVisualSignatureKey?
         private var lastFogKey: OrbitalViewportFogUpdateKey?
         private var sceneMaterialStates: [ObjectIdentifier: OrbitalViewportSceneMaterialState] = [:]
-        private var ribbedSphereDepthFogMaterialStates: [ObjectIdentifier: OrbitalViewportRibbedSphereDepthFogState] = [:]
         private var lastRibbedSphereCutawayPlaneState: OrbitalViewportRibbedSphereCutawayPlaneState?
         private var lastRibbedSphereCutawayUniforms: OrbitalViewportRibbedSphereCutawayUniforms?
         private var lastRibbedSphereCutawayShowHiddenLines: Bool?
         private var ribbedSphereFit = OrbitalViewportRibbedSpeakerSphereGeometry.Fit(center: .zero, radius: 1)
         private var lastRenderedAnimationTimeMS: Double?
         private var gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.defaultSpacing
+        private var gridPlaneThickness = OrbitalViewportGridPlaneGeometry.defaultThickness
         private var activeFramesPerSecond = OrbitalViewport3DSceneView.sceneFramesPerSecond
         private var frameRateMonitor = OrbitalViewportFrameRateMonitor(
             targetFramesPerSecond: OrbitalViewport3DSceneView.sceneFramesPerSecond
         )
         private var instrumentation = OrbitalViewportRenderInstrumentationSnapshot()
+        private let gridPlaneRenderingOrder = -1001
+        private let ribbedSphereCutawayPlaneRenderingOrder = -1000
+        #if DEBUG
+        private var ribbedDebugApplySequence = 0
+        private var ribbedDebugLastWriter = "none"
+        private var ribbedDebugMaterialNames = "none"
+        #endif
         var onFrameRateSample: (OrbitalViewportFrameRateSample) -> Void = { _ in }
 
         private(set) var gridPlaneBuildCount = 0
@@ -8649,6 +9025,17 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         var ribbedSphereSegmentCountForTests: Int {
             ribbedSphereSegmentCount
         }
+
+        #if DEBUG
+        var ribbedDebugState: OrbitalViewportRibbedDebugState {
+            OrbitalViewportRibbedDebugState(
+                buildStamp: OrbitalRenderTrace.buildStamp,
+                lastApplySequence: ribbedDebugApplySequence,
+                lastWriter: ribbedDebugLastWriter,
+                materialNames: ribbedDebugMaterialNames
+            )
+        }
+        #endif
 
         func speakerNodeHiddenForTests(channel: Int) -> Bool? {
             speakerNodes[channel]?.isHidden
@@ -8808,6 +9195,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         ) {
             sceneMutationLock.lock()
             defer { sceneMutationLock.unlock() }
+            #if DEBUG
+            OrbitalRenderTrace.log("coordinator_update_enter", configuration: configuration)
+            #endif
             _ = snapshot
             latestConfiguration = configuration
 
@@ -8880,7 +9270,15 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
             lastRenderedAnimationTimeMS = frameTimeMS
             instrumentation.renderAnimationFrameDrawCount += 1
-            renderScene(configuration: latestConfiguration.frameConfiguration(timeMS: frameTimeMS))
+            let frameConfiguration = latestConfiguration.frameConfiguration(timeMS: frameTimeMS)
+            #if DEBUG
+            OrbitalRenderTrace.log(
+                "frame_material_writer",
+                configuration: frameConfiguration,
+                extra: "timer_renderAnimationFrame"
+            )
+            #endif
+            renderScene(configuration: frameConfiguration)
         }
 
         private func timerFramesPerSecond(configuration: OrbitalViewportRenderConfiguration) -> Int {
@@ -8931,6 +9329,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 snapshot: snapshot
             )
             let fogKey = OrbitalViewportFogUpdateKey(configuration: configuration)
+            #if DEBUG
+            OrbitalRenderTrace.log(
+                "ribbed_update_key_compare",
+                configuration: configuration,
+                extra: "old=\(String(describing: lastRibbedSphereUpdateKey)) new=\(ribbedSphereUpdateKey) changed=\(lastRibbedSphereUpdateKey != ribbedSphereUpdateKey)"
+            )
+            #endif
 
             var didBeginTransaction = false
             var didMutateScene = false
@@ -9042,6 +9447,9 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             if lastFogKey != fogKey {
                 performSceneMutation {
                     updateFog(configuration: configuration)
+                    if configuration.showRibbedSpeakerSphere {
+                        _ = updateRibbedSphereCutawayPlane(configuration: configuration)
+                    }
                     return true
                 }
                 lastFogKey = fogKey
@@ -9132,7 +9540,10 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             scene.rootNode.addChildNode(fill)
         }
 
-        private func buildGridPlane(spacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing) {
+        private func buildGridPlane(
+            spacing: Double = OrbitalViewportGridPlaneGeometry.defaultSpacing,
+            thickness: Double = OrbitalViewportGridPlaneGeometry.defaultThickness
+        ) {
             gridPlaneBuildCount += 1
             instrumentation.gridPlaneUpdateCount += 1
             gridPlaneNode.childNodes.forEach {
@@ -9141,6 +9552,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             }
             gridPlaneLineNodes.removeAll()
             gridPlaneSpacing = OrbitalViewportGridPlaneGeometry.normalizedSpacing(spacing)
+            gridPlaneThickness = OrbitalViewportGridPlaneGeometry.normalizedThickness(thickness)
             gridPlaneNode.name = "grid-plane"
             gridPlaneNode.isHidden = true
 
@@ -9148,11 +9560,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 let node = cylinderNode(
                     from: line.start,
                     to: line.end,
-                    radius: line.isMajor
-                        ? OrbitalViewportGridPlaneGeometry.majorLineRadius
-                        : OrbitalViewportGridPlaneGeometry.minorLineRadius
+                    radius: OrbitalViewportGridPlaneGeometry.radius(
+                        for: line,
+                        thickness: gridPlaneThickness
+                    )
                 )
                 node.name = line.isMajor ? "grid-plane-major-line" : "grid-plane-line"
+                node.renderingOrder = gridPlaneRenderingOrder
                 let material = SCNMaterial()
                 material.lightingModel = .constant
                 material.isDoubleSided = true
@@ -9176,8 +9590,12 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
             let lineSegments = OrbitalViewportGridPlaneGeometry.lineSegments(spacing: configuration.gridPlaneSpacing)
             if gridPlaneLineNodes.count != lineSegments.count ||
-                abs(gridPlaneSpacing - configuration.gridPlaneSpacing) > 0.000_001 {
-                buildGridPlane(spacing: configuration.gridPlaneSpacing)
+                abs(gridPlaneSpacing - configuration.gridPlaneSpacing) > 0.000_001 ||
+                abs(gridPlaneThickness - configuration.gridPlaneThickness) > 0.000_001 {
+                buildGridPlane(
+                    spacing: configuration.gridPlaneSpacing,
+                    thickness: configuration.gridPlaneThickness
+                )
                 gridPlaneNode.isHidden = false
                 didMutate = true
             }
@@ -9560,7 +9978,6 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             node.geometry?.materials.forEach {
                 let materialID = ObjectIdentifier($0)
                 sceneMaterialStates.removeValue(forKey: materialID)
-                ribbedSphereDepthFogMaterialStates.removeValue(forKey: materialID)
             }
             node.childNodes.forEach { forgetMaterialStates(in: $0) }
         }
@@ -9577,37 +9994,129 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             guard configuration.showRibbedSpeakerSphere else {
                 return didMutate
             }
+            #if DEBUG
+            if OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_DEBUG_FORCE_RIBBED_GREEN") {
+                let didForceGreen = forceDebugRibbedSphereGreen(ribbedSphereNode, reason: "live_path_probe")
+                view?.rendersContinuously = true
+                view?.isPlaying = true
+                view?.needsDisplay = true
+                return didForceGreen || didMutate
+            }
+            #endif
             instrumentation.ribbedSphereMaterialUpdateCount += 1
 
             let theme = configuration.geodesicTheme
-            let materialFogDepth = configuration.ribbedSphereSceneMaterialFogDepth
-            let materialFogAlpha = configuration.ribbedSphereSceneMaterialAlpha
-            let verticalRibColor = configuration.foggedNSColor(
-                sceneColor(configuration.geodesicColor(theme.equator)),
-                depth: materialFogDepth
-            )
-            let horizontalRingColor = configuration.foggedNSColor(
-                sceneColor(configuration.geodesicColor(theme.structure)),
-                depth: materialFogDepth
-            )
-            let depthFogState = OrbitalViewportRibbedSphereDepthFogState(configuration: configuration)
+            let verticalRibColor = sceneColor(configuration.geodesicColor(theme.accent))
+            let horizontalRingColor = sceneColor(configuration.geodesicColor(theme.accent))
             let visibilityAlpha = configuration.showHiddenLines
                 ? 0.92
                 : OrbitalViewportRibbedSpeakerSphereGeometry.frontLineAlpha
             didMutate = updateRibbedSpeakerSphereBatchMaterial(
                 ribbedSphereVerticalNode,
+                lane: "vertical",
+                configuration: configuration,
                 color: verticalRibColor,
-                alpha: 0.74 * visibilityAlpha * materialFogAlpha,
-                depthFogState: depthFogState
+                alpha: 0.74 * visibilityAlpha
             ) || didMutate
             didMutate = updateRibbedSpeakerSphereBatchMaterial(
                 ribbedSphereHorizontalNode,
+                lane: "horizontal",
+                configuration: configuration,
                 color: horizontalRingColor,
-                alpha: 0.64 * visibilityAlpha * materialFogAlpha,
-                depthFogState: depthFogState
+                alpha: 0.64 * visibilityAlpha
             ) || didMutate
+            #if DEBUG
+            recordRibbedMaterialApply(
+                configuration: configuration,
+                verticalColor: verticalRibColor,
+                horizontalColor: horizontalRingColor
+            )
+            #endif
             return didMutate
         }
+
+        #if DEBUG
+        @discardableResult
+        private func forceDebugRibbedSphereGreen(_ root: SCNNode, reason: String) -> Bool {
+            var didMutate = false
+            root.enumerateChildNodes { node, _ in
+                guard let geometry = node.geometry else {
+                    return
+                }
+
+                node.name = [node.name, "DEBUG_FORCE_RIBBED_GREEN", reason]
+                    .compactMap { $0 }
+                    .joined(separator: ".")
+
+                for material in geometry.materials {
+                    let materialID = ObjectIdentifier(material)
+                    sceneMaterialStates.removeValue(forKey: materialID)
+                    material.name = "DEBUG_FORCE_GREEN_\(reason)"
+                    material.diffuse.contents = NSColor.systemGreen
+                    material.emission.contents = NSColor.systemGreen
+                    material.ambient.contents = NSColor.systemGreen
+                    material.multiply.contents = NSColor.white
+                    material.transparent.contents = NSColor.white
+                    material.shaderModifiers = nil
+                    didMutate = true
+                }
+            }
+
+            if didMutate {
+                ribbedDebugApplySequence += 1
+                ribbedDebugLastWriter = "debug_force_green_\(reason)"
+                ribbedDebugMaterialNames = ribbedSphereMaterialNames()
+                if let latestConfiguration {
+                    OrbitalRenderTrace.log(
+                        "ribbed_force_green_apply",
+                        configuration: latestConfiguration,
+                        extra: "materials=\(ribbedDebugMaterialNames)"
+                    )
+                }
+            }
+            return didMutate
+        }
+
+        private func recordRibbedMaterialApply(
+            configuration: OrbitalViewportRenderConfiguration,
+            verticalColor: NSColor,
+            horizontalColor: NSColor
+        ) {
+            ribbedDebugApplySequence += 1
+            ribbedDebugLastWriter = "ribbed_material_apply"
+            ribbedDebugMaterialNames = ribbedSphereMaterialNames()
+            let materialIDs = ribbedSphereMaterials()
+                .map { String(describing: ObjectIdentifier($0)) }
+                .joined(separator: ",")
+            OrbitalRenderTrace.log(
+                "ribbed_material_apply",
+                configuration: configuration,
+                extra: "vertical=\(debugColorDescription(verticalColor)) horizontal=\(debugColorDescription(horizontalColor)) materialIDs=\(materialIDs) names=\(ribbedDebugMaterialNames)"
+            )
+        }
+
+        private func ribbedSphereMaterials() -> [SCNMaterial] {
+            [ribbedSphereVerticalNode, ribbedSphereHorizontalNode]
+                .compactMap { $0?.geometry?.firstMaterial }
+        }
+
+        private func ribbedSphereMaterialNames() -> String {
+            ribbedSphereMaterials()
+                .map { $0.name ?? "nil" }
+                .joined(separator: ",")
+        }
+
+        private func debugColorDescription(_ color: NSColor) -> String {
+            let resolved = color.usingColorSpace(.deviceRGB) ?? color
+            return String(
+                format: "r=%.3f g=%.3f b=%.3f a=%.3f",
+                resolved.redComponent,
+                resolved.greenComponent,
+                resolved.blueComponent,
+                resolved.alphaComponent
+            )
+        }
+        #endif
 
         private func configureRibbedSphereCutawayPlane() {
             let plane = SCNPlane(width: 2, height: 2)
@@ -9623,7 +10132,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             ribbedSphereCutawayPlaneNode.name = "ribbed-speaker-sphere-cutaway-plane"
             ribbedSphereCutawayPlaneNode.geometry = plane
             ribbedSphereCutawayPlaneNode.isHidden = true
-            ribbedSphereCutawayPlaneNode.renderingOrder = -1000
+            ribbedSphereCutawayPlaneNode.renderingOrder = ribbedSphereCutawayPlaneRenderingOrder
         }
 
         private func updateRibbedSphereCutawayPlane(
@@ -10129,30 +10638,38 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
         private func updateRibbedSpeakerSphereBatchMaterial(
             _ node: SCNNode?,
+            lane: String,
+            configuration: OrbitalViewportRenderConfiguration,
             color: NSColor,
-            alpha: Double,
-            depthFogState: OrbitalViewportRibbedSphereDepthFogState
+            alpha: Double
         ) -> Bool {
             guard let material = node?.geometry?.firstMaterial else {
                 return false
             }
 
-            let brightness = OrbitalViewportMath.clamp01(alpha)
+            let brightness = OrbitalViewportMath.clamp01(0.16 + alpha * 1.08)
             let diffuse = ribbedSphereMaterialColor(color, brightness: brightness)
-            let emission = ribbedSphereMaterialColor(color, brightness: brightness * 0.28)
+            let emission = ribbedSphereMaterialColor(color, brightness: brightness * 0.42)
+            let materialName = ribbedSphereMaterialName(lane: lane, configuration: configuration)
             let didWriteMaterial = setOpaqueRibbedSphereMaterial(
                 material,
+                name: materialName,
                 diffuse: diffuse,
                 emission: emission
             )
-            let didWriteShader = setRibbedSphereDepthFogShader(
-                material,
-                state: depthFogState
-            )
-            if didWriteMaterial || didWriteShader {
+            let didClearShader = clearRibbedSphereDepthFogShader(material)
+            if didWriteMaterial || didClearShader {
                 instrumentation.ribbedSphereMaterialWriteCount += 1
             }
-            return didWriteMaterial || didWriteShader
+            return didWriteMaterial || didClearShader
+        }
+
+        private func ribbedSphereMaterialName(
+            lane: String,
+            configuration: OrbitalViewportRenderConfiguration
+        ) -> String {
+            let saturationBucket = Int((configuration.geodesicSaturation * 100).rounded())
+            return "ribbed.\(lane).style.\(configuration.geodesicRenderStyle.rawValue).sat.\(saturationBucket)"
         }
 
         private func ribbedSphereMaterialColor(
@@ -10172,10 +10689,12 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         @discardableResult
         private func setOpaqueRibbedSphereMaterial(
             _ material: SCNMaterial,
+            name: String,
             diffuse: NSColor,
             emission: NSColor
         ) -> Bool {
             let state = OrbitalViewportSceneMaterialState(
+                name: name,
                 diffuse: diffuse,
                 emission: emission,
                 transparency: 1,
@@ -10187,8 +10706,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 return false
             }
 
+            material.name = name
             material.diffuse.contents = diffuse
             material.emission.contents = emission
+            material.lightingModel = .physicallyBased
+            material.metalness.contents = 0.08
+            material.roughness.contents = 0.24
+            material.specular.contents = NSColor.white.withAlphaComponent(0.32)
             material.transparency = 1
             material.isDoubleSided = true
             material.readsFromDepthBuffer = true
@@ -10199,31 +10723,12 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         }
 
         @discardableResult
-        private func setRibbedSphereDepthFogShader(
-            _ material: SCNMaterial,
-            state: OrbitalViewportRibbedSphereDepthFogState
-        ) -> Bool {
-            let materialID = ObjectIdentifier(material)
-            let shaderModifiers: [SCNShaderModifierEntryPoint: String] = [
-                .geometry: OrbitalViewportRibbedSphereDepthFogShader.geometry,
-                .surface: OrbitalViewportRibbedSphereDepthFogShader.surface
-            ]
-            guard ribbedSphereDepthFogMaterialStates[materialID] != state ||
-                material.shaderModifiers != shaderModifiers else {
-                instrumentation.sceneMaterialSkipCount += 1
+        private func clearRibbedSphereDepthFogShader(_ material: SCNMaterial) -> Bool {
+            guard material.shaderModifiers != nil else {
                 return false
             }
 
-            material.shaderModifiers = shaderModifiers
-            material.setValue(NSNumber(value: state.startDistance), forKey: "orbitalRibbedFogStartDistance")
-            material.setValue(NSNumber(value: state.endDistance), forKey: "orbitalRibbedFogEndDistance")
-            material.setValue(NSNumber(value: state.densityExponent), forKey: "orbitalRibbedFogDensityExponent")
-            material.setValue(NSNumber(value: state.normalizedDensity), forKey: "orbitalRibbedFogNormalizedDensity")
-            material.setValue(NSNumber(value: state.colorMix), forKey: "orbitalRibbedFogColorMix")
-            material.setValue(NSNumber(value: state.brightnessLoss), forKey: "orbitalRibbedFogBrightnessLoss")
-            material.setValue(NSNumber(value: state.minimumBrightness), forKey: "orbitalRibbedFogMinimumBrightness")
-            material.setValue(NSValue(scnVector4: state.colorVector), forKey: "orbitalRibbedFogColor")
-            ribbedSphereDepthFogMaterialStates[materialID] = state
+            material.shaderModifiers = nil
             instrumentation.sceneMaterialWriteCount += 1
             return true
         }
@@ -10416,6 +10921,15 @@ final class OrbitalViewportSceneNSView: SCNView {
     private let frameRateLabel = NSTextField(labelWithString: "FPS --")
     private var frameRateTheme = OrbitalViewportTheme(style: OrbitalViewportMockup.defaultRenderStyle)
     private var frameRateSample = OrbitalViewportFrameRateSample.pending
+    #if DEBUG
+    private let ribbedDebugOverlayContainer = NSStackView()
+    private let ribbedDebugBuildLabel = NSTextField(labelWithString: "")
+    private let ribbedDebugStyleLabel = NSTextField(labelWithString: "")
+    private let ribbedDebugSaturationLabel = NSTextField(labelWithString: "")
+    private let ribbedDebugApplySequenceLabel = NSTextField(labelWithString: "")
+    private let ribbedDebugLastWriterLabel = NSTextField(labelWithString: "")
+    private let ribbedDebugMaterialsLabel = NSTextField(labelWithString: "")
+    #endif
     private var mouseDownPoint: CGPoint?
     private var previousDragPoint: CGPoint?
     private var hasDragged = false
@@ -10423,11 +10937,17 @@ final class OrbitalViewportSceneNSView: SCNView {
     override init(frame frameRect: NSRect, options: [String: Any]? = nil) {
         super.init(frame: frameRect, options: options)
         setupFrameRateMeter()
+        #if DEBUG
+        setupRibbedDebugOverlay()
+        #endif
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupFrameRateMeter()
+        #if DEBUG
+        setupRibbedDebugOverlay()
+        #endif
     }
 
     var frameRateMeterTextForTests: String {
@@ -10437,6 +10957,23 @@ final class OrbitalViewportSceneNSView: SCNView {
     var frameRateMeterAccessibilityValueForTests: String? {
         frameRateMeterContainer.accessibilityValue() as? String
     }
+
+    #if DEBUG
+    func ribbedDebugOverlayTextForTests(identifier: String) -> String? {
+        ribbedDebugOverlayLabels.first { $0.identifier?.rawValue == identifier }?.stringValue
+    }
+
+    private var ribbedDebugOverlayLabels: [NSTextField] {
+        [
+            ribbedDebugBuildLabel,
+            ribbedDebugStyleLabel,
+            ribbedDebugSaturationLabel,
+            ribbedDebugApplySequenceLabel,
+            ribbedDebugLastWriterLabel,
+            ribbedDebugMaterialsLabel
+        ]
+    }
+    #endif
 
     func configureFrameRateMeter(
         theme: OrbitalViewportTheme,
@@ -10453,6 +10990,26 @@ final class OrbitalViewportSceneNSView: SCNView {
         frameRateSample = sample
         applyFrameRateMeterAppearance()
     }
+
+    #if DEBUG
+    func updateRibbedDebugOverlay(
+        configuration: OrbitalViewportRenderConfiguration,
+        state: OrbitalViewportRibbedDebugState,
+        isEnabled: Bool = OrbitalRenderTrace.isEnvironmentFlagEnabled("ORB_DEBUG_RIBBED_OVERLAY")
+    ) {
+        ribbedDebugOverlayContainer.isHidden = !isEnabled
+        guard isEnabled else {
+            return
+        }
+
+        ribbedDebugBuildLabel.stringValue = "build: \(state.buildStamp)"
+        ribbedDebugStyleLabel.stringValue = "live-render-style-\(configuration.geodesicRenderStyle.rawValue)"
+        ribbedDebugSaturationLabel.stringValue = "live-saturation-\(configuration.geodesicSaturation)"
+        ribbedDebugApplySequenceLabel.stringValue = "ribbed-apply-sequence-\(state.lastApplySequence)"
+        ribbedDebugLastWriterLabel.stringValue = "ribbed-last-writer-\(state.lastWriter)"
+        ribbedDebugMaterialsLabel.stringValue = "ribbed-materials-\(state.materialNames)"
+    }
+    #endif
 
     private func setupFrameRateMeter() {
         frameRateMeterContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -10501,6 +11058,55 @@ final class OrbitalViewportSceneNSView: SCNView {
         ])
         applyFrameRateMeterAppearance()
     }
+
+    #if DEBUG
+    private func setupRibbedDebugOverlay() {
+        ribbedDebugOverlayContainer.translatesAutoresizingMaskIntoConstraints = false
+        ribbedDebugOverlayContainer.orientation = .vertical
+        ribbedDebugOverlayContainer.alignment = .leading
+        ribbedDebugOverlayContainer.spacing = 2
+        ribbedDebugOverlayContainer.edgeInsets = NSEdgeInsets(top: 6, left: 8, bottom: 6, right: 8)
+        ribbedDebugOverlayContainer.wantsLayer = true
+        ribbedDebugOverlayContainer.layer?.cornerRadius = 6
+        ribbedDebugOverlayContainer.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.72).cgColor
+        ribbedDebugOverlayContainer.layer?.borderColor = NSColor.systemGreen.withAlphaComponent(0.55).cgColor
+        ribbedDebugOverlayContainer.layer?.borderWidth = 1
+        ribbedDebugOverlayContainer.isHidden = true
+        ribbedDebugOverlayContainer.setAccessibilityLabel("Ribbed debug overlay")
+        ribbedDebugOverlayContainer.setAccessibilityElement(true)
+
+        let labels: [(NSTextField, String)] = [
+            (ribbedDebugBuildLabel, "orbital-build-stamp"),
+            (ribbedDebugStyleLabel, "live-render-style"),
+            (ribbedDebugSaturationLabel, "live-geodesic-saturation"),
+            (ribbedDebugApplySequenceLabel, "ribbed-apply-sequence"),
+            (ribbedDebugLastWriterLabel, "ribbed-last-writer"),
+            (ribbedDebugMaterialsLabel, "ribbed-material-names")
+        ]
+
+        for (label, identifier) in labels {
+            label.translatesAutoresizingMaskIntoConstraints = false
+            label.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
+            label.textColor = .systemGreen
+            label.isBezeled = false
+            label.isBordered = false
+            label.drawsBackground = false
+            label.isEditable = false
+            label.isSelectable = false
+            label.lineBreakMode = .byTruncatingTail
+            label.identifier = NSUserInterfaceItemIdentifier(identifier)
+            label.setAccessibilityIdentifier(identifier)
+            ribbedDebugOverlayContainer.addArrangedSubview(label)
+        }
+
+        addSubview(ribbedDebugOverlayContainer)
+        NSLayoutConstraint.activate([
+            ribbedDebugOverlayContainer.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            ribbedDebugOverlayContainer.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            ribbedDebugOverlayContainer.widthAnchor.constraint(lessThanOrEqualToConstant: 360)
+        ])
+    }
+    #endif
 
     private func applyFrameRateMeterAppearance() {
         frameRateLabel.stringValue = "FPS \(frameRateSample.displayFramesPerSecondText)"
@@ -10647,9 +11253,9 @@ private struct OrbitalViewportPainter {
 
     mutating func draw(size: CGSize) {
         drawBackground(size: size)
+        drawFogVeil(size: size)
         drawGridPlane()
         drawRibbedSpeakerSphere()
-        drawFogVeil(size: size)
         drawSpeakers()
         drawSources()
     }
@@ -10692,7 +11298,10 @@ private struct OrbitalViewportPainter {
             context.stroke(
                 path,
                 with: .color(color.opacity(alpha)),
-                style: StrokeStyle(lineWidth: line.isMajor ? 1.05 : 0.72, lineCap: .round)
+                style: StrokeStyle(
+                    lineWidth: (line.isMajor ? 1.05 : 0.72) * configuration.gridPlaneThickness,
+                    lineCap: .round
+                )
             )
         }
     }
@@ -10738,11 +11347,12 @@ private struct OrbitalViewportPainter {
             let baseAlpha = item.segment.kind == .verticalRib ? 0.74 : 0.64
             let alpha = baseAlpha * item.fade * OrbitalViewportRibbedSpeakerSphereGeometry.frontLineAlpha
             let strokeColor = configuration.geodesicColor(
-                item.segment.kind == .verticalRib ? geodesicTheme.equator : geodesicTheme.structure
+                geodesicTheme.accent
             )
+            let foggedStrokeColor = configuration.foggedGeodesicColor(strokeColor, depth: item.depth)
             context.stroke(
                 path,
-                with: .color(strokeColor.opacity(alpha)),
+                with: .color(foggedStrokeColor.opacity(alpha)),
                 style: StrokeStyle(
                     lineWidth: 1.02 * configuration.ribbedSphereThickness,
                     lineCap: .round

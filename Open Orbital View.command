@@ -85,4 +85,4 @@ echo "$APP_DIR"
 
 pkill -f OrbitalViewViewer 2>/dev/null || true
 
-open "$APP_DIR"
+open -n "$APP_DIR"

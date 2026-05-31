@@ -966,7 +966,7 @@ a shared shader function for all scene primitives.
 
 Why:
 
-- The SceneKit shader preview is useful for visual review, but production host integration is already accepted as MetalKit / MTKView.
+- The SceneKit shader preview was attempted and rejected visually; production host integration is already accepted as MetalKit / MTKView.
 - Fog should be one scene-depth rule, not separate hand-tuned alpha paths for ribs, speakers, source markers, labels, glows, and hidden-line treatment.
 - A Metal implementation can compute camera-depth fog per fragment while keeping shell/speaker geometry static and updating only view/fog uniforms plus small display material payloads.
 
@@ -980,7 +980,7 @@ How:
 
 Acceptance notes:
 
-- This is approach 2 from the fog-depth brainstorm and should remain future work until the SceneKit preview is accepted visually.
+- This is approach 2 from the fog-depth brainstorm and should remain future work until the desired fog look is accepted visually through another proof path; do not wait for the rejected SceneKit shader preview to become acceptable by plumbing alone.
 - It should not be mixed with Cube VU texture migration, UI cleanup, telemetry, audio, or downstream host integration.
 
 ## Required Changes Regardless Of Option
