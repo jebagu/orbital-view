@@ -54,10 +54,15 @@ public struct OrbitalViewportMockup: View {
         "Provider",
         "Status",
         "Track",
+        "Route",
+        "Source",
+        "Sample Rate",
+        "Channels",
+        "Frame Seq",
+        "32ch VU",
         "Choose File",
         "Play",
         "Pause",
-        "Render Type",
         "Ripple",
         "Waves",
         "Orbiting Comets",
@@ -65,7 +70,6 @@ public struct OrbitalViewportMockup: View {
         "Telemetry Status",
         "Displayed Meter",
         "Active Meter",
-        "Music Render",
         "Music Source",
         "Impulse Pattern"
     ]
@@ -152,6 +156,7 @@ public struct OrbitalViewportMockup: View {
     static let diceRandomizerAccessibilityLabels = [
         rollTheDiceTitle,
         "Randomize Cube Surface",
+        "Randomize Jet Surface",
         "Randomize Bloom Style",
         "Randomize Meter Response"
     ]
@@ -190,6 +195,13 @@ public struct OrbitalViewportMockup: View {
     static func defaultRightPanelTrayExpanded(_ title: String) -> Bool {
         defaultExpandedRightPanelTrayTitles.contains(title)
     }
+    static func surfaceBloomTrayTitle(for speakerShape: OrbitalViewportSpeakerShape) -> String {
+        speakerShape.isJetStyle ? "Jet Surface" : "Cube Surface"
+    }
+
+    static func surfaceBloomRandomizerAccessibilityLabel(for speakerShape: OrbitalViewportSpeakerShape) -> String {
+        "Randomize \(surfaceBloomTrayTitle(for: speakerShape))"
+    }
     static let globalDiceRandomizedControlTitles = [
         "Camera",
         "Zoom",
@@ -222,19 +234,32 @@ public struct OrbitalViewportMockup: View {
         "Telemetry Advertiser",
         "Local Song File",
         "Local Song Playback",
-        "Local Song Render Type",
         "Impulse Pattern"
     ]
     static let surfaceBloomControlTitles = [
         "Randomize Cube Surface",
+        "Pixel Density",
         "Bloom Min",
         "Bloom Max",
         "Bloom Edge",
         "Rim Halo Edge",
         "Response Curve",
-        "Face Pixels",
         "Pixel Fill",
         "Idle Tint",
+        "Surface Checker Opacity",
+        "Checker Contrast"
+    ]
+    static let jetSurfaceBloomControlTitles = [
+        "Randomize Jet Surface",
+        "Pixel Density",
+        "Bloom Min",
+        "Bloom Max",
+        "Bloom Edge",
+        "Rim Halo Edge",
+        "Response Curve",
+        "Pixel Fill",
+        "Idle Tint",
+        "Idle Opacity",
         "Surface Checker Opacity",
         "Checker Contrast"
     ]
@@ -281,6 +306,7 @@ public struct OrbitalViewportMockup: View {
     static let defaultRibbedSphereVerticalRibs = 16
     static let defaultRibbedSphereHorizontalRings = 8
     static let defaultSpeakerShape: OrbitalViewportSpeakerShape = .cubeVU
+    static let defaultJetLengthPixels = Double(SpeakerMeterVisualSettings.default.jetLengthPixels)
     static let defaultViewportFrameRate: OrbitalViewportFrameRate = .oneTwenty
     static let defaultSourceMode: OrbitalViewportSourceMode = .telemetry
     static let defaultTelemetryAdvertisers: [OrbitalViewportTelemetryAdvertiser] = []
@@ -308,6 +334,7 @@ public struct OrbitalViewportMockup: View {
     @State private var ribbedSphereVerticalRibs = OrbitalViewportMockup.defaultRibbedSphereVerticalRibs
     @State private var ribbedSphereHorizontalRings = OrbitalViewportMockup.defaultRibbedSphereHorizontalRings
     @State private var speakerShape: OrbitalViewportSpeakerShape = OrbitalViewportMockup.defaultSpeakerShape
+    @State private var jetLengthPixels = OrbitalViewportMockup.defaultJetLengthPixels
     @State private var speakerSizeSlider = 50.0
     @State private var fogDensitySlider = 50.0
     @State private var viewportFrameRate: OrbitalViewportFrameRate = OrbitalViewportMockup.defaultViewportFrameRate
@@ -487,6 +514,17 @@ public struct OrbitalViewportMockup: View {
         )
     }
 
+    private var pixelDensityBinding: Binding<Double> {
+        Binding(
+            get: { Double(cubeVUSettings.facePixels) },
+            set: {
+                cubeVUSettings.facePixels = OrbitalViewportCubeVUSettings.clampedFacePixels(
+                    Int($0.rounded(.toNearestOrAwayFromZero))
+                )
+            }
+        )
+    }
+
     private var activeViewportSpeakers: [OrbitalViewportSpeaker] {
         guard let activeSpeakerSetup else {
             return OrbitalViewportSpeaker.referenceSpeakers
@@ -531,6 +569,7 @@ public struct OrbitalViewportMockup: View {
             ribbedSphereVerticalRibs: ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: ribbedSphereHorizontalRings,
             speakerShape: speakerShape,
+            jetLengthPixels: jetLengthPixels,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
             meterSource: activeMeterSource,
@@ -742,6 +781,18 @@ public struct OrbitalViewportMockup: View {
             tuningValueRow("Provider", value: advertiser?.provider ?? "No Provider")
             tuningValueRow("Status", value: advertiser?.status ?? "Waiting")
             tuningValueRow("Track", value: advertiser?.track ?? "No Metadata")
+            if let routeLabel = advertiser?.routeLabel {
+                tuningValueRow("Route", value: routeLabel)
+            }
+            if let sourceLabel = advertiser?.sourceLabel {
+                tuningValueRow("Source", value: sourceLabel)
+            }
+            if let snapshot = telemetry.snapshot.meterSnapshot {
+                tuningValueRow("Sample Rate", value: snapshot.sampleRate > 0 ? "\(Int(snapshot.sampleRate)) Hz" : "unknown")
+                tuningValueRow("Channels", value: "\(snapshot.levelsByChannel.count) active / \(snapshot.recordCount) records")
+                tuningValueRow("Frame Seq", value: "\(snapshot.sequence)")
+                telemetryDVSChannelGrid(snapshot)
+            }
         }
     }
 
@@ -773,17 +824,6 @@ public struct OrbitalViewportMockup: View {
                 .foregroundStyle(theme.muted)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            sectionLabel("Render Type")
-            controlButtonGroup(
-                OrbitalViewportAudioRenderMode.allCases,
-                selection: localAudioRenderMode,
-                title: \.title
-            ) { mode in
-                if localAudioRenderMode != mode {
-                    localAudioRenderMode = mode
-                    recordDiagnostic("Audio render type set to \(mode.title)")
-                }
-            }
         }
     }
 
@@ -1054,16 +1094,73 @@ public struct OrbitalViewportMockup: View {
                 tuningValueRow("Provider", value: advertiser?.provider ?? "No Provider")
                 tuningValueRow("Telemetry Status", value: telemetry.snapshot.status)
                 tuningValueRow("Displayed Meter", value: telemetry.snapshot.displayedMeter)
+                if let snapshot = telemetry.snapshot.meterSnapshot {
+                    tuningValueRow("Channels", value: "\(snapshot.levelsByChannel.count) / \(snapshot.recordCount)")
+                    tuningValueRow("Sample Rate", value: snapshot.sampleRate > 0 ? "\(Int(snapshot.sampleRate)) Hz" : "unknown")
+                }
             case .localSong:
                 tuningValueRow("Active Meter", value: "Local Song")
-                tuningValueRow("Music Render", value: localAudioRenderMode.title)
                 tuningValueRow("Music Source", value: localAudio.hasLoadedAudio ? "local file" : "no file")
             case .impulseTest:
                 tuningValueRow("Active Meter", value: "Impulse Test")
                 tuningValueRow("Impulse Pattern", value: normalizedImpulseMode.impulseTitle)
-                tuningValueRow("Music Render", value: "not used")
             }
         }
+    }
+
+    private func telemetryDVSChannelGrid(_ snapshot: OrbitalViewTelemetryMeterSnapshot) -> some View {
+        let cells = snapshot.levelsByChannel
+            .map { (channelID: $0.key, level: $0.value) }
+            .sorted { lhs, rhs in
+                let lhsDVS = lhs.level.dvsChannel ?? lhs.channelID
+                let rhsDVS = rhs.level.dvsChannel ?? rhs.channelID
+                return lhsDVS == rhsDVS ? lhs.channelID < rhs.channelID : lhsDVS < rhsDVS
+            }
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            sectionLabel("32ch VU")
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+                ForEach(cells, id: \.channelID) { cell in
+                    telemetryDVSChannelCell(channelID: cell.channelID, level: cell.level)
+                }
+            }
+        }
+    }
+
+    private func telemetryDVSChannelCell(
+        channelID: Int,
+        level: OrbitalViewTelemetryMeterLevel
+    ) -> some View {
+        let dvsChannel = level.dvsChannel ?? channelID
+        let scalar = CGFloat(level.vuNormalized ?? level.rms)
+
+        return VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 3) {
+                Text("D\(dvsChannel)")
+                Text("C\(channelID)")
+                    .foregroundStyle(theme.muted)
+            }
+            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(theme.line.opacity(0.55))
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(level.clip ? OrbitalViewportLabTheme.red : theme.accent)
+                        .frame(width: max(1, proxy.size.width * min(max(scalar, 0), 1)))
+                }
+            }
+            .frame(height: 4)
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 4)
+        .background(theme.panelSecondaryBackground.opacity(0.42))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(theme.line.opacity(0.7), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
     private var viewThemeTray: some View {
@@ -1205,7 +1302,16 @@ public struct OrbitalViewportMockup: View {
                 }
             }
             tuningValueRow("Speaker Type", value: speakerShape.title)
-            tuningValueRow("VU Skin", value: speakerShape == .cubeVU ? "9x9 cube faces" : "simple meter tint")
+            tuningValueRow("VU Skin", value: speakerSkinDescription)
+            if speakerShape.isJetStyle {
+                tuningSliderRow(
+                    "Jet Length",
+                    value: $jetLengthPixels,
+                    range: Double(SpeakerMeterVisualSettings.minJetLengthPixels)...Double(SpeakerMeterVisualSettings.maxJetLengthPixels),
+                    step: 1,
+                    valueText: "\(Int(jetLengthPixels.rounded())) px"
+                )
+            }
             tuningValueRow("Channels", value: "30 physical")
             tuningSliderRow(
                 "Cube Outline",
@@ -1214,6 +1320,19 @@ public struct OrbitalViewportMockup: View {
                 step: 0.01,
                 valueText: cubeVUSettings.cubeOutlineStrength.formatted(.number.precision(.fractionLength(2)))
             )
+        }
+    }
+
+    private var speakerSkinDescription: String {
+        switch speakerShape {
+        case .cubeVU:
+            return "9x9 cube faces"
+        case .pixelJets:
+            return "outward pixel bands"
+        case .cellJets:
+            return "coarse radial cells"
+        case .prism, .sphere:
+            return "simple meter tint"
         }
     }
 
@@ -1325,13 +1444,22 @@ public struct OrbitalViewportMockup: View {
     }
 
     private var surfaceBloomTray: some View {
-        tuningTray("Cube Surface", isExpanded: $surfaceBloomExpanded) {
+        let trayTitle = Self.surfaceBloomTrayTitle(for: speakerShape)
+        let randomizerLabel = Self.surfaceBloomRandomizerAccessibilityLabel(for: speakerShape)
+        return tuningTray(trayTitle, isExpanded: $surfaceBloomExpanded) {
             HStack {
                 Spacer()
-                diceButton(accessibilityLabel: "Randomize Cube Surface") {
+                diceButton(accessibilityLabel: randomizerLabel) {
                     randomizeCubeSurface()
                 }
             }
+            tuningSliderRow(
+                "Pixel Density",
+                value: pixelDensityBinding,
+                range: Double(SpeakerMeterVisualSettings.minFacePixels)...Double(SpeakerMeterVisualSettings.maxFacePixels),
+                step: 1,
+                valueText: "\(cubeVUSettings.facePixels)"
+            )
             tuningSliderRow(
                 "Bloom Min",
                 value: $cubeVUSettings.bloomMin,
@@ -1367,7 +1495,6 @@ public struct OrbitalViewportMockup: View {
                 step: 0.01,
                 valueText: cubeVUSettings.responseCurve.formatted(.number.precision(.fractionLength(2)))
             )
-            tuningStepperRow("Face Pixels", value: $cubeVUSettings.facePixels, range: 6...14)
             tuningSliderRow(
                 "Pixel Fill",
                 value: $cubeVUSettings.pixelFill,
@@ -1382,6 +1509,15 @@ public struct OrbitalViewportMockup: View {
                 step: 0.01,
                 valueText: cubeVUSettings.idleTint.formatted(.number.precision(.fractionLength(2)))
             )
+            if speakerShape == .cellJets {
+                tuningSliderRow(
+                    "Idle Opacity",
+                    value: $cubeVUSettings.cellJetsIdleOpacity,
+                    range: 0...1,
+                    step: 0.01,
+                    valueText: "\((cubeVUSettings.cellJetsIdleOpacity * 100).formatted(.number.precision(.fractionLength(0))))%"
+                )
+            }
             tuningSliderRow(
                 "Surface Checker Opacity",
                 value: $cubeVUSettings.surfaceCheckerOpacity,
@@ -1464,7 +1600,13 @@ public struct OrbitalViewportMockup: View {
             tuningValueRow("Meter-only FPS", value: "\(Self.meterOnlyViewportFramesPerSecond)")
             tuningValueRow("Inspector FPS", value: "\(Self.inspectorRefreshFramesPerSecond)")
             tuningValueRow("Draw Mode", value: OrbitalViewport3DSceneView.rendersContinuously ? "continuous" : "on demand")
-            tuningStepperRow("Face Pixels Cost", value: $cubeVUSettings.facePixels, range: 6...14)
+            tuningSliderRow(
+                "Pixel Density Cost",
+                value: pixelDensityBinding,
+                range: Double(SpeakerMeterVisualSettings.minFacePixels)...Double(SpeakerMeterVisualSettings.maxFacePixels),
+                step: 1,
+                valueText: "\(cubeVUSettings.facePixels)"
+            )
         }
     }
 
@@ -1596,7 +1738,7 @@ public struct OrbitalViewportMockup: View {
             from: cubeVUSettings,
             using: &generator
         )
-        recordDiagnostic("Cube Surface randomized")
+        recordDiagnostic("\(Self.surfaceBloomTrayTitle(for: speakerShape)) randomized")
     }
 
     private func randomizeBloomStyle() {
@@ -2582,6 +2724,7 @@ public struct OrbitalViewportMockup: View {
             ribbedSphereVerticalRibs: ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: ribbedSphereHorizontalRings,
             speakerShape: speakerShape,
+            jetLengthPixels: jetLengthPixels,
             speakerLabelFont: speakerLabelFont,
             speakerLabelFontSizeSlider: speakerLabelFontSizeSlider,
             speakerLabelFontSizeScale: speakerLabelSizeScale,
@@ -2733,6 +2876,7 @@ public struct OrbitalViewportMockup: View {
         ribbedSphereVerticalRibs = payload.ribbedSphereVerticalRibs
         ribbedSphereHorizontalRings = payload.ribbedSphereHorizontalRings
         speakerShape = payload.speakerShape
+        jetLengthPixels = payload.jetLengthPixels
         speakerLabelFont = payload.speakerLabelFont
         speakerLabelFontSizeSlider = min(100, max(0, payload.speakerLabelFontSizeSlider))
         sourceMode = payload.sourceModeForThemeLoad(
@@ -3381,9 +3525,9 @@ enum OrbitalViewportSourceMode: String, CaseIterable, Identifiable, Codable, Equ
     var trayControlTitles: [String] {
         switch self {
         case .telemetry:
-            return ["Provider", "Status", "Track"]
+            return ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
         case .localSong:
-            return ["Choose File", "Play", "Pause", "Render Type"]
+            return ["Choose File", "Play", "Pause"]
         case .impulseTest:
             return OrbitalViewportVUDriveMode.impulseCases.map(\.impulseTitle)
         }
@@ -3399,12 +3543,23 @@ struct OrbitalViewportTelemetryAdvertiser: Identifiable, Equatable {
     let provider: String
     let status: String
     let track: String
+    let routeLabel: String?
+    let sourceLabel: String?
 
-    init(id: String, provider: String, status: String, track: String) {
+    init(
+        id: String,
+        provider: String,
+        status: String,
+        track: String,
+        routeLabel: String? = nil,
+        sourceLabel: String? = nil
+    ) {
         self.id = id
         self.provider = provider
         self.status = status
         self.track = track
+        self.routeLabel = routeLabel
+        self.sourceLabel = sourceLabel
     }
 
     init(summary: OrbitalViewTelemetryProviderSummary) {
@@ -3412,7 +3567,9 @@ struct OrbitalViewportTelemetryAdvertiser: Identifiable, Equatable {
             id: summary.id,
             provider: summary.provider,
             status: summary.status,
-            track: summary.track
+            track: summary.track,
+            routeLabel: summary.routeLabel,
+            sourceLabel: summary.sourceLabel
         )
     }
 }
@@ -3487,17 +3644,8 @@ struct OrbitalViewportMeterSource: Equatable {
                 return .silent
             }
             return OrbitalViewportMeterSample(rms: level.rms, peak: level.peak)
-        case .localAudio(_, let renderMode):
-            let sample = localAudio?.currentMeterSample() ?? .silent
-            guard let impulseKind = renderMode.impulseKind else {
-                return sample
-            }
-            return OrbitalViewportImpulsePattern.meter(
-                kind: impulseKind,
-                channel: channel,
-                timeMS: timeMS,
-                excitation: sample
-            )
+        case .localAudio:
+            return localAudio?.currentMeterSample() ?? .silent
         case .impulse(let kind):
             return OrbitalViewportImpulsePattern.meter(kind: kind, channel: channel, timeMS: timeMS)
         }
@@ -3652,6 +3800,7 @@ enum OrbitalViewportImpulsePattern {
         let remainder = value.truncatingRemainder(dividingBy: divisor)
         return remainder >= 0 ? remainder : remainder + divisor
     }
+
 }
 
 struct OrbitalViewportMeterDiagnostics: Equatable {
@@ -3846,8 +3995,8 @@ final class OrbitalViewportLocalAudioController: NSObject, ObservableObject, AVA
         guard let fileDisplayName else {
             return "Local Song / No File"
         }
-        let source = isPlaying ? "Local Song: \(fileDisplayName)" : "Local Song paused"
-        return renderMode == .allMono ? source : "\(source) / \(renderMode.title)"
+        _ = renderMode
+        return isPlaying ? "Local Song: \(fileDisplayName)" : "Local Song paused"
     }
 
     func chooseAudioFile() {
@@ -4199,6 +4348,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
     let ribbedSphereVerticalRibs: Int
     let ribbedSphereHorizontalRings: Int
     let speakerShape: OrbitalViewportSpeakerShape
+    let jetLengthPixels: Double
     let speakerLabelFont: OrbitalViewportSpeakerLabelFont
     let speakerLabelFontSizeSlider: Double
     let speakerLabelFontSizeScale: Double
@@ -4226,6 +4376,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         ribbedSphereVerticalRibs: Int = OrbitalViewportMockup.defaultRibbedSphereVerticalRibs,
         ribbedSphereHorizontalRings: Int = OrbitalViewportMockup.defaultRibbedSphereHorizontalRings,
         speakerShape: OrbitalViewportSpeakerShape,
+        jetLengthPixels: Double = OrbitalViewportMockup.defaultJetLengthPixels,
         speakerLabelFont: OrbitalViewportSpeakerLabelFont = .systemDefault,
         speakerLabelFontSizeSlider: Double = OrbitalViewportMath.speakerLabelFontSizeSliderCenter,
         speakerLabelFontSizeScale: Double = 1,
@@ -4257,6 +4408,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         self.ribbedSphereVerticalRibs = OrbitalViewportRibbedSpeakerSphereGeometry.normalizedVerticalRibs(ribbedSphereVerticalRibs)
         self.ribbedSphereHorizontalRings = OrbitalViewportRibbedSpeakerSphereGeometry.normalizedHorizontalRings(ribbedSphereHorizontalRings)
         self.speakerShape = speakerShape
+        self.jetLengthPixels = Self.normalizedJetLengthPixels(jetLengthPixels)
         self.speakerLabelFont = speakerLabelFont
         self.speakerLabelFontSizeSlider = min(100, max(0, speakerLabelFontSizeSlider))
         self.speakerLabelFontSizeScale = max(0.1, speakerLabelFontSizeScale)
@@ -4289,6 +4441,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         case ribbedSphereHorizontalRings
         case showSpeakerCenterStruts
         case speakerShape
+        case jetLengthPixels
         case speakerLabelFont
         case speakerLabelFontSizeSlider
         case speakerLabelFontSizeScale
@@ -4320,6 +4473,7 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
         try container.encode(ribbedSphereVerticalRibs, forKey: .ribbedSphereVerticalRibs)
         try container.encode(ribbedSphereHorizontalRings, forKey: .ribbedSphereHorizontalRings)
         try container.encode(speakerShape, forKey: .speakerShape)
+        try container.encode(jetLengthPixels, forKey: .jetLengthPixels)
         try container.encode(speakerLabelFont, forKey: .speakerLabelFont)
         try container.encode(speakerLabelFontSizeSlider, forKey: .speakerLabelFontSizeSlider)
         try container.encode(speakerLabelFontSizeScale, forKey: .speakerLabelFontSizeScale)
@@ -4377,6 +4531,10 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
                 ?? OrbitalViewportMockup.defaultRibbedSphereHorizontalRings
         )
         speakerShape = try container.decode(OrbitalViewportSpeakerShape.self, forKey: .speakerShape)
+        jetLengthPixels = Self.normalizedJetLengthPixels(
+            try container.decodeIfPresent(Double.self, forKey: .jetLengthPixels)
+                ?? OrbitalViewportMockup.defaultJetLengthPixels
+        )
         speakerLabelFont = try container.decodeIfPresent(
             OrbitalViewportSpeakerLabelFont.self,
             forKey: .speakerLabelFont
@@ -4453,6 +4611,16 @@ struct OrbitalViewportSettingsExportPayload: Codable, Equatable {
             return sourceMode
         }
         return defaultMode
+    }
+
+    private static func normalizedJetLengthPixels(_ value: Double) -> Double {
+        guard value.isFinite else {
+            return OrbitalViewportMockup.defaultJetLengthPixels
+        }
+        return min(
+            Double(SpeakerMeterVisualSettings.maxJetLengthPixels),
+            max(Double(SpeakerMeterVisualSettings.minJetLengthPixels), value)
+        )
     }
 }
 
@@ -5788,8 +5956,22 @@ public enum OrbitalViewportSpeakerShape: String, CaseIterable, Identifiable, Equ
     case prism
     case sphere
     case cubeVU
+    case pixelJets
+    case cellJets
 
     public var id: String { rawValue }
+
+    var isJetStyle: Bool {
+        self == .pixelJets || self == .cellJets
+    }
+
+    var usesDensitySegmentedJetSurface: Bool {
+        isJetStyle
+    }
+
+    var usesReadableFaceScale: Bool {
+        self == .cubeVU || isJetStyle
+    }
 
     public var title: String {
         switch self {
@@ -5799,7 +5981,38 @@ public enum OrbitalViewportSpeakerShape: String, CaseIterable, Identifiable, Equ
             return "Sphere"
         case .cubeVU:
             return "Cube VU"
+        case .pixelJets:
+            return "Pixel Jets"
+        case .cellJets:
+            return "Cell Jets"
         }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        switch rawValue {
+        case Self.prism.rawValue:
+            self = .prism
+        case Self.sphere.rawValue:
+            self = .sphere
+        case Self.cubeVU.rawValue:
+            self = .cubeVU
+        case Self.pixelJets.rawValue, "jetsVU", "solidJets":
+            self = .pixelJets
+        case Self.cellJets.rawValue:
+            self = .cellJets
+        default:
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unknown speaker shape: \(rawValue)"
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 }
 
@@ -6215,6 +6428,29 @@ enum OrbitalViewportVUDriveMode: String, CaseIterable, Identifiable, Equatable, 
 struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
     static let `default` = OrbitalViewportCubeVUSettings()
 
+    private enum CodingKeys: String, CodingKey {
+        case inputCalibration
+        case levelCompression
+        case displayCeiling
+        case hotResponse
+        case hotThreshold
+        case hotFillStrength
+        case paletteDrive
+        case idleTint
+        case cellJetsIdleOpacity
+        case bloomMin
+        case bloomMax
+        case bloomEdge
+        case rimHaloEdge
+        case responseCurve
+        case facePixels
+        case checkerContrast
+        case pixelFill
+        case surfaceCheckerOpacity
+        case cubeOutlineStrength
+        case speakerHeight
+    }
+
     var inputCalibration = 1.0
     var levelCompression = 1.0
     var displayCeiling = 1.0
@@ -6223,6 +6459,7 @@ struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
     var hotFillStrength = 0.86
     var paletteDrive = 1.7
     var idleTint = 0.10
+    var cellJetsIdleOpacity = 1.0
     var bloomMin = 0.08
     var bloomMax = 0.92
     var bloomEdge = 0.16
@@ -6235,6 +6472,69 @@ struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
     var cubeOutlineStrength = 0.0
     var speakerHeight = 1.0
 
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = Self.default
+        inputCalibration = try container.decodeIfPresent(Double.self, forKey: .inputCalibration) ?? defaults.inputCalibration
+        levelCompression = try container.decodeIfPresent(Double.self, forKey: .levelCompression) ?? defaults.levelCompression
+        displayCeiling = try container.decodeIfPresent(Double.self, forKey: .displayCeiling) ?? defaults.displayCeiling
+        hotResponse = try container.decodeIfPresent(Double.self, forKey: .hotResponse) ?? defaults.hotResponse
+        hotThreshold = try container.decodeIfPresent(Double.self, forKey: .hotThreshold) ?? defaults.hotThreshold
+        hotFillStrength = try container.decodeIfPresent(Double.self, forKey: .hotFillStrength) ?? defaults.hotFillStrength
+        paletteDrive = try container.decodeIfPresent(Double.self, forKey: .paletteDrive) ?? defaults.paletteDrive
+        idleTint = try container.decodeIfPresent(Double.self, forKey: .idleTint) ?? defaults.idleTint
+        cellJetsIdleOpacity = try container.decodeIfPresent(Double.self, forKey: .cellJetsIdleOpacity) ?? defaults.cellJetsIdleOpacity
+        bloomMin = try container.decodeIfPresent(Double.self, forKey: .bloomMin) ?? defaults.bloomMin
+        bloomMax = try container.decodeIfPresent(Double.self, forKey: .bloomMax) ?? defaults.bloomMax
+        bloomEdge = try container.decodeIfPresent(Double.self, forKey: .bloomEdge) ?? defaults.bloomEdge
+        rimHaloEdge = try container.decodeIfPresent(Double.self, forKey: .rimHaloEdge) ?? defaults.rimHaloEdge
+        responseCurve = try container.decodeIfPresent(Double.self, forKey: .responseCurve) ?? defaults.responseCurve
+        facePixels = Self.clampedFacePixels(
+            try container.decodeIfPresent(Int.self, forKey: .facePixels) ?? defaults.facePixels
+        )
+        checkerContrast = try container.decodeIfPresent(Double.self, forKey: .checkerContrast) ?? defaults.checkerContrast
+        pixelFill = try container.decodeIfPresent(Double.self, forKey: .pixelFill) ?? defaults.pixelFill
+        surfaceCheckerOpacity = try container.decodeIfPresent(Double.self, forKey: .surfaceCheckerOpacity) ?? defaults.surfaceCheckerOpacity
+        cubeOutlineStrength = try container.decodeIfPresent(Double.self, forKey: .cubeOutlineStrength) ?? defaults.cubeOutlineStrength
+        speakerHeight = try container.decodeIfPresent(Double.self, forKey: .speakerHeight) ?? defaults.speakerHeight
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(inputCalibration, forKey: .inputCalibration)
+        try container.encode(levelCompression, forKey: .levelCompression)
+        try container.encode(displayCeiling, forKey: .displayCeiling)
+        try container.encode(hotResponse, forKey: .hotResponse)
+        try container.encode(hotThreshold, forKey: .hotThreshold)
+        try container.encode(hotFillStrength, forKey: .hotFillStrength)
+        try container.encode(paletteDrive, forKey: .paletteDrive)
+        try container.encode(idleTint, forKey: .idleTint)
+        try container.encode(cellJetsIdleOpacity, forKey: .cellJetsIdleOpacity)
+        try container.encode(bloomMin, forKey: .bloomMin)
+        try container.encode(bloomMax, forKey: .bloomMax)
+        try container.encode(bloomEdge, forKey: .bloomEdge)
+        try container.encode(rimHaloEdge, forKey: .rimHaloEdge)
+        try container.encode(responseCurve, forKey: .responseCurve)
+        try container.encode(Self.clampedFacePixels(facePixels), forKey: .facePixels)
+        try container.encode(checkerContrast, forKey: .checkerContrast)
+        try container.encode(pixelFill, forKey: .pixelFill)
+        try container.encode(surfaceCheckerOpacity, forKey: .surfaceCheckerOpacity)
+        try container.encode(cubeOutlineStrength, forKey: .cubeOutlineStrength)
+        try container.encode(speakerHeight, forKey: .speakerHeight)
+    }
+
+    static func clampedFacePixels(_ value: Int) -> Int {
+        max(SpeakerMeterVisualSettings.minFacePixels, min(SpeakerMeterVisualSettings.maxFacePixels, value))
+    }
+
+    static func defaultWith(facePixels: Int) -> OrbitalViewportCubeVUSettings {
+        var settings = Self.default
+        settings.facePixels = clampedFacePixels(facePixels)
+        return settings
+    }
+
     var coreSettings: SpeakerMeterVisualSettings {
         try! SpeakerMeterVisualSettings(
             inputCalibration: Float(inputCalibration),
@@ -6245,6 +6545,7 @@ struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
             hotFillStrength: Float(hotFillStrength),
             vuPaletteDrive: Float(paletteDrive),
             idleTint: Float(idleTint),
+            cellJetsIdleOpacity: Float(cellJetsIdleOpacity),
             checkerContrast: Float(checkerContrast),
             speakerZScale: 1,
             bloomMin: Float(bloomMin),
@@ -6252,7 +6553,7 @@ struct OrbitalViewportCubeVUSettings: Equatable, Codable, Sendable {
             bloomEdge: Float(bloomEdge),
             responseCurve: Float(responseCurve),
             hotFill: Float(hotFillStrength),
-            facePixels: facePixels
+            facePixels: Self.clampedFacePixels(facePixels)
         )
     }
 }
@@ -6501,7 +6802,10 @@ enum OrbitalViewportDiceRandomizer {
         randomized.bloomEdge = Double.random(in: 0.025...0.38, using: &generator)
         randomized.rimHaloEdge = Double.random(in: 0...1, using: &generator)
         randomized.responseCurve = Double.random(in: 0.35...2.2, using: &generator)
-        randomized.facePixels = Int.random(in: 6...14, using: &generator)
+        randomized.facePixels = Int.random(
+            in: SpeakerMeterVisualSettings.minFacePixels...SpeakerMeterVisualSettings.maxFacePixels,
+            using: &generator
+        )
         randomized.pixelFill = Double.random(in: 0.55...1, using: &generator)
         randomized.idleTint = Double.random(in: 0...0.35, using: &generator)
         randomized.surfaceCheckerOpacity = Double.random(in: 0...0.75, using: &generator)
@@ -6873,7 +7177,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         hotColor: NSColor
     ) -> NSImage {
         let key = FaceTextureKey(
-            facePixels: max(4, min(64, settings.facePixels)),
+            facePixels: OrbitalViewportCubeVUSettings.clampedFacePixels(settings.facePixels),
             display: quantized(Double(scalars.displayVuScalar), scale: 96),
             hot: quantized(Double(scalars.hotScalar), scale: 96),
             clip: clip,
@@ -7076,6 +7380,743 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         let b = Int((color.blueComponent * 255).rounded())
         let a = Int((color.alphaComponent * 255).rounded())
         return (r << 24) | (g << 16) | (b << 8) | a
+    }
+}
+
+struct OrbitalViewportJetsVUPixelMetrics: Equatable {
+    let crossPixels: Int
+    let axialPixels: Int
+    let depth: Double
+
+    var aspectRatio: Double {
+        Double(axialPixels) / Double(crossPixels)
+    }
+
+    static func make(
+        faceSize: Double,
+        facePixels: Int,
+        jetLengthPixels: Double
+    ) -> OrbitalViewportJetsVUPixelMetrics {
+        let crossPixels = clampedCrossPixels(facePixels)
+        let axialPixels = axialPixelCount(
+            crossPixels: crossPixels,
+            jetLengthPixels: jetLengthPixels
+        )
+        return OrbitalViewportJetsVUPixelMetrics(
+            crossPixels: crossPixels,
+            axialPixels: axialPixels,
+            depth: max(faceSize, 0) * Double(axialPixels) / Double(crossPixels)
+        )
+    }
+
+    static func pixelCounts(
+        facePixels: Int,
+        jetLengthPixels: Double
+    ) -> (crossPixels: Int, axialPixels: Int) {
+        let crossPixels = clampedCrossPixels(facePixels)
+        return (
+            crossPixels: crossPixels,
+            axialPixels: axialPixelCount(
+                crossPixels: crossPixels,
+                jetLengthPixels: jetLengthPixels
+            )
+        )
+    }
+
+    private static func clampedCrossPixels(_ facePixels: Int) -> Int {
+        OrbitalViewportCubeVUSettings.clampedFacePixels(facePixels)
+    }
+
+    private static func axialPixelCount(crossPixels: Int, jetLengthPixels: Double) -> Int {
+        let normalizedPixels = min(
+            Double(SpeakerMeterVisualSettings.maxJetLengthPixels),
+            max(
+                Double(SpeakerMeterVisualSettings.minJetLengthPixels),
+                jetLengthPixels.isFinite ? jetLengthPixels : OrbitalViewportMockup.defaultJetLengthPixels
+            )
+        )
+        let scaled = (normalizedPixels / 24) * Double(crossPixels)
+        return max(crossPixels, Int(scaled.rounded(.toNearestOrAwayFromZero)))
+    }
+}
+
+enum OrbitalViewportJetsVUSceneKitMaterial {
+    static let usesRetainedAxialTextureCache = true
+    static let usesAxialPixelFill = true
+    static let sideMaterialName = "jets-vu-pixel-side"
+    static let baseCapMaterialName = "jets-vu-base-cap"
+    static let tipCapMaterialName = "jets-vu-tip-cap"
+
+    private struct AxialTextureKey: Hashable {
+        var renderStyle: String
+        var fogAmount: Int
+        var crossPixels: Int
+        var axialPixels: Int
+        var display: Int
+        var hot: Int
+        var heat: Int
+        var clip: Bool
+        var pixelFill: Int
+        var surfaceCheckerOpacity: Int
+        var responseCurve: Int
+        var idleTint: Int
+        var checkerContrast: Int
+        var hotFillStrength: Int
+        var hotThreshold: Int
+    }
+
+    private static var axialTextureCache: [AxialTextureKey: NSImage] = [:]
+    private static var axialTextureOrder: [AxialTextureKey] = []
+    private static let axialTextureCacheLimit = 160
+
+    static func makeSideMaterial() -> SCNMaterial {
+        let material = SCNMaterial()
+        material.name = sideMaterialName
+        material.lightingModel = .constant
+        material.isDoubleSided = true
+        configurePixelatedMaterialProperty(material.diffuse)
+        configurePixelatedMaterialProperty(material.emission)
+        return material
+    }
+
+    static func makeBaseCapMaterial() -> SCNMaterial {
+        makeCapMaterial(name: baseCapMaterialName)
+    }
+
+    static func makeTipCapMaterial() -> SCNMaterial {
+        makeCapMaterial(name: tipCapMaterialName)
+    }
+
+    static func update(
+        sideMaterial: SCNMaterial?,
+        baseCapMaterial: SCNMaterial?,
+        tipCapMaterial: SCNMaterial?,
+        settings: OrbitalViewportCubeVUSettings,
+        scalars: SpeakerCubeVUScalars,
+        clip: Bool,
+        alpha: Double,
+        configuration: OrbitalViewportRenderConfiguration,
+        speakerDepth: Double
+    ) {
+        guard let sideMaterial else {
+            return
+        }
+
+        let texture = axialTexture(
+            settings: settings,
+            scalars: scalars,
+            clip: clip,
+            configuration: configuration,
+            speakerDepth: speakerDepth
+        )
+        assignTexture(texture, to: sideMaterial.diffuse)
+        assignTexture(texture, to: sideMaterial.emission)
+        sideMaterial.transparency = CGFloat(alpha)
+        let signal = max(Double(scalars.displayVuScalar), Double(scalars.hotScalar))
+        let signalGate = max(smoothstep(0.018, 0.09, signal), clip ? 1 : 0)
+        sideMaterial.emission.intensity = CGFloat(
+            OrbitalViewportMath.clamp01(
+                0.015 +
+                signalGate * (
+                    Double(scalars.displayVuScalar) * 0.46 +
+                    Double(scalars.hotScalar) * 0.22
+                ) +
+                (clip ? 0.3 : 0)
+            )
+        )
+
+        let baseColor = configuration.foggedNSColor(
+            resolvedColor(red: 0.018, green: 0.022, blue: 0.028),
+            depth: speakerDepth
+        )
+        applyCap(
+            baseCapMaterial,
+            color: baseColor,
+            emission: baseColor,
+            alpha: alpha,
+            intensity: 0.012 + settings.idleTint * 0.025 * signalGate
+        )
+
+        let tipMix = clip
+            ? 1.0
+            : smoothstep(settings.hotThreshold, 1, Double(scalars.hotScalar)) * 0.82
+        let tipBase = configuration.foggedNSColor(
+            configuration.theme.cubeVUNSColor(heat: Double(scalars.paletteHeat)),
+            depth: speakerDepth
+        )
+        let tipColor = mix(
+            baseColor,
+            configuration.theme.cubeVUHotNSColor,
+            amount: tipMix
+        )
+        let activeTipColor = mix(tipBase, tipColor, amount: max(tipMix, clip ? 1 : 0))
+        applyCap(
+            tipCapMaterial,
+            color: mix(baseColor, activeTipColor, amount: signalGate),
+            emission: activeTipColor,
+            alpha: alpha,
+            intensity: 0.015 + signalGate * 0.08 + tipMix * 0.72
+        )
+    }
+
+    static func axialTexture(
+        settings: OrbitalViewportCubeVUSettings,
+        scalars: SpeakerCubeVUScalars,
+        clip: Bool,
+        configuration: OrbitalViewportRenderConfiguration,
+        speakerDepth: Double
+    ) -> NSImage {
+        let pixelCounts = OrbitalViewportJetsVUPixelMetrics.pixelCounts(
+            facePixels: settings.facePixels,
+            jetLengthPixels: configuration.jetLengthPixels
+        )
+        let key = AxialTextureKey(
+            renderStyle: configuration.renderStyle.rawValue,
+            fogAmount: quantized(configuration.depthFogAmount(speakerDepth), scale: 128),
+            crossPixels: pixelCounts.crossPixels,
+            axialPixels: pixelCounts.axialPixels,
+            display: quantized(Double(scalars.displayVuScalar), scale: 96),
+            hot: quantized(Double(scalars.hotScalar), scale: 96),
+            heat: quantized(Double(scalars.paletteHeat), scale: 96),
+            clip: clip,
+            pixelFill: quantized(settings.pixelFill, scale: 128),
+            surfaceCheckerOpacity: quantized(settings.surfaceCheckerOpacity, scale: 128),
+            responseCurve: quantized(settings.responseCurve / 4, scale: 128),
+            idleTint: quantized(settings.idleTint, scale: 96),
+            checkerContrast: quantized(settings.checkerContrast, scale: 128),
+            hotFillStrength: quantized(settings.hotFillStrength, scale: 96),
+            hotThreshold: quantized(settings.hotThreshold, scale: 96)
+        )
+
+        if let cached = axialTextureCache[key] {
+            return cached
+        }
+
+        let image = makeAxialTextureImage(
+            key: key,
+            settings: settings,
+            scalars: scalars,
+            clip: clip,
+            configuration: configuration,
+            speakerDepth: speakerDepth
+        )
+        axialTextureCache[key] = image
+        axialTextureOrder.append(key)
+        while axialTextureOrder.count > axialTextureCacheLimit, let oldest = axialTextureOrder.first {
+            axialTextureOrder.removeFirst()
+            axialTextureCache.removeValue(forKey: oldest)
+        }
+        return image
+    }
+
+    static func cachedAxialTextureCountForTests() -> Int {
+        axialTextureCache.count
+    }
+
+    static func resetAxialTextureCacheForTests() {
+        axialTextureCache.removeAll()
+        axialTextureOrder.removeAll()
+    }
+
+    private static func makeCapMaterial(name: String) -> SCNMaterial {
+        let material = SCNMaterial()
+        material.name = name
+        material.lightingModel = .constant
+        material.isDoubleSided = true
+        material.diffuse.contents = resolvedColor(red: 0.018, green: 0.022, blue: 0.028)
+        material.emission.contents = resolvedColor(red: 0.004, green: 0.006, blue: 0.010)
+        material.emission.intensity = 0.08
+        return material
+    }
+
+    private static func makeAxialTextureImage(
+        key: AxialTextureKey,
+        settings: OrbitalViewportCubeVUSettings,
+        scalars: SpeakerCubeVUScalars,
+        clip: Bool,
+        configuration: OrbitalViewportRenderConfiguration,
+        speakerDepth: Double
+    ) -> NSImage {
+        let crossPixels = key.crossPixels
+        let axialPixels = key.axialPixels
+        let tilePixels = OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel
+        let imageSize = NSSize(
+            width: axialPixels * tilePixels,
+            height: crossPixels * tilePixels
+        )
+        let image = NSImage(size: imageSize)
+        let display = OrbitalViewportMath.clamp01(Double(scalars.displayVuScalar))
+        let hot = OrbitalViewportMath.clamp01(Double(scalars.hotScalar))
+        let heat = OrbitalViewportMath.clamp01(Double(scalars.paletteHeat))
+        let signal = max(display, hot)
+        let signalGate = max(smoothstep(0.018, 0.09, signal), clip ? 1 : 0)
+        let responseCurve = max(0.001, settings.responseCurve)
+        let fillEnd = max(1 / Double(axialPixels), pow(display, responseCurve))
+        let hotEnd = max(fillEnd, pow(hot, max(0.001, responseCurve * 0.72)))
+        let leadingWidth = max(1 / Double(axialPixels), settings.bloomEdge * 0.9)
+        let pixelFill = min(1, max(0.5, settings.pixelFill))
+        let visibleCheckerContrast = max(
+            settings.checkerContrast,
+            OrbitalViewportCubeVUSceneKitMaterial.idleCheckerContrastFloor
+        ) * OrbitalViewportMath.clamp01(settings.surfaceCheckerOpacity)
+        let base = mix(
+            resolvedColor(red: 0.018, green: 0.022, blue: 0.028),
+            configuration.foggedNSColor(configuration.theme.cubeVUNSColor(heat: heat), depth: speakerDepth),
+            amount: settings.idleTint * 0.10 * signalGate
+        )
+        let gap = mix(base, resolvedColor(red: 0.004, green: 0.006, blue: 0.010), amount: 0.78)
+
+        image.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .none
+        NSGraphicsContext.current?.shouldAntialias = false
+        (pixelFill < 0.999 ? gap : base).setFill()
+        NSBezierPath(rect: NSRect(origin: .zero, size: imageSize)).fill()
+
+        for y in 0..<crossPixels {
+            for x in 0..<axialPixels {
+                let axial = (Double(x) + 0.5) / Double(axialPixels)
+                let rampPosition = pow(
+                    OrbitalViewportMath.clamp01((axial * 0.85) + (heat * 0.15)),
+                    responseCurve
+                )
+                let vuColor = configuration.foggedNSColor(
+                    configuration.theme.cubeVUNSColor(heat: rampPosition),
+                    depth: speakerDepth
+                )
+                let hotColor = configuration.theme.cubeVUHotNSColor
+                let filled = (1 - smoothstep(fillEnd, fillEnd + leadingWidth, axial)) * signalGate
+                let leading = (1 - smoothstep(leadingWidth * 0.2, leadingWidth * 1.15, abs(axial - fillEnd))) * signalGate
+                let hotLead = (1 - smoothstep(leadingWidth * 0.25, leadingWidth * 1.35, abs(axial - hotEnd))) * signalGate
+                let hotMix = settings.hotFillStrength * smoothstep(settings.hotThreshold, 1, hot)
+                let energy = OrbitalViewportMath.clamp01(
+                    settings.idleTint * 0.08 * signalGate +
+                    filled * (0.38 + display * 0.62) +
+                    leading * display * 0.24 +
+                    hotLead * hotMix * 0.34
+                )
+                var tileColor = mix(base, vuColor, amount: energy)
+                tileColor = mix(tileColor, hotColor, amount: max(leading * hotMix * 0.32, hotLead * hotMix * 0.52))
+                if clip && axial > 0.84 {
+                    tileColor = mix(tileColor, resolvedColor(red: 1, green: 0.92, blue: 0.72), amount: 0.86)
+                }
+                let checker = ((x + y) % 2 == 0)
+                    ? max(0, 1 - visibleCheckerContrast)
+                    : 1 + visibleCheckerContrast
+                tileColor = multiply(tileColor, by: checker)
+                tileColor.setFill()
+
+                let fillInset = Int(((1 - pixelFill) * Double(tilePixels) / 2).rounded(.toNearestOrAwayFromZero))
+                let tileInset = max(OrbitalViewportCubeVUSceneKitMaterial.faceTextureTileGapPixels, fillInset)
+                let rect = NSRect(
+                    x: x * tilePixels + tileInset,
+                    y: y * tilePixels + tileInset,
+                    width: max(1, tilePixels - tileInset * 2),
+                    height: max(1, tilePixels - tileInset * 2)
+                )
+                NSBezierPath(rect: rect).fill()
+            }
+        }
+        image.unlockFocus()
+        return image
+    }
+
+    private static func configurePixelatedMaterialProperty(_ property: SCNMaterialProperty) {
+        property.magnificationFilter = .nearest
+        property.minificationFilter = .nearest
+        property.mipFilter = .none
+        property.wrapS = .clamp
+        property.wrapT = .clamp
+    }
+
+    private static func assignTexture(_ texture: NSImage, to property: SCNMaterialProperty) {
+        if let current = property.contents as? NSImage,
+           current === texture {
+            return
+        }
+        property.contents = texture
+    }
+
+    private static func applyCap(
+        _ material: SCNMaterial?,
+        color: NSColor,
+        emission: NSColor,
+        alpha: Double,
+        intensity: Double
+    ) {
+        material?.diffuse.contents = color
+        material?.emission.contents = emission
+        material?.transparency = CGFloat(alpha)
+        material?.emission.intensity = CGFloat(OrbitalViewportMath.clamp01(intensity))
+    }
+
+    private static func resolvedColor(red: CGFloat, green: CGFloat, blue: CGFloat) -> NSColor {
+        NSColor(deviceRed: red, green: green, blue: blue, alpha: 1)
+    }
+
+    private static func resolvedColor(_ color: NSColor) -> NSColor {
+        color.usingColorSpace(.deviceRGB) ?? color
+    }
+
+    private static func mix(_ first: NSColor, _ second: NSColor, amount: Double) -> NSColor {
+        let first = resolvedColor(first)
+        let second = resolvedColor(second)
+        let t = CGFloat(OrbitalViewportMath.clamp01(amount))
+        return NSColor(
+            deviceRed: first.redComponent + (second.redComponent - first.redComponent) * t,
+            green: first.greenComponent + (second.greenComponent - first.greenComponent) * t,
+            blue: first.blueComponent + (second.blueComponent - first.blueComponent) * t,
+            alpha: first.alphaComponent + (second.alphaComponent - first.alphaComponent) * t
+        )
+    }
+
+    private static func multiply(_ color: NSColor, by factor: Double) -> NSColor {
+        let color = resolvedColor(color)
+        let factor = CGFloat(max(0, factor))
+        return NSColor(
+            deviceRed: min(1, color.redComponent * factor),
+            green: min(1, color.greenComponent * factor),
+            blue: min(1, color.blueComponent * factor),
+            alpha: color.alphaComponent
+        )
+    }
+
+    private static func smoothstep(_ edge0: Double, _ edge1: Double, _ value: Double) -> Double {
+        guard edge0 != edge1 else {
+            return value < edge0 ? 0 : 1
+        }
+        let t = OrbitalViewportMath.clamp01((value - edge0) / (edge1 - edge0))
+        return t * t * (3 - 2 * t)
+    }
+
+    private static func quantized(_ value: Double, scale: Double) -> Int {
+        guard value.isFinite else {
+            return 0
+        }
+        return Int((OrbitalViewportMath.clamp01(value) * scale).rounded())
+    }
+}
+
+enum OrbitalViewportPixelJetsSceneKitMaterial {
+    static let usesGeneratedTextures = false
+    static let usesSceneKitShaderModifiers = false
+    static let usesRetainedBandMaterials = true
+    static let sideMaterialName = "pixel-jets-side"
+    static let baseCapMaterialName = "pixel-jets-base-cap"
+    static let tipCapMaterialName = "pixel-jets-tip-cap"
+
+    static func sideBandCount(settings: OrbitalViewportCubeVUSettings) -> Int {
+        OrbitalViewportCubeVUSettings.clampedFacePixels(settings.facePixels)
+    }
+
+    static func sideMaterialName(index: Int) -> String {
+        "\(sideMaterialName)-\(index)"
+    }
+
+    static func makeSideMaterials(settings: OrbitalViewportCubeVUSettings) -> [SCNMaterial] {
+        (0..<sideBandCount(settings: settings)).map { makeMaterial(name: sideMaterialName(index: $0)) }
+    }
+
+    static func makeBaseCapMaterial() -> SCNMaterial {
+        makeMaterial(name: baseCapMaterialName)
+    }
+
+    static func makeTipCapMaterial() -> SCNMaterial {
+        makeMaterial(name: tipCapMaterialName)
+    }
+
+    static func update(
+        sideMaterials: [SCNMaterial],
+        baseCapMaterial: SCNMaterial?,
+        tipCapMaterial: SCNMaterial?,
+        settings: OrbitalViewportCubeVUSettings,
+        scalars: SpeakerCubeVUScalars,
+        clip: Bool,
+        alpha: Double,
+        configuration: OrbitalViewportRenderConfiguration,
+        speakerDepth: Double
+    ) {
+        let display = OrbitalViewportMath.clamp01(Double(scalars.displayVuScalar))
+        let hot = OrbitalViewportMath.clamp01(Double(scalars.hotScalar))
+        let heat = OrbitalViewportMath.clamp01(Double(scalars.paletteHeat))
+        let baseColor = configuration.foggedNSColor(
+            resolvedColor(red: 0.018, green: 0.022, blue: 0.028),
+            depth: speakerDepth
+        )
+        let vuColor = configuration.foggedNSColor(
+            configuration.theme.cubeVUNSColor(heat: heat),
+            depth: speakerDepth
+        )
+        let hotColor = configuration.theme.cubeVUHotNSColor
+        let hotMix = clip
+            ? 1.0
+            : smoothstep(settings.hotThreshold, 1, hot) * settings.hotFillStrength
+        let signal = max(display, hot)
+        let signalGate = max(smoothstep(0.018, 0.09, signal), clip ? 1 : 0)
+        let visibleEnergy = OrbitalViewportMath.clamp01(
+            signalGate * (
+                display * (0.48 + display * 0.28) +
+                hotMix * 0.22
+            )
+        )
+        let sideAlpha = alpha * (0.18 + signalGate * 0.82)
+        let count = max(1, sideMaterials.count)
+        let cellWidth = 1.0 / Double(count)
+        for (index, material) in sideMaterials.enumerated() {
+            let axial = (Double(index) + 0.5) / Double(count)
+            let levelFill = smoothstep(axial - cellWidth * 0.62, axial + cellWidth * 0.62, display) * signalGate
+            let meterHead = (1 - smoothstep(cellWidth * 0.35, cellWidth * 1.35, abs(axial - display))) * signalGate
+            let tipBand = (1 - smoothstep(cellWidth * 0.5, cellWidth * 1.7, abs(axial - hot))) * signalGate
+            let outwardGradient = smoothstep(0.0, 1.0, axial)
+            let band = OrbitalViewportMath.clamp01(
+                levelFill * (0.24 + display * 0.38) +
+                meterHead * (0.38 + display * 0.34) +
+                tipBand * hotMix * 0.22
+            )
+            let bandHeat = OrbitalViewportMath.clamp01(
+                heat * 0.52 +
+                outwardGradient * 0.30 +
+                band * 0.20
+            )
+            let bandVUColor = configuration.foggedNSColor(
+                configuration.theme.cubeVUNSColor(heat: bandHeat),
+                depth: speakerDepth
+            )
+            let idleColor = mix(
+                baseColor,
+                bandVUColor,
+                amount: settings.idleTint * 0.08 * signalGate
+            )
+            let energy = OrbitalViewportMath.clamp01(
+                visibleEnergy * 0.36 +
+                band * (0.46 + display * 0.24) +
+                tipBand * hotMix * 0.28
+            )
+            let sideColor = mix(idleColor, bandVUColor, amount: energy)
+            let sideEmission = mix(
+                sideColor,
+                hotColor,
+                amount: max(hotMix * 0.34, tipBand * hotMix)
+            )
+            apply(
+                material,
+                color: sideColor,
+                emission: sideEmission,
+                alpha: sideAlpha,
+                intensity: 0.015 + energy * 0.54 + max(meterHead, tipBand) * 0.24 + hotMix * 0.20
+            )
+        }
+
+        apply(
+            baseCapMaterial,
+            color: baseColor,
+            emission: baseColor,
+            alpha: alpha * (0.22 + signalGate * 0.78),
+            intensity: 0.012 + settings.idleTint * 0.025 * signalGate
+        )
+
+        let activeTipColor = mix(vuColor, hotColor, amount: max(hotMix, clip ? 1 : 0))
+        let tipColor = mix(baseColor, activeTipColor, amount: signalGate)
+        apply(
+            tipCapMaterial,
+            color: tipColor,
+            emission: tipColor,
+            alpha: alpha * (0.22 + signalGate * 0.78),
+            intensity: 0.015 + signalGate * 0.10 + hotMix * 0.74 + (clip ? 0.28 : 0)
+        )
+    }
+
+    private static func makeMaterial(name: String) -> SCNMaterial {
+        let material = SCNMaterial()
+        material.name = name
+        material.lightingModel = .constant
+        material.isDoubleSided = true
+        material.diffuse.contents = resolvedColor(red: 0.018, green: 0.022, blue: 0.028)
+        material.emission.contents = resolvedColor(red: 0.004, green: 0.006, blue: 0.010)
+        material.emission.intensity = 0.08
+        return material
+    }
+
+    private static func apply(
+        _ material: SCNMaterial?,
+        color: NSColor,
+        emission: NSColor,
+        alpha: Double,
+        intensity: Double
+    ) {
+        material?.diffuse.contents = color
+        material?.emission.contents = emission
+        material?.transparency = CGFloat(alpha)
+        material?.emission.intensity = CGFloat(OrbitalViewportMath.clamp01(intensity))
+    }
+
+    private static func resolvedColor(red: CGFloat, green: CGFloat, blue: CGFloat) -> NSColor {
+        NSColor(deviceRed: red, green: green, blue: blue, alpha: 1)
+    }
+
+    private static func resolvedColor(_ color: NSColor) -> NSColor {
+        color.usingColorSpace(.deviceRGB) ?? color
+    }
+
+    private static func mix(_ first: NSColor, _ second: NSColor, amount: Double) -> NSColor {
+        let first = resolvedColor(first)
+        let second = resolvedColor(second)
+        let t = CGFloat(OrbitalViewportMath.clamp01(amount))
+        return NSColor(
+            deviceRed: first.redComponent + (second.redComponent - first.redComponent) * t,
+            green: first.greenComponent + (second.greenComponent - first.greenComponent) * t,
+            blue: first.blueComponent + (second.blueComponent - first.blueComponent) * t,
+            alpha: first.alphaComponent + (second.alphaComponent - first.alphaComponent) * t
+        )
+    }
+
+    private static func smoothstep(_ edge0: Double, _ edge1: Double, _ value: Double) -> Double {
+        guard edge0 != edge1 else {
+            return value < edge0 ? 0 : 1
+        }
+        let t = OrbitalViewportMath.clamp01((value - edge0) / (edge1 - edge0))
+        return t * t * (3 - 2 * t)
+    }
+
+}
+
+enum OrbitalViewportCellJetsSceneKitMaterial {
+    static let usesGeneratedTextures = false
+    static let usesSceneKitShaderModifiers = false
+    static let usesRetainedCellMaterials = true
+    static let sideMaterialName = "cell-jets-cell"
+
+    static func sideBandCount(settings: OrbitalViewportCubeVUSettings) -> Int {
+        OrbitalViewportCubeVUSettings.clampedFacePixels(settings.facePixels)
+    }
+
+    static func sideMaterialName(index: Int) -> String {
+        "\(sideMaterialName)-\(index)"
+    }
+
+    static func makeSideMaterials(settings: OrbitalViewportCubeVUSettings) -> [SCNMaterial] {
+        (0..<sideBandCount(settings: settings)).map { makeMaterial(name: sideMaterialName(index: $0)) }
+    }
+
+    static func update(
+        cellMaterials: [SCNMaterial],
+        settings: OrbitalViewportCubeVUSettings,
+        scalars: SpeakerCubeVUScalars,
+        clip: Bool,
+        alpha: Double,
+        configuration: OrbitalViewportRenderConfiguration,
+        speakerDepth: Double
+    ) {
+        let display = OrbitalViewportMath.clamp01(Double(scalars.displayVuScalar))
+        let hot = OrbitalViewportMath.clamp01(Double(scalars.hotScalar))
+        let heat = OrbitalViewportMath.clamp01(Double(scalars.paletteHeat))
+        let baseColor = configuration.foggedNSColor(
+            resolvedColor(red: 0.014, green: 0.018, blue: 0.024),
+            depth: speakerDepth
+        )
+        let hotColor = configuration.theme.cubeVUHotNSColor
+        let hotMix = clip
+            ? 1.0
+            : smoothstep(settings.hotThreshold, 1, hot) * settings.hotFillStrength
+        let signal = max(display, hot)
+        let signalGate = max(smoothstep(0.018, 0.09, signal), clip ? 1 : 0)
+        let count = max(1, cellMaterials.count)
+        let cellWidth = 1.0 / Double(count)
+        let idleOpacity = OrbitalViewportMath.clamp01(settings.cellJetsIdleOpacity)
+        let sideAlpha = alpha * (idleOpacity * 0.16 + signalGate * 0.84)
+        let tipIsFullScale = clip || display >= 0.995
+
+        for (index, material) in cellMaterials.enumerated() {
+            let axial = (Double(index) + 0.5) / Double(count)
+            let isFinalCell = index == count - 1
+            let levelFill = smoothstep(axial - cellWidth * 0.62, axial + cellWidth * 0.62, display) * signalGate
+            let leadingEdge = (1 - smoothstep(cellWidth * 0.35, cellWidth * 1.35, abs(axial - display))) * signalGate
+            let tipCell = (1 - smoothstep(cellWidth * 0.5, cellWidth * 1.7, abs(axial - hot))) * signalGate
+            let cellEnergy = OrbitalViewportMath.clamp01(
+                levelFill * (0.44 + display * 0.36) +
+                leadingEdge * (0.26 + display * 0.30) +
+                tipCell * hotMix * 0.26
+            )
+            let cellHeat = OrbitalViewportMath.clamp01(
+                heat * 0.56 +
+                axial * 0.32 +
+                cellEnergy * 0.18
+            )
+            let cellVUColor = configuration.foggedNSColor(
+                configuration.theme.cubeVUNSColor(heat: cellHeat),
+                depth: speakerDepth
+            )
+            let idleColor = mix(
+                baseColor,
+                cellVUColor,
+                amount: settings.idleTint * 0.06 * signalGate
+            )
+            let isMutedFinalCell = isFinalCell && !tipIsFullScale
+            let color = isMutedFinalCell ? baseColor : mix(idleColor, cellVUColor, amount: cellEnergy)
+            let emission = isMutedFinalCell ? baseColor : mix(color, hotColor, amount: max(hotMix * 0.28, tipCell * hotMix))
+            let materialAlpha = isMutedFinalCell ? alpha * idleOpacity * 0.04 : sideAlpha
+            let materialIntensity = isMutedFinalCell
+                ? 0
+                : 0.012 + cellEnergy * 0.46 + max(leadingEdge, tipCell) * 0.18 + hotMix * 0.16
+            apply(
+                material,
+                color: color,
+                emission: emission,
+                alpha: materialAlpha,
+                intensity: materialIntensity
+            )
+        }
+    }
+
+    private static func makeMaterial(name: String) -> SCNMaterial {
+        let material = SCNMaterial()
+        material.name = name
+        material.lightingModel = .constant
+        material.isDoubleSided = true
+        material.diffuse.contents = resolvedColor(red: 0.014, green: 0.018, blue: 0.024)
+        material.emission.contents = resolvedColor(red: 0.003, green: 0.005, blue: 0.008)
+        material.emission.intensity = 0.06
+        return material
+    }
+
+    private static func apply(
+        _ material: SCNMaterial?,
+        color: NSColor,
+        emission: NSColor,
+        alpha: Double,
+        intensity: Double
+    ) {
+        material?.diffuse.contents = color
+        material?.emission.contents = emission
+        material?.transparency = CGFloat(alpha)
+        material?.emission.intensity = CGFloat(OrbitalViewportMath.clamp01(intensity))
+    }
+
+    private static func resolvedColor(red: CGFloat, green: CGFloat, blue: CGFloat) -> NSColor {
+        NSColor(deviceRed: red, green: green, blue: blue, alpha: 1)
+    }
+
+    private static func resolvedColor(_ color: NSColor) -> NSColor {
+        color.usingColorSpace(.deviceRGB) ?? color
+    }
+
+    private static func mix(_ first: NSColor, _ second: NSColor, amount: Double) -> NSColor {
+        let first = resolvedColor(first)
+        let second = resolvedColor(second)
+        let t = CGFloat(OrbitalViewportMath.clamp01(amount))
+        return NSColor(
+            deviceRed: first.redComponent + (second.redComponent - first.redComponent) * t,
+            green: first.greenComponent + (second.greenComponent - first.greenComponent) * t,
+            blue: first.blueComponent + (second.blueComponent - first.blueComponent) * t,
+            alpha: first.alphaComponent + (second.alphaComponent - first.alphaComponent) * t
+        )
+    }
+
+    private static func smoothstep(_ edge0: Double, _ edge1: Double, _ value: Double) -> Double {
+        guard edge0 != edge1 else {
+            return value < edge0 ? 0 : 1
+        }
+        let t = OrbitalViewportMath.clamp01((value - edge0) / (edge1 - edge0))
+        return t * t * (3 - 2 * t)
     }
 }
 
@@ -7496,6 +8537,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
     let ribbedSphereVerticalRibs: Int
     let ribbedSphereHorizontalRings: Int
     let speakerShape: OrbitalViewportSpeakerShape
+    let jetLengthPixels: Double
     let speakerSize: Double
     let fogDensity: Double
     let meterSource: OrbitalViewportMeterSource
@@ -7537,6 +8579,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         ribbedSphereVerticalRibs: Int = OrbitalViewportMockup.defaultRibbedSphereVerticalRibs,
         ribbedSphereHorizontalRings: Int = OrbitalViewportMockup.defaultRibbedSphereHorizontalRings,
         speakerShape: OrbitalViewportSpeakerShape,
+        jetLengthPixels: Double = OrbitalViewportMockup.defaultJetLengthPixels,
         speakerSize: Double,
         fogDensity: Double,
         meterSource: OrbitalViewportMeterSource = .telemetryNoProvider,
@@ -7577,6 +8620,10 @@ struct OrbitalViewportRenderConfiguration: Equatable {
         self.ribbedSphereVerticalRibs = OrbitalViewportRibbedSpeakerSphereGeometry.normalizedVerticalRibs(ribbedSphereVerticalRibs)
         self.ribbedSphereHorizontalRings = OrbitalViewportRibbedSpeakerSphereGeometry.normalizedHorizontalRings(ribbedSphereHorizontalRings)
         self.speakerShape = speakerShape
+        self.jetLengthPixels = min(
+            Double(SpeakerMeterVisualSettings.maxJetLengthPixels),
+            max(Double(SpeakerMeterVisualSettings.minJetLengthPixels), jetLengthPixels.isFinite ? jetLengthPixels : OrbitalViewportMockup.defaultJetLengthPixels)
+        )
         self.speakerSize = speakerSize
         self.fogDensity = fogDensity
         self.meterSource = meterSource
@@ -7842,6 +8889,7 @@ struct OrbitalViewportRenderConfiguration: Equatable {
             ribbedSphereVerticalRibs: ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: ribbedSphereHorizontalRings,
             speakerShape: speakerShape,
+            jetLengthPixels: jetLengthPixels,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
             meterSource: meterSource,
@@ -7986,15 +9034,23 @@ struct OrbitalViewportRibbedSpeakerSphereUpdateKey: Equatable {
 
 struct OrbitalViewportSpeakerGeometryUpdateKey: Equatable {
     let speakerShape: OrbitalViewportSpeakerShape
+    let jetLengthPixels: Double
+    let jetFacePixels: Int
     let speakerSize: Double
     let speakers: [OrbitalViewportSpeaker]
 
     init(
         speakerShape: OrbitalViewportSpeakerShape,
+        jetLengthPixels: Double = OrbitalViewportMockup.defaultJetLengthPixels,
+        jetFacePixels: Int = OrbitalViewportCubeVUSceneKitMaterial.defaultFacePixels,
         speakerSize: Double,
         speakers: [OrbitalViewportSpeaker]
     ) {
         self.speakerShape = speakerShape
+        self.jetLengthPixels = speakerShape.isJetStyle ? jetLengthPixels : OrbitalViewportMockup.defaultJetLengthPixels
+        self.jetFacePixels = speakerShape.usesDensitySegmentedJetSurface
+            ? OrbitalViewportCubeVUSettings.clampedFacePixels(jetFacePixels)
+            : OrbitalViewportCubeVUSceneKitMaterial.defaultFacePixels
         self.speakerSize = speakerSize
         self.speakers = speakers
     }
@@ -8002,6 +9058,8 @@ struct OrbitalViewportSpeakerGeometryUpdateKey: Equatable {
     init(configuration: OrbitalViewportRenderConfiguration) {
         self.init(
             speakerShape: configuration.speakerShape,
+            jetLengthPixels: configuration.jetLengthPixels,
+            jetFacePixels: configuration.cubeVUSettings.facePixels,
             speakerSize: configuration.speakerSize,
             speakers: configuration.speakers
         )
@@ -9041,8 +10099,119 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             speakerNodes[channel]?.isHidden
         }
 
+        func speakerNodePositionForTests(channel: Int) -> SCNVector3? {
+            speakerNodes[channel]?.position
+        }
+
         func speakerLabelNodeHiddenForTests(channel: Int) -> Bool? {
             labelNodes[channel]?.isHidden
+        }
+
+        func speakerLabelNodePositionForTests(channel: Int) -> SCNVector3? {
+            labelNodes[channel]?.position
+        }
+
+        func speakerOutlineNodeCountForTests(channel: Int) -> Int? {
+            speakerOutlineNodes[channel]?.count
+        }
+
+        func speakerOutlineBoxSizesForTests(channel: Int) -> [(width: CGFloat, height: CGFloat, length: CGFloat)]? {
+            speakerOutlineNodes[channel]?.compactMap { node in
+                guard let box = node.geometry as? SCNBox else {
+                    return nil
+                }
+                return (box.width, box.height, box.length)
+            }
+        }
+
+        func speakerOutlineHiddenStatesForTests(channel: Int) -> [Bool]? {
+            speakerOutlineNodes[channel]?.map(\.isHidden)
+        }
+
+        func speakerBoxSizeForTests(channel: Int) -> (width: CGFloat, height: CGFloat, length: CGFloat)? {
+            guard let geometry = speakerNodes[channel]?.geometry else {
+                return nil
+            }
+            if let box = geometry as? SCNBox {
+                return (box.width, box.height, box.length)
+            }
+            let bounds = geometry.boundingBox
+            return (
+                CGFloat(bounds.max.x - bounds.min.x),
+                CGFloat(bounds.max.y - bounds.min.y),
+                CGFloat(bounds.max.z - bounds.min.z)
+            )
+        }
+
+        func speakerMaterialNamesForTests(channel: Int) -> [String]? {
+            speakerNodes[channel]?.geometry?.materials.map { $0.name ?? "" }
+        }
+
+        func speakerGeometryPrimitiveCountsForTests(channel: Int) -> [Int]? {
+            guard let geometry = speakerNodes[channel]?.geometry else {
+                return nil
+            }
+            return (0..<geometry.elementCount).map {
+                geometry.element(at: $0).primitiveCount
+            }
+        }
+
+        func speakerDiffuseTextureForTests(channel: Int, materialIndex: Int) -> NSImage? {
+            guard let materials = speakerNodes[channel]?.geometry?.materials,
+                  materials.indices.contains(materialIndex) else {
+                return nil
+            }
+            return materials[materialIndex].diffuse.contents as? NSImage
+        }
+
+        func speakerDiffuseColorForTests(channel: Int, materialIndex: Int) -> NSColor? {
+            guard let materials = speakerNodes[channel]?.geometry?.materials,
+                  materials.indices.contains(materialIndex) else {
+                return nil
+            }
+            return materials[materialIndex].diffuse.contents as? NSColor
+        }
+
+        func speakerDiffuseFilterModesForTests(channel: Int, materialIndex: Int) -> (magnification: SCNFilterMode, minification: SCNFilterMode)? {
+            guard let materials = speakerNodes[channel]?.geometry?.materials,
+                  materials.indices.contains(materialIndex) else {
+                return nil
+            }
+            let property = materials[materialIndex].diffuse
+            return (property.magnificationFilter, property.minificationFilter)
+        }
+
+        func speakerEmissionIntensityForTests(channel: Int, materialIndex: Int) -> CGFloat? {
+            guard let materials = speakerNodes[channel]?.geometry?.materials,
+                  materials.indices.contains(materialIndex) else {
+                return nil
+            }
+            return materials[materialIndex].emission.intensity
+        }
+
+        func speakerMaterialTransparencyForTests(channel: Int, materialIndex: Int) -> CGFloat? {
+            guard let materials = speakerNodes[channel]?.geometry?.materials,
+                  materials.indices.contains(materialIndex) else {
+                return nil
+            }
+            return materials[materialIndex].transparency
+        }
+
+        func speakerSurfaceShaderForTests(channel: Int, materialIndex: Int) -> String? {
+            guard let materials = speakerNodes[channel]?.geometry?.materials,
+                  materials.indices.contains(materialIndex) else {
+                return nil
+            }
+            return materials[materialIndex].shaderModifiers?[.surface]
+        }
+
+        func speakerShaderNumericValueForTests(channel: Int, materialIndex: Int, key: String) -> Double? {
+            guard let materials = speakerNodes[channel]?.geometry?.materials,
+                  materials.indices.contains(materialIndex),
+                  let value = materials[materialIndex].value(forKey: key) as? NSNumber else {
+                return nil
+            }
+            return value.doubleValue
         }
 
         var ribbedSphereCutawayPlaneHiddenForTests: Bool {
@@ -9160,6 +10329,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             rebuildSpeakers(
                 speakers: OrbitalViewportSpeaker.referenceSpeakers,
                 shape: .prism,
+                jetLengthPixels: OrbitalViewportMockup.defaultJetLengthPixels,
+                jetFacePixels: OrbitalViewportCubeVUSceneKitMaterial.defaultFacePixels,
                 speakerSize: OrbitalViewportMath.speakerSize(fromSlider: 50),
                 speakerLabelFont: .systemDefault,
                 speakerLabelSizeScale: 1
@@ -9206,6 +10377,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 rebuildSpeakers(
                     speakers: configuration.speakers,
                     shape: configuration.speakerShape,
+                    jetLengthPixels: configuration.jetLengthPixels,
+                    jetFacePixels: configuration.cubeVUSettings.facePixels,
                     speakerSize: configuration.speakerSize,
                     speakerLabelFont: configuration.speakerLabelFont,
                     speakerLabelSizeScale: configuration.speakerLabelSizeScale
@@ -9401,8 +10574,11 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             let shouldUpdateSpeakerVisibility = lastSpeakerVisibilityKey != visibilityKey
             let speakerMaterialCadenceChanged = lastSpeakerMaterialKey != materialKey
             let speakerMaterialVisualChanged = lastSpeakerMaterialVisualSignatureKey != materialVisualSignatureKey
-            let shouldUpdateSpeakerMaterial = speakerMaterialCadenceChanged && speakerMaterialVisualChanged
-            if speakerMaterialCadenceChanged && !speakerMaterialVisualChanged {
+            let shouldUpdateSpeakerMaterial = speakerMaterialCadenceChanged &&
+                (speakerMaterialVisualChanged || configuration.speakerShape.isJetStyle)
+            if speakerMaterialCadenceChanged &&
+                !speakerMaterialVisualChanged &&
+                !configuration.speakerShape.isJetStyle {
                 instrumentation.speakerMaterialUnchangedFrameSkipCount += 1
                 lastSpeakerMaterialKey = materialKey
             }
@@ -9691,6 +10867,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private func rebuildSpeakers(
             speakers: [OrbitalViewportSpeaker],
             shape: OrbitalViewportSpeakerShape,
+            jetLengthPixels: Double,
+            jetFacePixels: Int,
             speakerSize: Double,
             speakerLabelFont: OrbitalViewportSpeakerLabelFont,
             speakerLabelSizeScale: Double
@@ -9705,6 +10883,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             speakerOutlineMaterialKeys.removeAll()
             lastSpeakerGeometryKey = OrbitalViewportSpeakerGeometryUpdateKey(
                 speakerShape: shape,
+                jetLengthPixels: jetLengthPixels,
+                jetFacePixels: jetFacePixels,
                 speakerSize: speakerSize,
                 speakers: speakers
             )
@@ -9713,6 +10893,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 let node = makeSpeakerNode(
                     speaker: speaker,
                     shape: shape,
+                    jetLengthPixels: jetLengthPixels,
+                    jetFacePixels: jetFacePixels,
                     speakerSize: speakerSize
                 )
                 node.name = "speaker-\(speaker.channel)"
@@ -9749,7 +10931,13 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             for speaker in speakers {
                 let label = makeLabelNode(channel: speaker.channel, font: font, sizeScale: sizeScale)
                 label.name = "speaker-label-\(speaker.channel)"
-                label.position = (OVVector3(speaker) * 1.18).scn
+                label.position = speakerLabelPosition(
+                    for: speaker,
+                    shape: lastSpeakerGeometryKey?.speakerShape ?? .cubeVU,
+                    jetLengthPixels: lastSpeakerGeometryKey?.jetLengthPixels ?? OrbitalViewportMockup.defaultJetLengthPixels,
+                    jetFacePixels: lastSpeakerGeometryKey?.jetFacePixels ?? OrbitalViewportCubeVUSettings.default.facePixels,
+                    speakerSize: lastSpeakerGeometryKey?.speakerSize ?? OrbitalViewportMath.speakerSize(fromSlider: 50)
+                ).scn
                 labelRoot.addChildNode(label)
                 labelNodes[speaker.channel] = label
             }
@@ -9758,6 +10946,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private func makeSpeakerNode(
             speaker: OrbitalViewportSpeaker,
             shape: OrbitalViewportSpeakerShape,
+            jetLengthPixels: Double,
+            jetFacePixels: Int,
             speakerSize: Double
         ) -> SCNNode {
             let node: SCNNode
@@ -9765,20 +10955,49 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             case .sphere:
                 node = SCNNode(geometry: SCNSphere(radius: 0.035 * speakerSize))
                 node.position = (OVVector3(speaker) * 1.02).scn
-            case .prism, .cubeVU:
+            case .prism, .cubeVU, .pixelJets, .cellJets:
                 let short = 0.032 * speakerSize * (
-                    shape == .cubeVU ? OrbitalViewportCubeVUSceneKitMaterial.cubeVUReadableFaceScale : 1
+                    shape.usesReadableFaceScale
+                        ? OrbitalViewportCubeVUSceneKitMaterial.cubeVUReadableFaceScale
+                        : 1
                 )
-                let width = shape == .cubeVU ? short : short * 2
-                let depth = short
-                let geometry = SCNBox(
-                    width: width,
-                    height: short,
-                    length: depth,
-                    chamferRadius: shape == .cubeVU ? 0 : short * 0.05
-                )
+                let width = shape.usesReadableFaceScale ? short : short * 2
+                let depth: Double
+                if shape == .pixelJets {
+                    depth = OrbitalViewportJetsVUPixelMetrics.make(
+                        faceSize: short,
+                        facePixels: jetFacePixels,
+                        jetLengthPixels: jetLengthPixels
+                    ).depth
+                } else if shape == .cellJets {
+                    depth = max(short, short * normalizedJetLengthRatio(jetLengthPixels))
+                } else {
+                    depth = short
+                }
+                let geometry: SCNGeometry
+                if shape == .pixelJets {
+                    geometry = makeJetsVUPrismGeometry(width: width, height: short, depth: depth)
+                } else if shape == .cellJets {
+                    geometry = makeSolidJetsPrismGeometry(
+                        width: width,
+                        height: short,
+                        depth: depth,
+                        sideBands: OrbitalViewportCellJetsSceneKitMaterial.sideBandCount(
+                            settings: OrbitalViewportCubeVUSettings.defaultWith(facePixels: jetFacePixels)
+                        )
+                    )
+                } else if shape.isJetStyle {
+                    geometry = makeJetsVUPrismGeometry(width: width, height: short, depth: depth)
+                } else {
+                    geometry = SCNBox(
+                        width: width,
+                        height: short,
+                        length: depth,
+                        chamferRadius: shape == .cubeVU ? 0 : short * 0.05
+                    )
+                }
                 node = SCNNode(geometry: geometry)
-                if shape == .cubeVU {
+                if shape == .cubeVU || shape.isJetStyle {
                     makeCubeOutlineNodes(
                         channel: speaker.channel,
                         width: width,
@@ -9796,20 +11015,326 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                 )
             }
 
-            let material = shape == .cubeVU
-                ? OrbitalViewportCubeVUSceneKitMaterial.makeMaterial()
-                : SCNMaterial()
-            if shape != .cubeVU {
+            if shape == .cubeVU {
+                let material = OrbitalViewportCubeVUSceneKitMaterial.makeMaterial()
+                node.geometry?.materials = Array(repeating: material, count: 6)
+            } else if shape == .pixelJets {
+                node.geometry?.materials = [
+                    OrbitalViewportJetsVUSceneKitMaterial.makeSideMaterial(),
+                    OrbitalViewportJetsVUSceneKitMaterial.makeBaseCapMaterial(),
+                    OrbitalViewportJetsVUSceneKitMaterial.makeTipCapMaterial()
+                ]
+            } else if shape == .cellJets {
+                var settings = OrbitalViewportCubeVUSettings.default
+                settings.facePixels = jetFacePixels
+                node.geometry?.materials = OrbitalViewportCellJetsSceneKitMaterial.makeSideMaterials(settings: settings)
+            } else {
+                let material = SCNMaterial()
                 material.lightingModel = .physicallyBased
-            }
-            node.geometry?.materials = shape == .cubeVU
-                ? Array(repeating: material, count: 6)
-                : [material]
-            if shape != .cubeVU {
+                node.geometry?.materials = [material]
                 node.geometry?.firstMaterial?.metalness.contents = 0.12
                 node.geometry?.firstMaterial?.roughness.contents = 0.38
             }
             return node
+        }
+
+        private func speakerLabelPosition(
+            for speaker: OrbitalViewportSpeaker,
+            shape: OrbitalViewportSpeakerShape,
+            jetLengthPixels: Double,
+            jetFacePixels: Int,
+            speakerSize: Double
+        ) -> OVVector3 {
+            let radial = OVVector3(speaker).normalized(fallback: OVVector3(x: 0, y: 0, z: 1))
+            let distance = speakerLabelRadialDistance(
+                shape: shape,
+                jetLengthPixels: jetLengthPixels,
+                jetFacePixels: jetFacePixels,
+                speakerSize: speakerSize
+            )
+            return radial * distance
+        }
+
+        private func speakerLabelRadialDistance(
+            shape: OrbitalViewportSpeakerShape,
+            jetLengthPixels: Double,
+            jetFacePixels: Int,
+            speakerSize: Double
+        ) -> Double {
+            let short = 0.032 * speakerSize * (
+                shape.usesReadableFaceScale
+                    ? OrbitalViewportCubeVUSceneKitMaterial.cubeVUReadableFaceScale
+                    : 1
+            )
+            let depth: Double
+            switch shape {
+            case .sphere:
+                depth = 0.02 + (0.035 * speakerSize)
+            case .pixelJets:
+                depth = OrbitalViewportJetsVUPixelMetrics.make(
+                    faceSize: short,
+                    facePixels: jetFacePixels,
+                    jetLengthPixels: jetLengthPixels
+                ).depth
+            case .cellJets:
+                depth = max(short, short * normalizedJetLengthRatio(jetLengthPixels))
+            case .prism, .cubeVU:
+                depth = short
+            }
+            return 1 + depth + OrbitalViewportSceneMetrics.speakerLabelOuterGap
+        }
+
+        private func normalizedJetLengthRatio(_ jetLengthPixels: Double) -> Double {
+            let normalizedPixels = min(
+                Double(SpeakerMeterVisualSettings.maxJetLengthPixels),
+                max(
+                    Double(SpeakerMeterVisualSettings.minJetLengthPixels),
+                    jetLengthPixels.isFinite ? jetLengthPixels : OrbitalViewportMockup.defaultJetLengthPixels
+                )
+            )
+            return normalizedPixels / 24
+        }
+
+        private func makeSolidJetsPrismGeometry(
+            width: Double,
+            height: Double,
+            depth: Double,
+            sideBands: Int
+        ) -> SCNGeometry {
+            let halfWidth = width * 0.5
+            let halfHeight = height * 0.5
+            let halfDepth = depth * 0.5
+            let bandCount = max(1, sideBands)
+            var vertices: [SCNVector3] = []
+            var normals: [SCNVector3] = []
+            var textureCoordinates: [CGPoint] = []
+            var cellIndices = Array(repeating: [Int32](), count: bandCount)
+
+            func appendFace(
+                _ corners: [SCNVector3],
+                normal: SCNVector3,
+                materialIndices: inout [Int32],
+                axialUVs: [CGPoint]
+            ) {
+                let start = Int32(vertices.count)
+                vertices.append(contentsOf: corners)
+                normals.append(contentsOf: Array(repeating: normal, count: corners.count))
+                textureCoordinates.append(contentsOf: axialUVs)
+                materialIndices.append(contentsOf: [
+                    start, start + 1, start + 2,
+                    start, start + 2, start + 3
+                ])
+            }
+
+            let frontZ = -halfDepth
+            let tipZ = halfDepth
+            for bandIndex in 0..<bandCount {
+                let lower = Double(bandIndex) / Double(bandCount)
+                let upper = Double(bandIndex + 1) / Double(bandCount)
+                let z0 = frontZ + (tipZ - frontZ) * lower
+                let z1 = frontZ + (tipZ - frontZ) * upper
+                let axialSideUVs = [
+                    CGPoint(x: lower, y: 0),
+                    CGPoint(x: lower, y: 1),
+                    CGPoint(x: upper, y: 1),
+                    CGPoint(x: upper, y: 0)
+                ]
+
+                appendFace(
+                    [
+                        SCNVector3(-halfWidth, -halfHeight, z0),
+                        SCNVector3(halfWidth, -halfHeight, z0),
+                        SCNVector3(halfWidth, -halfHeight, z1),
+                        SCNVector3(-halfWidth, -halfHeight, z1)
+                    ],
+                    normal: SCNVector3(0, -1, 0),
+                    materialIndices: &cellIndices[bandIndex],
+                    axialUVs: axialSideUVs
+                )
+                appendFace(
+                    [
+                        SCNVector3(halfWidth, halfHeight, z0),
+                        SCNVector3(-halfWidth, halfHeight, z0),
+                        SCNVector3(-halfWidth, halfHeight, z1),
+                        SCNVector3(halfWidth, halfHeight, z1)
+                    ],
+                    normal: SCNVector3(0, 1, 0),
+                    materialIndices: &cellIndices[bandIndex],
+                    axialUVs: axialSideUVs
+                )
+                appendFace(
+                    [
+                        SCNVector3(-halfWidth, halfHeight, z0),
+                        SCNVector3(-halfWidth, -halfHeight, z0),
+                        SCNVector3(-halfWidth, -halfHeight, z1),
+                        SCNVector3(-halfWidth, halfHeight, z1)
+                    ],
+                    normal: SCNVector3(-1, 0, 0),
+                    materialIndices: &cellIndices[bandIndex],
+                    axialUVs: axialSideUVs
+                )
+                appendFace(
+                    [
+                        SCNVector3(halfWidth, -halfHeight, z0),
+                        SCNVector3(halfWidth, halfHeight, z0),
+                        SCNVector3(halfWidth, halfHeight, z1),
+                        SCNVector3(halfWidth, -halfHeight, z1)
+                    ],
+                    normal: SCNVector3(1, 0, 0),
+                    materialIndices: &cellIndices[bandIndex],
+                    axialUVs: axialSideUVs
+                )
+                appendFace(
+                    [
+                        SCNVector3(-halfWidth, -halfHeight, z1),
+                        SCNVector3(halfWidth, -halfHeight, z1),
+                        SCNVector3(halfWidth, halfHeight, z1),
+                        SCNVector3(-halfWidth, halfHeight, z1)
+                    ],
+                    normal: SCNVector3(0, 0, 1),
+                    materialIndices: &cellIndices[bandIndex],
+                    axialUVs: [
+                        CGPoint(x: 0, y: 0),
+                        CGPoint(x: 1, y: 0),
+                        CGPoint(x: 1, y: 1),
+                        CGPoint(x: 0, y: 1)
+                    ]
+                )
+            }
+
+            return SCNGeometry(
+                sources: [
+                    SCNGeometrySource(vertices: vertices),
+                    SCNGeometrySource(normals: normals),
+                    SCNGeometrySource(textureCoordinates: textureCoordinates)
+                ],
+                elements: cellIndices.map {
+                    SCNGeometryElement(indices: $0, primitiveType: .triangles)
+                }
+            )
+        }
+
+        private func makeJetsVUPrismGeometry(width: Double, height: Double, depth: Double) -> SCNGeometry {
+            let halfWidth = width * 0.5
+            let halfHeight = height * 0.5
+            let halfDepth = depth * 0.5
+            var vertices: [SCNVector3] = []
+            var normals: [SCNVector3] = []
+            var textureCoordinates: [CGPoint] = []
+            var sideIndices: [Int32] = []
+            var baseIndices: [Int32] = []
+            var tipIndices: [Int32] = []
+
+            func appendFace(
+                _ corners: [SCNVector3],
+                normal: SCNVector3,
+                materialIndices: inout [Int32],
+                axialUVs: [CGPoint]
+            ) {
+                let start = Int32(vertices.count)
+                vertices.append(contentsOf: corners)
+                normals.append(contentsOf: Array(repeating: normal, count: corners.count))
+                textureCoordinates.append(contentsOf: axialUVs)
+                materialIndices.append(contentsOf: [
+                    start, start + 1, start + 2,
+                    start, start + 2, start + 3
+                ])
+            }
+
+            let frontZ = -halfDepth
+            let tipZ = halfDepth
+            let axialSideUVs = [
+                CGPoint(x: 0, y: 0),
+                CGPoint(x: 0, y: 1),
+                CGPoint(x: 1, y: 1),
+                CGPoint(x: 1, y: 0)
+            ]
+            let capUVs = [
+                CGPoint(x: 0, y: 0),
+                CGPoint(x: 1, y: 0),
+                CGPoint(x: 1, y: 1),
+                CGPoint(x: 0, y: 1)
+            ]
+
+            appendFace(
+                [
+                    SCNVector3(-halfWidth, -halfHeight, frontZ),
+                    SCNVector3(halfWidth, -halfHeight, frontZ),
+                    SCNVector3(halfWidth, -halfHeight, tipZ),
+                    SCNVector3(-halfWidth, -halfHeight, tipZ)
+                ],
+                normal: SCNVector3(0, -1, 0),
+                materialIndices: &sideIndices,
+                axialUVs: axialSideUVs
+            )
+            appendFace(
+                [
+                    SCNVector3(halfWidth, halfHeight, frontZ),
+                    SCNVector3(-halfWidth, halfHeight, frontZ),
+                    SCNVector3(-halfWidth, halfHeight, tipZ),
+                    SCNVector3(halfWidth, halfHeight, tipZ)
+                ],
+                normal: SCNVector3(0, 1, 0),
+                materialIndices: &sideIndices,
+                axialUVs: axialSideUVs
+            )
+            appendFace(
+                [
+                    SCNVector3(-halfWidth, halfHeight, frontZ),
+                    SCNVector3(-halfWidth, -halfHeight, frontZ),
+                    SCNVector3(-halfWidth, -halfHeight, tipZ),
+                    SCNVector3(-halfWidth, halfHeight, tipZ)
+                ],
+                normal: SCNVector3(-1, 0, 0),
+                materialIndices: &sideIndices,
+                axialUVs: axialSideUVs
+            )
+            appendFace(
+                [
+                    SCNVector3(halfWidth, -halfHeight, frontZ),
+                    SCNVector3(halfWidth, halfHeight, frontZ),
+                    SCNVector3(halfWidth, halfHeight, tipZ),
+                    SCNVector3(halfWidth, -halfHeight, tipZ)
+                ],
+                normal: SCNVector3(1, 0, 0),
+                materialIndices: &sideIndices,
+                axialUVs: axialSideUVs
+            )
+            appendFace(
+                [
+                    SCNVector3(-halfWidth, halfHeight, frontZ),
+                    SCNVector3(halfWidth, halfHeight, frontZ),
+                    SCNVector3(halfWidth, -halfHeight, frontZ),
+                    SCNVector3(-halfWidth, -halfHeight, frontZ)
+                ],
+                normal: SCNVector3(0, 0, -1),
+                materialIndices: &baseIndices,
+                axialUVs: capUVs
+            )
+            appendFace(
+                [
+                    SCNVector3(-halfWidth, -halfHeight, tipZ),
+                    SCNVector3(halfWidth, -halfHeight, tipZ),
+                    SCNVector3(halfWidth, halfHeight, tipZ),
+                    SCNVector3(-halfWidth, halfHeight, tipZ)
+                ],
+                normal: SCNVector3(0, 0, 1),
+                materialIndices: &tipIndices,
+                axialUVs: capUVs
+            )
+
+            return SCNGeometry(
+                sources: [
+                    SCNGeometrySource(vertices: vertices),
+                    SCNGeometrySource(normals: normals),
+                    SCNGeometrySource(textureCoordinates: textureCoordinates)
+                ],
+                elements: [
+                    SCNGeometryElement(indices: sideIndices, primitiveType: .triangles),
+                    SCNGeometryElement(indices: baseIndices, primitiveType: .triangles),
+                    SCNGeometryElement(indices: tipIndices, primitiveType: .triangles)
+                ]
+            )
         }
 
         private func makeCubeOutlineNodes(
@@ -10205,7 +11730,7 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                         didMutate = true
                     }
                     let outlineVisible = visible &&
-                        configuration.speakerShape == .cubeVU &&
+                        (configuration.speakerShape == .cubeVU || configuration.speakerShape.isJetStyle) &&
                         configuration.cubeVUSettings.cubeOutlineStrength > 0.001
                     speakerOutlineNodes[speaker.channel]?.forEach {
                         if $0.isHidden != !outlineVisible {
@@ -10238,24 +11763,55 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                         (configuration.cubeVUSettings.bloomMax - configuration.cubeVUSettings.bloomMin) * visibleFill +
                         configuration.cubeVUSettings.hotFillStrength * hotMix * 0.38
                     ) * emissionScale
-                    if configuration.speakerShape == .cubeVU {
-                        let vuColor = configuration.foggedNSColor(
-                            configuration.theme.cubeVUNSColor(heat: heat),
-                            depth: speaker.depth
-                        )
-                        let hotColor = selected
-                            ? configuration.theme.cubeVUHotNSColor
-                            : configuration.foggedNSColor(configuration.theme.cubeVUHotNSColor, depth: speaker.depth)
-                        OrbitalViewportCubeVUSceneKitMaterial.update(
-                            material: node.geometry?.firstMaterial,
-                            settings: configuration.cubeVUSettings,
-                            scalars: scalars,
-                            clip: speaker.peak >= 0.995,
-                            alpha: alpha,
-                            vuColor: vuColor,
-                            hotColor: hotColor
-                        )
-                        didMutate = true
+                    if configuration.speakerShape == .cubeVU || configuration.speakerShape.isJetStyle {
+                        if configuration.speakerShape == .cubeVU {
+                            let vuColor = configuration.foggedNSColor(
+                                configuration.theme.cubeVUNSColor(heat: heat),
+                                depth: speaker.depth
+                            )
+                            let hotColor = selected
+                                ? configuration.theme.cubeVUHotNSColor
+                                : configuration.foggedNSColor(configuration.theme.cubeVUHotNSColor, depth: speaker.depth)
+                            OrbitalViewportCubeVUSceneKitMaterial.update(
+                                material: node.geometry?.firstMaterial,
+                                settings: configuration.cubeVUSettings,
+                                scalars: scalars,
+                                clip: speaker.peak >= 0.995,
+                                alpha: alpha,
+                                vuColor: vuColor,
+                                hotColor: hotColor
+                            )
+                            didMutate = true
+                        } else if configuration.speakerShape == .pixelJets {
+                            let materials = node.geometry?.materials ?? []
+                            OrbitalViewportJetsVUSceneKitMaterial.update(
+                                sideMaterial: materials.first,
+                                baseCapMaterial: materials.dropFirst().first,
+                                tipCapMaterial: materials.dropFirst(2).first,
+                                settings: configuration.cubeVUSettings,
+                                scalars: scalars,
+                                clip: speaker.peak >= 0.995,
+                                alpha: alpha,
+                                configuration: configuration,
+                                speakerDepth: speaker.depth
+                            )
+                            didMutate = true
+                        } else if configuration.speakerShape == .cellJets {
+                            let materials = node.geometry?.materials ?? []
+                            let sideBandCount = OrbitalViewportCellJetsSceneKitMaterial.sideBandCount(
+                                settings: configuration.cubeVUSettings
+                            )
+                            OrbitalViewportCellJetsSceneKitMaterial.update(
+                                cellMaterials: Array(materials.prefix(sideBandCount)),
+                                settings: configuration.cubeVUSettings,
+                                scalars: scalars,
+                                clip: speaker.peak >= 0.995,
+                                alpha: alpha,
+                                configuration: configuration,
+                                speakerDepth: speaker.depth
+                            )
+                            didMutate = true
+                        }
                         didMutate = updateCubeOutline(
                             channel: speaker.channel,
                             speakerOutlineNodes[speaker.channel],
@@ -11399,7 +12955,7 @@ private struct OrbitalViewportPainter {
                     continue
                 }
                 drawSpeakerSphere(speaker, color: color, alpha: alpha, selected: selected)
-            case .prism, .cubeVU:
+            case .prism, .cubeVU, .pixelJets, .cellJets:
                 drawSpeakerPrism(speaker, color: color, baseAlpha: alpha, selected: selected)
             }
 
@@ -11577,8 +13133,19 @@ private struct OrbitalViewportPainter {
     private func prismFaces(for speaker: OrbitalViewportProjectedSpeaker) -> [OrbitalViewportPrismFace] {
         let basis = prismBasis(for: speaker)
         let short = (10 * configuration.speakerSize) / max(1, configuration.sphereRadius)
-        let long = configuration.speakerShape == .cubeVU ? short : short * 2
-        let depth = short
+        let long = configuration.speakerShape.usesReadableFaceScale ? short : short * 2
+        let depth: Double
+        if configuration.speakerShape == .pixelJets {
+            depth = OrbitalViewportJetsVUPixelMetrics.make(
+                faceSize: short,
+                facePixels: configuration.cubeVUSettings.facePixels,
+                jetLengthPixels: configuration.jetLengthPixels
+            ).depth
+        } else if configuration.speakerShape == .cellJets {
+            depth = max(short, short * configuration.jetLengthPixels / 24)
+        } else {
+            depth = short
+        }
         let base = basis.radialAxis
         func vertex(_ longSign: Double, _ sideSign: Double, _ radialAmount: Double) -> OrbitalViewportPrismPoint {
             let source = base
@@ -11676,8 +13243,30 @@ private struct OrbitalViewportPainter {
         let dy = speaker.screen.y - center.y
         let length = hypot(dx, dy)
         let direction = length > 0.001 ? CGPoint(x: dx / length, y: dy / length) : CGPoint(x: 1, y: -1)
-        let distance = (configuration.speakerShape == .sphere ? 17 : 24) + configuration.speakerSize * 4
+        let distance = speakerLabelOffsetDistance()
         return CGPoint(x: direction.x * distance, y: direction.y * distance)
+    }
+
+    private func speakerLabelOffsetDistance() -> Double {
+        let baseDistance = (configuration.speakerShape == .sphere ? 17 : 24) + configuration.speakerSize * 4
+        guard configuration.speakerShape.isJetStyle else {
+            return baseDistance
+        }
+
+        let short = (10 * configuration.speakerSize) / max(1, configuration.sphereRadius)
+        let cubeDepthPixels = short * configuration.sphereRadius
+        let jetDepth: Double
+        if configuration.speakerShape == .pixelJets {
+            jetDepth = OrbitalViewportJetsVUPixelMetrics.make(
+                faceSize: short,
+                facePixels: configuration.cubeVUSettings.facePixels,
+                jetLengthPixels: configuration.jetLengthPixels
+            ).depth
+        } else {
+            jetDepth = max(short, short * configuration.jetLengthPixels / 24)
+        }
+        let extraDepthPixels = max(0, (jetDepth * configuration.sphereRadius) - cubeDepthPixels)
+        return baseDistance + extraDepthPixels
     }
 
     private func polygonPath(_ points: [CGPoint]) -> Path {
@@ -11723,6 +13312,7 @@ struct OrbitalViewportSceneMetrics {
     static let speakerLabelTextureFontPointSize: CGFloat = 44
     static let speakerLabelTextureWidth: CGFloat = 0.084
     static let speakerLabelTextureHeight: CGFloat = 0.042
+    static let speakerLabelOuterGap = 0.034
 }
 
 struct OrbitalViewportTheme: Equatable {

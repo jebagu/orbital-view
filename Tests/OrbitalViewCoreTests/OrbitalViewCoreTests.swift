@@ -275,6 +275,12 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertEqual(defaults.visualGainDB, 0)
         XCTAssertEqual(defaults.style, .cubeScalarCenterBloom)
         XCTAssertEqual(defaults.colorScheme, .daftPunkBow)
+        XCTAssertEqual(defaults.speakerType, .cubeVU)
+        XCTAssertEqual(
+            SpeakerMeterSpeakerType.allCases.map(\.displayName),
+            ["Cube VU", "Pixel Jets", "Cell Jets"]
+        )
+        XCTAssertEqual(defaults.jetLengthPixels, 48)
         XCTAssertEqual(defaults.ringFrontDensity, 3.3)
         XCTAssertEqual(defaults.tileDetail, 10)
         XCTAssertEqual(defaults.inputCalibration, 1)
@@ -285,6 +291,7 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertEqual(defaults.hotFillStrength, 0.86)
         XCTAssertEqual(defaults.vuPaletteDrive, 1.7)
         XCTAssertEqual(defaults.idleTint, 0.25)
+        XCTAssertEqual(defaults.cellJetsIdleOpacity, 1)
         XCTAssertEqual(defaults.checkerContrast, 0.08)
         XCTAssertEqual(defaults.memoryCarryover, 0.68)
         XCTAssertEqual(defaults.checkerBandVelocity, 0.826)
@@ -309,6 +316,22 @@ final class OrbitalViewCoreTests: XCTestCase {
         XCTAssertEqual(hot.style.displayName, "Warm Pulse")
         XCTAssertEqual(hot.colorScheme, .daftPunkBow)
         XCTAssertEqual(hot.speakerZScale, 2)
+
+        let pixelJets = try SpeakerMeterVisualSettings(speakerType: .pixelJets, facePixels: 1, jetLengthPixels: 180)
+        XCTAssertEqual(pixelJets.speakerType.displayName, "Pixel Jets")
+        XCTAssertEqual(pixelJets.facePixels, 1)
+        XCTAssertEqual(pixelJets.jetLengthPixels, 180)
+
+        let cellJets = try SpeakerMeterVisualSettings(
+            speakerType: .cellJets,
+            cellJetsIdleOpacity: 0.42,
+            facePixels: 9,
+            jetLengthPixels: 96
+        )
+        XCTAssertEqual(cellJets.speakerType.displayName, "Cell Jets")
+        XCTAssertEqual(cellJets.facePixels, 9)
+        XCTAssertEqual(cellJets.jetLengthPixels, 96)
+        XCTAssertEqual(cellJets.cellJetsIdleOpacity, 0.42, accuracy: 0.000_001)
 
         XCTAssertThrowsError(try SpeakerMeterVisualSettings(visualGainDB: .nan)) { error in
             XCTAssertEqual(
@@ -366,10 +389,45 @@ final class OrbitalViewCoreTests: XCTestCase {
             )
         }
 
-        XCTAssertThrowsError(try SpeakerMeterVisualSettings(facePixels: 65)) { error in
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(facePixels: 10)) { error in
             XCTAssertEqual(
                 error as? OrbitalViewValidationError,
-                .invalidRange(field: "meterVisual.facePixels", value: 65, validRange: "4...64")
+                .invalidRange(field: "meterVisual.facePixels", value: 10, validRange: "1...9")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(facePixels: 0)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "meterVisual.facePixels", value: 0, validRange: "1...9")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(jetLengthPixels: .infinity)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .nonFiniteValue(field: "meterVisual.jetLengthPixels")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(jetLengthPixels: 181)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "meterVisual.jetLengthPixels", value: 181, validRange: "8...180")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(cellJetsIdleOpacity: .nan)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .nonFiniteValue(field: "meterVisual.cellJetsIdleOpacity")
+            )
+        }
+
+        XCTAssertThrowsError(try SpeakerMeterVisualSettings(cellJetsIdleOpacity: -0.01)) { error in
+            XCTAssertEqual(
+                error as? OrbitalViewValidationError,
+                .invalidRange(field: "meterVisual.cellJetsIdleOpacity", value: -0.009999999776482582, validRange: "0...1")
             )
         }
     }
@@ -464,11 +522,17 @@ final class OrbitalViewCoreTests: XCTestCase {
     }
 
     func testSpeakerMeterVisualStyleCodableRoundTrip() throws {
-        let settings = try SpeakerMeterVisualSettings(visualGainDB: -6, style: .customTBD)
+        let settings = try SpeakerMeterVisualSettings(
+            visualGainDB: -6,
+            style: .customTBD,
+            speakerType: .cellJets,
+            cellJetsIdleOpacity: 0.37
+        )
         let encoded = try JSONEncoder().encode(settings)
         let decoded = try JSONDecoder().decode(SpeakerMeterVisualSettings.self, from: encoded)
 
         XCTAssertEqual(decoded, settings)
+        XCTAssertEqual(decoded.cellJetsIdleOpacity, 0.37, accuracy: 0.000_001)
 
         let invalidJSON = """
         {
@@ -510,6 +574,9 @@ final class OrbitalViewCoreTests: XCTestCase {
             from: legacyJSONWithoutSpeakerZScale
         )
         XCTAssertEqual(legacyDecoded.speakerZScale, 1)
+        XCTAssertEqual(legacyDecoded.speakerType, .cubeVU)
+        XCTAssertEqual(legacyDecoded.jetLengthPixels, SpeakerMeterVisualSettings.default.jetLengthPixels)
+        XCTAssertEqual(legacyDecoded.cellJetsIdleOpacity, 1)
         XCTAssertEqual(legacyDecoded.bloomMin, SpeakerMeterVisualSettings.default.bloomMin)
         XCTAssertEqual(legacyDecoded.style, .checkerPulseRingAndDiagonalWave)
 
@@ -527,6 +594,35 @@ final class OrbitalViewCoreTests: XCTestCase {
             from: #""checkerRipple""#.data(using: .utf8)!
         )
         XCTAssertEqual(legacyRippleAlias, .checkerPulseRingAndDiagonalWave)
+
+        for speakerType in SpeakerMeterSpeakerType.allCases {
+            let encoded = try JSONEncoder().encode(speakerType)
+            let decoded = try JSONDecoder().decode(SpeakerMeterSpeakerType.self, from: encoded)
+            XCTAssertEqual(decoded, speakerType)
+        }
+
+        let legacyJetsType = try JSONDecoder().decode(
+            SpeakerMeterSpeakerType.self,
+            from: #""jetsVU""#.data(using: .utf8)!
+        )
+        XCTAssertEqual(legacyJetsType, .pixelJets)
+
+        let legacySolidJetsType = try JSONDecoder().decode(
+            SpeakerMeterSpeakerType.self,
+            from: #""solidJets""#.data(using: .utf8)!
+        )
+        XCTAssertEqual(legacySolidJetsType, .pixelJets)
+
+        let legacyHighDensityJSON = """
+        {
+            "speakerType": "solidJets",
+            "facePixels": 64,
+            "jetLengthPixels": 96
+        }
+        """.data(using: .utf8)!
+        let legacyHighDensity = try JSONDecoder().decode(SpeakerMeterVisualSettings.self, from: legacyHighDensityJSON)
+        XCTAssertEqual(legacyHighDensity.speakerType, .pixelJets)
+        XCTAssertEqual(legacyHighDensity.facePixels, 9)
     }
 
     func testSpeakerMeterFrameSanitizerClampsAndDiagnosesUnsafeHostSamples() throws {

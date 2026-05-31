@@ -83,7 +83,7 @@ Static geometry, meter state, and camera state should stay separate so meter upd
 flowchart TD
   Scene["OrbitalViewSceneSpec"] --> State["OrbitalViewRenderState"]
   Meters["SpeakerMeterFrame"] --> State
-  CubeSettings["SpeakerMeterVisualSettings"] --> State
+  VisualSettings["SpeakerMeterVisualSettings: Cube VU, Pixel Jets, or Cell Jets"] --> State
   Performance["OrbitalViewPerformanceSettings"] --> Wrapper["SwiftUI MTKView bridge"]
   ObjectFrames["OrbitalViewObjectFrameSet"] --> State
   ObjectMeters["ObjectMeterFrame"] --> State
@@ -92,12 +92,12 @@ flowchart TD
   Selection["OrbitalViewSelection"] --> Events["OrbitalViewEvent queue"]
   Wrapper --> Delegate
   State --> Delegate["OrbitalViewMetalRenderer MTKViewDelegate"]
-  Delegate --> Inputs["Static speaker cube inputs + display-only meter materials + object inputs"]
+  Delegate --> Inputs["Static speaker inputs + display-only meter materials / Jets geometry + object inputs"]
   Inputs --> Pipeline["OrbitalViewMetalDrawPipeline"]
   Pipeline --> Frame["MTKView frame or offscreen texture"]
 ```
 
-The current renderer seam stores validated state, emits camera/selection events, and issues Metal draw commands for instanced cube/prism speakers plus separate object overlay quads.
+The current renderer seam stores validated state, emits camera/selection events, and issues Metal draw commands for instanced cube/prism speakers plus separate object overlay quads. Pixel Jets is interpreted as display-only outward speaker geometry with a VU-gated axial/cross pixel-cell palette branch, while Cell Jets uses the same outward geometry with a low-CPU stepped cell branch. SceneKit Cell Jets cells are five-face retained elements, and Cell Jets idle opacity is a display-only silent-cell control; the final end-capped Cell Jets cell remains dark unless the display scalar reaches full-scale or the channel clips. Pixel Density is validated at `1...9`, and changing speaker type, density, idle opacity, or jet length does not mutate canonical scene speaker data or physical channel mapping.
 
 ## Current Telemetry Source And Overload Flow
 
@@ -192,13 +192,14 @@ flowchart LR
   Meter["Meter frame"] --> ColorInputs["display VU scalar, hot scalar, palette heat, clip"]
   Objects["Object frames/meters"] --> ObjectInputs["object overlay inputs"]
   Camera["Camera state"] --> State["renderer state"]
+  DisplayType["Speaker display type / jet length"] --> ColorInputs
   StaticInputs --> Tests["invariant tests"]
   ColorInputs --> Tests
   ObjectInputs --> Tests
   State --> Tests
 ```
 
-Meter, camera, cube-setting, and object-meter updates must not change static speaker draw inputs. Speaker meters affect display-only material values, while object frames/meters remain a separate renderer layer.
+Meter, camera, cube/jet setting, and object-meter updates must not change static speaker draw inputs. Speaker meters affect display-only material values, Pixel Jets affects display-only shader geometry plus VU-gated axial/cross pixel color/emission, Cell Jets affects display-only shader geometry plus retained cell color/emission, and object frames/meters remain a separate renderer layer.
 
 ## Current SwiftUI Wrapper Flow
 
@@ -240,7 +241,7 @@ flowchart LR
   PerfSettings --> MTKView["MTKView FPS and draw-on-demand config"]
 ```
 
-Input, Roll the dice on looks, theme color palette, saved themes, speaker shape, label font and font size, cube surface, bloom style, sphere geometry, sphere palette, ground appearance, meter response, performance, and diagnostics are review-facing controls in the current SceneKit review surface. The left `View Detail` rail owns Speaker Size, Fog Density, Speaker Labels, Hidden Lines, and the display-only Ground Plane on/off switch. The right panel starts with a `Sound Metering Input` header above one expandable `Input` tray, and all collapsible right-panel trays start closed by default; when `Input` is expanded it chooses `Telemetry`, `Local Song`, or `Impulse Test` and owns telemetry details, local song file/transport/render controls, impulse pattern controls, and `Meter Source` status rows. `Speaker and Source Layout` contains the collapsed-by-default `Sonic Sphere Speakers` tray with `Speaker layout in SPAT XML format.` and the collapsed-by-default `Source Speakers` tray with `Source speaker layout in SPAT XML format.` These controls tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing. The review-only impulse drives are deterministic synthetic meter sources for visual stress testing and do not change production host meter contracts. Audio-excited render types use the already-computed mono audio RMS/peak sample as a lightweight spatial-pattern envelope. `Theme` now starts with the global `Color Palette` tray, which drives the app skin, physical speaker pixels, source marker pixels, sphere palette, ground palette, and Cube VU ramp together; new theme saves mirror `sourceSpeakerRenderStyle` to the global palette while older JSON still decodes safely. `Sphere Geometry` owns the independent default-off ribbed speaker sphere overlay plus rib thickness/rib/ring controls; `Hidden Lines` off clips that ribbed overlay behind an invisible camera-facing plane that bisects the fitted sphere and hides rear speakers/labels, while `Hidden Lines` on reveals the full sphere context. `Sphere Palette` owns only the sphere palette and saturation that style both ribbed sphere color lanes, and `Ground Appearance` owns ground palette, visibility, spacing, and size controls, but not the on/off switch. Sphere and ground palettes may be locally overridden after a global palette choice; choosing a new global `Color Palette` resets both local palettes to match. The old imported/Fey shell is not rendered in the SceneKit or canvas review paths. Dice-icon randomizers are local to Cube Surface, Bloom Style, and Meter Response, and the global `Roll the dice on looks` action is a centered icon-only button that randomizes view/visual state, including Color Palette, Sphere Palette, and Ground Appearance, while preserving Input state and not saving themes automatically.
+Input, Roll the dice on looks, theme color palette, saved themes, speaker shape, label font and font size, cube/jet surface, bloom style, sphere geometry, sphere palette, ground appearance, meter response, performance, and diagnostics are review-facing controls in the current SceneKit review surface. The `Speaker Shape` tray includes Prism, Sphere, Cube VU, Pixel Jets, and Cell Jets; both jet styles show a `Jet Length` slider and extend each speaker outward along its radial normal without changing the imported/canonical speaker layout. Pixel Jets renders retained axial/cross pixel textures on the jet faces using the selected VU ramp, simple base/tip caps, and no SceneKit shader modifiers; no-provider/silent meters leave it nearly dark. Cell Jets uses the same outward shape with retained five-face cell materials only, so meter updates mutate material color/emission/alpha without geometry or texture rebuilds; its Cell Jets-only Idle Opacity control affects silent cell visibility, and its final end-capped cell stays dark until full-scale/clip. Cube Outline applies to Cube VU, Pixel Jets, and Cell Jets, while speaker labels sit beyond the furthest visible speaker/meter extremity. Neither jet style creates clock-only trail/head pulses in normal meter paths. The left `View Detail` rail owns Speaker Size, Fog Density, Speaker Labels, Hidden Lines, and the display-only Ground Plane on/off switch. The right panel starts with a `Sound Metering Input` header above one expandable `Input` tray, and all collapsible right-panel trays start closed by default; when `Input` is expanded it chooses `Telemetry`, `Local Song`, or `Impulse Test` and owns telemetry details, local song file/transport controls, impulse pattern controls, and `Meter Source` status rows. `Speaker and Source Layout` contains the collapsed-by-default `Sonic Sphere Speakers` tray with `Speaker layout in SPAT XML format.` and the collapsed-by-default `Source Speakers` tray with `Source speaker layout in SPAT XML format.` These controls tune visual/render settings only; they do not own host audio, playback, routing, MIDI, OSC, or meter timing. The review-only impulse drives are deterministic synthetic meter sources for visual stress testing and do not change production host meter contracts. Local Song speaker meters use only the already-computed mono audio RMS/peak sample. `Theme` now starts with the global `Color Palette` tray, which drives the app skin, physical speaker pixels, source marker pixels, sphere palette, ground palette, and Cube VU/Pixel Jets/Cell Jets ramp together; new theme saves mirror `sourceSpeakerRenderStyle` to the global palette while older JSON still decodes safely. `Sphere Geometry` owns the independent default-off ribbed speaker sphere overlay plus rib thickness/rib/ring controls; `Hidden Lines` off clips that ribbed overlay behind an invisible camera-facing plane that bisects the fitted sphere and hides rear speakers/labels, while `Hidden Lines` on reveals the full sphere context. `Sphere Palette` owns only the sphere palette and saturation that style both ribbed speaker sphere color lanes, and `Ground Appearance` owns ground palette, visibility, spacing, and size controls, but not the on/off switch. Sphere and ground palettes may be locally overridden after a global palette choice; choosing a new global `Color Palette` resets both local palettes to match. The old imported/Fey shell is not rendered in the SceneKit or canvas review paths. Dice-icon randomizers are local to the dynamic Cube Surface / Jet Surface tray, Bloom Style, and Meter Response; the surface tray puts the `Pixel Density` slider first, caps it at `1...9`, adds `Idle Opacity` only for Cell Jets, and uses `Randomize Jet Surface` when a jet style is selected. The global `Roll the dice on looks` action is a centered icon-only button that randomizes view/visual state, including Color Palette, Sphere Palette, and Ground Appearance, while preserving Input state and not saving themes automatically.
 
 ## Current Saved Themes Flow
 
@@ -255,7 +256,7 @@ flowchart LR
   Default --> Launch["Apply default on next app launch"]
 ```
 
-View themes are review-app visual settings only. Loading a theme restores viewport styling, camera/view-detail, speaker label font and font size, Cube VU tuning, source mode, remembered impulse pattern, ribbed speaker sphere visibility/settings, and performance FPS, but it does not restore a local audio file, playback state, telemetry provider, or selected speaker. Legacy `hideSphereStructure` keys decode harmlessly and are ignored.
+View themes are review-app visual settings only. Loading a theme restores viewport styling, camera/view-detail, speaker shape, jet length, speaker label font and font size, Cube VU tuning, source mode, remembered impulse pattern, ribbed speaker sphere visibility/settings, and performance FPS, but it does not restore a local audio file, playback state, telemetry provider, or selected speaker. Legacy `hideSphereStructure` keys decode harmlessly and are ignored.
 
 ## Current Offscreen Harness Flow
 

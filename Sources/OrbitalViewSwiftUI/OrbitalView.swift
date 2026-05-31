@@ -241,10 +241,16 @@ struct OrbitalViewMeterSettingsTray: View {
 
     private var speakerVUSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            valueRow("Shape", "Cube VU")
             sliderRow("Visual Gain", value: visualGainBinding, range: -24...24, step: 0.5, valueText: gainText)
 
-            Picker("Style", selection: styleBinding) {
+            Picker("Speaker Type", selection: speakerTypeBinding) {
+                ForEach(SpeakerMeterSpeakerType.allCases, id: \.self) { type in
+                    Text(type.displayName).tag(type)
+                }
+            }
+            .pickerStyle(.menu)
+
+            Picker("VU Style", selection: styleBinding) {
                 ForEach(SpeakerMeterVisualStyle.builtInStyles, id: \.self) { style in
                     Text(style.displayName).tag(style)
                 }
@@ -258,13 +264,32 @@ struct OrbitalViewMeterSettingsTray: View {
             }
             .pickerStyle(.menu)
 
-            sliderRow(
-                "Speaker Height: Cube -> 2 Cubes",
-                value: speakerZScaleBinding,
-                range: 1...2,
-                step: 0.01,
-                valueText: settings.speakerZScale.formatted(.number.precision(.fractionLength(2)))
-            )
+            if settings.speakerType == .pixelJets || settings.speakerType == .cellJets {
+                sliderRow(
+                    "Jet Length",
+                    value: jetLengthPixelsBinding,
+                    range: Double(SpeakerMeterVisualSettings.minJetLengthPixels)...Double(SpeakerMeterVisualSettings.maxJetLengthPixels),
+                    step: 1,
+                    valueText: "\(Int(settings.jetLengthPixels.rounded())) px"
+                )
+                if settings.speakerType == .cellJets {
+                    sliderRow(
+                        "Idle Opacity",
+                        value: cellJetsIdleOpacityBinding,
+                        range: 0...1,
+                        step: 0.01,
+                        valueText: "\((settings.cellJetsIdleOpacity * 100).formatted(.number.precision(.fractionLength(0))))%"
+                    )
+                }
+            } else {
+                sliderRow(
+                    "Speaker Height: Cube -> 2 Cubes",
+                    value: speakerZScaleBinding,
+                    range: 1...2,
+                    step: 0.01,
+                    valueText: settings.speakerZScale.formatted(.number.precision(.fractionLength(2)))
+                )
+            }
         }
     }
 
@@ -419,7 +444,13 @@ struct OrbitalViewMeterSettingsTray: View {
                 step: 0.01,
                 valueText: settings.hotFill.formatted(.number.precision(.fractionLength(2)))
             )
-            stepperRow("Face Pixels", value: facePixelsBinding, range: 4...64, valueText: "\(settings.facePixels)")
+            sliderRow(
+                "Pixel Density",
+                value: pixelDensityBinding,
+                range: Double(SpeakerMeterVisualSettings.minFacePixels)...Double(SpeakerMeterVisualSettings.maxFacePixels),
+                step: 1,
+                valueText: "\(settings.facePixels)"
+            )
             Toggle("Show Diagnostics", isOn: showsDiagnosticsBinding)
         }
     }
@@ -486,7 +517,13 @@ struct OrbitalViewMeterSettingsTray: View {
             stepperRow("Meter-only FPS", value: meterOnlyFPSBinding, range: 1...30, valueText: "\(performanceSettings.meterOnlyViewportFramesPerSecond)")
             stepperRow("Inspector FPS", value: inspectorFPSBinding, range: 1...30, valueText: "\(performanceSettings.inspectorRefreshFramesPerSecond)")
             Toggle("Draw on Demand", isOn: drawsOnDemandBinding)
-            stepperRow("Face Pixels Cost", value: facePixelsBinding, range: 4...64, valueText: "\(settings.facePixels)")
+            sliderRow(
+                "Pixel Density Cost",
+                value: pixelDensityBinding,
+                range: Double(SpeakerMeterVisualSettings.minFacePixels)...Double(SpeakerMeterVisualSettings.maxFacePixels),
+                step: 1,
+                valueText: "\(settings.facePixels)"
+            )
             stepperRow("Trail Point Cap", value: objectMaxTrailPointsBinding, range: 0...ObjectVisualSettings.maxTrailPointsLimit, valueText: "\(objectSettings.maxTrailPointsPerObject)")
             valueRow("Max Active Objects", "\(OrbitalViewObjectFrameSet.maxObjectCount)")
             valueRow("Active Objects Now", "\(objectFrames?.activeObjects.count ?? 0)")
@@ -762,10 +799,24 @@ struct OrbitalViewMeterSettingsTray: View {
         )
     }
 
+    private var speakerTypeBinding: Binding<SpeakerMeterSpeakerType> {
+        Binding(
+            get: { settings.speakerType },
+            set: { updateSettings(speakerType: $0) }
+        )
+    }
+
     private var speakerZScaleBinding: Binding<Double> {
         Binding(
             get: { Double(settings.speakerZScale) },
             set: { updateSettings(speakerZScale: Float($0)) }
+        )
+    }
+
+    private var jetLengthPixelsBinding: Binding<Double> {
+        Binding(
+            get: { Double(settings.jetLengthPixels) },
+            set: { updateSettings(jetLengthPixels: Float($0)) }
         )
     }
 
@@ -794,6 +845,13 @@ struct OrbitalViewMeterSettingsTray: View {
         Binding(
             get: { Double(settings.idleTint) },
             set: { updateSettings(idleTint: Float($0)) }
+        )
+    }
+
+    private var cellJetsIdleOpacityBinding: Binding<Double> {
+        Binding(
+            get: { Double(settings.cellJetsIdleOpacity) },
+            set: { updateSettings(cellJetsIdleOpacity: Float($0)) }
         )
     }
 
@@ -874,10 +932,18 @@ struct OrbitalViewMeterSettingsTray: View {
         )
     }
 
-    private var facePixelsBinding: Binding<Int> {
+    private var pixelDensityBinding: Binding<Double> {
         Binding(
-            get: { settings.facePixels },
-            set: { updateSettings(facePixels: $0) }
+            get: { Double(settings.facePixels) },
+            set: {
+                let value = Int($0.rounded(.toNearestOrAwayFromZero))
+                updateSettings(
+                    facePixels: max(
+                        SpeakerMeterVisualSettings.minFacePixels,
+                        min(SpeakerMeterVisualSettings.maxFacePixels, value)
+                    )
+                )
+            }
         )
     }
 
@@ -1058,6 +1124,7 @@ struct OrbitalViewMeterSettingsTray: View {
         visualGainDB: Float? = nil,
         style: SpeakerMeterVisualStyle? = nil,
         colorScheme: SpeakerMeterColorScheme? = nil,
+        speakerType: SpeakerMeterSpeakerType? = nil,
         ringFrontDensity: Float? = nil,
         bandSoftness: Float? = nil,
         tileDetail: Int? = nil,
@@ -1069,6 +1136,7 @@ struct OrbitalViewMeterSettingsTray: View {
         hotFillStrength: Float? = nil,
         vuPaletteDrive: Float? = nil,
         idleTint: Float? = nil,
+        cellJetsIdleOpacity: Float? = nil,
         checkerContrast: Float? = nil,
         memoryCarryover: Float? = nil,
         checkerBandVelocity: Float? = nil,
@@ -1082,12 +1150,14 @@ struct OrbitalViewMeterSettingsTray: View {
         releaseMemory: Float? = nil,
         hotFill: Float? = nil,
         facePixels: Int? = nil,
+        jetLengthPixels: Float? = nil,
         showsDiagnostics: Bool? = nil
     ) {
         if let next = try? SpeakerMeterVisualSettings(
             visualGainDB: visualGainDB ?? settings.visualGainDB,
             style: style ?? settings.style,
             colorScheme: colorScheme ?? settings.colorScheme,
+            speakerType: speakerType ?? settings.speakerType,
             ringFrontDensity: ringFrontDensity ?? settings.ringFrontDensity,
             bandSoftness: bandSoftness ?? settings.bandSoftness,
             tileDetail: tileDetail ?? settings.tileDetail,
@@ -1099,6 +1169,7 @@ struct OrbitalViewMeterSettingsTray: View {
             hotFillStrength: hotFillStrength ?? settings.hotFillStrength,
             vuPaletteDrive: vuPaletteDrive ?? settings.vuPaletteDrive,
             idleTint: idleTint ?? settings.idleTint,
+            cellJetsIdleOpacity: cellJetsIdleOpacity ?? settings.cellJetsIdleOpacity,
             checkerContrast: checkerContrast ?? settings.checkerContrast,
             memoryCarryover: memoryCarryover ?? settings.memoryCarryover,
             checkerBandVelocity: checkerBandVelocity ?? settings.checkerBandVelocity,
@@ -1112,6 +1183,7 @@ struct OrbitalViewMeterSettingsTray: View {
             releaseMemory: releaseMemory ?? settings.releaseMemory,
             hotFill: hotFill ?? settings.hotFill,
             facePixels: facePixels ?? settings.facePixels,
+            jetLengthPixels: jetLengthPixels ?? settings.jetLengthPixels,
             showsDiagnostics: showsDiagnostics ?? settings.showsDiagnostics
         ) {
             settings = next

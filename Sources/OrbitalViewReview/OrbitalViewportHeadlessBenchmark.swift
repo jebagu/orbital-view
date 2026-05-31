@@ -181,6 +181,7 @@ public enum OrbitalViewportHeadlessBenchmark {
             ribbedSphereVerticalRibs: options.ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: options.ribbedSphereHorizontalRings,
             speakerShape: OrbitalViewportMockup.defaultSpeakerShape,
+            jetLengthPixels: OrbitalViewportMockup.defaultJetLengthPixels,
             speakerSize: OrbitalViewportMath.speakerSize(fromSlider: 50),
             fogDensity: options.fogDensity,
             meterSource: .impulse(OrbitalViewportMockup.defaultVUDriveMode.impulseKind ?? .ripple),

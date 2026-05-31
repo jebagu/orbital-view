@@ -63,6 +63,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.defaultRibbedSphereVerticalRibs, 16)
         XCTAssertEqual(OrbitalViewportMockup.defaultRibbedSphereHorizontalRings, 8)
         XCTAssertEqual(OrbitalViewportMockup.defaultSpeakerShape, .cubeVU)
+        XCTAssertEqual(OrbitalViewportMockup.defaultJetLengthPixels, 48, accuracy: 0.000_001)
         XCTAssertEqual(OrbitalViewportMockup.defaultViewportFrameRate, .oneTwenty)
         XCTAssertEqual(OrbitalViewportMockup.defaultCubeVUPreset, .hotCoreBloom)
         XCTAssertEqual(OrbitalViewportMockup.defaultSourceMode, .telemetry)
@@ -124,10 +125,15 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Provider",
                 "Status",
                 "Track",
+                "Route",
+                "Source",
+                "Sample Rate",
+                "Channels",
+                "Frame Seq",
+                "32ch VU",
                 "Choose File",
                 "Play",
                 "Pause",
-                "Render Type",
                 "Ripple",
                 "Waves",
                 "Orbiting Comets",
@@ -135,15 +141,17 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Telemetry Status",
                 "Displayed Meter",
                 "Active Meter",
-                "Music Render",
                 "Music Source",
                 "Impulse Pattern"
             ]
         )
-        XCTAssertEqual(OrbitalViewportMockup.telemetryTrayControlTitles, ["Provider", "Status", "Track"])
+        XCTAssertEqual(
+            OrbitalViewportMockup.telemetryTrayControlTitles,
+            ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
+        )
         XCTAssertEqual(
             OrbitalViewportMockup.localSongTrayControlTitles,
-            ["Choose File", "Play", "Pause", "Render Type"]
+            ["Choose File", "Play", "Pause"]
         )
         XCTAssertEqual(
             OrbitalViewportMockup.impulseTestTrayControlTitles,
@@ -211,7 +219,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMockup.audioRenderTypeTitles,
             ["All Mono", "Excite Ripple", "Excite Waves", "Excite Comets"]
         )
-        XCTAssertEqual(OrbitalViewportSpeakerShape.allCases.map(\.title), ["Prism", "Sphere", "Cube VU"])
+        XCTAssertEqual(OrbitalViewportSpeakerShape.allCases.map(\.title), ["Prism", "Sphere", "Cube VU", "Pixel Jets", "Cell Jets"])
         XCTAssertEqual(OrbitalViewportFrameRate.allCases.map(\.title), ["30 FPS", "60 FPS", "120 FPS"])
         XCTAssertEqual(
             OrbitalViewportMockup.tuningTrayTitles,
@@ -277,7 +285,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.speakerLabelFontSizeControlTitle, "Font Size")
         XCTAssertEqual(
             OrbitalViewportMockup.diceRandomizerAccessibilityLabels,
-            ["Roll the dice on looks", "Randomize Cube Surface", "Randomize Bloom Style", "Randomize Meter Response"]
+            ["Roll the dice on looks", "Randomize Cube Surface", "Randomize Jet Surface", "Randomize Bloom Style", "Randomize Meter Response"]
         )
         XCTAssertEqual(
             OrbitalViewportMockup.speakerLabelFontControlTitles,
@@ -314,18 +322,43 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMockup.surfaceBloomControlTitles,
             [
                 "Randomize Cube Surface",
+                "Pixel Density",
                 "Bloom Min",
                 "Bloom Max",
                 "Bloom Edge",
                 "Rim Halo Edge",
                 "Response Curve",
-                "Face Pixels",
                 "Pixel Fill",
                 "Idle Tint",
                 "Surface Checker Opacity",
                 "Checker Contrast"
             ]
         )
+        XCTAssertEqual(
+            OrbitalViewportMockup.jetSurfaceBloomControlTitles,
+            [
+                "Randomize Jet Surface",
+                "Pixel Density",
+                "Bloom Min",
+                "Bloom Max",
+                "Bloom Edge",
+                "Rim Halo Edge",
+                "Response Curve",
+                "Pixel Fill",
+                "Idle Tint",
+                "Idle Opacity",
+                "Surface Checker Opacity",
+                "Checker Contrast"
+            ]
+        )
+        XCTAssertEqual(OrbitalViewportMockup.surfaceBloomTrayTitle(for: .cubeVU), "Cube Surface")
+        XCTAssertEqual(OrbitalViewportMockup.surfaceBloomTrayTitle(for: .pixelJets), "Jet Surface")
+        XCTAssertEqual(OrbitalViewportMockup.surfaceBloomTrayTitle(for: .cellJets), "Jet Surface")
+        XCTAssertEqual(OrbitalViewportMockup.surfaceBloomRandomizerAccessibilityLabel(for: .cubeVU), "Randomize Cube Surface")
+        XCTAssertEqual(OrbitalViewportMockup.surfaceBloomRandomizerAccessibilityLabel(for: .pixelJets), "Randomize Jet Surface")
+        XCTAssertEqual(OrbitalViewportMockup.surfaceBloomRandomizerAccessibilityLabel(for: .cellJets), "Randomize Jet Surface")
+        XCTAssertFalse(OrbitalViewportMockup.surfaceBloomControlTitles.contains("Face Pixels"))
+        XCTAssertFalse(OrbitalViewportMockup.jetSurfaceBloomControlTitles.contains("Face Pixels"))
         XCTAssertEqual(
             OrbitalViewportMockup.meterResponseControlTitles,
             [
@@ -380,10 +413,13 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
     func testCorrectViewerSourceSelectorSeparatesTelemetrySongAndImpulseControls() {
         XCTAssertEqual(OrbitalViewportMockup.defaultSourceMode, .telemetry)
-        XCTAssertEqual(OrbitalViewportSourceMode.telemetry.trayControlTitles, ["Provider", "Status", "Track"])
+        XCTAssertEqual(
+            OrbitalViewportSourceMode.telemetry.trayControlTitles,
+            ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
+        )
         XCTAssertEqual(
             OrbitalViewportSourceMode.localSong.trayControlTitles,
-            ["Choose File", "Play", "Pause", "Render Type"]
+            ["Choose File", "Play", "Pause"]
         )
         XCTAssertEqual(
             OrbitalViewportSourceMode.impulseTest.trayControlTitles,
@@ -545,7 +581,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(defaults.hotFillStrength, Double(core.hotFillStrength), accuracy: 0.000_001)
         XCTAssertEqual(defaults.paletteDrive, Double(core.vuPaletteDrive), accuracy: 0.000_001)
         XCTAssertEqual(defaults.facePixels, core.facePixels)
+        XCTAssertEqual(OrbitalViewportMockup.defaultJetLengthPixels, Double(core.jetLengthPixels), accuracy: 0.000_001)
         XCTAssertEqual(defaults.idleTint, 0.10, accuracy: 0.000_001)
+        XCTAssertEqual(defaults.cellJetsIdleOpacity, 1, accuracy: 0.000_001)
         XCTAssertEqual(defaults.responseCurve, 0.82, accuracy: 0.000_001)
         XCTAssertEqual(defaults.rimHaloEdge, 0, accuracy: 0.000_001)
         XCTAssertEqual(defaults.pixelFill, 1)
@@ -660,7 +698,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(cubeSurface.displayCeiling, base.displayCeiling)
         XCTAssertEqual(cubeSurface.hotResponse, base.hotResponse)
         XCTAssertLessThanOrEqual(cubeSurface.bloomMin, cubeSurface.bloomMax)
-        XCTAssertTrue((6...14).contains(cubeSurface.facePixels))
+        XCTAssertTrue((1...9).contains(cubeSurface.facePixels))
         XCTAssertEqual(cubeSurface.speakerHeight, 1)
 
         let meterResponse = OrbitalViewportDiceRandomizer.randomizedMeterResponseSettings(
@@ -690,7 +728,6 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Telemetry Advertiser",
                 "Local Song File",
                 "Local Song Playback",
-                "Local Song Render Type",
                 "Impulse Pattern"
             ]
         )
@@ -1310,7 +1347,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             ribbedSphereThickness: 1.4,
             ribbedSphereVerticalRibs: 24,
             ribbedSphereHorizontalRings: 12,
-            speakerShape: .cubeVU,
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96,
             speakerLabelFont: .pressStart2P,
             speakerLabelFontSizeSlider: 72,
             speakerLabelFontSizeScale: 1.17,
@@ -1332,7 +1370,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                     spin: true,
                     cameraAdjusted: true
                 ),
-                speakerType: .cubeVU,
+                speakerType: .pixelJets,
                 viewDetail: OrbitalViewportViewDetailExportSettings(
                     speakerSizeSlider: 64,
                     speakerSize: 2.35,
@@ -1381,6 +1419,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertTrue(json.contains("\"ribbedSphereThickness\" : 1.4"))
         XCTAssertTrue(json.contains("\"ribbedSphereVerticalRibs\" : 24"))
         XCTAssertTrue(json.contains("\"ribbedSphereHorizontalRings\" : 12"))
+        XCTAssertTrue(json.contains("\"speakerShape\" : \"pixelJets\""))
+        XCTAssertTrue(json.contains("\"jetLengthPixels\" : 96"))
         XCTAssertFalse(json.contains("\"showSpeakerCenterStruts\""))
         XCTAssertTrue(json.contains("\"renderMode\" : \"exciteWaves\""))
         XCTAssertTrue(json.contains("\"speakerLabelFont\" : \"pressStart2P\""))
@@ -1413,10 +1453,12 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(decoded.ribbedSphereThickness, 1.4, accuracy: 0.000_001)
         XCTAssertEqual(decoded.ribbedSphereVerticalRibs, 24)
         XCTAssertEqual(decoded.ribbedSphereHorizontalRings, 12)
+        XCTAssertEqual(decoded.speakerShape, .pixelJets)
+        XCTAssertEqual(decoded.jetLengthPixels, 96, accuracy: 0.000_001)
         XCTAssertEqual(decoded.leftPanel.camera.cameraView, .elevation)
         XCTAssertEqual(decoded.leftPanel.camera.yaw, 0.42, accuracy: 0.000_001)
         XCTAssertTrue(decoded.leftPanel.camera.spin)
-        XCTAssertEqual(decoded.leftPanel.speakerType, .cubeVU)
+        XCTAssertEqual(decoded.leftPanel.speakerType, .pixelJets)
         XCTAssertEqual(decoded.leftPanel.viewDetail.speakerSizeSlider, 64)
         XCTAssertTrue(decoded.leftPanel.viewDetail.showSpeakerNumbers)
         XCTAssertTrue(decoded.leftPanel.viewDetail.showHiddenLines)
@@ -1432,6 +1474,17 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(decoded.speakerLabelFont, .pressStart2P)
         XCTAssertEqual(decoded.speakerLabelFontSizeSlider, 72)
         XCTAssertEqual(decoded.speakerLabelFontSizeScale, 1.17, accuracy: 0.000_001)
+
+        let legacyJSON = json
+            .replacingOccurrences(of: "\"pixelJets\"", with: "\"solidJets\"")
+            .replacingOccurrences(of: "\"facePixels\" : 9", with: "\"facePixels\" : 14")
+        let legacyDecoded = try JSONDecoder().decode(
+            OrbitalViewportSettingsExportPayload.self,
+            from: Data(legacyJSON.utf8)
+        )
+        XCTAssertEqual(legacyDecoded.speakerShape, .pixelJets)
+        XCTAssertEqual(legacyDecoded.leftPanel.speakerType, .pixelJets)
+        XCTAssertEqual(legacyDecoded.cubeSettings.facePixels, 9)
     }
 
     func testCorrectViewerUnadjustedLegacyIsometricCameraResolvesToPresetOrbit() throws {
@@ -2905,6 +2958,473 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     }
 
     #if os(macOS)
+    func testCorrectViewerSceneKitPixelJetsExtendAndUseFacePixelTextures() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let shortPixelJets = makeViewportConfiguration(
+            speakerShape: .pixelJets,
+            jetLengthPixels: 8
+        )
+        let longPixelJets = makeViewportConfiguration(
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96
+        )
+
+        OrbitalViewportJetsVUSceneKitMaterial.resetAxialTextureCacheForTests()
+        coordinator.update(configuration: shortPixelJets, snapshot: OrbitalViewportSnapshot(configuration: shortPixelJets))
+        let shortBox = try XCTUnwrap(coordinator.speakerBoxSizeForTests(channel: 1))
+
+        coordinator.update(configuration: longPixelJets, snapshot: OrbitalViewportSnapshot(configuration: longPixelJets))
+        let longBox = try XCTUnwrap(coordinator.speakerBoxSizeForTests(channel: 1))
+        let materialNames = try XCTUnwrap(coordinator.speakerMaterialNamesForTests(channel: 1))
+        let sideTexture = try XCTUnwrap(coordinator.speakerDiffuseTextureForTests(channel: 1, materialIndex: 0))
+        let sideFilters = try XCTUnwrap(coordinator.speakerDiffuseFilterModesForTests(channel: 1, materialIndex: 0))
+        let pixelCounts = OrbitalViewportJetsVUPixelMetrics.pixelCounts(
+            facePixels: longPixelJets.cubeVUSettings.facePixels,
+            jetLengthPixels: longPixelJets.jetLengthPixels
+        )
+
+        XCTAssertEqual(shortBox.width, shortBox.height, accuracy: 0.000_001)
+        XCTAssertEqual(shortBox.length, shortBox.width, accuracy: 0.000_001)
+        XCTAssertEqual(longBox.width, shortBox.width, accuracy: 0.000_001)
+        XCTAssertEqual(longBox.height, shortBox.height, accuracy: 0.000_001)
+        XCTAssertGreaterThan(longBox.length, longBox.width * 3)
+        XCTAssertEqual(longBox.length, longBox.width * 4, accuracy: 0.000_001)
+        XCTAssertEqual(materialNames, [
+            OrbitalViewportJetsVUSceneKitMaterial.sideMaterialName,
+            OrbitalViewportJetsVUSceneKitMaterial.baseCapMaterialName,
+            OrbitalViewportJetsVUSceneKitMaterial.tipCapMaterialName
+        ])
+        XCTAssertEqual(sideFilters.magnification, .nearest)
+        XCTAssertEqual(sideFilters.minification, .nearest)
+        XCTAssertEqual(Int(sideTexture.size.width), pixelCounts.axialPixels * OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel)
+        XCTAssertEqual(Int(sideTexture.size.height), pixelCounts.crossPixels * OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel)
+        XCTAssertTrue(OrbitalViewportJetsVUSceneKitMaterial.usesRetainedAxialTextureCache)
+        XCTAssertGreaterThan(OrbitalViewportJetsVUSceneKitMaterial.cachedAxialTextureCountForTests(), 0)
+        XCTAssertNotEqual(
+            OrbitalViewportSpeakerGeometryUpdateKey(configuration: shortPixelJets),
+            OrbitalViewportSpeakerGeometryUpdateKey(configuration: longPixelJets)
+        )
+    }
+
+    func testCorrectViewerSceneKitCellJetsUseRetainedCellMaterialsWithoutTextureGeneration() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let activeSource = OrbitalViewportMeterSource.telemetry(
+            OrbitalViewTelemetryMeterSnapshot(
+                sequence: 1,
+                producerHostTime: 1,
+                levelsByChannel: [
+                    1: OrbitalViewTelemetryMeterLevel(rms: 0.72, peak: 0.9)
+                ]
+            )
+        )
+        let shortCellJets = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 8,
+            meterSource: activeSource
+        )
+        let longCellJets = makeViewportConfiguration(
+            timeMS: 420,
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            meterSource: activeSource
+        )
+
+        OrbitalViewportJetsVUSceneKitMaterial.resetAxialTextureCacheForTests()
+        coordinator.update(configuration: shortCellJets, snapshot: OrbitalViewportSnapshot(configuration: shortCellJets))
+        let shortBox = try XCTUnwrap(coordinator.speakerBoxSizeForTests(channel: 1))
+
+        coordinator.update(configuration: longCellJets, snapshot: OrbitalViewportSnapshot(configuration: longCellJets))
+        let longBox = try XCTUnwrap(coordinator.speakerBoxSizeForTests(channel: 1))
+        let materialNames = try XCTUnwrap(coordinator.speakerMaterialNamesForTests(channel: 1))
+        let primitiveCounts = try XCTUnwrap(coordinator.speakerGeometryPrimitiveCountsForTests(channel: 1))
+        let sideTexture = coordinator.speakerDiffuseTextureForTests(channel: 1, materialIndex: 0)
+        let cellCount = OrbitalViewportCellJetsSceneKitMaterial.sideBandCount(settings: longCellJets.cubeVUSettings)
+        let firstBandColor = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: 0))
+        let middleBandColor = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(
+            channel: 1,
+            materialIndex: cellCount / 2
+        ))
+        let tipBandColor = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(
+            channel: 1,
+            materialIndex: cellCount - 1
+        ))
+        let firstIntensity = try XCTUnwrap(coordinator.speakerEmissionIntensityForTests(channel: 1, materialIndex: 0))
+        let speakerRebuildCount = coordinator.speakerRebuildCount
+
+        let laterSameMeterCellJets = makeViewportConfiguration(
+            timeMS: 840,
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            meterSource: activeSource
+        )
+        coordinator.update(configuration: laterSameMeterCellJets, snapshot: OrbitalViewportSnapshot(configuration: laterSameMeterCellJets))
+        let laterFirstBandColor = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: 0))
+        let secondIntensity = try XCTUnwrap(coordinator.speakerEmissionIntensityForTests(channel: 1, materialIndex: 0))
+
+        XCTAssertEqual(shortBox.width, shortBox.height, accuracy: 0.000_001)
+        XCTAssertEqual(shortBox.length, shortBox.width, accuracy: 0.000_001)
+        XCTAssertEqual(longBox.width, shortBox.width, accuracy: 0.000_001)
+        XCTAssertEqual(longBox.height, shortBox.height, accuracy: 0.000_001)
+        XCTAssertGreaterThan(longBox.length, longBox.width * 3)
+        let expectedBandNames = (0..<cellCount).map {
+            OrbitalViewportCellJetsSceneKitMaterial.sideMaterialName(index: $0)
+        }
+        XCTAssertEqual(materialNames, expectedBandNames)
+        XCTAssertEqual(primitiveCounts.count, cellCount)
+        XCTAssertEqual(primitiveCounts, Array(repeating: 10, count: cellCount))
+        XCTAssertNil(sideTexture)
+        XCTAssertFalse(OrbitalViewportCellJetsSceneKitMaterial.usesGeneratedTextures)
+        XCTAssertFalse(OrbitalViewportCellJetsSceneKitMaterial.usesSceneKitShaderModifiers)
+        XCTAssertTrue(OrbitalViewportCellJetsSceneKitMaterial.usesRetainedCellMaterials)
+        XCTAssertNil(coordinator.speakerSurfaceShaderForTests(channel: 1, materialIndex: 0))
+        XCTAssertNotEqual(colorSignature(firstBandColor), colorSignature(middleBandColor))
+        XCTAssertNotEqual(colorSignature(middleBandColor), colorSignature(tipBandColor))
+        XCTAssertEqual(OrbitalViewportJetsVUSceneKitMaterial.cachedAxialTextureCountForTests(), 0)
+        XCTAssertEqual(coordinator.speakerRebuildCount, speakerRebuildCount)
+        XCTAssertEqual(colorSignature(firstBandColor), colorSignature(laterFirstBandColor))
+        XCTAssertEqual(firstIntensity, secondIntensity, accuracy: 0.000_001)
+    }
+
+    func testCorrectViewerSceneKitJetOutlinesFollowCubeOutlineControl() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        var outlineSettings = OrbitalViewportCubeVUSettings.default
+        outlineSettings.cubeOutlineStrength = 0.72
+        let pixelJets = makeViewportConfiguration(
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96,
+            cubeVUSettings: outlineSettings
+        )
+        let cellJets = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            cubeVUSettings: outlineSettings
+        )
+
+        coordinator.update(configuration: pixelJets, snapshot: OrbitalViewportSnapshot(configuration: pixelJets))
+        let pixelBox = try XCTUnwrap(coordinator.speakerBoxSizeForTests(channel: 1))
+        let pixelOutlineSizes = try XCTUnwrap(coordinator.speakerOutlineBoxSizesForTests(channel: 1))
+        let pixelHiddenStates = try XCTUnwrap(coordinator.speakerOutlineHiddenStatesForTests(channel: 1))
+
+        coordinator.update(configuration: cellJets, snapshot: OrbitalViewportSnapshot(configuration: cellJets))
+        let cellBox = try XCTUnwrap(coordinator.speakerBoxSizeForTests(channel: 1))
+        let cellOutlineSizes = try XCTUnwrap(coordinator.speakerOutlineBoxSizesForTests(channel: 1))
+        let cellHiddenStates = try XCTUnwrap(coordinator.speakerOutlineHiddenStatesForTests(channel: 1))
+
+        var hiddenSettings = outlineSettings
+        hiddenSettings.cubeOutlineStrength = 0
+        let hiddenCellJets = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            cubeVUSettings: hiddenSettings
+        )
+        coordinator.update(configuration: hiddenCellJets, snapshot: OrbitalViewportSnapshot(configuration: hiddenCellJets))
+        let hiddenStates = try XCTUnwrap(coordinator.speakerOutlineHiddenStatesForTests(channel: 1))
+
+        XCTAssertEqual(pixelOutlineSizes.count, 12)
+        XCTAssertEqual(cellOutlineSizes.count, 12)
+        XCTAssertTrue(pixelHiddenStates.allSatisfy { !$0 })
+        XCTAssertTrue(cellHiddenStates.allSatisfy { !$0 })
+        XCTAssertGreaterThan(pixelOutlineSizes.map { $0.length }.max() ?? 0, pixelBox.length)
+        XCTAssertGreaterThan(cellOutlineSizes.map { $0.length }.max() ?? 0, cellBox.length)
+        XCTAssertTrue(hiddenStates.allSatisfy { $0 })
+    }
+
+    func testCorrectViewerSceneKitCellJetsIdleOpacityHidesOnlySilentBody() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        var settings = OrbitalViewportCubeVUSettings.default
+        settings.cellJetsIdleOpacity = 0
+        let silent = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            cubeVUSettings: settings,
+            meterSource: .telemetryNoProvider
+        )
+        let activeSource = OrbitalViewportMeterSource.telemetry(
+            OrbitalViewTelemetryMeterSnapshot(
+                sequence: 1,
+                producerHostTime: 1,
+                levelsByChannel: [
+                    1: OrbitalViewTelemetryMeterLevel(rms: 0.72, peak: 0.9)
+                ]
+            )
+        )
+        let active = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            cubeVUSettings: settings,
+            meterSource: activeSource
+        )
+        let cellCount = OrbitalViewportCellJetsSceneKitMaterial.sideBandCount(settings: settings)
+
+        coordinator.update(configuration: silent, snapshot: OrbitalViewportSnapshot(configuration: silent))
+        let silentBandAlpha = try XCTUnwrap(coordinator.speakerMaterialTransparencyForTests(channel: 1, materialIndex: 0))
+        let silentMiddleAlpha = try XCTUnwrap(coordinator.speakerMaterialTransparencyForTests(channel: 1, materialIndex: cellCount / 2))
+        let silentTipAlpha = try XCTUnwrap(coordinator.speakerMaterialTransparencyForTests(channel: 1, materialIndex: cellCount - 1))
+
+        coordinator.update(configuration: active, snapshot: OrbitalViewportSnapshot(configuration: active))
+        let activeBandAlpha = try XCTUnwrap(coordinator.speakerMaterialTransparencyForTests(channel: 1, materialIndex: 0))
+        let activeBandColor = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: cellCount / 2))
+
+        XCTAssertLessThan(silentBandAlpha, 0.001)
+        XCTAssertLessThan(silentMiddleAlpha, 0.001)
+        XCTAssertLessThan(silentTipAlpha, 0.001)
+        XCTAssertGreaterThan(activeBandAlpha, 0.4)
+        XCTAssertGreaterThan(try colorBrightness(activeBandColor), 0.08)
+    }
+
+    func testCorrectViewerSceneKitCellJetsTipCapColorsOnlyAtFullScaleOrClip() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let cellCount = OrbitalViewportCellJetsSceneKitMaterial.sideBandCount(settings: .default)
+        let activeSource = OrbitalViewportMeterSource.telemetry(
+            OrbitalViewTelemetryMeterSnapshot(
+                sequence: 1,
+                producerHostTime: 1,
+                levelsByChannel: [
+                    1: OrbitalViewTelemetryMeterLevel(rms: 0.72, peak: 0.9)
+                ]
+            )
+        )
+        let fullScaleSource = OrbitalViewportMeterSource.telemetry(
+            OrbitalViewTelemetryMeterSnapshot(
+                sequence: 2,
+                producerHostTime: 2,
+                levelsByChannel: [
+                    1: OrbitalViewTelemetryMeterLevel(rms: 1, peak: 1, clip: true)
+                ]
+            )
+        )
+        let active = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            meterSource: activeSource
+        )
+        let fullScale = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 96,
+            meterSource: fullScaleSource
+        )
+
+        coordinator.update(configuration: active, snapshot: OrbitalViewportSnapshot(configuration: active))
+        let activeTip = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: cellCount - 1))
+        let activeTipAlpha = try XCTUnwrap(coordinator.speakerMaterialTransparencyForTests(channel: 1, materialIndex: cellCount - 1))
+        let activeSide = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: cellCount - 2))
+
+        coordinator.update(configuration: fullScale, snapshot: OrbitalViewportSnapshot(configuration: fullScale))
+        let fullTip = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: cellCount - 1))
+        let fullTipAlpha = try XCTUnwrap(coordinator.speakerMaterialTransparencyForTests(channel: 1, materialIndex: cellCount - 1))
+
+        XCTAssertLessThan(try colorBrightness(activeTip), 0.08)
+        XCTAssertLessThan(activeTipAlpha, 0.08)
+        XCTAssertGreaterThan(try colorBrightness(activeSide), 0.08)
+        XCTAssertGreaterThan(try colorBrightness(fullTip), try colorBrightness(activeTip) + 0.2)
+        XCTAssertGreaterThan(fullTipAlpha, 0.8)
+    }
+
+    func testCorrectViewerSceneKitSpeakerLabelsOffsetFromJetExtremity() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let cube = makeViewportConfiguration(
+            speakerShape: .cubeVU,
+            jetLengthPixels: 8
+        )
+        let shortCellJets = makeViewportConfiguration(
+            speakerShape: .cellJets,
+            jetLengthPixels: 8
+        )
+        let longPixelJets = makeViewportConfiguration(
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96
+        )
+
+        coordinator.update(configuration: cube, snapshot: OrbitalViewportSnapshot(configuration: cube))
+        let cubeLabelPosition = try XCTUnwrap(coordinator.speakerLabelNodePositionForTests(channel: 1))
+        let cubeLabelDistance = vectorLength(cubeLabelPosition)
+
+        coordinator.update(configuration: shortCellJets, snapshot: OrbitalViewportSnapshot(configuration: shortCellJets))
+        let shortCellLabelPosition = try XCTUnwrap(coordinator.speakerLabelNodePositionForTests(channel: 1))
+        let shortCellLabelDistance = vectorLength(shortCellLabelPosition)
+
+        coordinator.update(configuration: longPixelJets, snapshot: OrbitalViewportSnapshot(configuration: longPixelJets))
+        let longPixelLabelPosition = try XCTUnwrap(coordinator.speakerLabelNodePositionForTests(channel: 1))
+        let longPixelLabelDistance = vectorLength(longPixelLabelPosition)
+        let longPixelBox = try XCTUnwrap(coordinator.speakerBoxSizeForTests(channel: 1))
+
+        XCTAssertEqual(shortCellLabelDistance, cubeLabelDistance, accuracy: 0.01)
+        XCTAssertGreaterThan(longPixelLabelDistance, cubeLabelDistance + 0.30)
+        XCTAssertGreaterThan(longPixelLabelDistance, 1 + Double(longPixelBox.length))
+        XCTAssertLessThan(longPixelLabelDistance - (1 + Double(longPixelBox.length)), 0.06)
+    }
+
+    func testCorrectViewerSceneKitPixelJetsStayDarkWithoutMeterSignal() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let silentPixelJets = makeViewportConfiguration(
+            timeMS: 420,
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96,
+            meterSource: .telemetryNoProvider
+        )
+
+        OrbitalViewportJetsVUSceneKitMaterial.resetAxialTextureCacheForTests()
+        coordinator.update(configuration: silentPixelJets, snapshot: OrbitalViewportSnapshot(configuration: silentPixelJets))
+        let silentTexture = try XCTUnwrap(coordinator.speakerDiffuseTextureForTests(channel: 1, materialIndex: 0))
+        let silentScale = try bitmapScale(silentTexture)
+        let tilePixels = OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel
+        let pixelCounts = OrbitalViewportJetsVUPixelMetrics.pixelCounts(
+            facePixels: silentPixelJets.cubeVUSettings.facePixels,
+            jetLengthPixels: silentPixelJets.jetLengthPixels
+        )
+        let baseBrightness = try pixelBrightness(silentTexture, x: tilePixels / 2, y: tilePixels / 2, scale: silentScale)
+        let middleBrightness = try pixelBrightness(
+            silentTexture,
+            x: (pixelCounts.axialPixels * tilePixels) / 2,
+            y: tilePixels / 2,
+            scale: silentScale
+        )
+        let tipBrightness = try pixelBrightness(
+            silentTexture,
+            x: pixelCounts.axialPixels * tilePixels - tilePixels / 2,
+            y: tilePixels / 2,
+            scale: silentScale
+        )
+        let baseCapColor = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: 1))
+        let tipCapColor = try XCTUnwrap(coordinator.speakerDiffuseColorForTests(channel: 1, materialIndex: 2))
+        let firstIntensity = try XCTUnwrap(coordinator.speakerEmissionIntensityForTests(channel: 1, materialIndex: 0))
+        let cachedTextureCount = OrbitalViewportJetsVUSceneKitMaterial.cachedAxialTextureCountForTests()
+        let speakerRebuildCount = coordinator.speakerRebuildCount
+
+        let laterSilentPixelJets = makeViewportConfiguration(
+            timeMS: 840,
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96,
+            meterSource: .telemetryNoProvider
+        )
+        coordinator.update(configuration: laterSilentPixelJets, snapshot: OrbitalViewportSnapshot(configuration: laterSilentPixelJets))
+        let laterSilentTexture = try XCTUnwrap(coordinator.speakerDiffuseTextureForTests(channel: 1, materialIndex: 0))
+        let secondIntensity = try XCTUnwrap(coordinator.speakerEmissionIntensityForTests(channel: 1, materialIndex: 0))
+
+        XCTAssertLessThan(baseBrightness, 0.06)
+        XCTAssertLessThan(middleBrightness, 0.06)
+        XCTAssertLessThan(tipBrightness, 0.06)
+        XCTAssertLessThan(try colorBrightness(baseCapColor), 0.06)
+        XCTAssertLessThan(try colorBrightness(tipCapColor), 0.06)
+        XCTAssertLessThan(firstIntensity, 0.04)
+        XCTAssertLessThan(secondIntensity, 0.04)
+        XCTAssertTrue(silentTexture === laterSilentTexture)
+        XCTAssertEqual(OrbitalViewportJetsVUSceneKitMaterial.cachedAxialTextureCountForTests(), cachedTextureCount)
+        XCTAssertEqual(coordinator.speakerRebuildCount, speakerRebuildCount)
+    }
+
+    func testCorrectViewerSceneKitPixelJetsFollowSelectedVURampPalette() throws {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let activeSource = OrbitalViewportMeterSource.telemetry(
+            OrbitalViewTelemetryMeterSnapshot(
+                sequence: 1,
+                producerHostTime: 1,
+                levelsByChannel: [
+                    1: OrbitalViewTelemetryMeterLevel(rms: 0.72, peak: 0.9)
+                ]
+            )
+        )
+        let rainbowPixelJets = makeViewportConfiguration(
+            timeMS: 640,
+            renderStyle: .daftPunkBow,
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96,
+            meterSource: activeSource
+        )
+        let monochromePixelJets = makeViewportConfiguration(
+            timeMS: 640,
+            renderStyle: .bw,
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96,
+            meterSource: activeSource
+        )
+
+        OrbitalViewportJetsVUSceneKitMaterial.resetAxialTextureCacheForTests()
+        coordinator.update(configuration: rainbowPixelJets, snapshot: OrbitalViewportSnapshot(configuration: rainbowPixelJets))
+        let rainbowTexture = try XCTUnwrap(coordinator.speakerDiffuseTextureForTests(channel: 1, materialIndex: 0))
+        let rainbowScale = try bitmapScale(rainbowTexture)
+        let tilePixels = OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel
+        let pixelCounts = OrbitalViewportJetsVUPixelMetrics.pixelCounts(
+            facePixels: rainbowPixelJets.cubeVUSettings.facePixels,
+            jetLengthPixels: rainbowPixelJets.jetLengthPixels
+        )
+        let sampleX = max(tilePixels / 2, Int(Double(pixelCounts.axialPixels * tilePixels) * 0.45))
+        let rainbowColor = try pixelColor(rainbowTexture, x: sampleX, y: tilePixels / 2, scale: rainbowScale)
+        let speakerRebuildCount = coordinator.speakerRebuildCount
+
+        coordinator.update(configuration: monochromePixelJets, snapshot: OrbitalViewportSnapshot(configuration: monochromePixelJets))
+        let monochromeTexture = try XCTUnwrap(coordinator.speakerDiffuseTextureForTests(channel: 1, materialIndex: 0))
+        let monochromeColor = try pixelColor(
+            monochromeTexture,
+            x: sampleX,
+            y: tilePixels / 2,
+            scale: try bitmapScale(monochromeTexture)
+        )
+
+        XCTAssertGreaterThan(try colorBrightness(rainbowColor), 0.10)
+        XCTAssertGreaterThan(try colorBrightness(monochromeColor), 0.10)
+        XCTAssertGreaterThan(try rgbDistance(rainbowColor, monochromeColor), 0.08)
+        XCTAssertGreaterThan(try rgbSpread(rainbowColor), try rgbSpread(monochromeColor) + 0.02)
+        XCTAssertEqual(coordinator.speakerRebuildCount, speakerRebuildCount)
+    }
+
+    func testCorrectViewerLegacyJetsPixelTextureHelperFillsFromSphereBaseTowardTip() throws {
+        var settings = OrbitalViewportMockup.defaultCubeVUSettings
+        settings.facePixels = 9
+        settings.pixelFill = 1
+        settings.surfaceCheckerOpacity = 0
+        settings.idleTint = 0.08
+        let configuration = makeViewportConfiguration(
+            speakerShape: .pixelJets,
+            jetLengthPixels: 96,
+            cubeVUSettings: settings
+        )
+        OrbitalViewportJetsVUSceneKitMaterial.resetAxialTextureCacheForTests()
+
+        let quietTexture = OrbitalViewportJetsVUSceneKitMaterial.axialTexture(
+            settings: settings,
+            scalars: SpeakerCubeVUScalars(rawRms: 0.12, settings: settings.coreSettings, paletteValue: 0.12),
+            clip: false,
+            configuration: configuration,
+            speakerDepth: 1
+        )
+        let loudTexture = OrbitalViewportJetsVUSceneKitMaterial.axialTexture(
+            settings: settings,
+            scalars: SpeakerCubeVUScalars(rawRms: 0.92, settings: settings.coreSettings, paletteValue: 0.92),
+            clip: false,
+            configuration: configuration,
+            speakerDepth: 1
+        )
+        let clipTexture = OrbitalViewportJetsVUSceneKitMaterial.axialTexture(
+            settings: settings,
+            scalars: SpeakerCubeVUScalars(rawRms: 1, settings: settings.coreSettings, paletteValue: 1),
+            clip: true,
+            configuration: configuration,
+            speakerDepth: 1
+        )
+
+        let tilePixels = OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel
+        let pixelCounts = OrbitalViewportJetsVUPixelMetrics.pixelCounts(
+            facePixels: settings.facePixels,
+            jetLengthPixels: configuration.jetLengthPixels
+        )
+        let quietScale = try bitmapScale(quietTexture)
+        let loudScale = try bitmapScale(loudTexture)
+        let clipScale = try bitmapScale(clipTexture)
+        let baseX = tilePixels / 2
+        let tipX = pixelCounts.axialPixels * tilePixels - tilePixels / 2
+        let y = tilePixels / 2
+        let quietBase = try pixelBrightness(quietTexture, x: baseX, y: y, scale: quietScale)
+        let quietTip = try pixelBrightness(quietTexture, x: tipX, y: y, scale: quietScale)
+        let loudTip = try pixelBrightness(loudTexture, x: tipX, y: y, scale: loudScale)
+        let clipTip = try pixelBrightness(clipTexture, x: tipX, y: y, scale: clipScale)
+
+        XCTAssertGreaterThan(quietBase, quietTip + 0.02)
+        XCTAssertGreaterThan(loudTip, quietTip + 0.05)
+        XCTAssertGreaterThan(clipTip, loudTip)
+        XCTAssertGreaterThanOrEqual(OrbitalViewportJetsVUSceneKitMaterial.cachedAxialTextureCountForTests(), 3)
+    }
+
     func testCorrectViewerSceneKitDefaultsDrawOnDemandAtSixtyFPS() {
         XCTAssertFalse(OrbitalViewport3DSceneView.rendersContinuously)
         XCTAssertEqual(OrbitalViewport3DSceneView.sceneFramesPerSecond, 120)
@@ -4375,13 +4895,15 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let scene = try makeScene()
         let camera = try OrbitalViewCameraState.preset(.isometric)
         let boostedSettings = try SpeakerMeterVisualSettings(
+            speakerType: .pixelJets,
             inputCalibration: 1.4,
             levelCompression: 2,
             displayCeiling: 0.9,
             hotResponse: 2.1,
             hotThreshold: 0.72,
             hotFillStrength: 0.7,
-            vuPaletteDrive: 2.2
+            vuPaletteDrive: 2.2,
+            jetLengthPixels: 72
         )
 
         _ = coordinator.apply(
@@ -4419,6 +4941,34 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
         XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings, boostedSettings)
         XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettingsRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings.speakerType, .pixelJets)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings.jetLengthPixels, 72)
+
+        let cellJetSettings = try SpeakerMeterVisualSettings(
+            speakerType: .cellJets,
+            cellJetsIdleOpacity: 0.23,
+            jetLengthPixels: 84
+        )
+        _ = coordinator.apply(
+            OrbitalViewRenderConfiguration(
+                scene: scene,
+                meters: nil,
+                meterVisualSettings: cellJetSettings,
+                objectFrames: nil,
+                objectMeters: nil,
+                objectVisualSettings: .default,
+                performanceSettings: .default,
+                camera: camera,
+                selection: nil
+            )
+        )
+
+        XCTAssertEqual(coordinator.renderer.renderState.scene, scene)
+        XCTAssertEqual(coordinator.renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettingsRevision, 2)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings.speakerType, .cellJets)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings.jetLengthPixels, 84)
+        XCTAssertEqual(coordinator.renderer.renderState.meterVisualSettings.cellJetsIdleOpacity, 0.23, accuracy: 0.000_001)
     }
 
     func testCoordinatorForwardsObjectStateWithoutReloadingScene() throws {
@@ -4483,6 +5033,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         ribbedSphereVerticalRibs: Int = OrbitalViewportMockup.defaultRibbedSphereVerticalRibs,
         ribbedSphereHorizontalRings: Int = OrbitalViewportMockup.defaultRibbedSphereHorizontalRings,
         speakerShape: OrbitalViewportSpeakerShape = .prism,
+        jetLengthPixels: Double = OrbitalViewportMockup.defaultJetLengthPixels,
         speakerSize: Double = 1.95,
         fogDensity: Double = 30,
         cubeVUSettings: OrbitalViewportCubeVUSettings = .default,
@@ -4522,6 +5073,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             ribbedSphereVerticalRibs: ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: ribbedSphereHorizontalRings,
             speakerShape: speakerShape,
+            jetLengthPixels: jetLengthPixels,
             speakerSize: speakerSize,
             fogDensity: fogDensity,
             meterSource: meterSource,
@@ -4673,6 +5225,15 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         return (Double(color.redComponent) + Double(color.greenComponent) + Double(color.blueComponent)) / 3
     }
 
+    private func pixelColor(_ image: NSImage, x: Int, y: Int, scale: Double) throws -> NSColor {
+        var rect = NSRect(origin: .zero, size: image.size)
+        let cgImage = try XCTUnwrap(image.cgImage(forProposedRect: &rect, context: nil, hints: nil))
+        let bitmap = NSBitmapImageRep(cgImage: cgImage)
+        let pixelX = min(bitmap.pixelsWide - 1, max(0, Int((Double(x) * scale).rounded(.down))))
+        let pixelY = min(bitmap.pixelsHigh - 1, max(0, Int((Double(y) * scale).rounded(.down))))
+        return try XCTUnwrap(bitmap.colorAt(x: pixelX, y: pixelY)?.usingColorSpace(.deviceRGB))
+    }
+
     private func rgbComponents(_ color: Color) throws -> (red: Double, green: Double, blue: Double) {
         let nsColor = NSColor(color)
         let rgb = try XCTUnwrap(nsColor.usingColorSpace(.deviceRGB) ?? nsColor.usingColorSpace(.sRGB))
@@ -4728,6 +5289,18 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         return abs(left.redComponent - right.redComponent) +
             abs(left.greenComponent - right.greenComponent) +
             abs(left.blueComponent - right.blueComponent)
+    }
+
+    private func colorBrightness(_ color: NSColor) throws -> Double {
+        let rgb = try XCTUnwrap(color.usingColorSpace(.deviceRGB) ?? color.usingColorSpace(.sRGB))
+        return max(rgb.redComponent, rgb.greenComponent, rgb.blueComponent)
+    }
+
+    private func vectorLength(_ vector: SCNVector3) -> Double {
+        let x = Double(vector.x)
+        let y = Double(vector.y)
+        let z = Double(vector.z)
+        return sqrt(x * x + y * y + z * z)
     }
 
     private func isBlueDominant(_ color: NSColor) throws -> Bool {
@@ -4836,6 +5409,16 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
     private func rgbDistance(_ lhs: RGBSample, _ rhs: RGBSample) -> Double {
         abs(lhs.red - rhs.red) + abs(lhs.green - rhs.green) + abs(lhs.blue - rhs.blue)
+    }
+
+    private func colorSignature(_ color: NSColor) -> [Int] {
+        let rgb = color.usingColorSpace(.deviceRGB) ?? color
+        return [
+            Int((rgb.redComponent * 1_000).rounded()),
+            Int((rgb.greenComponent * 1_000).rounded()),
+            Int((rgb.blueComponent * 1_000).rounded()),
+            Int((rgb.alphaComponent * 1_000).rounded())
+        ]
     }
     #endif
 }

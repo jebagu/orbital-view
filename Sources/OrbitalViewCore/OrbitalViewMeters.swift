@@ -115,6 +115,46 @@ public enum SpeakerMeterVisualStyle: String, Codable, CaseIterable, Equatable, S
     }
 }
 
+public enum SpeakerMeterSpeakerType: String, Codable, CaseIterable, Equatable, Sendable {
+    case cubeVU
+    case pixelJets
+    case cellJets
+
+    public var displayName: String {
+        switch self {
+        case .cubeVU:
+            return "Cube VU"
+        case .pixelJets:
+            return "Pixel Jets"
+        case .cellJets:
+            return "Cell Jets"
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        switch rawValue {
+        case Self.cubeVU.rawValue:
+            self = .cubeVU
+        case Self.pixelJets.rawValue, "jetsVU", "solidJets":
+            self = .pixelJets
+        case Self.cellJets.rawValue:
+            self = .cellJets
+        default:
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unknown speaker meter speaker type: \(rawValue)"
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+}
+
 public enum SpeakerMeterColorScheme: String, Codable, CaseIterable, Equatable, Sendable {
     case kimiPurple
     case daftPunkBow
@@ -212,6 +252,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         case visualGainDB
         case style
         case colorScheme
+        case speakerType
         case ringFrontDensity
         case bandSoftness
         case tileDetail
@@ -223,6 +264,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         case hotFillStrength
         case vuPaletteDrive
         case idleTint
+        case cellJetsIdleOpacity
         case checkerContrast
         case memoryCarryover
         case checkerBandVelocity
@@ -236,6 +278,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         case releaseMemory
         case hotFill
         case facePixels
+        case jetLengthPixels
         case showsDiagnostics
     }
 
@@ -255,10 +298,15 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
     public static let maxVUPaletteDrive: Float = 4
     public static let minSpeakerZScale: Float = 1
     public static let maxSpeakerZScale: Float = 2
+    public static let minFacePixels = 1
+    public static let maxFacePixels = 9
+    public static let minJetLengthPixels: Float = 8
+    public static let maxJetLengthPixels: Float = 180
     public static let `default` = SpeakerMeterVisualSettings(
         uncheckedVisualGainDB: 0,
         style: .cubeScalarCenterBloom,
         colorScheme: .daftPunkBow,
+        speakerType: .cubeVU,
         ringFrontDensity: 3.3,
         bandSoftness: 0.85,
         tileDetail: 10,
@@ -270,6 +318,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         hotFillStrength: 0.86,
         vuPaletteDrive: 1.7,
         idleTint: 0.25,
+        cellJetsIdleOpacity: 1,
         checkerContrast: 0.08,
         memoryCarryover: 0.68,
         checkerBandVelocity: 0.826,
@@ -283,12 +332,14 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         releaseMemory: 0.68,
         hotFill: 0.86,
         facePixels: 9,
+        jetLengthPixels: 48,
         showsDiagnostics: false
     )
 
     public let visualGainDB: Float
     public let style: SpeakerMeterVisualStyle
     public let colorScheme: SpeakerMeterColorScheme
+    public let speakerType: SpeakerMeterSpeakerType
     public let ringFrontDensity: Float
     public let bandSoftness: Float
     public let tileDetail: Int
@@ -300,6 +351,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
     public let hotFillStrength: Float
     public let vuPaletteDrive: Float
     public let idleTint: Float
+    public let cellJetsIdleOpacity: Float
     public let checkerContrast: Float
     public let memoryCarryover: Float
     public let checkerBandVelocity: Float
@@ -313,12 +365,14 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
     public let releaseMemory: Float
     public let hotFill: Float
     public let facePixels: Int
+    public let jetLengthPixels: Float
     public let showsDiagnostics: Bool
 
     public init(
         visualGainDB: Float = 0,
         style: SpeakerMeterVisualStyle = .cubeScalarCenterBloom,
         colorScheme: SpeakerMeterColorScheme = .daftPunkBow,
+        speakerType: SpeakerMeterSpeakerType = .cubeVU,
         ringFrontDensity: Float = 3.3,
         bandSoftness: Float = 0.85,
         tileDetail: Int = 10,
@@ -330,6 +384,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         hotFillStrength: Float = 0.86,
         vuPaletteDrive: Float = 1.7,
         idleTint: Float = 0.25,
+        cellJetsIdleOpacity: Float = 1,
         checkerContrast: Float = 0.08,
         memoryCarryover: Float = 0.68,
         checkerBandVelocity: Float = 0.826,
@@ -343,11 +398,13 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         releaseMemory: Float = 0.68,
         hotFill: Float = 0.86,
         facePixels: Int = 9,
+        jetLengthPixels: Float = 48,
         showsDiagnostics: Bool = false
     ) throws {
         self.visualGainDB = visualGainDB
         self.style = style
         self.colorScheme = colorScheme
+        self.speakerType = speakerType
         self.ringFrontDensity = ringFrontDensity
         self.bandSoftness = bandSoftness
         self.tileDetail = tileDetail
@@ -359,6 +416,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         self.hotFillStrength = hotFillStrength
         self.vuPaletteDrive = vuPaletteDrive
         self.idleTint = idleTint
+        self.cellJetsIdleOpacity = cellJetsIdleOpacity
         self.checkerContrast = checkerContrast
         self.memoryCarryover = memoryCarryover
         self.checkerBandVelocity = checkerBandVelocity
@@ -372,6 +430,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         self.releaseMemory = releaseMemory
         self.hotFill = hotFill
         self.facePixels = facePixels
+        self.jetLengthPixels = jetLengthPixels
         self.showsDiagnostics = showsDiagnostics
         try validate()
     }
@@ -382,6 +441,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         let visualGainDB = try container.decodeIfPresent(Float.self, forKey: .visualGainDB) ?? defaults.visualGainDB
         let style = try container.decodeIfPresent(SpeakerMeterVisualStyle.self, forKey: .style) ?? defaults.style
         let colorScheme = try container.decodeIfPresent(SpeakerMeterColorScheme.self, forKey: .colorScheme) ?? defaults.colorScheme
+        let speakerType = try container.decodeIfPresent(SpeakerMeterSpeakerType.self, forKey: .speakerType) ?? defaults.speakerType
         let ringFrontDensity = try container.decodeIfPresent(Float.self, forKey: .ringFrontDensity) ?? defaults.ringFrontDensity
         let bandSoftness = try container.decodeIfPresent(Float.self, forKey: .bandSoftness) ?? defaults.bandSoftness
         let tileDetail = try container.decodeIfPresent(Int.self, forKey: .tileDetail) ?? defaults.tileDetail
@@ -393,6 +453,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         let hotFillStrength = try container.decodeIfPresent(Float.self, forKey: .hotFillStrength) ?? defaults.hotFillStrength
         let vuPaletteDrive = try container.decodeIfPresent(Float.self, forKey: .vuPaletteDrive) ?? defaults.vuPaletteDrive
         let idleTint = try container.decodeIfPresent(Float.self, forKey: .idleTint) ?? defaults.idleTint
+        let cellJetsIdleOpacity = try container.decodeIfPresent(Float.self, forKey: .cellJetsIdleOpacity) ?? defaults.cellJetsIdleOpacity
         let checkerContrast = try container.decodeIfPresent(Float.self, forKey: .checkerContrast) ?? defaults.checkerContrast
         let memoryCarryover = try container.decodeIfPresent(Float.self, forKey: .memoryCarryover) ?? defaults.memoryCarryover
         let checkerBandVelocity = try container.decodeIfPresent(Float.self, forKey: .checkerBandVelocity) ?? defaults.checkerBandVelocity
@@ -405,12 +466,15 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         let peakHoldSeconds = try container.decodeIfPresent(Float.self, forKey: .peakHoldSeconds) ?? defaults.peakHoldSeconds
         let releaseMemory = try container.decodeIfPresent(Float.self, forKey: .releaseMemory) ?? defaults.releaseMemory
         let hotFill = try container.decodeIfPresent(Float.self, forKey: .hotFill) ?? defaults.hotFill
-        let facePixels = try container.decodeIfPresent(Int.self, forKey: .facePixels) ?? defaults.facePixels
+        let decodedFacePixels = try container.decodeIfPresent(Int.self, forKey: .facePixels) ?? defaults.facePixels
+        let facePixels = Self.clampedFacePixels(decodedFacePixels)
+        let jetLengthPixels = try container.decodeIfPresent(Float.self, forKey: .jetLengthPixels) ?? defaults.jetLengthPixels
         let showsDiagnostics = try container.decodeIfPresent(Bool.self, forKey: .showsDiagnostics) ?? defaults.showsDiagnostics
         try self.init(
             visualGainDB: visualGainDB,
             style: style,
             colorScheme: colorScheme,
+            speakerType: speakerType,
             ringFrontDensity: ringFrontDensity,
             bandSoftness: bandSoftness,
             tileDetail: tileDetail,
@@ -422,6 +486,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
             hotFillStrength: hotFillStrength,
             vuPaletteDrive: vuPaletteDrive,
             idleTint: idleTint,
+            cellJetsIdleOpacity: cellJetsIdleOpacity,
             checkerContrast: checkerContrast,
             memoryCarryover: memoryCarryover,
             checkerBandVelocity: checkerBandVelocity,
@@ -435,6 +500,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
             releaseMemory: releaseMemory,
             hotFill: hotFill,
             facePixels: facePixels,
+            jetLengthPixels: jetLengthPixels,
             showsDiagnostics: showsDiagnostics
         )
     }
@@ -444,6 +510,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         try container.encode(visualGainDB, forKey: .visualGainDB)
         try container.encode(style, forKey: .style)
         try container.encode(colorScheme, forKey: .colorScheme)
+        try container.encode(speakerType, forKey: .speakerType)
         try container.encode(ringFrontDensity, forKey: .ringFrontDensity)
         try container.encode(bandSoftness, forKey: .bandSoftness)
         try container.encode(tileDetail, forKey: .tileDetail)
@@ -455,6 +522,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         try container.encode(hotFillStrength, forKey: .hotFillStrength)
         try container.encode(vuPaletteDrive, forKey: .vuPaletteDrive)
         try container.encode(idleTint, forKey: .idleTint)
+        try container.encode(cellJetsIdleOpacity, forKey: .cellJetsIdleOpacity)
         try container.encode(checkerContrast, forKey: .checkerContrast)
         try container.encode(memoryCarryover, forKey: .memoryCarryover)
         try container.encode(checkerBandVelocity, forKey: .checkerBandVelocity)
@@ -468,6 +536,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         try container.encode(releaseMemory, forKey: .releaseMemory)
         try container.encode(hotFill, forKey: .hotFill)
         try container.encode(facePixels, forKey: .facePixels)
+        try container.encode(jetLengthPixels, forKey: .jetLengthPixels)
         try container.encode(showsDiagnostics, forKey: .showsDiagnostics)
     }
 
@@ -475,6 +544,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         uncheckedVisualGainDB visualGainDB: Float,
         style: SpeakerMeterVisualStyle,
         colorScheme: SpeakerMeterColorScheme,
+        speakerType: SpeakerMeterSpeakerType,
         ringFrontDensity: Float,
         bandSoftness: Float,
         tileDetail: Int,
@@ -486,6 +556,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         hotFillStrength: Float,
         vuPaletteDrive: Float,
         idleTint: Float,
+        cellJetsIdleOpacity: Float,
         checkerContrast: Float,
         memoryCarryover: Float,
         checkerBandVelocity: Float,
@@ -499,11 +570,13 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         releaseMemory: Float,
         hotFill: Float,
         facePixels: Int,
+        jetLengthPixels: Float,
         showsDiagnostics: Bool
     ) {
         self.visualGainDB = visualGainDB
         self.style = style
         self.colorScheme = colorScheme
+        self.speakerType = speakerType
         self.ringFrontDensity = ringFrontDensity
         self.bandSoftness = bandSoftness
         self.tileDetail = tileDetail
@@ -515,6 +588,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         self.hotFillStrength = hotFillStrength
         self.vuPaletteDrive = vuPaletteDrive
         self.idleTint = idleTint
+        self.cellJetsIdleOpacity = cellJetsIdleOpacity
         self.checkerContrast = checkerContrast
         self.memoryCarryover = memoryCarryover
         self.checkerBandVelocity = checkerBandVelocity
@@ -528,6 +602,7 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         self.releaseMemory = releaseMemory
         self.hotFill = hotFill
         self.facePixels = facePixels
+        self.jetLengthPixels = jetLengthPixels
         self.showsDiagnostics = showsDiagnostics
     }
 
@@ -604,6 +679,12 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
         try validateFiniteRange(
             field: "meterVisual.idleTint",
             value: idleTint,
+            validRange: 0...1,
+            validRangeDescription: "0...1"
+        )
+        try validateFiniteRange(
+            field: "meterVisual.cellJetsIdleOpacity",
+            value: cellJetsIdleOpacity,
             validRange: 0...1,
             validRangeDescription: "0...1"
         )
@@ -695,13 +776,20 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
             )
         }
 
-        guard facePixels >= 4, facePixels <= 64 else {
+        guard facePixels >= Self.minFacePixels, facePixels <= Self.maxFacePixels else {
             throw OrbitalViewValidationError.invalidRange(
                 field: "meterVisual.facePixels",
                 value: Double(facePixels),
-                validRange: "4...64"
+                validRange: "1...9"
             )
         }
+
+        try validateFiniteRange(
+            field: "meterVisual.jetLengthPixels",
+            value: jetLengthPixels,
+            validRange: Self.minJetLengthPixels...Self.maxJetLengthPixels,
+            validRangeDescription: "8...180"
+        )
     }
 
     private func validateFiniteRange(
@@ -721,6 +809,10 @@ public struct SpeakerMeterVisualSettings: Equatable, Codable, Sendable {
                 validRange: validRangeDescription
             )
         }
+    }
+
+    private static func clampedFacePixels(_ value: Int) -> Int {
+        max(minFacePixels, min(maxFacePixels, value))
     }
 }
 

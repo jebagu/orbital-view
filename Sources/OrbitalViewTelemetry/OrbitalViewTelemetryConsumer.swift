@@ -8,11 +8,27 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
     public var rms: Double
     public var peak: Double
     public var clip: Bool
+    public var dvsChannel: Int?
+    public var stateFlags: UInt32
+    public var vuNormalized: Double?
+    public var vuDbFS: Double?
 
-    public init(rms: Double, peak: Double, clip: Bool = false) {
+    public init(
+        rms: Double,
+        peak: Double,
+        clip: Bool = false,
+        dvsChannel: Int? = nil,
+        stateFlags: UInt32 = 0,
+        vuNormalized: Double? = nil,
+        vuDbFS: Double? = nil
+    ) {
         self.rms = Self.clamp01(rms)
         self.peak = Self.clamp01(max(peak, rms))
         self.clip = clip
+        self.dvsChannel = dvsChannel
+        self.stateFlags = stateFlags
+        self.vuNormalized = vuNormalized.map(Self.clamp01)
+        self.vuDbFS = vuDbFS?.isFinite == true ? vuDbFS : nil
     }
 
     private static func clamp01(_ value: Double) -> Double {
@@ -24,15 +40,24 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
 public struct OrbitalViewTelemetryMeterSnapshot: Equatable, Sendable {
     public var sequence: UInt64
     public var producerHostTime: UInt64
+    public var sampleRate: Double
+    public var frameCount: UInt32
+    public var recordCount: Int
     public var levelsByChannel: [Int: OrbitalViewTelemetryMeterLevel]
 
     public init(
         sequence: UInt64,
         producerHostTime: UInt64,
+        sampleRate: Double = 0,
+        frameCount: UInt32 = 0,
+        recordCount: Int? = nil,
         levelsByChannel: [Int: OrbitalViewTelemetryMeterLevel]
     ) {
         self.sequence = sequence
         self.producerHostTime = producerHostTime
+        self.sampleRate = sampleRate
+        self.frameCount = frameCount
+        self.recordCount = recordCount ?? levelsByChannel.count
         self.levelsByChannel = levelsByChannel
     }
 
@@ -46,12 +71,23 @@ public struct OrbitalViewTelemetryProviderSummary: Identifiable, Equatable, Send
     public var provider: String
     public var status: String
     public var track: String
+    public var routeLabel: String?
+    public var sourceLabel: String?
 
-    public init(id: String, provider: String, status: String, track: String) {
+    public init(
+        id: String,
+        provider: String,
+        status: String,
+        track: String,
+        routeLabel: String? = nil,
+        sourceLabel: String? = nil
+    ) {
         self.id = id
         self.provider = provider
         self.status = status
         self.track = track
+        self.routeLabel = routeLabel
+        self.sourceLabel = sourceLabel
     }
 }
 
@@ -282,7 +318,9 @@ public final class OrbitalViewTelemetryConsumer {
                     id: record.providerInstanceID,
                     provider: record.appName,
                     status: providerStatus,
-                    track: track
+                    track: track,
+                    routeLabel: record.humanRouteLabel,
+                    sourceLabel: record.humanSourceLabel
                 )
             }
 
@@ -321,15 +359,45 @@ public final class OrbitalViewTelemetryConsumer {
             let rms = Double(try payload.readFloat32(at: offset + 4))
             let peak = Double(try payload.readFloat32(at: offset + 8))
             let clip = (try payload.readUInt8(at: offset + 12)) != 0
-            levels[channelID] = OrbitalViewTelemetryMeterLevel(rms: rms, peak: peak, clip: clip)
+            let dvsChannel = recordByteSize >= 20
+                ? Int(try payload.readInteger(at: offset + 16, as: UInt32.self))
+                : nil
+            let stateFlags = recordByteSize >= 24
+                ? try payload.readInteger(at: offset + 20, as: UInt32.self)
+                : 0
+            let vuNormalized = recordByteSize >= 28
+                ? Double(try payload.readFloat32(at: offset + 24))
+                : nil
+            let vuDbFS = recordByteSize >= 32
+                ? Double(try payload.readFloat32(at: offset + 28))
+                : nil
+            guard (stateFlags & OrbitalViewTelemetryDVSStateFlags.disabled) == 0 else {
+                continue
+            }
+            levels[channelID] = OrbitalViewTelemetryMeterLevel(
+                rms: rms,
+                peak: peak,
+                clip: clip,
+                dvsChannel: dvsChannel,
+                stateFlags: stateFlags,
+                vuNormalized: vuNormalized,
+                vuDbFS: vuDbFS
+            )
         }
 
         return OrbitalViewTelemetryMeterSnapshot(
             sequence: frame.envelope.frameSequence,
             producerHostTime: frame.envelope.producerHostTime,
+            sampleRate: frame.envelope.sampleRate,
+            frameCount: frame.envelope.frameCount,
+            recordCount: count,
             levelsByChannel: levels
         )
     }
+}
+
+private enum OrbitalViewTelemetryDVSStateFlags {
+    static let disabled: UInt32 = 1 << 1
 }
 
 public final class OrbitalViewTelemetryConsumerViewModel: ObservableObject {
@@ -342,7 +410,7 @@ public final class OrbitalViewTelemetryConsumerViewModel: ObservableObject {
 
     public init(
         consumer: OrbitalViewTelemetryConsumer = OrbitalViewTelemetryConsumer(),
-        pollInterval: TimeInterval = 0.5
+        pollInterval: TimeInterval = 1.0 / 30.0
     ) {
         self.consumer = consumer
         self.pollInterval = pollInterval

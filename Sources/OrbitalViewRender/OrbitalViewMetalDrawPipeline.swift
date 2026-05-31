@@ -234,11 +234,26 @@ final class OrbitalViewMetalDrawPipeline {
             let rampBuffer = speakerResources.rampBuffer
             var bloomUniforms = Self.makeBloomUniforms(settings: state.meterVisualSettings)
             var hotUniforms = Self.makeHotUniforms(settings: state.meterVisualSettings)
+            var jetPixelUniforms = Self.makeJetPixelUniforms(
+                settings: state.meterVisualSettings,
+                timestamp: state.meters?.timestamp ?? 0
+            )
+            let renderTargetTexture = renderPassDescriptor.colorAttachments[0].texture
+            var geometryUniforms = Self.makeSpeakerGeometryUniforms(
+                settings: state.meterVisualSettings,
+                renderTargetWidth: renderTargetTexture?.width ?? 1,
+                renderTargetHeight: renderTargetTexture?.height ?? 1
+            )
 
             encoder.setRenderPipelineState(speakerPipelineState)
             encoder.setVertexBuffer(positionBuffer, offset: 0, index: 0)
             encoder.setVertexBuffer(orientationBuffer, offset: 0, index: 1)
             encoder.setVertexBuffer(materialBuffer, offset: 0, index: 2)
+            encoder.setVertexBytes(
+                &geometryUniforms,
+                length: MemoryLayout<SIMD4<Float>>.stride,
+                index: 3
+            )
             encoder.setFragmentBytes(
                 &bloomUniforms,
                 length: MemoryLayout<SIMD4<Float>>.stride,
@@ -249,6 +264,16 @@ final class OrbitalViewMetalDrawPipeline {
                 &hotUniforms,
                 length: MemoryLayout<SIMD4<Float>>.stride,
                 index: 2
+            )
+            encoder.setFragmentBytes(
+                &geometryUniforms,
+                length: MemoryLayout<SIMD4<Float>>.stride,
+                index: 3
+            )
+            encoder.setFragmentBytes(
+                &jetPixelUniforms,
+                length: MemoryLayout<SIMD4<Float>>.stride,
+                index: 4
             )
             encoder.drawPrimitives(
                 type: .triangle,
@@ -869,6 +894,100 @@ final class OrbitalViewMetalDrawPipeline {
         )
     }
 
+    private struct JetPixelMetrics {
+        let crossPixels: Int
+        let axialPixels: Int
+
+        var depthRatio: Float {
+            Float(axialPixels) / Float(crossPixels)
+        }
+    }
+
+    private static func makeJetPixelUniforms(
+        settings: SpeakerMeterVisualSettings,
+        timestamp: TimeInterval
+    ) -> SIMD4<Float> {
+        _ = timestamp
+        let metrics = makeJetPixelMetrics(settings: settings)
+        if settings.speakerType == .cellJets {
+            let cellCount = Float(max(
+                SpeakerMeterVisualSettings.minFacePixels,
+                min(SpeakerMeterVisualSettings.maxFacePixels, settings.facePixels)
+            ))
+            return SIMD4<Float>(
+                cellCount,
+                min(max(settings.cellJetsIdleOpacity, 0), 1),
+                max(0.08, min(settings.bandSoftness, 1.8)),
+                min(max(settings.checkerContrast, 0), 0.4)
+            )
+        }
+
+        return SIMD4<Float>(
+            Float(metrics.axialPixels),
+            Float(metrics.crossPixels),
+            1,
+            min(max(settings.checkerContrast, 0), 0.4)
+        )
+    }
+
+    static func jetPixelMetricsForTests(settings: SpeakerMeterVisualSettings) -> (crossPixels: Int, axialPixels: Int, depthRatio: Float) {
+        let metrics = makeJetPixelMetrics(settings: settings)
+        return (
+            crossPixels: metrics.crossPixels,
+            axialPixels: metrics.axialPixels,
+            depthRatio: metrics.depthRatio
+        )
+    }
+
+    static func speakerGeometryUniformsForTests(settings: SpeakerMeterVisualSettings) -> SIMD4<Float> {
+        makeSpeakerGeometryUniforms(settings: settings, renderTargetWidth: 1, renderTargetHeight: 1)
+    }
+
+    private static func makeJetPixelMetrics(settings: SpeakerMeterVisualSettings) -> JetPixelMetrics {
+        let crossPixels = max(SpeakerMeterVisualSettings.minFacePixels, min(SpeakerMeterVisualSettings.maxFacePixels, settings.facePixels))
+        let normalizedLength = normalizedJetLengthPixels(settings.jetLengthPixels)
+        let scaled = (normalizedLength / 24) * Float(crossPixels)
+        let axialPixels = max(crossPixels, Int(scaled.rounded(.toNearestOrAwayFromZero)))
+        return JetPixelMetrics(crossPixels: crossPixels, axialPixels: axialPixels)
+    }
+
+    private static func normalizedJetLengthPixels(_ jetLengthPixels: Float) -> Float {
+        min(
+            SpeakerMeterVisualSettings.maxJetLengthPixels,
+            max(SpeakerMeterVisualSettings.minJetLengthPixels, jetLengthPixels.isFinite ? jetLengthPixels : SpeakerMeterVisualSettings.default.jetLengthPixels)
+        )
+    }
+
+    private static func makeSpeakerGeometryUniforms(
+        settings: SpeakerMeterVisualSettings,
+        renderTargetWidth: Int,
+        renderTargetHeight: Int
+    ) -> SIMD4<Float> {
+        _ = renderTargetWidth
+        _ = renderTargetHeight
+        let cubeDepthClip = speakerQuadRadius * 2
+        let jetPixelMetrics = makeJetPixelMetrics(settings: settings)
+        let jetDepthRatio = settings.speakerType == .cellJets
+            ? normalizedJetLengthPixels(settings.jetLengthPixels) / 24
+            : jetPixelMetrics.depthRatio
+        let jetLengthClip = cubeDepthClip * jetDepthRatio
+        let speakerTypeMode: Float
+        switch settings.speakerType {
+        case .cubeVU:
+            speakerTypeMode = 0
+        case .pixelJets:
+            speakerTypeMode = 1
+        case .cellJets:
+            speakerTypeMode = 3
+        }
+        return SIMD4<Float>(
+            speakerTypeMode,
+            max(cubeDepthClip, jetLengthClip),
+            cubeDepthClip,
+            settings.responseCurve
+        )
+    }
+
     private static func makeRampUniforms(settings: SpeakerMeterVisualSettings) -> [SIMD4<Float>] {
         let sortedRamp = settings.colorScheme.theme.vuRamp.sorted { $0.position < $1.position }
         let fallback = [
@@ -1157,6 +1276,10 @@ final class OrbitalViewMetalDrawPipeline {
         let objectMeterRevision: Int
         let objectVisualSettingsRevision: Int
     }
+
+    static var shaderSourceForTests: String {
+        orbitalViewMetalShaderSource
+    }
 }
 
 private let orbitalViewMetalShaderSource = """
@@ -1168,6 +1291,9 @@ struct SpeakerVertexOut {
     float2 faceUV;
     float shade;
     float4 material;
+    float jetAxial;
+    float jetCross;
+    float jetTipCap;
 };
 
 struct ObjectVertexOut {
@@ -1275,14 +1401,24 @@ vertex SpeakerVertexOut orbital_speaker_vertex(
     uint instanceID [[instance_id]],
     const device float4 *speakerPositions [[buffer(0)]],
     const device float4 *speakerOrientations [[buffer(1)]],
-    const device float4 *speakerMaterials [[buffer(2)]]
+    const device float4 *speakerMaterials [[buffer(2)]],
+    constant float4 &geometryUniforms [[buffer(3)]]
 ) {
     SpeakerMeshVertex mesh = speaker_cube_vertex(vertexID);
     float4 speaker = speakerPositions[instanceID];
     float4 orientation = speakerOrientations[instanceID];
     float3 normalOut = safe_normalize(orientation.xyz, float3(0.0, 0.0, 1.0));
     float depthScale = clamp(orientation.w, 0.25, 3.0);
-    float3 worldPosition = speaker_world_vector(mesh.localPosition, normalOut, depthScale);
+    float speakerType = geometryUniforms.x;
+    float jetDepthClip = max(geometryUniforms.y, geometryUniforms.z);
+    float jetAxial = saturate((mesh.localPosition.z + 1.0) * 0.5);
+    float3 localPosition = mesh.localPosition;
+    float positionDepthScale = depthScale;
+    if (speakerType > 0.5) {
+        localPosition.z = jetAxial * (jetDepthClip / max(speaker.z, 0.000001));
+        positionDepthScale = 1.0;
+    }
+    float3 worldPosition = speaker_world_vector(localPosition, normalOut, positionDepthScale);
     float3 worldNormal = safe_normalize(speaker_world_vector(mesh.localNormal, normalOut, 1.0), normalOut);
     float2 position = speaker.xy + (worldPosition.xy * speaker.z);
     float3 lightDirection = normalize(float3(0.32, 0.54, 0.78));
@@ -1292,6 +1428,9 @@ vertex SpeakerVertexOut orbital_speaker_vertex(
     out.faceUV = mesh.uv;
     out.shade = 0.56 + (0.44 * saturate(dot(worldNormal, lightDirection)));
     out.material = speakerMaterials[instanceID];
+    out.jetAxial = jetAxial;
+    out.jetCross = mesh.uv.y;
+    out.jetTipCap = mesh.localNormal.z > 0.5 ? 1.0 : 0.0;
     return out;
 }
 
@@ -1320,7 +1459,9 @@ fragment float4 orbital_speaker_fragment(
     SpeakerVertexOut in [[stage_in]],
     constant float4 &bloomUniforms [[buffer(0)]],
     const device float4 *rampStops [[buffer(1)]],
-    constant float4 &hotUniforms [[buffer(2)]]
+    constant float4 &hotUniforms [[buffer(2)]],
+    constant float4 &geometryUniforms [[buffer(3)]],
+    constant float4 &jetPixelUniforms [[buffer(4)]]
 ) {
     float displayVuScalar = saturate(in.material.x);
     float hotScalar = saturate(in.material.y);
@@ -1332,6 +1473,113 @@ fragment float4 orbital_speaker_fragment(
     float idleTint = saturate(bloomUniforms.w);
     float hotFillStrength = saturate(hotUniforms.x);
     float hotThreshold = clamp(hotUniforms.y, 0.0, 1.0);
+
+    if (geometryUniforms.x > 2.5) {
+        float axial = saturate(in.jetAxial);
+        float cellCount = max(jetPixelUniforms.x, 1.0);
+        float idleOpacity = saturate(jetPixelUniforms.y);
+        float cellAxial = (floor(axial * cellCount) + 0.5) / cellCount;
+        float cellWidth = 1.0 / cellCount;
+        float signal = max(displayVuScalar, hotScalar);
+        float clipGate = clip > 0.5 ? 1.0 : 0.0;
+        float signalGate = max(smoothstep(0.015, 0.085, signal), clipGate);
+        float hotMix = hotFillStrength * smoothstep(hotThreshold, 1.0, hotScalar);
+        float levelFill = smoothstep(cellAxial - (cellWidth * 0.62), cellAxial + (cellWidth * 0.62), displayVuScalar) * signalGate;
+        float leadingEdge = (1.0 - smoothstep(cellWidth * 0.35, cellWidth * 1.35, abs(cellAxial - displayVuScalar))) * signalGate;
+        float tipCell = (1.0 - smoothstep(cellWidth * 0.5, cellWidth * 1.7, abs(cellAxial - hotScalar))) * signalGate;
+        float cellEnergy = saturate(
+            levelFill * (0.44 + displayVuScalar * 0.36) +
+            leadingEdge * (0.26 + displayVuScalar * 0.30) +
+            tipCell * hotMix * 0.26
+        );
+        float responseCurve = max(geometryUniforms.w, 0.001);
+        float rampPosition = pow(saturate((paletteHeat * 0.56) + (cellAxial * 0.32) + (cellEnergy * 0.18)), responseCurve);
+        float3 vuColor = ramp_color(rampPosition, rampStops);
+        float3 idleBaseColor = float3(0.014, 0.018, 0.024) * idleOpacity;
+        float3 idleColor = mix(idleBaseColor, vuColor * (0.12 + cellAxial * 0.08), idleTint * 0.10 * signalGate);
+        float3 rgb = mix(idleColor, vuColor, cellEnergy) * in.shade;
+        rgb += vuColor * (max(leadingEdge, tipCell) * 0.12 + levelFill * 0.08) * signalGate;
+
+        if (clip > 0.5 && cellAxial > 0.84) {
+            rgb = max(rgb, ramp_color(1.0, rampStops));
+        }
+
+        if (in.jetTipCap > 0.5 && displayVuScalar < 0.995 && clip <= 0.5) {
+            rgb = idleBaseColor * in.shade * 0.35;
+        }
+
+        return float4(saturate(rgb), 1.0);
+    }
+
+    if (geometryUniforms.x > 1.5) {
+        float axial = saturate(in.jetAxial);
+        float pixelJetWidth = clamp(jetPixelUniforms.y, 0.12, 0.92);
+        float pixelJetSoftness = max(jetPixelUniforms.z, 0.08);
+        float fillEdge = max(bloomEdge * 0.72, 0.015);
+        float signal = max(displayVuScalar, hotScalar);
+        float clipGate = clip > 0.5 ? 1.0 : 0.0;
+        float signalGate = max(smoothstep(0.015, 0.085, signal), clipGate);
+        float baseEnergy = idleTint * 0.02 * signalGate;
+        float bodyEnergy = signalGate * displayVuScalar * (0.52 + displayVuScalar * 0.36);
+        float levelFill = (1.0 - smoothstep(displayVuScalar, displayVuScalar + pixelJetWidth * fillEdge, axial)) * signalGate;
+        float meterHead = (1.0 - smoothstep(fillEdge * 0.25, fillEdge * pixelJetSoftness * 2.6, abs(axial - displayVuScalar))) * signalGate;
+        float outwardGradient = smoothstep(0.0, 1.0, axial);
+        float leadingEdge = saturate((levelFill * 0.38) + (meterHead * 0.72));
+        float tipGlow = (1.0 - smoothstep(fillEdge * 0.7, fillEdge * 2.2, abs(axial - hotScalar))) * signalGate;
+        float responseCurve = max(geometryUniforms.w, 0.001);
+        float rampPosition = pow(saturate((outwardGradient * 0.52) + (paletteHeat * 0.32) + (leadingEdge * 0.16)), responseCurve);
+        float3 vuColor = ramp_color(rampPosition, rampStops);
+        float3 idleColor = mix(float3(0.018, 0.022, 0.028), vuColor * (0.16 + outwardGradient * 0.10), idleTint * 0.15 * signalGate);
+        float energy = saturate(baseEnergy + bodyEnergy + leadingEdge * (0.22 + displayVuScalar * 0.58) + tipGlow * hotScalar * 0.28);
+        float3 rgb = mix(idleColor, vuColor, energy) * in.shade;
+        rgb += vuColor * max(leadingEdge, tipGlow) * (0.08 + displayVuScalar * 0.18) * signalGate;
+
+        if (clip > 0.5 && axial > 0.84) {
+            rgb = max(rgb, ramp_color(1.0, rampStops));
+        }
+
+        return float4(saturate(rgb), 1.0);
+    }
+
+    if (geometryUniforms.x > 0.5) {
+        float axial = saturate(in.jetAxial);
+        float cross = saturate(in.jetCross);
+        float jetAxialPixels = max(jetPixelUniforms.x, 1.0);
+        float jetCrossPixels = max(jetPixelUniforms.y, 1.0);
+        float pixelFill = 1.0;
+        float surfaceCheckerOpacity = saturate(jetPixelUniforms.z);
+        float checkerContrast = saturate(jetPixelUniforms.w);
+        float axialCell = (floor(axial * jetAxialPixels) + 0.5) / jetAxialPixels;
+        float crossCell = (floor(cross * jetCrossPixels) + 0.5) / jetCrossPixels;
+        float2 cell = float2(axialCell, crossCell);
+        float2 cellDistance = abs(float2(axial, cross) - cell) * float2(jetAxialPixels, jetCrossPixels);
+        float tileMask = step(max(cellDistance.x, cellDistance.y), pixelFill * 0.5);
+        float fillEdge = max(1.0 / jetAxialPixels, bloomEdge * 0.75);
+        float signal = max(displayVuScalar, hotScalar);
+        float clipGate = clip > 0.5 ? 1.0 : 0.0;
+        float signalGate = max(smoothstep(0.015, 0.085, signal), clipGate);
+        float filledCells = (1.0 - smoothstep(displayVuScalar, displayVuScalar + fillEdge, axialCell)) * signalGate;
+        float leadingEdge = (1.0 - smoothstep(fillEdge * 0.35, fillEdge * 1.35, abs(axialCell - displayVuScalar))) * signalGate;
+        float tip = (1.0 - smoothstep(fillEdge * 0.5, fillEdge * 2.0, abs(axialCell - hotScalar))) * signalGate;
+        float energy = saturate((idleTint * 0.08 * signalGate) + (filledCells * (0.42 + displayVuScalar * 0.58)) + (leadingEdge * 0.22) + (tip * 0.26));
+        float responseCurve = max(geometryUniforms.w, 0.001);
+        float rampPosition = pow(saturate((axialCell * 0.85) + (paletteHeat * 0.15)), responseCurve);
+        float3 vuColor = ramp_color(rampPosition, rampStops);
+        float checkerParity = fmod(floor(cell.x * jetAxialPixels) + floor(cell.y * jetCrossPixels), 2.0);
+        float checker = mix(1.0 - checkerContrast, 1.0 + checkerContrast, checkerParity) * surfaceCheckerOpacity + (1.0 - surfaceCheckerOpacity);
+        float3 idleColor = mix(float3(0.004, 0.006, 0.010), vuColor * 0.18, idleTint * 0.18 * signalGate);
+        float3 rgb = mix(idleColor, vuColor, energy) * checker;
+        rgb += vuColor * max(leadingEdge, tip) * 0.24 * signalGate;
+        rgb = mix(float3(0.004, 0.006, 0.010), rgb, tileMask);
+        rgb *= in.shade;
+
+        if (clip > 0.5 && axialCell > 0.85) {
+            rgb = max(rgb, float3(1.0, 0.92, 0.72));
+        }
+
+        return float4(saturate(rgb), 1.0);
+    }
+
     float centerDistance = length(in.faceUV - float2(0.5, 0.5)) * 1.41421356;
     float bloomRadius = mix(bloomMin, bloomMax, displayVuScalar);
     float bloomEnd = max(bloomRadius + 0.001, min(1.41421356, bloomRadius + bloomEdge));

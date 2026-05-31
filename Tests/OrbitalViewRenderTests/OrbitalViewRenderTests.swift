@@ -443,6 +443,329 @@ final class OrbitalViewRenderTests: XCTestCase {
         XCTAssertNotEqual(bowMetrics.greenIntensity, monochromeMetrics.greenIntensity)
     }
 
+    func testPixelJetsRenderOutwardPrismWithoutChangingSceneSpeakerShape() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("Metal device unavailable; skipping Pixel Jets pixel probe.")
+        }
+
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeScene())
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.72, peak: 0.72, clip: false)
+                ]
+            )
+        )
+        let baselineShapes = renderer.renderState.scene?.speakers.map(\.shape)
+        let cubeInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let cubeMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(speakerType: .pixelJets, jetLengthPixels: 96)
+        )
+        let pixelJetsInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let pixelJetsMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        XCTAssertEqual(renderer.renderState.scene?.speakers.map(\.shape), baselineShapes)
+        XCTAssertEqual(cubeInputs.staticGeometry, pixelJetsInputs.staticGeometry)
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(renderer.renderState.meterVisualSettingsRevision, 1)
+        XCTAssertNotEqual(cubeMetrics.totalIntensity, pixelJetsMetrics.totalIntensity)
+        XCTAssertGreaterThan(try XCTUnwrap(pixelJetsMetrics.bounds).maxX, try XCTUnwrap(cubeMetrics.bounds).maxX)
+    }
+
+    func testCellJetsRenderOutwardPrismWithLowCPUSteppedBranch() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("Metal device unavailable; skipping Cell Jets pixel probe.")
+        }
+
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeScene())
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.72, peak: 0.9, clip: false)
+                ]
+            )
+        )
+        let baselineShapes = renderer.renderState.scene?.speakers.map(\.shape)
+        let cubeInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let cubeMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(speakerType: .pixelJets, jetLengthPixels: 96)
+        )
+        let pixelJetsMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(speakerType: .cellJets, jetLengthPixels: 96)
+        )
+        let cellInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let cellMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1.65,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.72, peak: 0.9, clip: false)
+                ]
+            )
+        )
+        let cellMovedMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 2,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0, peak: 0, clip: false)
+                ]
+            )
+        )
+        let cellSilentMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        let cubeUniforms = OrbitalViewMetalDrawPipeline.speakerGeometryUniformsForTests(settings: .default)
+        let pixelJetsUniforms = OrbitalViewMetalDrawPipeline.speakerGeometryUniformsForTests(
+            settings: try SpeakerMeterVisualSettings(speakerType: .pixelJets, jetLengthPixels: 96)
+        )
+        let cellLowDensityUniforms = OrbitalViewMetalDrawPipeline.speakerGeometryUniformsForTests(
+            settings: try SpeakerMeterVisualSettings(speakerType: .cellJets, facePixels: 1, jetLengthPixels: 96)
+        )
+        let cellHighDensityUniforms = OrbitalViewMetalDrawPipeline.speakerGeometryUniformsForTests(
+            settings: try SpeakerMeterVisualSettings(speakerType: .cellJets, facePixels: 9, jetLengthPixels: 96)
+        )
+
+        XCTAssertEqual(renderer.renderState.scene?.speakers.map(\.shape), baselineShapes)
+        XCTAssertEqual(cubeInputs.staticGeometry, cellInputs.staticGeometry)
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+        XCTAssertEqual(renderer.renderState.meterVisualSettingsRevision, 2)
+        XCTAssertEqual(cubeUniforms.x, 0)
+        XCTAssertEqual(pixelJetsUniforms.x, 1)
+        XCTAssertEqual(cellLowDensityUniforms.x, 3)
+        XCTAssertEqual(cellHighDensityUniforms.x, 3)
+        XCTAssertEqual(cellLowDensityUniforms.y, cellHighDensityUniforms.y, accuracy: 0.000_001)
+        XCTAssertGreaterThan(try XCTUnwrap(cellMetrics.bounds).maxX, try XCTUnwrap(cubeMetrics.bounds).maxX)
+        XCTAssertNotEqual(cellMetrics.totalIntensity, pixelJetsMetrics.totalIntensity)
+        XCTAssertEqual(cellMetrics.xWeightedIntensity, cellMovedMetrics.xWeightedIntensity)
+        XCTAssertGreaterThan(cellMetrics.totalIntensity, cellSilentMetrics.totalIntensity + 1_000)
+    }
+
+    func testCellJetsMetalIdleOpacityHidesSilentBodyOnly() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("Metal device unavailable; skipping Cell Jets idle-opacity probe.")
+        }
+
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeScene())
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(
+                speakerType: .cellJets,
+                cellJetsIdleOpacity: 0,
+                jetLengthPixels: 96
+            )
+        )
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0, peak: 0, clip: false)
+                ]
+            )
+        )
+        let silentMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 2,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.72, peak: 0.9, clip: false)
+                ]
+            )
+        )
+        let activeMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        XCTAssertLessThan(silentMetrics.totalIntensity, 100)
+        XCTAssertGreaterThan(activeMetrics.totalIntensity, silentMetrics.totalIntensity + 1_000)
+        XCTAssertNotNil(activeMetrics.bounds)
+    }
+
+    func testCellJetsMetalTipCapColorsOnlyAtFullScaleOrClip() {
+        let shader = OrbitalViewMetalDrawPipeline.shaderSourceForTests
+
+        XCTAssertTrue(shader.contains("out.jetTipCap = mesh.localNormal.z > 0.5 ? 1.0 : 0.0;"))
+        XCTAssertTrue(shader.contains("float idleOpacity = saturate(jetPixelUniforms.y);"))
+        XCTAssertTrue(shader.contains("if (in.jetTipCap > 0.5 && displayVuScalar < 0.995 && clip <= 0.5)"))
+        XCTAssertTrue(shader.contains("rgb = idleBaseColor * in.shade * 0.35;"))
+    }
+
+    func testPixelJetsUseColorSchemeRampAndMeterSignalGate() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("Metal device unavailable; skipping Pixel Jets color probe.")
+        }
+
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThreeSpeakerScene())
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.78, peak: 0.92, clip: false),
+                    2: SpeakerMeterLevel(rms: 0.52, peak: 0.68, clip: false)
+                ]
+            )
+        )
+
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(
+                colorScheme: .daftPunkBow,
+                speakerType: .pixelJets,
+                jetLengthPixels: 60
+            )
+        )
+        let bowInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let bowMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(
+                colorScheme: .monochrome,
+                speakerType: .pixelJets,
+                jetLengthPixels: 60
+            )
+        )
+        let monochromeInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let monochromeMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        XCTAssertEqual(bowInputs.staticGeometry, monochromeInputs.staticGeometry)
+        XCTAssertNotEqual(bowMetrics.redIntensity, monochromeMetrics.redIntensity)
+        XCTAssertNotEqual(bowMetrics.greenIntensity, monochromeMetrics.greenIntensity)
+
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 2,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.02, peak: 0.03, clip: false),
+                    2: SpeakerMeterLevel(rms: 0.02, peak: 0.03, clip: false)
+                ]
+            )
+        )
+        let quietMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+        XCTAssertGreaterThan(monochromeMetrics.totalIntensity, quietMetrics.totalIntensity)
+    }
+
+    func testCellJetsUseColorSchemeRampAndMeterSignalGate() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("Metal device unavailable; skipping Cell Jets color probe.")
+        }
+
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeThreeSpeakerScene())
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 1,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0.78, peak: 0.92, clip: false),
+                    2: SpeakerMeterLevel(rms: 0.52, peak: 0.68, clip: false)
+                ]
+            )
+        )
+
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(
+                colorScheme: .daftPunkBow,
+                speakerType: .cellJets,
+                jetLengthPixels: 60
+            )
+        )
+        let bowInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let bowMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(
+                colorScheme: .monochrome,
+                speakerType: .cellJets,
+                jetLengthPixels: 60
+            )
+        )
+        let monochromeInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+        let monochromeMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        renderer.updateMeters(
+            try SpeakerMeterFrame(
+                timestamp: 2,
+                levelsByChannel: [
+                    1: SpeakerMeterLevel(rms: 0, peak: 0, clip: false),
+                    2: SpeakerMeterLevel(rms: 0, peak: 0, clip: false)
+                ]
+            )
+        )
+        let silentMetrics = pixelMetrics(for: try renderer.renderOffscreen(device: device, width: 512, height: 512))
+
+        XCTAssertEqual(bowInputs.staticGeometry, monochromeInputs.staticGeometry)
+        XCTAssertNotEqual(bowMetrics.redIntensity, monochromeMetrics.redIntensity)
+        XCTAssertNotEqual(bowMetrics.greenIntensity, monochromeMetrics.greenIntensity)
+        XCTAssertNotEqual(bowMetrics.blueIntensity, monochromeMetrics.blueIntensity)
+        XCTAssertGreaterThan(monochromeMetrics.totalIntensity, silentMetrics.totalIntensity + 1_000)
+    }
+
+    func testPixelAndCellJetsShaderBranchesUseRampAndSignalGate() {
+        let shader = OrbitalViewMetalDrawPipeline.shaderSourceForTests
+
+        XCTAssertTrue(shader.contains("geometryUniforms.x > 2.5"))
+        XCTAssertTrue(shader.contains("float cellCount = max(jetPixelUniforms.x, 1.0)"))
+        XCTAssertTrue(shader.contains("floor(axial * cellCount)"))
+        XCTAssertTrue(shader.contains("float leadingEdge = (1.0 - smoothstep(cellWidth * 0.35"))
+        XCTAssertTrue(shader.contains("geometryUniforms.x > 0.5"))
+        XCTAssertTrue(shader.contains("float jetAxialPixels = max(jetPixelUniforms.x, 1.0)"))
+        XCTAssertTrue(shader.contains("float jetCrossPixels = max(jetPixelUniforms.y, 1.0)"))
+        XCTAssertTrue(shader.contains("float tileMask = step(max(cellDistance.x, cellDistance.y), pixelFill * 0.5)"))
+        XCTAssertTrue(shader.contains("ramp_color(rampPosition, rampStops)"))
+        XCTAssertTrue(shader.contains("float signalGate = max(smoothstep(0.015, 0.085, signal), clipGate)"))
+        XCTAssertFalse(shader.contains("movingCell"))
+        XCTAssertFalse(shader.contains("movingTrail"))
+        XCTAssertFalse(shader.contains("pixelJetPhase"))
+        XCTAssertFalse(shader.contains("cellPhase"))
+        XCTAssertTrue(shader.contains("rgb = max(rgb, ramp_color(1.0, rampStops))"))
+    }
+
+    func testJetPixelMetricsCapAtNineAndDensityOneUsesWideBands() throws {
+        let renderer = OrbitalViewMetalRenderer()
+        renderer.loadScene(try makeScene())
+        let baselineInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        let shortSettings = try SpeakerMeterVisualSettings(
+            speakerType: .pixelJets,
+            facePixels: 9,
+            jetLengthPixels: 24
+        )
+        let longSettings = try SpeakerMeterVisualSettings(
+            speakerType: .pixelJets,
+            facePixels: 9,
+            jetLengthPixels: 96
+        )
+        let wideBandSettings = try SpeakerMeterVisualSettings(
+            speakerType: .pixelJets,
+            facePixels: 1,
+            jetLengthPixels: 96
+        )
+        let shortMetrics = OrbitalViewMetalDrawPipeline.jetPixelMetricsForTests(settings: shortSettings)
+        let longMetrics = OrbitalViewMetalDrawPipeline.jetPixelMetricsForTests(settings: longSettings)
+        let wideBandMetrics = OrbitalViewMetalDrawPipeline.jetPixelMetricsForTests(settings: wideBandSettings)
+
+        renderer.updateMeterVisualSettings(longSettings)
+        let longInputs = OrbitalViewMetalDrawPipeline.makeSpeakerDrawInputs(from: renderer.renderState)
+
+        XCTAssertEqual(shortMetrics.crossPixels, 9)
+        XCTAssertEqual(shortMetrics.axialPixels, 9)
+        XCTAssertEqual(longMetrics.crossPixels, 9)
+        XCTAssertEqual(longMetrics.axialPixels, 36)
+        XCTAssertEqual(longMetrics.depthRatio, 4, accuracy: 0.000_001)
+        XCTAssertEqual(wideBandMetrics.crossPixels, 1)
+        XCTAssertEqual(wideBandMetrics.axialPixels, 4)
+        XCTAssertEqual(wideBandMetrics.depthRatio, 4, accuracy: 0.000_001)
+        XCTAssertEqual(baselineInputs.staticGeometry, longInputs.staticGeometry)
+        XCTAssertEqual(renderer.renderState.structuralRevision, 1)
+    }
+
     func testRepeatedObjectRenderReusesMetalBufferCapacity() throws {
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw XCTSkip("Metal device unavailable; skipping retained buffer reuse check.")
@@ -579,6 +902,14 @@ final class OrbitalViewRenderTests: XCTestCase {
             OrbitalViewMetalDrawPipeline.makeSpeakerStaticGeometryCacheKey(from: renderer.renderState)
         )
 
+        renderer.updateMeterVisualSettings(
+            try SpeakerMeterVisualSettings(speakerType: .pixelJets, jetLengthPixels: 96)
+        )
+        XCTAssertEqual(
+            baselineKey,
+            OrbitalViewMetalDrawPipeline.makeSpeakerStaticGeometryCacheKey(from: renderer.renderState)
+        )
+
         renderer.updateCamera(try OrbitalViewCameraState.preset(.isometric))
         XCTAssertEqual(
             baselineKey,
@@ -670,7 +1001,11 @@ final class OrbitalViewRenderTests: XCTestCase {
         _ = try renderer.renderOffscreen(device: device, width: 96, height: 96)
         XCTAssertEqual(try renderer.debugBufferAllocationCount(device: device), baselineAllocationCount)
 
-        renderer.updateMeterVisualSettings(try SpeakerMeterVisualSettings(visualGainDB: 5, facePixels: 12))
+        renderer.updateMeterVisualSettings(try SpeakerMeterVisualSettings(visualGainDB: 5, facePixels: 9))
+        _ = try renderer.renderOffscreen(device: device, width: 96, height: 96)
+        XCTAssertEqual(try renderer.debugBufferAllocationCount(device: device), baselineAllocationCount)
+
+        renderer.updateMeterVisualSettings(try SpeakerMeterVisualSettings(speakerType: .pixelJets, jetLengthPixels: 96))
         _ = try renderer.renderOffscreen(device: device, width: 96, height: 96)
         XCTAssertEqual(try renderer.debugBufferAllocationCount(device: device), baselineAllocationCount)
 
@@ -741,6 +1076,7 @@ final class OrbitalViewRenderTests: XCTestCase {
         let redIntensity: Int
         let greenIntensity: Int
         let blueIntensity: Int
+        let xWeightedIntensity: Int64
     }
 
     private func pixelMetrics(for frame: OrbitalViewOffscreenFrame) -> FramePixelMetrics {
@@ -752,6 +1088,7 @@ final class OrbitalViewRenderTests: XCTestCase {
         var redIntensity = 0
         var greenIntensity = 0
         var blueIntensity = 0
+        var xWeightedIntensity: Int64 = 0
 
         for y in 0..<frame.height {
             for x in 0..<frame.width {
@@ -772,6 +1109,7 @@ final class OrbitalViewRenderTests: XCTestCase {
                 redIntensity += red
                 greenIntensity += green
                 blueIntensity += blue
+                xWeightedIntensity += Int64(x * pixelIntensity)
             }
         }
 
@@ -783,7 +1121,8 @@ final class OrbitalViewRenderTests: XCTestCase {
             totalIntensity: totalIntensity,
             redIntensity: redIntensity,
             greenIntensity: greenIntensity,
-            blueIntensity: blueIntensity
+            blueIntensity: blueIntensity,
+            xWeightedIntensity: xWeightedIntensity
         )
     }
 
