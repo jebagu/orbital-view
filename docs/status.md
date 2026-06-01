@@ -129,6 +129,14 @@ none
 
 ## Recent Changes
 
+### Update: 2026-06-01 App Package Rebuild (latest render-perf build) + GitHub Publish
+
+- Rebuilt the tracked `dist/Orbital View VU 1.0/Orbital View VU 1.0.pkg` and `Orbital View VU 1.0.app.zip` from the current build (commit with the per-speaker material skip + palette cache + theme profiler), replacing the 2026-05-31 artifacts that predated this render-perf work. The launcher (`Open Orbital View.command`) was run first to rebuild `OrbitalViewViewer`, refresh the review resource bundle/icon, set `CFBundleName`/`CFBundleDisplayName` to `Orbital View 1.0`, and ad-hoc sign the app; that app was then staged as `Orbital View VU 1.0.app`, ad-hoc re-signed, and packaged.
+- Package recipe (unchanged from prior): flat `pkgbuild` component package, identifier `com.orbitalviewkit.native-scenekit-geodesic-review`, version `1.0`, install-location `/Applications`; `app.zip` via `ditto -c -k --sequesterRsrc --keepParent`.
+- Verification: `codesign --verify --deep --strict` passed on the staged app and on the app extracted from `app.zip`; `installer -pkg ... -target / -showChoiceChangesXML` accepted the pkg; `pkgutil --payload-files` confirmed the payload carries the current `OrbitalViewViewer` binary, `AppIcon.icns`, the review resource bundle, fonts, source/speaker layouts, and saved themes; the extracted bundle reports `CFBundleName = Orbital View 1.0`.
+- Remaining risks: the pkg is ad-hoc signed and unsigned/un-notarized (`pkgutil --check-signature` → `no signature`), same as the prior artifact. The payload now includes 47 `._` AppleDouble companion entries carrying only the system `com.apple.provenance` xattr (auto-stamped by macOS Sequoia and not strippable on disk; harmless on install) — a cosmetic difference from the 2026-05-31 pkg, which was built before provenance stamping.
+- GitHub: published to `https://github.com/jebagu/orbital-view`. The pre-existing remote `main` (a separate `orbital-view-with-objects` lineage sharing only the `v0.1` ancestor) was preserved on the remote before this line replaced it as `main`.
+
 ### Update: 2026-06-01 Render Perf: Per-Speaker Material Skip + Palette Cache + Theme Profiler
 
 This pass bundles three behavior-preserving render-perf changes plus a new measurement harness, all confined to the review-only `OrbitalViewReview` surface, its benchmark, and tests.
