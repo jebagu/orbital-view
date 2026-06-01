@@ -3435,6 +3435,7 @@ struct OrbitalViewportRenderInstrumentationSnapshot: Equatable {
     var speakerVisibilityUpdateCount = 0
     var speakerMaterialUpdateCount = 0
     var speakerMaterialSpeakerVisitCount = 0
+    var speakerMaterialPerSpeakerSkipCount = 0
     var speakerLabelMaterialUpdateCount = 0
     var sourcePoseOrVisibilityUpdateCount = 0
     var sourceMaterialUpdateCount = 0
@@ -5581,7 +5582,25 @@ public enum OrbitalViewportRenderStyle: String, CaseIterable, Identifiable, Equa
         }
     }
 
+    /// Resolved palette for this style. Palettes are pure functions of compile-time color
+    /// constants, so they are computed once per style and cached. Previously this was a computed
+    /// property that rebuilt the whole palette (and allocated every `Color`) on every access —
+    /// which, because `OrbitalViewportTheme` is created fresh each frame and queried many times
+    /// per speaker, showed up as the hottest stack on the SceneKit render queue. The cached value
+    /// is identical; this is a behavior-preserving, zero-visual-change optimization.
     var palette: OrbitalViewportPalette {
+        Self.paletteCache[self] ?? computedPalette
+    }
+
+    private static let paletteCache: [OrbitalViewportRenderStyle: OrbitalViewportPalette] = {
+        var cache: [OrbitalViewportRenderStyle: OrbitalViewportPalette] = [:]
+        for style in OrbitalViewportRenderStyle.allCases {
+            cache[style] = style.computedPalette
+        }
+        return cache
+    }()
+
+    private var computedPalette: OrbitalViewportPalette {
         switch self {
         case .green:
             return OrbitalViewportPalette(
@@ -5678,23 +5697,24 @@ public enum OrbitalViewportRenderStyle: String, CaseIterable, Identifiable, Equa
         }
     }
 
-    private static var kimiPurplePalette: OrbitalViewportPalette {
-        OrbitalViewportPalette(
-            backgroundTop: rgb(10, 8, 17),
-            backgroundBottom: rgb(0, 0, 0),
-            panel: rgb(20, 24, 28).opacity(0.92),
-            panelSoft: rgb(170, 136, 255).opacity(0.09),
-            toolbar: rgb(29, 33, 37).opacity(0.82),
-            line: Color.white.opacity(0.12),
-            text: rgb(242, 242, 242),
-            textSoft: rgb(170, 172, 173),
-            accent: rgb(170, 136, 255),
-            accentSecondary: rgb(50, 214, 191),
-            success: rgb(24, 206, 15),
-            warning: rgb(255, 178, 54),
-            danger: rgb(255, 54, 54)
-        )
-    }
+    // Computed once: `daftPunkBow` wraps this as its base, and it is the `.purple` palette, so a
+    // recomputed `static var` here was rebuilt on every palette access. A `static let` keeps the
+    // identical value while removing the per-access rebuild.
+    private static let kimiPurplePalette = OrbitalViewportPalette(
+        backgroundTop: rgb(10, 8, 17),
+        backgroundBottom: rgb(0, 0, 0),
+        panel: rgb(20, 24, 28).opacity(0.92),
+        panelSoft: rgb(170, 136, 255).opacity(0.09),
+        toolbar: rgb(29, 33, 37).opacity(0.82),
+        line: Color.white.opacity(0.12),
+        text: rgb(242, 242, 242),
+        textSoft: rgb(170, 172, 173),
+        accent: rgb(170, 136, 255),
+        accentSecondary: rgb(50, 214, 191),
+        success: rgb(24, 206, 15),
+        warning: rgb(255, 178, 54),
+        danger: rgb(255, 54, 54)
+    )
 
     private static func rackPalette(accent: Color, accentSecondary: Color, warning: Color, danger: Color) -> OrbitalViewportPalette {
         OrbitalViewportPalette(
@@ -9202,6 +9222,33 @@ struct OrbitalViewportSpeakerMaterialVisualSignatureKey: Equatable {
     }
 }
 
+/// The global (non-per-speaker) inputs that affect every speaker's material.
+///
+/// This intentionally mirrors `OrbitalViewportSpeakerMaterialVisualSignatureKey`'s fields
+/// *except* the per-speaker `signatures` array and `meterSourceMode`. The per-speaker meter
+/// values are already captured by `OrbitalViewportSpeakerMaterialVisualSignature`, so
+/// `meterSourceMode` (which carries the live telemetry snapshot and therefore changes every
+/// frame) must be excluded here or per-speaker skipping could never fire. When any of these
+/// global inputs change, every speaker's last-applied signature is invalidated so all speakers
+/// re-apply, keeping the per-speaker skip strictly as correct as the existing global gate.
+struct OrbitalViewportSpeakerMaterialContextKey: Equatable {
+    let renderStyle: OrbitalViewportRenderStyle
+    let cubeVUSettings: OrbitalViewportCubeVUSettings
+    let selectedChannel: Int?
+    let speakerShape: OrbitalViewportSpeakerShape
+    let speakerLabelFont: OrbitalViewportSpeakerLabelFont
+
+    init(configuration: OrbitalViewportRenderConfiguration) {
+        self.renderStyle = configuration.renderStyle
+        var materialSettings = configuration.cubeVUSettings
+        materialSettings.speakerHeight = 1
+        self.cubeVUSettings = materialSettings
+        self.selectedChannel = configuration.selectedChannel
+        self.speakerShape = configuration.speakerShape
+        self.speakerLabelFont = configuration.speakerLabelFont
+    }
+}
+
 struct OrbitalViewportSourceMaterialVisualSignature: Equatable {
     let sourceID: Int
     let state: SpatGRISSliceState
@@ -10057,6 +10104,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
         private var lastSpeakerVisibilityKey: OrbitalViewportSpeakerVisibilityUpdateKey?
         private var lastSpeakerMaterialKey: OrbitalViewportSpeakerMaterialUpdateKey?
         private var lastSpeakerMaterialVisualSignatureKey: OrbitalViewportSpeakerMaterialVisualSignatureKey?
+        private var lastSpeakerMaterialContextKey: OrbitalViewportSpeakerMaterialContextKey?
+        private var lastAppliedSpeakerMaterialSignatures: [Int: OrbitalViewportSpeakerMaterialVisualSignature] = [:]
         private var lastSourcePoseUpdateKey: OrbitalViewportSourcePoseUpdateKey?
         private var lastSourceMaterialUpdateKey: OrbitalViewportSourceMaterialUpdateKey?
         private var lastSourceMaterialVisualSignatureKey: OrbitalViewportSourceMaterialVisualSignatureKey?
@@ -10894,6 +10943,11 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             speakerNodes.removeAll()
             speakerOutlineNodes.removeAll()
             speakerOutlineMaterialKeys.removeAll()
+            // Speaker nodes are recreated with fresh, untextured materials, so the per-speaker
+            // applied-signature memory must reset; otherwise an unchanged meter signature would
+            // skip re-applying the material and leave the new geometry blank (e.g. after a
+            // jet-length / speaker-size / face-pixel change that rebuilds geometry).
+            lastAppliedSpeakerMaterialSignatures.removeAll(keepingCapacity: true)
             lastSpeakerGeometryKey = OrbitalViewportSpeakerGeometryUpdateKey(
                 speakerShape: shape,
                 jetLengthPixels: jetLengthPixels,
@@ -11716,6 +11770,117 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             return true
         }
 
+        /// Applies the meter-driven material (and outline) for a single speaker.
+        ///
+        /// Extracted from `updateSpeakers` so the per-speaker visual-signature dirty-check can
+        /// skip this work for speakers whose bucketed appearance is unchanged. Behavior here is
+        /// identical to the previous inline code; returns whether it mutated the scene.
+        private func applySpeakerMaterial(
+            speaker: OrbitalViewportProjectedSpeaker,
+            node: SCNNode,
+            configuration: OrbitalViewportRenderConfiguration,
+            selected: Bool,
+            visible: Bool
+        ) -> Bool {
+            var didMutate = false
+            let alpha = configuration.speakerAlpha(depth: speaker.depth, selected: selected)
+            let emissionScale = configuration.speakerEmissionScale(depth: speaker.depth)
+            let scalars = SpeakerCubeVUScalars(
+                rawRms: Float(speaker.rms),
+                settings: configuration.cubeVUSettings.coreSettings,
+                paletteValue: Float(speaker.peak),
+                displayDrive: Float(speaker.displayDrive)
+            )
+            let display = Double(scalars.displayVuScalar)
+            let hot = Double(scalars.hotScalar)
+            let heat = Double(scalars.paletteHeat)
+            let hotMix = OrbitalViewportMath.clamp01(
+                (hot - configuration.cubeVUSettings.hotThreshold) /
+                max(0.001, 1 - configuration.cubeVUSettings.hotThreshold)
+            )
+            let idleTint = configuration.cubeVUSettings.idleTint
+            let visibleFill = max(idleTint, display)
+            let emissionOpacity = (
+                configuration.cubeVUSettings.bloomMin +
+                (configuration.cubeVUSettings.bloomMax - configuration.cubeVUSettings.bloomMin) * visibleFill +
+                configuration.cubeVUSettings.hotFillStrength * hotMix * 0.38
+            ) * emissionScale
+            if configuration.speakerShape == .cubeVU || configuration.speakerShape.isJetStyle {
+                if configuration.speakerShape == .cubeVU {
+                    let vuColor = configuration.foggedNSColor(
+                        configuration.theme.cubeVUNSColor(heat: heat),
+                        depth: speaker.depth
+                    )
+                    let hotColor = selected
+                        ? configuration.theme.cubeVUHotNSColor
+                        : configuration.foggedNSColor(configuration.theme.cubeVUHotNSColor, depth: speaker.depth)
+                    OrbitalViewportCubeVUSceneKitMaterial.update(
+                        material: node.geometry?.firstMaterial,
+                        settings: configuration.cubeVUSettings,
+                        scalars: scalars,
+                        clip: speaker.peak >= 0.995,
+                        alpha: alpha,
+                        vuColor: vuColor,
+                        hotColor: hotColor
+                    )
+                    didMutate = true
+                } else if configuration.speakerShape == .pixelJets {
+                    let materials = node.geometry?.materials ?? []
+                    OrbitalViewportJetsVUSceneKitMaterial.update(
+                        sideMaterial: materials.first,
+                        baseCapMaterial: materials.dropFirst().first,
+                        tipCapMaterial: materials.dropFirst(2).first,
+                        settings: configuration.cubeVUSettings,
+                        scalars: scalars,
+                        clip: speaker.peak >= 0.995,
+                        alpha: alpha,
+                        configuration: configuration,
+                        speakerDepth: speaker.depth
+                    )
+                    didMutate = true
+                } else if configuration.speakerShape == .cellJets {
+                    let materials = node.geometry?.materials ?? []
+                    let sideBandCount = OrbitalViewportCellJetsSceneKitMaterial.sideBandCount(
+                        settings: configuration.cubeVUSettings
+                    )
+                    OrbitalViewportCellJetsSceneKitMaterial.update(
+                        cellMaterials: Array(materials.prefix(sideBandCount)),
+                        settings: configuration.cubeVUSettings,
+                        scalars: scalars,
+                        clip: speaker.peak >= 0.995,
+                        alpha: alpha,
+                        configuration: configuration,
+                        speakerDepth: speaker.depth
+                    )
+                    didMutate = true
+                }
+                didMutate = updateCubeOutline(
+                    channel: speaker.channel,
+                    speakerOutlineNodes[speaker.channel],
+                    renderStyle: configuration.renderStyle,
+                    color: selected
+                        ? configuration.theme.selectedLabelNSColor
+                        : configuration.foggedNSColor(configuration.theme.cubeOutlineNSColor, depth: speaker.depth),
+                    alpha: alpha,
+                    strength: configuration.cubeVUSettings.cubeOutlineStrength,
+                    selected: selected,
+                    visible: visible
+                ) || didMutate
+            } else {
+                let color = configuration.foggedNSColor(
+                    configuration.theme.vuNSColor(heat: heat),
+                    depth: speaker.depth
+                )
+                didMutate = setMaterial(
+                    node.geometry?.firstMaterial,
+                    color: color,
+                    alpha: alpha * (0.72 + visibleFill * 0.28),
+                    emission: color.withAlphaComponent(OrbitalViewportMath.clamp01(emissionOpacity))
+                ) || didMutate
+            }
+            return didMutate
+        }
+
         private func updateSpeakers(
             configuration: OrbitalViewportRenderConfiguration,
             snapshot: OrbitalViewportSnapshot,
@@ -11728,6 +11893,14 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             }
             if updateMaterial {
                 instrumentation.speakerMaterialUpdateCount += 1
+                // Invalidate per-speaker apply cache when any global (non-per-speaker) visual
+                // input changes, so a palette/settings/selection/shape change re-applies every
+                // speaker even if individual meter signatures are unchanged.
+                let materialContextKey = OrbitalViewportSpeakerMaterialContextKey(configuration: configuration)
+                if lastSpeakerMaterialContextKey != materialContextKey {
+                    lastSpeakerMaterialContextKey = materialContextKey
+                    lastAppliedSpeakerMaterialSignatures.removeAll(keepingCapacity: true)
+                }
             }
             for speaker in snapshot.speakers {
                 guard let node = speakerNodes[speaker.channel] else {
@@ -11755,99 +11928,24 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
 
                 if updateMaterial {
                     instrumentation.speakerMaterialSpeakerVisitCount += 1
-                    let alpha = configuration.speakerAlpha(depth: speaker.depth, selected: selected)
-                    let emissionScale = configuration.speakerEmissionScale(depth: speaker.depth)
-                    let scalars = SpeakerCubeVUScalars(
-                        rawRms: Float(speaker.rms),
-                        settings: configuration.cubeVUSettings.coreSettings,
-                        paletteValue: Float(speaker.peak),
-                        displayDrive: Float(speaker.displayDrive)
+                    let materialSignature = OrbitalViewportSpeakerMaterialVisualSignature(
+                        speaker: speaker,
+                        configuration: configuration
                     )
-                    let display = Double(scalars.displayVuScalar)
-                    let hot = Double(scalars.hotScalar)
-                    let heat = Double(scalars.paletteHeat)
-                    let hotMix = OrbitalViewportMath.clamp01(
-                        (hot - configuration.cubeVUSettings.hotThreshold) /
-                        max(0.001, 1 - configuration.cubeVUSettings.hotThreshold)
-                    )
-                    let idleTint = configuration.cubeVUSettings.idleTint
-                    let visibleFill = max(idleTint, display)
-                    let emissionOpacity = (
-                        configuration.cubeVUSettings.bloomMin +
-                        (configuration.cubeVUSettings.bloomMax - configuration.cubeVUSettings.bloomMin) * visibleFill +
-                        configuration.cubeVUSettings.hotFillStrength * hotMix * 0.38
-                    ) * emissionScale
-                    if configuration.speakerShape == .cubeVU || configuration.speakerShape.isJetStyle {
-                        if configuration.speakerShape == .cubeVU {
-                            let vuColor = configuration.foggedNSColor(
-                                configuration.theme.cubeVUNSColor(heat: heat),
-                                depth: speaker.depth
-                            )
-                            let hotColor = selected
-                                ? configuration.theme.cubeVUHotNSColor
-                                : configuration.foggedNSColor(configuration.theme.cubeVUHotNSColor, depth: speaker.depth)
-                            OrbitalViewportCubeVUSceneKitMaterial.update(
-                                material: node.geometry?.firstMaterial,
-                                settings: configuration.cubeVUSettings,
-                                scalars: scalars,
-                                clip: speaker.peak >= 0.995,
-                                alpha: alpha,
-                                vuColor: vuColor,
-                                hotColor: hotColor
-                            )
-                            didMutate = true
-                        } else if configuration.speakerShape == .pixelJets {
-                            let materials = node.geometry?.materials ?? []
-                            OrbitalViewportJetsVUSceneKitMaterial.update(
-                                sideMaterial: materials.first,
-                                baseCapMaterial: materials.dropFirst().first,
-                                tipCapMaterial: materials.dropFirst(2).first,
-                                settings: configuration.cubeVUSettings,
-                                scalars: scalars,
-                                clip: speaker.peak >= 0.995,
-                                alpha: alpha,
-                                configuration: configuration,
-                                speakerDepth: speaker.depth
-                            )
-                            didMutate = true
-                        } else if configuration.speakerShape == .cellJets {
-                            let materials = node.geometry?.materials ?? []
-                            let sideBandCount = OrbitalViewportCellJetsSceneKitMaterial.sideBandCount(
-                                settings: configuration.cubeVUSettings
-                            )
-                            OrbitalViewportCellJetsSceneKitMaterial.update(
-                                cellMaterials: Array(materials.prefix(sideBandCount)),
-                                settings: configuration.cubeVUSettings,
-                                scalars: scalars,
-                                clip: speaker.peak >= 0.995,
-                                alpha: alpha,
-                                configuration: configuration,
-                                speakerDepth: speaker.depth
-                            )
-                            didMutate = true
-                        }
-                        didMutate = updateCubeOutline(
-                            channel: speaker.channel,
-                            speakerOutlineNodes[speaker.channel],
-                            renderStyle: configuration.renderStyle,
-                            color: selected
-                                ? configuration.theme.selectedLabelNSColor
-                                : configuration.foggedNSColor(configuration.theme.cubeOutlineNSColor, depth: speaker.depth),
-                            alpha: alpha,
-                            strength: configuration.cubeVUSettings.cubeOutlineStrength,
+                    if lastAppliedSpeakerMaterialSignatures[speaker.channel] == materialSignature {
+                        // This speaker's bucketed visual signature is unchanged since it was last
+                        // applied, so re-applying would produce an identical texture + uniforms.
+                        // Skipping avoids redundant face-texture lookups/generation and material
+                        // writes with no visual change.
+                        instrumentation.speakerMaterialPerSpeakerSkipCount += 1
+                    } else {
+                        lastAppliedSpeakerMaterialSignatures[speaker.channel] = materialSignature
+                        didMutate = applySpeakerMaterial(
+                            speaker: speaker,
+                            node: node,
+                            configuration: configuration,
                             selected: selected,
                             visible: visible
-                        ) || didMutate
-                    } else {
-                        let color = configuration.foggedNSColor(
-                            configuration.theme.vuNSColor(heat: heat),
-                            depth: speaker.depth
-                        )
-                        didMutate = setMaterial(
-                            node.geometry?.firstMaterial,
-                            color: color,
-                            alpha: alpha * (0.72 + visibleFill * 0.28),
-                            emission: color.withAlphaComponent(OrbitalViewportMath.clamp01(emissionOpacity))
                         ) || didMutate
                     }
                 }

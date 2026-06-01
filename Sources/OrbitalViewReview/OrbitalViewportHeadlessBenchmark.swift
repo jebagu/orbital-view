@@ -122,6 +122,7 @@ public enum OrbitalViewportHeadlessBenchmark {
             viewport: viewport
         )
 
+        coordinator.resetInstrumentationForTests()
         let startCPUSeconds = currentProcessCPUSeconds()
         let start = CACurrentMediaTime()
         try renderFrames(
@@ -136,6 +137,22 @@ public enum OrbitalViewportHeadlessBenchmark {
             viewport: viewport
         )
         let elapsed = max(CACurrentMediaTime() - start, 0.000_001)
+        let instrumentation = coordinator.instrumentationSnapshotForTests
+        print(
+            String(
+                format: "  %@ diagnostics: renderScene=%d frameMaterialSkip=%d perSpeakerSkip=%d cubeMatUpdate=%d texHit=%d texMiss=%d texGen=%d texEvict=%d texAssign=%d",
+                options.mode.rawValue,
+                instrumentation.renderSceneCount,
+                instrumentation.speakerMaterialUnchangedFrameSkipCount,
+                instrumentation.speakerMaterialPerSpeakerSkipCount,
+                instrumentation.cubeVUMaterialUpdateCount,
+                instrumentation.cubeVUFaceTextureCacheHitCount,
+                instrumentation.cubeVUFaceTextureCacheMissCount,
+                instrumentation.cubeVUFaceTextureGenerationCount,
+                instrumentation.cubeVUFaceTextureEvictionCount,
+                instrumentation.cubeVUTextureAssignmentCount
+            )
+        )
         let cpuSeconds = max(0, currentProcessCPUSeconds() - startCPUSeconds)
         let cpuPercent = (cpuSeconds / elapsed) * 100
         let ribbedSphereEnabled = options.showRibbedSpeakerSphere

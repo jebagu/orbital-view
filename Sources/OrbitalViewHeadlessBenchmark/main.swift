@@ -14,12 +14,19 @@ struct BenchmarkCLI {
     var ribbedSphereHorizontalRings = 8
     var showHiddenLines = false
     var fogDensity: Double = 20
+    var themePaths: [String] = []
 
     init(arguments: [String]) throws {
         var index = 1
         while index < arguments.count {
             let argument = arguments[index]
             switch argument {
+            case "--theme":
+                index += 1
+                guard index < arguments.count else {
+                    throw CLIError.missingValue(argument)
+                }
+                themePaths.append(arguments[index])
             case "--mode":
                 index += 1
                 guard index < arguments.count else {
@@ -64,6 +71,10 @@ struct BenchmarkCLI {
     }
 
     func run() throws {
+        if !themePaths.isEmpty {
+            try runThemeProfiles()
+            return
+        }
         print("OrbitalViewHeadlessBenchmark")
         print(
             "size=\(width)x\(height) warmup=\(warmupFrames) frames=\(measuredFrames) target=\(targetFramesPerSecond) " +
@@ -90,11 +101,33 @@ struct BenchmarkCLI {
         }
     }
 
+    func runThemeProfiles() throws {
+        print("OrbitalViewHeadlessBenchmark theme profile")
+        print("size=\(width)x\(height) warmup=\(warmupFrames) frames=\(measuredFrames) spin=on impulse=on")
+        for path in themePaths {
+            let options = OrbitalViewportThemeProfileOptions(
+                themePath: path,
+                warmupFrames: warmupFrames,
+                measuredFrames: measuredFrames,
+                width: width,
+                height: height,
+                forceSpin: true,
+                forceImpulse: true
+            )
+            let result = try OrbitalViewportThemeProfile.run(options: options)
+            for line in result.summaryLines {
+                print(line)
+            }
+        }
+    }
+
     static func usage() -> String {
         """
         Usage: OrbitalViewHeadlessBenchmark [--mode idle|active|both] [--warmup N] [--frames N] [--width N] [--height N] [--target N] [--ribbed] [--vertical-ribs N] [--horizontal-rings N] [--show-hidden-lines] [--fog-density N]
+               OrbitalViewHeadlessBenchmark --theme <path-to-theme.json> [--theme <path2.json> ...] [--warmup N] [--frames N] [--width N] [--height N]
 
         Defaults: --mode both --warmup 60 --frames 300 --width 1360 --height 820 --target 120 --vertical-ribs 16 --horizontal-rings 8 --fog-density 20
+        Theme mode drives the saved theme with spin + impulse meters and reports per-aspect render work.
         """
     }
 

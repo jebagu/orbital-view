@@ -4633,6 +4633,94 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(snapshot.needsDisplayCount, 0)
     }
 
+    func testCubeVUPerSpeakerMaterialSkipAvoidsRedundantUnchangedSpeakerWork() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let referenceSpeakers = OrbitalViewportSpeaker.referenceSpeakers
+        let changedChannel = referenceSpeakers[0].channel
+
+        func cubeConfiguration(timeMS: Double, sequence: UInt64, changedChannelRMS: Double)
+            -> OrbitalViewportRenderConfiguration {
+            var levels: [Int: OrbitalViewTelemetryMeterLevel] = [:]
+            for speaker in referenceSpeakers {
+                levels[speaker.channel] = OrbitalViewTelemetryMeterLevel(rms: 0.5, peak: 0.6)
+            }
+            levels[changedChannel] = OrbitalViewTelemetryMeterLevel(rms: changedChannelRMS, peak: 0.6)
+            let source = OrbitalViewportMeterSource.telemetry(
+                OrbitalViewTelemetryMeterSnapshot(
+                    sequence: sequence,
+                    producerHostTime: sequence,
+                    levelsByChannel: levels
+                )
+            )
+            return makeViewportConfiguration(
+                timeMS: timeMS,
+                speakerShape: .cubeVU,
+                activeViewportFramesPerSecond: 120,
+                meterOnlyViewportFramesPerSecond: 30,
+                meterSource: source
+            )
+        }
+
+        // Prime every speaker's material once.
+        let first = cubeConfiguration(timeMS: 1_000, sequence: 1, changedChannelRMS: 0.5)
+        coordinator.update(configuration: first, snapshot: OrbitalViewportSnapshot(configuration: first))
+
+        // Next meter bucket: only one channel's level changes. The cadence gate opens (so the
+        // speaker-material pass runs), but only the single changed speaker should re-apply; the
+        // rest have identical bucketed signatures and must be skipped with no visual change.
+        coordinator.resetInstrumentationForTests()
+        let second = cubeConfiguration(timeMS: 1_034, sequence: 2, changedChannelRMS: 0.85)
+        coordinator.update(configuration: second, snapshot: OrbitalViewportSnapshot(configuration: second))
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        let speakerCount = referenceSpeakers.count
+        XCTAssertEqual(snapshot.speakerMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.speakerMaterialSpeakerVisitCount, speakerCount)
+        XCTAssertEqual(snapshot.cubeVUMaterialUpdateCount, 1)
+        XCTAssertEqual(snapshot.speakerMaterialPerSpeakerSkipCount, speakerCount - 1)
+    }
+
+    func testCubeVUPerSpeakerMaterialSkipReappliesAllSpeakersWhenPaletteChanges() {
+        let coordinator = OrbitalViewport3DSceneView.Coordinator()
+        let referenceSpeakers = OrbitalViewportSpeaker.referenceSpeakers
+
+        func cubeConfiguration(timeMS: Double, sequence: UInt64, renderStyle: OrbitalViewportRenderStyle)
+            -> OrbitalViewportRenderConfiguration {
+            var levels: [Int: OrbitalViewTelemetryMeterLevel] = [:]
+            for speaker in referenceSpeakers {
+                levels[speaker.channel] = OrbitalViewTelemetryMeterLevel(rms: 0.5, peak: 0.6)
+            }
+            let source = OrbitalViewportMeterSource.telemetry(
+                OrbitalViewTelemetryMeterSnapshot(
+                    sequence: sequence,
+                    producerHostTime: sequence,
+                    levelsByChannel: levels
+                )
+            )
+            return makeViewportConfiguration(
+                timeMS: timeMS,
+                renderStyle: renderStyle,
+                speakerShape: .cubeVU,
+                activeViewportFramesPerSecond: 120,
+                meterOnlyViewportFramesPerSecond: 30,
+                meterSource: source
+            )
+        }
+
+        let purple = cubeConfiguration(timeMS: 1_000, sequence: 1, renderStyle: .purple)
+        coordinator.update(configuration: purple, snapshot: OrbitalViewportSnapshot(configuration: purple))
+
+        // Same meter levels, but the palette (global context) changed: every speaker must
+        // re-apply so the new colors take effect, with zero per-speaker skips.
+        coordinator.resetInstrumentationForTests()
+        let blue = cubeConfiguration(timeMS: 1_034, sequence: 2, renderStyle: .rackBlue)
+        coordinator.update(configuration: blue, snapshot: OrbitalViewportSnapshot(configuration: blue))
+        let snapshot = coordinator.instrumentationSnapshotForTests
+
+        XCTAssertEqual(snapshot.speakerMaterialPerSpeakerSkipCount, 0)
+        XCTAssertEqual(snapshot.cubeVUMaterialUpdateCount, referenceSpeakers.count)
+    }
+
     func testCubeVUResolvedMaterialColorsMatchThemeRamp() throws {
         let theme = OrbitalViewportTheme(style: .daftPunkBow)
         let heat = 0.42
