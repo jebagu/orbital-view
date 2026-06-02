@@ -15,6 +15,9 @@ struct BenchmarkCLI {
     var showHiddenLines = false
     var fogDensity: Double = 20
     var themePaths: [String] = []
+    var lamella = false
+    var sphereStructureOpacity: Double = 1
+    var snapshotPath: String?
 
     init(arguments: [String]) throws {
         var index = 1
@@ -61,6 +64,17 @@ struct BenchmarkCLI {
             case "--fog-density":
                 index += 1
                 fogDensity = try Self.parseDouble(arguments, index: index, option: argument)
+            case "--lamella":
+                lamella = true
+            case "--structure-opacity":
+                index += 1
+                sphereStructureOpacity = try Self.parseDouble(arguments, index: index, option: argument)
+            case "--snapshot":
+                index += 1
+                guard index < arguments.count else {
+                    throw CLIError.missingValue(argument)
+                }
+                snapshotPath = arguments[index]
             case "--help", "-h":
                 throw CLIError.helpRequested
             default:
@@ -94,7 +108,10 @@ struct BenchmarkCLI {
                 ribbedSphereVerticalRibs: ribbedSphereVerticalRibs,
                 ribbedSphereHorizontalRings: ribbedSphereHorizontalRings,
                 showHiddenLines: showHiddenLines,
-                fogDensity: fogDensity
+                fogDensity: fogDensity,
+                lamella: lamella,
+                sphereStructureOpacity: sphereStructureOpacity,
+                snapshotPath: snapshotPath
             )
             let result = try OrbitalViewportHeadlessBenchmark.run(options: options)
             print(result.summaryLine)

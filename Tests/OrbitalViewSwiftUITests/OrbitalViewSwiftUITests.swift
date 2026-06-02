@@ -33,12 +33,12 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.inspectorWidth, 300)
         XCTAssertFalse(OrbitalViewportMockup.usesRootAnimationTimeline)
         XCTAssertEqual(OrbitalViewportMockup.tuningTrayHitTargetPattern, "full-width-header-button")
-        XCTAssertEqual(OrbitalViewportMockup.viewportAnimationFramesPerSecond, 120)
+        XCTAssertEqual(OrbitalViewportMockup.viewportAnimationFramesPerSecond, 60)
         XCTAssertEqual(OrbitalViewportMockup.meterOnlyViewportFramesPerSecond, 30)
         XCTAssertEqual(OrbitalViewportMockup.inspectorRefreshFramesPerSecond, 10)
         XCTAssertEqual(OrbitalViewportMockup.fpsMeterLocation, "viewport-bottom-right")
-        XCTAssertEqual(OrbitalViewportMockup.fpsMeterTargetFramesPerSecond, 120)
-        XCTAssertEqual(OrbitalViewportMockup.fpsMeterUnderTargetFramesPerSecond, 60)
+        XCTAssertEqual(OrbitalViewportMockup.fpsMeterTargetFramesPerSecond, 60)
+        XCTAssertEqual(OrbitalViewportMockup.fpsMeterUnderTargetFramesPerSecond, 30)
         XCTAssertEqual(OrbitalViewportMockup.fpsMeterLogSamplesPerSecond, 5)
         #if os(macOS)
         XCTAssertEqual(OrbitalViewport3DSceneView.antialiasingMode, .none)
@@ -64,7 +64,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.defaultRibbedSphereHorizontalRings, 8)
         XCTAssertEqual(OrbitalViewportMockup.defaultSpeakerShape, .cubeVU)
         XCTAssertEqual(OrbitalViewportMockup.defaultJetLengthPixels, 48, accuracy: 0.000_001)
-        XCTAssertEqual(OrbitalViewportMockup.defaultViewportFrameRate, .oneTwenty)
+        XCTAssertEqual(OrbitalViewportMockup.defaultViewportFrameRate, .sixty)
         XCTAssertEqual(OrbitalViewportMockup.defaultCubeVUPreset, .hotCoreBloom)
         XCTAssertEqual(OrbitalViewportMockup.defaultSourceMode, .telemetry)
         XCTAssertEqual(OrbitalViewportMockup.defaultVUDriveMode, .impulseRipple)
@@ -74,7 +74,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(settings.checkerContrast, 0.08, accuracy: 0.000_001)
         XCTAssertEqual(settings.cubeOutlineStrength, 0.64, accuracy: 0.000_001)
         XCTAssertEqual(settings.displayCeiling, 1, accuracy: 0.000_001)
-        XCTAssertEqual(settings.facePixels, 9)
+        XCTAssertEqual(settings.facePixels, 4)
         XCTAssertEqual(settings.hotFillStrength, 0.94, accuracy: 0.000_001)
         XCTAssertEqual(settings.hotResponse, 2.25, accuracy: 0.000_001)
         XCTAssertEqual(settings.hotThreshold, 0.58, accuracy: 0.000_001)
@@ -107,12 +107,12 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     func testCorrectViewerKeepsLeftRailFocusedAndMovesTuningTraysRight() {
         XCTAssertEqual(
             OrbitalViewportMockup.leftRailSectionTitles,
-            ["Camera", "View Detail"]
+            ["Camera", "View Options"]
         )
         XCTAssertEqual(OrbitalViewportMockup.leftRailCameraPanelPlacement, "top-aligned-under-title")
         XCTAssertEqual(
             OrbitalViewportMockup.sourceSelectorControlTitles,
-            ["Telemetry", "Local Song", "Impulse Test"]
+            ["Telemetry", "System Audio", "Demo Patterns"]
         )
         XCTAssertEqual(OrbitalViewportMockup.inputSectionHeaderTitle, "Sound Metering Input")
         XCTAssertEqual(OrbitalViewportMockup.inputTrayTitle, "Input")
@@ -120,8 +120,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMockup.inputTrayControlTitles,
             [
                 "Telemetry",
-                "Local Song",
-                "Impulse Test",
+                "System Audio",
+                "Demo Patterns",
                 "Provider",
                 "Status",
                 "Track",
@@ -131,9 +131,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Channels",
                 "Frame Seq",
                 "32ch VU",
-                "Choose File",
-                "Play",
-                "Pause",
+                "Start",
+                "Stop",
+                "All Mono",
                 "Ripple",
                 "Waves",
                 "Orbiting Comets",
@@ -142,7 +142,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Displayed Meter",
                 "Active Meter",
                 "Music Source",
-                "Impulse Pattern"
+                "Demo Pattern"
             ]
         )
         XCTAssertEqual(
@@ -150,8 +150,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
         )
         XCTAssertEqual(
-            OrbitalViewportMockup.localSongTrayControlTitles,
-            ["Choose File", "Play", "Pause"]
+            OrbitalViewportMockup.systemAudioTrayControlTitles,
+            ["Start", "Stop", "All Mono", "Ripple", "Waves", "Orbiting Comets"]
         )
         XCTAssertEqual(
             OrbitalViewportMockup.impulseTestTrayControlTitles,
@@ -193,7 +193,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.globalDiceButtonStyle, "icon-only-centered-dice")
         XCTAssertEqual(
             OrbitalViewportMockup.viewDetailControlTitles,
-            ["Speaker Size", "Fog Density", "Speaker Labels", "Hidden Lines", "Ground Plane"]
+            ["Speaker Size", "Fog Density", "Input Calibration", "Speaker Labels", "Hidden Lines", "Ground Plane"]
         )
         XCTAssertEqual(
             OrbitalViewportMockup.geodesicAppearanceControlTitles,
@@ -205,10 +205,14 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(
             OrbitalViewportMockup.sphereGeometryControlTitles,
             [
-                "Ribbed Speaker Sphere",
+                "Off",
+                "Ribbed",
+                "Lamella",
+                "Structure Opacity",
                 "Rib Thickness",
                 "Vertical Ribs",
-                "Horizontal Rings"
+                "Horizontal Rings",
+                "Number of Sectors"
             ]
         )
         XCTAssertEqual(
@@ -219,7 +223,11 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMockup.audioRenderTypeTitles,
             ["All Mono", "Excite Ripple", "Excite Waves", "Excite Comets"]
         )
+        // Prism/Sphere remain in the enum (saved-theme decode + rendering) but are hidden from the UI.
         XCTAssertEqual(OrbitalViewportSpeakerShape.allCases.map(\.title), ["Prism", "Sphere", "Cube VU", "Pixel Jets", "Cell Jets"])
+        XCTAssertEqual(OrbitalViewportMockup.visibleSpeakerShapes.map(\.title), ["Cube VU", "Pixel Jets", "Cell Jets"])
+        XCTAssertFalse(OrbitalViewportMockup.visibleSpeakerShapes.contains(.prism))
+        XCTAssertFalse(OrbitalViewportMockup.visibleSpeakerShapes.contains(.sphere))
         XCTAssertEqual(OrbitalViewportFrameRate.allCases.map(\.title), ["30 FPS", "60 FPS", "120 FPS"])
         XCTAssertEqual(
             OrbitalViewportMockup.tuningTrayTitles,
@@ -238,10 +246,10 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Sphere Palette",
                 "Ground Appearance",
                 "Meter Response",
-                "Performance",
                 "Diagnostics"
             ]
         )
+        XCTAssertFalse(OrbitalViewportMockup.tuningTrayTitles.contains("Performance"))
         XCTAssertFalse(OrbitalViewportMockup.tuningTrayTitles.contains("Sonic Sphere Speaker Palette"))
         XCTAssertFalse(OrbitalViewportMockup.tuningTrayTitles.contains("Source Speaker Palette"))
         XCTAssertFalse(OrbitalViewportMockup.tuningTrayTitles.contains("Speaker Pattern"))
@@ -277,7 +285,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(
             OrbitalViewportMockup.sourceLayoutTrayControlTitles,
-            ["Import Setup...", "Import Project...", "Save", "Refresh", "Listen OSC", "Load", "Set Default"]
+            ["Import Setup...", "Import Project...", "Save", "Clear", "Listen OSC", "Load", "Set Default"]
         )
         XCTAssertEqual(OrbitalViewportMockup.spatGRISOSCAddress, "/spat/serv")
         XCTAssertEqual(OrbitalViewportMockup.spatGRISDefaultOSCPort, 18032)
@@ -347,6 +355,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Pixel Fill",
                 "Idle Tint",
                 "Idle Opacity",
+                "Fill From Outside",
                 "Surface Checker Opacity",
                 "Checker Contrast"
             ]
@@ -363,7 +372,6 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportMockup.meterResponseControlTitles,
             [
                 "Randomize Meter Response",
-                "Input Calibration",
                 "Level Compression",
                 "Display Ceiling",
                 "Hot Response",
@@ -382,7 +390,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(
             OrbitalViewportVUDriveMode.allCases.map(\.title),
-            ["Music", "Impulse Test Ripple", "Impulse Test Waves", "Impulse Test Orbiting Comets"]
+            ["Music", "Demo Pattern Ripple", "Demo Pattern Waves", "Demo Pattern Orbiting Comets"]
         )
         XCTAssertEqual(
             OrbitalViewportVUDriveMode.impulseCases.map(\.impulseTitle),
@@ -399,8 +407,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(OrbitalViewportMockup.motionFPSControlLocation, "right-performance-tray")
         XCTAssertEqual(OrbitalViewportMockup.fpsMeterLocation, "viewport-bottom-right")
-        XCTAssertEqual(OrbitalViewportMockup.fpsMeterTargetFramesPerSecond, 120)
-        XCTAssertEqual(OrbitalViewportMockup.fpsMeterUnderTargetFramesPerSecond, 60)
+        XCTAssertEqual(OrbitalViewportMockup.fpsMeterTargetFramesPerSecond, 60)
+        XCTAssertEqual(OrbitalViewportMockup.fpsMeterUnderTargetFramesPerSecond, 30)
         XCTAssertEqual(OrbitalViewportMockup.fpsMeterLogSamplesPerSecond, 5)
         XCTAssertEqual(OrbitalViewportMockup.audioSourcePosition, "right-panel-single-input-tray-above-theme")
         XCTAssertEqual(OrbitalViewportMockup.audioTransportButtonLayout, "inside-expanded-input-tray-local-song-mode")
@@ -411,6 +419,133 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
     }
 
+    func testSystemAudioSourceModeOffersPatternsAndDemoPatternsRename() {
+        // Inputs are Telemetry / System Audio / Demo Patterns (Local Song removed). The impulseTest
+        // case name / raw value is unchanged for saved-theme compat; only its title changed.
+        XCTAssertEqual(
+            OrbitalViewportSourceMode.allCases,
+            [.telemetry, .systemAudio, .impulseTest]
+        )
+        XCTAssertEqual(OrbitalViewportSourceMode.systemAudio.rawValue, "systemAudio")
+        XCTAssertEqual(OrbitalViewportSourceMode.systemAudio.title, "System Audio")
+        XCTAssertEqual(OrbitalViewportSourceMode.impulseTest.title, "Demo Patterns")
+        XCTAssertEqual(OrbitalViewportSourceMode.impulseTest.rawValue, "impulseTest")
+        // System Audio offers Start/Stop plus All Mono and the three excited pattern modes.
+        XCTAssertEqual(
+            OrbitalViewportSourceMode.systemAudio.trayControlTitles,
+            ["Start", "Stop", "All Mono", "Ripple", "Waves", "Orbiting Comets"]
+        )
+        XCTAssertEqual(
+            OrbitalViewportAudioRenderMode.patternCases.map(\.patternTitle),
+            ["All Mono", "Ripple", "Waves", "Orbiting Comets"]
+        )
+        // Legacy "localSong" decodes to the default telemetry mode so old themes still load.
+        XCTAssertEqual(
+            try? JSONDecoder().decode(OrbitalViewportSourceMode.self, from: Data("\"localSong\"".utf8)),
+            .telemetry
+        )
+    }
+
+    func testSystemAudioTapInactiveControllerProducesSilentMetersAndCarriesRenderMode() {
+        let controller = OrbitalViewportSystemAudioTapController()
+        // Not capturing yet -> inactive silent source.
+        let inactive = controller.meterSource(renderMode: .exciteWaves)
+        XCTAssertEqual(inactive.meter(channel: 1, timeMS: 0), .silent)
+        XCTAssertEqual(controller.currentMeterSample(), .silent)
+        XCTAssertFalse(controller.isCapturing)
+        // The systemAudio meter-source factory carries the same render-mode options as local audio.
+        let active = OrbitalViewportMeterSource.systemAudio(controller, renderMode: .exciteWaves)
+        if case .systemAudio(_, let renderMode) = active.mode {
+            XCTAssertEqual(renderMode, .exciteWaves)
+        } else {
+            XCTFail("expected .systemAudio mode")
+        }
+        // Availability tracks the OS floor for the process-tap API.
+        if #available(macOS 14.2, *) {
+            XCTAssertTrue(controller.isAvailable)
+        } else {
+            XCTAssertFalse(controller.isAvailable)
+        }
+    }
+
+    func testSystemAudioPatternsAreExcitedByAudioOnlyWithNoIdleMotion() {
+        // System Audio patterns must be driven ONLY by the live music: with no audio the sphere is
+        // fully dark (no self-running animation), and louder audio blooms the flowing waves. Check
+        // this holds across pattern kinds and several time samples so there is no idle motion.
+        for kind in [OrbitalViewportImpulseKind.ripple, .waves, .orbitingComets] {
+            for timeMS in stride(from: 0.0, through: 4_000.0, by: 250.0) {
+                let silent = OrbitalViewportImpulsePattern.meter(
+                    kind: kind, channel: 5, timeMS: timeMS, excitation: .silent
+                )
+                // No audio -> completely dark, at every time step (no animation creeping in).
+                XCTAssertEqual(silent.rms, 0, accuracy: 1e-9, "kind=\(kind) t=\(timeMS)")
+                XCTAssertEqual(silent.peak, 0, accuracy: 1e-9, "kind=\(kind) t=\(timeMS)")
+            }
+        }
+        // Louder audio excites the pattern more than quiet audio.
+        let quiet = OrbitalViewportImpulsePattern.meter(
+            kind: .ripple, channel: 5, timeMS: 1_000, excitation: OrbitalViewportMeterSample(rms: 0.1, peak: 0.2)
+        )
+        let loud = OrbitalViewportImpulsePattern.meter(
+            kind: .ripple, channel: 5, timeMS: 1_000, excitation: OrbitalViewportMeterSample(rms: 0.7, peak: 0.95)
+        )
+        XCTAssertGreaterThan(loud.rms, quiet.rms)
+        // Demo Patterns (no excitation) still self-animate at full strength.
+        XCTAssertGreaterThan(
+            OrbitalViewportImpulsePattern.meter(kind: .ripple, channel: 5, timeMS: 1_000).rms,
+            0.0
+        )
+    }
+
+    func testSpeakerLabelFontSizeScaleReachesTwoHundredPercent() {
+        // Default (slider 50) stays 100%; the cap is now 200%.
+        XCTAssertEqual(OrbitalViewportMath.speakerLabelSizeScale(fromSlider: 0), 0.62, accuracy: 1e-9)
+        XCTAssertEqual(OrbitalViewportMath.speakerLabelSizeScale(fromSlider: 50), 1.0, accuracy: 1e-9)
+        XCTAssertEqual(OrbitalViewportMath.speakerLabelSizeScale(fromSlider: 75), 1.5, accuracy: 1e-9)
+        XCTAssertEqual(OrbitalViewportMath.speakerLabelSizeScale(fromSlider: 100), 2.0, accuracy: 1e-9)
+    }
+
+    func testJetFillReversedSettingDefaultsFalseAndRoundTrips() throws {
+        XCTAssertFalse(OrbitalViewportCubeVUSettings.default.jetFillReversed)
+        var settings = OrbitalViewportCubeVUSettings.default
+        settings.jetFillReversed = true
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(OrbitalViewportCubeVUSettings.self, from: data)
+        XCTAssertTrue(decoded.jetFillReversed)
+    }
+
+    func testLamellaSphereGeometryUsesSectorsForFacetedRingsAndDiagonals() {
+        let speakers = OrbitalViewportSpeaker.referenceSpeakers
+        let sectors = 10
+        let rings = 6
+        let lamella = OrbitalViewportRibbedSpeakerSphereGeometry.curves(
+            for: speakers,
+            verticalRibs: 16,
+            horizontalRings: rings,
+            style: .lamella,
+            lamellaSpacing: 0.6,
+            lamellaSectors: sectors
+        )
+        XCTAssertFalse(lamella.isEmpty)
+        // One faceted hoop ring per band; each ring polygon has `sectors` vertices.
+        let hoops = lamella.filter { $0.kind == .horizontalRing }
+        XCTAssertEqual(hoops.count, rings)
+        XCTAssertTrue(hoops.allSatisfy { $0.points.count == sectors })
+        // Diagonal lamella members (zig-zag) appear between adjacent bands (rings - 1 of them).
+        let diagonals = lamella.filter { $0.kind == .verticalRib }
+        XCTAssertEqual(diagonals.count, rings - 1)
+        // Ribbed still includes the full meridian vertical ribs.
+        let ribbed = OrbitalViewportRibbedSpeakerSphereGeometry.curves(
+            for: speakers,
+            verticalRibs: 16,
+            horizontalRings: 8,
+            style: .ribbed
+        )
+        XCTAssertTrue(ribbed.contains { $0.kind == .verticalRib })
+        XCTAssertEqual(OrbitalViewportMockup.defaultRibbedSphereStyle, .ribbed)
+        XCTAssertEqual(OrbitalViewportRibbedSpeakerSphereGeometry.normalizedLamellaSectors(1), 3)
+    }
+
     func testCorrectViewerSourceSelectorSeparatesTelemetrySongAndImpulseControls() {
         XCTAssertEqual(OrbitalViewportMockup.defaultSourceMode, .telemetry)
         XCTAssertEqual(
@@ -418,14 +553,14 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
         )
         XCTAssertEqual(
-            OrbitalViewportSourceMode.localSong.trayControlTitles,
-            ["Choose File", "Play", "Pause"]
+            OrbitalViewportSourceMode.systemAudio.trayControlTitles,
+            ["Start", "Stop", "All Mono", "Ripple", "Waves", "Orbiting Comets"]
         )
         XCTAssertEqual(
             OrbitalViewportSourceMode.impulseTest.trayControlTitles,
             ["Ripple", "Waves", "Orbiting Comets"]
         )
-        XCTAssertEqual(OrbitalViewportSourceMode.legacyMode(for: .music), .localSong)
+        XCTAssertEqual(OrbitalViewportSourceMode.legacyMode(for: .music), .telemetry)
         XCTAssertEqual(OrbitalViewportSourceMode.legacyMode(for: .impulseWaves), .impulseTest)
 
         XCTAssertEqual(
@@ -498,7 +633,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             .silent
         )
         XCTAssertEqual(
-            OrbitalViewportMeterSource.localSongNoFile.meter(channel: 1, timeMS: 0),
+            OrbitalViewportMeterSource.systemAudioInactive.meter(channel: 1, timeMS: 0),
             .silent
         )
         XCTAssertGreaterThan(
@@ -630,7 +765,10 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(defaults.hotThreshold, Double(core.hotThreshold), accuracy: 0.000_001)
         XCTAssertEqual(defaults.hotFillStrength, Double(core.hotFillStrength), accuracy: 0.000_001)
         XCTAssertEqual(defaults.paletteDrive, Double(core.vuPaletteDrive), accuracy: 0.000_001)
-        XCTAssertEqual(defaults.facePixels, core.facePixels)
+        // Review intentionally defaults pixel density lower than the core contract to cut per-frame
+        // texture cost; it still stays within the core min/max range.
+        XCTAssertEqual(defaults.facePixels, 4)
+        XCTAssertTrue((SpeakerMeterVisualSettings.minFacePixels...SpeakerMeterVisualSettings.maxFacePixels).contains(defaults.facePixels))
         XCTAssertEqual(OrbitalViewportMockup.defaultJetLengthPixels, Double(core.jetLengthPixels), accuracy: 0.000_001)
         XCTAssertEqual(defaults.idleTint, 0.10, accuracy: 0.000_001)
         XCTAssertEqual(defaults.cellJetsIdleOpacity, 1, accuracy: 0.000_001)
@@ -776,9 +914,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             [
                 "Source Mode",
                 "Telemetry Advertiser",
-                "Local Song File",
-                "Local Song Playback",
-                "Impulse Pattern"
+                "Demo Pattern"
             ]
         )
         XCTAssertEqual(
@@ -792,10 +928,14 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Speaker Labels",
                 "Hidden Lines",
                 "Color Palette",
-                "Ribbed Speaker Sphere",
+                "Off",
+                "Ribbed",
+                "Lamella",
+                "Structure Opacity",
                 "Rib Thickness",
                 "Vertical Ribs",
                 "Horizontal Rings",
+                "Number of Sectors",
                 "Sphere Palette",
                 "Sphere Saturation",
                 "Ground Plane",
@@ -807,8 +947,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Label Font",
                 "Cube Surface",
                 "Bloom Style",
-                "Meter Response",
-                "Performance"
+                "Meter Response"
             ]
         )
         for title in OrbitalViewportMockup.geodesicAppearanceControlTitles {
@@ -888,12 +1027,20 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(roll.speakerLabelFontSizeSlider, 0)
         XCTAssertLessThanOrEqual(roll.speakerLabelFontSizeSlider, 100)
         XCTAssertTrue(OrbitalViewportCubeVUPreset.allCases.contains(roll.cubePreset))
-        XCTAssertGreaterThanOrEqual(roll.cubeSettings.inputCalibration, 0.5)
+        // Input Calibration is NOT randomized — it stays at the unmodified default.
+        XCTAssertEqual(roll.cubeSettings.inputCalibration, OrbitalViewportCubeVUSettings.default.inputCalibration)
         XCTAssertLessThanOrEqual(roll.cubeSettings.paletteDrive, 3.4)
         XCTAssertGreaterThanOrEqual(roll.cubeSettings.cubeOutlineStrength, 0)
         XCTAssertLessThanOrEqual(roll.cubeSettings.cubeOutlineStrength, 1)
         XCTAssertEqual(roll.cubeSettings.speakerHeight, 1)
         XCTAssertTrue(OrbitalViewportFrameRate.allCases.contains(roll.viewportFrameRate))
+        // Newly randomized sphere-geometry + jet controls.
+        XCTAssertTrue([.ribbed, .lamella].contains(roll.ribbedSphereStyle))
+        XCTAssertTrue((6...40).contains(roll.lamellaSectors))
+        XCTAssertGreaterThanOrEqual(roll.sphereStructureOpacity, 0.4)
+        XCTAssertLessThanOrEqual(roll.sphereStructureOpacity, 1)
+        XCTAssertGreaterThanOrEqual(roll.jetLengthPixels, 24)
+        XCTAssertLessThanOrEqual(roll.jetLengthPixels, 130)
 
         var enabledGenerator = SeededGenerator(seed: 0xD1CE)
         let enabledRoll = OrbitalViewportDiceRandomizer.globalViewRoll(
@@ -987,12 +1134,14 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     }
 
     func testCorrectViewerFrameRateStatusUsesTargetAndUnderTargetThresholds() {
-        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 120), .target)
-        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 108), .target)
-        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 60), .belowTarget)
-        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 72.5), .belowTarget)
-        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 59.9), .underTarget)
-        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 12.2), .underTarget)
+        // Threshold logic is target-relative; pin to an explicit 120 target so it is independent of
+        // the app's default (now 60fps).
+        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 120, targetFramesPerSecond: 120), .target)
+        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 108, targetFramesPerSecond: 120), .target)
+        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 60, targetFramesPerSecond: 120), .belowTarget)
+        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 72.5, targetFramesPerSecond: 120), .belowTarget)
+        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 59.9, targetFramesPerSecond: 120), .underTarget)
+        XCTAssertEqual(OrbitalViewportFrameRateStatus.status(for: 12.2, targetFramesPerSecond: 120), .underTarget)
         XCTAssertEqual(
             OrbitalViewportFrameRateStatus.status(for: 60, targetFramesPerSecond: 60),
             .target
@@ -1023,7 +1172,9 @@ final class OrbitalViewSwiftUITests: XCTestCase {
     }
 
     func testCorrectViewerFrameRateMonitorEmitsStatusTransitionsImmediately() {
-        var monitor = OrbitalViewportFrameRateMonitor()
+        // Pin to a 120 target so the status-transition thresholds are exercised independently of the
+        // app default (now 60fps).
+        var monitor = OrbitalViewportFrameRateMonitor(targetFramesPerSecond: 120)
 
         XCTAssertNil(monitor.recordFrame(at: 0))
         let targetSample = monitor.recordFrame(at: 1_000.0 / 120)
@@ -1055,8 +1206,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         }
 
         XCTAssertEqual(entries.count, OrbitalViewportDiagnosticLog.maximumEntries)
-        XCTAssertEqual(entries.first?.message, "FPS 23.9 target=120 status=under target")
-        XCTAssertEqual(entries.last?.message, "FPS 14.0 target=120 status=under target")
+        XCTAssertEqual(entries.first?.message, "FPS 23.9 target=60 status=under target")
+        XCTAssertEqual(entries.last?.message, "FPS 14.0 target=60 status=under target")
     }
 
     #if os(macOS)
@@ -1446,9 +1597,13 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             geodesicPaletteFollowsMainTheme: false,
             geodesicSaturation: 0.36,
             showRibbedSpeakerSphere: true,
+            ribbedSphereStyle: .lamella,
             ribbedSphereThickness: 1.4,
+            lamellaSpacing: 0.8,
+            lamellaSectors: 18,
             ribbedSphereVerticalRibs: 24,
             ribbedSphereHorizontalRings: 12,
+            sphereStructureOpacity: 0.5,
             speakerShape: .pixelJets,
             jetLengthPixels: 96,
             speakerLabelFont: .pressStart2P,
@@ -1493,7 +1648,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 gridPlanePaletteFollowsMainTheme: false,
                 gridPlaneThickness: 1.65
             ),
-            sourceMode: .localSong,
+            sourceMode: .systemAudio,
             driveMode: .impulseRipple,
             cubePreset: .haloEdgeBloom,
             cubeSettings: OrbitalViewportCubeVUPreset.haloEdgeBloom.settings,
@@ -1508,7 +1663,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let decoded = try JSONDecoder().decode(OrbitalViewportSettingsExportPayload.self, from: data)
 
         XCTAssertTrue(json.contains("\"schemaVersion\" : 9"))
-        XCTAssertTrue(json.contains("\"sourceMode\" : \"localSong\""))
+        XCTAssertTrue(json.contains("\"sourceMode\" : \"systemAudio\""))
         XCTAssertTrue(json.contains("\"driveMode\" : \"impulseTest\""))
         XCTAssertTrue(json.contains("\"cubePreset\" : \"haloEdgeBloom\""))
         XCTAssertTrue(json.contains("\"renderStyle\" : \"daftPunkBow\""))
@@ -1546,13 +1701,17 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(decoded.leftPanel.audioSource.mode, .localAudioFile)
         XCTAssertEqual(decoded.leftPanel.audioSource.filePath, "/Users/example/Music/reference-track.wav")
         XCTAssertEqual(decoded.leftPanel.audioSource.renderMode, .exciteWaves)
-        XCTAssertEqual(decoded.sourceMode, .localSong)
+        XCTAssertEqual(decoded.sourceMode, .systemAudio)
         XCTAssertTrue(decoded.sourceModeWasExplicit)
         XCTAssertEqual(decoded.sourceSpeakerRenderStyle, .flamingoGreen)
         XCTAssertEqual(decoded.geodesicRenderStyle, .rackBlue)
         XCTAssertFalse(decoded.geodesicPaletteFollowsMainTheme)
         XCTAssertTrue(decoded.showRibbedSpeakerSphere)
+        XCTAssertEqual(decoded.ribbedSphereStyle, .lamella)
         XCTAssertEqual(decoded.ribbedSphereThickness, 1.4, accuracy: 0.000_001)
+        XCTAssertEqual(decoded.lamellaSpacing, 0.8, accuracy: 0.000_001)
+        XCTAssertEqual(decoded.lamellaSectors, 18)
+        XCTAssertEqual(decoded.sphereStructureOpacity, 0.5, accuracy: 0.000_001)
         XCTAssertEqual(decoded.ribbedSphereVerticalRibs, 24)
         XCTAssertEqual(decoded.ribbedSphereHorizontalRings, 12)
         XCTAssertEqual(decoded.speakerShape, .pixelJets)
@@ -1579,7 +1738,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         let legacyJSON = json
             .replacingOccurrences(of: "\"pixelJets\"", with: "\"solidJets\"")
-            .replacingOccurrences(of: "\"facePixels\" : 9", with: "\"facePixels\" : 14")
+            .replacingOccurrences(of: "\"facePixels\" : 4", with: "\"facePixels\" : 14")
         let legacyDecoded = try JSONDecoder().decode(
             OrbitalViewportSettingsExportPayload.self,
             from: Data(legacyJSON.utf8)
@@ -1706,7 +1865,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             from: impulseData
         )
 
-        XCTAssertEqual(legacyLocalSong.sourceMode, .localSong)
+        XCTAssertEqual(legacyLocalSong.sourceMode, .telemetry)
         XCTAssertFalse(legacyLocalSong.sourceModeWasExplicit)
         XCTAssertEqual(
             legacyLocalSong.sourceModeForThemeLoad(defaultMode: .telemetry, preferDefaultWhenMissing: true),
@@ -1714,7 +1873,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(
             legacyLocalSong.sourceModeForThemeLoad(defaultMode: .telemetry, preferDefaultWhenMissing: false),
-            .localSong
+            .telemetry
         )
         XCTAssertEqual(legacyImpulse.sourceMode, .impulseTest)
         XCTAssertFalse(legacyImpulse.sourceModeWasExplicit)
@@ -2132,7 +2291,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             fileManager: fileManager,
             nameProvider: { "Neon Circuit" }
         )
-        XCTAssertEqual(firstURL.lastPathComponent, "Neon Circuit.json")
+        XCTAssertEqual(firstURL.lastPathComponent, "Neon Circuit.orbvu")
         XCTAssertEqual(firstURL.deletingPathExtension().lastPathComponent.split(separator: " ").count, 2)
         try Data("{}".utf8).write(to: firstURL)
 
@@ -2142,7 +2301,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             fileManager: fileManager,
             nameProvider: { names.next() ?? "Velvet Pulse" }
         )
-        XCTAssertEqual(secondURL.lastPathComponent, "Chrome Horizon.json")
+        XCTAssertEqual(secondURL.lastPathComponent, "Chrome Horizon.orbvu")
         XCTAssertFalse(fileManager.fileExists(atPath: secondURL.path))
     }
 
@@ -2205,6 +2364,82 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             themes.first?.payload?.speakerLabelFontSizeScale,
             OrbitalViewportMath.speakerLabelSizeScale(fromSlider: 76)
         )
+    }
+
+    func testCorrectViewerViewThemeDeleteRemovesFileAndClearsDefault() throws {
+        let fileManager = FileManager.default
+        let root = try makeTemporaryDirectory()
+        defer { try? fileManager.removeItem(at: root) }
+        let saved = try OrbitalViewportViewThemeStore.writeTheme(
+            payload: makeViewThemePayload(themeID: "theme-delete"),
+            resourcesURL: root,
+            fileManager: fileManager,
+            nameProvider: { "Nova Beacon" }
+        )
+        _ = try OrbitalViewportViewThemeStore.writeDefaultTheme(saved, fileManager: fileManager)
+        let directoryURL = saved.url.deletingLastPathComponent()
+
+        try OrbitalViewportViewThemeStore.deleteTheme(saved, fileManager: fileManager)
+
+        XCTAssertFalse(fileManager.fileExists(atPath: saved.url.path))
+        let remaining = try OrbitalViewportViewThemeStore.savedThemes(in: directoryURL, fileManager: fileManager)
+        XCTAssertTrue(remaining.isEmpty)
+        // Default metadata for the deleted theme is cleared.
+        XCTAssertNil(try? OrbitalViewportViewThemeStore.readDefaultTheme(in: directoryURL))
+    }
+
+    func testCorrectViewerViewThemeListReadsLegacyJSONAndNewOrbvuFiles() throws {
+        let fileManager = FileManager.default
+        let root = try makeTemporaryDirectory()
+        defer { try? fileManager.removeItem(at: root) }
+        let directoryURL = try OrbitalViewportViewThemeStore.themeDirectoryURL(
+            resourcesURL: root,
+            fileManager: fileManager
+        )
+        // A new save writes .orbvu...
+        let saved = try OrbitalViewportViewThemeStore.writeTheme(
+            payload: makeViewThemePayload(themeID: "theme-new"),
+            resourcesURL: root,
+            fileManager: fileManager,
+            nameProvider: { "Solar Flux" }
+        )
+        XCTAssertEqual(saved.url.pathExtension, "orbvu")
+        // ...and a legacy .json theme file is still listed.
+        let legacyURL = directoryURL.appendingPathComponent("Legacy Theme.json")
+        try OrbitalViewportSettingsJSONExporter.jsonData(payload: makeViewThemePayload(themeID: "theme-legacy"))
+            .write(to: legacyURL)
+
+        let themes = try OrbitalViewportViewThemeStore.savedThemes(in: directoryURL, fileManager: fileManager)
+        let names = Set(themes.map(\.displayName))
+        XCTAssertTrue(names.contains("Solar Flux"))
+        XCTAssertTrue(names.contains("Legacy Theme"))
+    }
+
+    func testCorrectViewerViewThemeImportRoundTripsFromJSONFile() throws {
+        let fileManager = FileManager.default
+        let root = try makeTemporaryDirectory()
+        defer { try? fileManager.removeItem(at: root) }
+        // An external theme file to import (written outside the theme directory).
+        let externalURL = root.appendingPathComponent("incoming-theme.json")
+        let externalPayload = makeViewThemePayload(themeID: "theme-source", renderStyle: .rackBlue)
+        try OrbitalViewportSettingsJSONExporter.jsonData(payload: externalPayload).write(to: externalURL)
+
+        let imported = try OrbitalViewportViewThemeStore.importTheme(
+            from: externalURL,
+            resourcesURL: root,
+            fileManager: fileManager,
+            nameProvider: { "Quantum Signal" }
+        )
+
+        XCTAssertEqual(imported.displayName, "Quantum Signal")
+        XCTAssertEqual(imported.payload?.renderStyle, .rackBlue)
+        // Import assigns a fresh themeID so it can't collide with the source theme's default tracking.
+        XCTAssertNotEqual(imported.payload?.themeID, "theme-source")
+        let themes = try OrbitalViewportViewThemeStore.savedThemes(
+            in: imported.url.deletingLastPathComponent(),
+            fileManager: fileManager
+        )
+        XCTAssertEqual(themes.first?.displayName, "Quantum Signal")
     }
 
     func testCorrectViewerViewThemeDefaultSurvivesManualRenameByThemeID() throws {
@@ -3529,7 +3764,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
     func testCorrectViewerSceneKitDefaultsDrawOnDemandAtSixtyFPS() {
         XCTAssertFalse(OrbitalViewport3DSceneView.rendersContinuously)
-        XCTAssertEqual(OrbitalViewport3DSceneView.sceneFramesPerSecond, 120)
+        XCTAssertEqual(OrbitalViewport3DSceneView.sceneFramesPerSecond, 60)
     }
 
     func testCorrectViewerBundledSpeakerLabelFontsResolveFromResourceBundle() {
@@ -4729,6 +4964,28 @@ final class OrbitalViewSwiftUITests: XCTestCase {
 
         XCTAssertLessThan(try rgbDistance(theme.cubeVUNSColor(heat: heat), referenceColor), 0.000_1)
         XCTAssertLessThan(try rgbDistance(theme.cubeVUHotNSColor, referenceHotColor), 0.000_001)
+    }
+
+    func testBlendResolvedMatchesBlendForFoggedMeterColors() throws {
+        // blendResolved is a fast path that must produce byte-identical results to blend for the
+        // colors actually used on the fogged-meter path (cached device-RGB theme/VU colors blended
+        // with the cached fog color). Verify across styles, heat levels, and fog amounts.
+        for style in OrbitalViewportRenderStyle.allCases {
+            let theme = OrbitalViewportTheme(style: style)
+            let fog = theme.fogNSColor
+            for heat in [0.0, 0.18, 0.42, 0.66, 0.83, 1.0] {
+                let meterColor = theme.cubeVUNSColor(heat: heat)
+                for amount in [0.0, 0.0005, 0.1, 0.34, 0.68, 1.0] {
+                    let reference = OrbitalViewportColorTools.blend(meterColor, with: fog, amount: amount)
+                    let fast = OrbitalViewportColorTools.blendResolved(meterColor, with: fog, amount: amount)
+                    XCTAssertLessThan(
+                        try rgbDistance(fast, reference),
+                        0.000_001,
+                        "blendResolved diverged for style=\(style) heat=\(heat) amount=\(amount)"
+                    )
+                }
+            }
+        }
     }
 
     func testSourcePoseAndSourceMaterialCadenceAreSeparatedByCoordinator() throws {

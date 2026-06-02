@@ -23,6 +23,9 @@ public struct OrbitalViewportHeadlessBenchmarkOptions: Sendable {
     public var ribbedSphereHorizontalRings: Int
     public var showHiddenLines: Bool
     public var fogDensity: Double
+    public var lamella: Bool
+    public var sphereStructureOpacity: Double
+    public var snapshotPath: String?
 
     public init(
         mode: OrbitalViewportHeadlessBenchmarkMode,
@@ -35,7 +38,10 @@ public struct OrbitalViewportHeadlessBenchmarkOptions: Sendable {
         ribbedSphereVerticalRibs: Int = 16,
         ribbedSphereHorizontalRings: Int = 8,
         showHiddenLines: Bool = false,
-        fogDensity: Double = 20
+        fogDensity: Double = 20,
+        lamella: Bool = false,
+        sphereStructureOpacity: Double = 1,
+        snapshotPath: String? = nil
     ) {
         self.mode = mode
         self.warmupFrames = max(0, warmupFrames)
@@ -48,6 +54,9 @@ public struct OrbitalViewportHeadlessBenchmarkOptions: Sendable {
         self.ribbedSphereHorizontalRings = OrbitalViewportRibbedSpeakerSphereGeometry.normalizedHorizontalRings(ribbedSphereHorizontalRings)
         self.showHiddenLines = showHiddenLines
         self.fogDensity = max(0, min(100, fogDensity))
+        self.lamella = lamella
+        self.sphereStructureOpacity = max(0, min(1, sphereStructureOpacity))
+        self.snapshotPath = snapshotPath
     }
 }
 
@@ -122,6 +131,21 @@ public enum OrbitalViewportHeadlessBenchmark {
             viewport: viewport
         )
 
+        if let snapshotPath = options.snapshotPath {
+            // Match the app's dark theme background so the snapshot reflects what the operator sees.
+            renderer.scene?.background.contents = NSColor(calibratedRed: 0.04, green: 0.03, blue: 0.07, alpha: 1)
+            let image = renderer.snapshot(
+                atTime: 0,
+                with: CGSize(width: options.width, height: options.height),
+                antialiasingMode: .multisampling4X
+            )
+            if let tiff = image.tiffRepresentation,
+               let rep = NSBitmapImageRep(data: tiff),
+               let png = rep.representation(using: .png, properties: [:]) {
+                try png.write(to: URL(fileURLWithPath: snapshotPath))
+            }
+        }
+
         coordinator.resetInstrumentationForTests()
         let startCPUSeconds = currentProcessCPUSeconds()
         let start = CACurrentMediaTime()
@@ -194,9 +218,12 @@ public enum OrbitalViewportHeadlessBenchmark {
             geodesicRenderStyle: OrbitalViewportMockup.defaultGeodesicRenderStyle,
             geodesicSaturation: OrbitalViewportMockup.defaultGeodesicSaturation,
             showRibbedSpeakerSphere: options.showRibbedSpeakerSphere,
+            ribbedSphereStyle: options.lamella ? .lamella : .ribbed,
             ribbedSphereThickness: OrbitalViewportMockup.defaultRibbedSphereThickness,
+            lamellaSpacing: OrbitalViewportMockup.defaultLamellaSpacing,
             ribbedSphereVerticalRibs: options.ribbedSphereVerticalRibs,
             ribbedSphereHorizontalRings: options.ribbedSphereHorizontalRings,
+            sphereStructureOpacity: options.sphereStructureOpacity,
             speakerShape: OrbitalViewportMockup.defaultSpeakerShape,
             jetLengthPixels: OrbitalViewportMockup.defaultJetLengthPixels,
             speakerSize: OrbitalViewportMath.speakerSize(fromSlider: 50),

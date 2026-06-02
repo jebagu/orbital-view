@@ -197,7 +197,7 @@ public enum OrbitalViewportThemeProfile {
         cubeSettings.speakerHeight = 1
 
         // Impulse meters are the easiest way to get representative activity on the meters, matching
-        // the operator selecting "Impulse Test". `forceImpulse` is the profiling default; we always
+        // the operator selecting "Demo Patterns". `forceImpulse` is the profiling default; we always
         // resolve to the theme's impulse kind here.
         _ = options.forceImpulse
         let meterSource: OrbitalViewportMeterSource = .impulse(payload.driveMode.impulseKind ?? .ripple)

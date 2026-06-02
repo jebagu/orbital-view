@@ -76,6 +76,15 @@ fi
   /usr/libexec/PlistBuddy -c "Add :CFBundleName string Orbital View 1.0" "$APP_PLIST"
 /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Orbital View 1.0" "$APP_PLIST" 2>/dev/null || \
   /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Orbital View 1.0" "$APP_PLIST"
+
+# System Audio (Core Audio process tap) input needs an audio-capture usage description so macOS can
+# show the privacy consent prompt. Set both keys: the tap consent is audio/microphone-category, and
+# NSAudioCaptureUsageDescription covers the system-audio capture phrasing across macOS versions.
+SYSTEM_AUDIO_USAGE="Orbital View visualizes system audio levels you choose to share for review."
+/usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription $SYSTEM_AUDIO_USAGE" "$APP_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string $SYSTEM_AUDIO_USAGE" "$APP_PLIST"
+/usr/libexec/PlistBuddy -c "Set :NSAudioCaptureUsageDescription $SYSTEM_AUDIO_USAGE" "$APP_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Add :NSAudioCaptureUsageDescription string $SYSTEM_AUDIO_USAGE" "$APP_PLIST"
 touch "$APP_DIR"
 
 codesign --force --deep --sign - "$APP_DIR"
