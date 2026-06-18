@@ -11,6 +11,7 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
     public var recordFlags: UInt8
     public var dvsChannel: Int?
     public var stateFlags: UInt32
+    public var displayDriveOverride: Double?
     public var vuNormalized: Double?
     public var vuDbFS: Double?
 
@@ -21,6 +22,7 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
         recordFlags: UInt8 = 0,
         dvsChannel: Int? = nil,
         stateFlags: UInt32 = 0,
+        displayDriveOverride: Double? = nil,
         vuNormalized: Double? = nil,
         vuDbFS: Double? = nil
     ) {
@@ -30,6 +32,7 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
         self.recordFlags = recordFlags
         self.dvsChannel = dvsChannel
         self.stateFlags = stateFlags
+        self.displayDriveOverride = displayDriveOverride.map(Self.clamp01)
         self.vuNormalized = vuNormalized.map(Self.clamp01)
         self.vuDbFS = vuDbFS?.isFinite == true ? vuDbFS : nil
     }
@@ -39,7 +42,10 @@ public struct OrbitalViewTelemetryMeterLevel: Equatable, Sendable {
     }
 
     public var displayDrive: Double {
-        hasValidVUDisplayDrive ? (vuNormalized ?? rms) : rms
+        if hasValidVUDisplayDrive {
+            return vuNormalized ?? rms
+        }
+        return displayDriveOverride ?? rms
     }
 
     private static func clamp01(_ value: Double) -> Double {
@@ -52,12 +58,36 @@ public enum OrbitalViewTelemetryRecordFlags {
     public static let vuNormalizedValid: UInt8 = 1 << 0
 }
 
+public enum OrbitalViewTelemetryMeterSlotKind: String, Equatable, Sendable {
+    case speakerMeters
+    case sourceLaneMeters
+
+    public var title: String {
+        switch self {
+        case .speakerMeters:
+            return "Speaker meters"
+        case .sourceLaneMeters:
+            return "Source lane meters"
+        }
+    }
+
+    public var displayedMeterText: String {
+        switch self {
+        case .speakerMeters:
+            return "live telemetry"
+        case .sourceLaneMeters:
+            return "live source-lane telemetry"
+        }
+    }
+}
+
 public struct OrbitalViewTelemetryMeterSnapshot: Equatable, Sendable {
     public var sequence: UInt64
     public var producerHostTime: UInt64
     public var sampleRate: Double
     public var frameCount: UInt32
     public var recordCount: Int
+    public var slotKind: OrbitalViewTelemetryMeterSlotKind
     public var levelsByChannel: [Int: OrbitalViewTelemetryMeterLevel]
 
     public init(
@@ -66,6 +96,7 @@ public struct OrbitalViewTelemetryMeterSnapshot: Equatable, Sendable {
         sampleRate: Double = 0,
         frameCount: UInt32 = 0,
         recordCount: Int? = nil,
+        slotKind: OrbitalViewTelemetryMeterSlotKind = .speakerMeters,
         levelsByChannel: [Int: OrbitalViewTelemetryMeterLevel]
     ) {
         self.sequence = sequence
@@ -73,6 +104,7 @@ public struct OrbitalViewTelemetryMeterSnapshot: Equatable, Sendable {
         self.sampleRate = sampleRate
         self.frameCount = frameCount
         self.recordCount = recordCount ?? levelsByChannel.count
+        self.slotKind = slotKind
         self.levelsByChannel = levelsByChannel
     }
 
@@ -86,6 +118,7 @@ public struct OrbitalViewTelemetryProviderSummary: Identifiable, Equatable, Send
     public var provider: String
     public var status: String
     public var track: String
+    public var meterSlotKind: OrbitalViewTelemetryMeterSlotKind
     public var routeLabel: String?
     public var sourceLabel: String?
 
@@ -94,6 +127,7 @@ public struct OrbitalViewTelemetryProviderSummary: Identifiable, Equatable, Send
         provider: String,
         status: String,
         track: String,
+        meterSlotKind: OrbitalViewTelemetryMeterSlotKind = .speakerMeters,
         routeLabel: String? = nil,
         sourceLabel: String? = nil
     ) {
@@ -101,6 +135,7 @@ public struct OrbitalViewTelemetryProviderSummary: Identifiable, Equatable, Send
         self.provider = provider
         self.status = status
         self.track = track
+        self.meterSlotKind = meterSlotKind
         self.routeLabel = routeLabel
         self.sourceLabel = sourceLabel
     }
@@ -113,6 +148,7 @@ public struct OrbitalViewTelemetryConsumerSnapshot: Equatable, Sendable {
         selectedProviderName: "No Provider",
         status: "Waiting",
         track: "No Metadata",
+        selectedMeterSlotKind: nil,
         displayedMeter: "silent until telemetry arrives",
         meterSnapshot: nil,
         lastError: nil
@@ -123,6 +159,7 @@ public struct OrbitalViewTelemetryConsumerSnapshot: Equatable, Sendable {
     public var selectedProviderName: String
     public var status: String
     public var track: String
+    public var selectedMeterSlotKind: OrbitalViewTelemetryMeterSlotKind?
     public var displayedMeter: String
     public var meterSnapshot: OrbitalViewTelemetryMeterSnapshot?
     public var lastError: String?
@@ -153,6 +190,7 @@ public struct OrbitalViewTelemetryConsumerConfiguration: Sendable {
 public final class OrbitalViewTelemetryConsumer {
     private let configuration: OrbitalViewTelemetryConsumerConfiguration
     private var attachedProviderID: String?
+    private var attachedSlotType: TelemetrySlotType?
     private var attachedSegment: SharedTelemetrySegment?
     private var attachedReader: SharedLatestSlotReader?
 
@@ -181,9 +219,7 @@ public final class OrbitalViewTelemetryConsumer {
             )
         }
 
-        let compatibleRecords = records.filter { record in
-            record.slotSummary.contains { $0.slotTypeRawValue == TelemetrySlotType.speakerMeters.rawValue }
-        }
+        let compatibleRecords = records.filter { Self.supportedMeterSlotType(for: $0) != nil }
         let selectedRecord = selectRecord(
             from: compatibleRecords,
             selectedProviderID: selectedProviderID,
@@ -204,9 +240,10 @@ public final class OrbitalViewTelemetryConsumer {
         }
 
         do {
-            let reader = try reader(for: selectedRecord)
+            let slotType = Self.supportedMeterSlotType(for: selectedRecord) ?? .speakerMeters
+            let reader = try reader(for: selectedRecord, slotType: slotType)
             let frame = try reader.read()
-            let meterSnapshot = try frame.map(Self.decodeSpeakerMeters)
+            let meterSnapshot = try frame.map { try Self.decodeMeters(frame: $0, slotType: slotType) }
             return Self.snapshot(
                 records: compatibleRecords,
                 selectedRecord: selectedRecord,
@@ -242,11 +279,32 @@ public final class OrbitalViewTelemetryConsumer {
             return selected
         }
 
+        if let selected = selectRecord(
+            from: records.filter { Self.supportedMeterSlotType(for: $0) == .speakerMeters },
+            now: now,
+            requiredSlots: [.speakerMeters]
+        ) {
+            return selected
+        }
+
+        return selectRecord(
+            from: records.filter { Self.supportedMeterSlotType(for: $0) == .sourceLaneMeters },
+            now: now,
+            requiredSlots: [.sourceLaneMeters]
+        )
+    }
+
+    private func selectRecord(
+        from records: [TelemetryProviderRegistryRecord],
+        now: UInt64,
+        requiredSlots: Set<TelemetrySlotType>
+    ) -> TelemetryProviderRegistryRecord? {
+        guard !records.isEmpty else { return nil }
         let candidates = records.map(TelemetryProviderCandidate.init(record:))
         let selection = TelemetryProviderSelector.select(
             candidates: candidates,
             context: TelemetryProviderSelectionContext(
-                requiredSlots: [.speakerMeters],
+                requiredSlots: requiredSlots,
                 nowHostTime: now,
                 staleProviderHostTicks: configuration.staleProviderHostTicks,
                 staleFrameHostTicks: configuration.staleFrameHostTicks
@@ -258,13 +316,17 @@ public final class OrbitalViewTelemetryConsumer {
         return records.first { $0.providerInstanceID == selected.providerInstanceID }
     }
 
-    private func reader(for record: TelemetryProviderRegistryRecord) throws -> SharedLatestSlotReader {
-        if attachedProviderID != record.providerInstanceID {
+    private func reader(
+        for record: TelemetryProviderRegistryRecord,
+        slotType: TelemetrySlotType
+    ) throws -> SharedLatestSlotReader {
+        if attachedProviderID != record.providerInstanceID || attachedSlotType != slotType {
             detach()
             let segment = try SharedTelemetrySegment.openReadOnly(providerRecord: record)
-            attachedReader = try segment.reader(for: .speakerMeters)
+            attachedReader = try segment.reader(for: slotType)
             attachedSegment = segment
             attachedProviderID = record.providerInstanceID
+            attachedSlotType = slotType
         }
 
         guard let attachedReader else {
@@ -277,6 +339,27 @@ public final class OrbitalViewTelemetryConsumer {
         attachedReader = nil
         attachedSegment = nil
         attachedProviderID = nil
+        attachedSlotType = nil
+    }
+
+    private static func supportedMeterSlotType(for record: TelemetryProviderRegistryRecord) -> TelemetrySlotType? {
+        let slotTypes = Set(record.slotSummary.map(\.slotTypeRawValue))
+        if slotTypes.contains(TelemetrySlotType.speakerMeters.rawValue) {
+            return .speakerMeters
+        }
+        if slotTypes.contains(TelemetrySlotType.sourceLaneMeters.rawValue) {
+            return .sourceLaneMeters
+        }
+        return nil
+    }
+
+    private static func meterSlotKind(for slotType: TelemetrySlotType) -> OrbitalViewTelemetryMeterSlotKind {
+        switch slotType {
+        case .sourceLaneMeters:
+            return .sourceLaneMeters
+        default:
+            return .speakerMeters
+        }
     }
 
     private static func snapshot(
@@ -314,6 +397,8 @@ public final class OrbitalViewTelemetryConsumer {
             displayedMeter = "silent until telemetry arrives"
         } else if status == "Stale" {
             displayedMeter = "stale telemetry"
+        } else if let selectedMeterSnapshot {
+            displayedMeter = selectedMeterSnapshot.slotKind.displayedMeterText
         } else {
             displayedMeter = "live telemetry"
         }
@@ -334,6 +419,7 @@ public final class OrbitalViewTelemetryConsumer {
                     provider: record.appName,
                     status: providerStatus,
                     track: track,
+                    meterSlotKind: supportedMeterSlotType(for: record).map(meterSlotKind(for:)) ?? .speakerMeters,
                     routeLabel: record.humanRouteLabel,
                     sourceLabel: record.humanSourceLabel
                 )
@@ -345,10 +431,24 @@ public final class OrbitalViewTelemetryConsumer {
             selectedProviderName: selectedRecord?.appName ?? "No Provider",
             status: status,
             track: track,
+            selectedMeterSlotKind: selectedMeterSnapshot?.slotKind
+                ?? selectedRecord.flatMap { supportedMeterSlotType(for: $0).map(meterSlotKind(for:)) },
             displayedMeter: displayedMeter,
             meterSnapshot: selectedMeterSnapshot,
             lastError: errorText
         )
+    }
+
+    private static func decodeMeters(
+        frame: TelemetryReadFrame,
+        slotType: TelemetrySlotType
+    ) throws -> OrbitalViewTelemetryMeterSnapshot {
+        switch slotType {
+        case .sourceLaneMeters:
+            return try decodeSourceLaneMeters(frame: frame)
+        default:
+            return try decodeSpeakerMeters(frame: frame)
+        }
     }
 
     private static func decodeSpeakerMeters(
@@ -410,8 +510,60 @@ public final class OrbitalViewTelemetryConsumer {
             sampleRate: frame.envelope.sampleRate,
             frameCount: frame.envelope.frameCount,
             recordCount: count,
+            slotKind: .speakerMeters,
             levelsByChannel: levels
         )
+    }
+
+    private static func decodeSourceLaneMeters(
+        frame: TelemetryReadFrame
+    ) throws -> OrbitalViewTelemetryMeterSnapshot {
+        let payload = frame.payload
+        let recordByteSize = frame.envelope.recordStride
+        let count = Int(frame.envelope.recordCount)
+        guard recordByteSize >= UInt32(SourceLaneMeterPayloadRecord.byteSize) else {
+            throw TelemetryError.invalidFrame("source lane meter record stride is too small")
+        }
+        guard payload.count >= count * Int(recordByteSize) else {
+            throw TelemetryError.invalidFrame("source lane meter payload records are truncated")
+        }
+
+        var levels: [Int: OrbitalViewTelemetryMeterLevel] = [:]
+        for index in 0..<count {
+            let offset = index * Int(recordByteSize)
+            let sourceLaneID = Int(try payload.readInteger(at: offset, as: UInt32.self))
+            guard sourceLaneID > 0 else {
+                continue
+            }
+            let rms = Double(try payload.readFloat32(at: offset + 20))
+            let peak = Double(try payload.readFloat32(at: offset + 24))
+            let clip = (try payload.readUInt8(at: offset + 28)) != 0
+            levels[sourceLaneID] = OrbitalViewTelemetryMeterLevel(
+                rms: rms,
+                peak: peak,
+                clip: clip,
+                displayDriveOverride: sourceLaneDisplayDrive(forRMS: rms)
+            )
+        }
+
+        return OrbitalViewTelemetryMeterSnapshot(
+            sequence: frame.envelope.frameSequence,
+            producerHostTime: frame.envelope.producerHostTime,
+            sampleRate: frame.envelope.sampleRate,
+            frameCount: frame.envelope.frameCount,
+            recordCount: count,
+            slotKind: .sourceLaneMeters,
+            levelsByChannel: levels
+        )
+    }
+
+    private static func sourceLaneDisplayDrive(forRMS rms: Double) -> Double {
+        let floorDb = -50.0
+        let ceilingDb = 0.0
+        let floorLinear = pow(10.0, floorDb / 20.0)
+        let safeRMS = max(rms, floorLinear)
+        let db = 20.0 * log10(safeRMS)
+        return min(1.0, max(0.0, (db - floorDb) / (ceilingDb - floorDb)))
     }
 }
 

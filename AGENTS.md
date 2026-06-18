@@ -41,7 +41,7 @@ Open Orbital View Kit.command
 The stable launcher in the parent `vibecode projects` folder is:
 
 ```text
-/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command
+/Users/jeremyguillory/Documents/vibecode-projects/Open-Orbital-View-Kit-Latest.command
 ```
 
 Keep the parent launcher as a thin wrapper that delegates to this checkout's project launcher. The project launcher is the source of truth and must rebuild `OrbitalViewViewer`, refresh the native review `.app` executable and current review resource bundle, restart any stale `OrbitalViewViewer` process, and open the latest app.

@@ -45,7 +45,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(path: "/Users/jeremyguillory/Documents/orbisonic telemetry")
+        .package(path: "/Users/jeremyguillory/Documents/vibecode-projects/orbisonic-telemetry")
     ],
     targets: [
         .target(
@@ -67,8 +67,8 @@ let package = Package(
             name: "OrbitalViewTelemetry",
             dependencies: [
                 "OrbitalViewCore",
-                .product(name: "OrbisonicTelemetryDashboard", package: "orbisonic telemetry"),
-                .product(name: "OrbisonicTelemetryKit", package: "orbisonic telemetry")
+                .product(name: "OrbisonicTelemetryDashboard", package: "orbisonic-telemetry"),
+                .product(name: "OrbisonicTelemetryKit", package: "orbisonic-telemetry")
             ]
         ),
         .target(
@@ -150,7 +150,7 @@ let package = Package(
             name: "OrbitalViewTelemetryTests",
             dependencies: [
                 "OrbitalViewTelemetry",
-                .product(name: "OrbisonicTelemetryKit", package: "orbisonic telemetry")
+                .product(name: "OrbisonicTelemetryKit", package: "orbisonic-telemetry")
             ]
         ),
         .testTarget(

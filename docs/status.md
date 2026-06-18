@@ -40,10 +40,42 @@ The final realtime-family adoption audit is now recorded in `docs/realtime-famil
 
 The project launcher `Open Orbital View.command` rebuilds the latest `OrbitalViewViewer`, refreshes the native review `.app` executable and current review resource bundle, restarts stale `OrbitalViewViewer` processes, and opens the refreshed review app. `Open Orbital View Kit.command` remains a compatibility wrapper. The parent-folder launcher `/Users/jeremyguillory/Documents/vibecode projects/Open Orbital View Kit Latest.command` still delegates into this checkout so Finder access from the `vibecode projects` root stays current.
 
+### Update: 2026-06-17 Source-Lane Telemetry Consumer
+
+- Added `sourceLaneMeters` consumer support for Wave Relay's Orbisonic telemetry provider without changing Wave Relay or relabeling source-origin data as speaker/output truth.
+- Fixed the local `orbisonic-telemetry` package dependency path in `Package.swift`; SwiftPM resolves the package identity as `orbisonic-telemetry` even though the package manifest name is `OrbisonicTelemetryKit`.
+- `OrbitalViewTelemetryConsumer` now discovers compatible providers that publish either `speakerMeters` or `sourceLaneMeters`, keeps existing speaker-meter automatic priority, and attaches the reader for the selected slot type.
+- Source-lane frames use the shared ABI slot type `TelemetrySlotType.sourceLaneMeters`, `SourceLaneMeterPayloadRecord.byteSize`, and 48-byte Wave Relay layout. Lanes `1...30` map to Orbital View meter keys `1...30`; absent lanes `31/32` are not treated as errors.
+- Source-lane visual drive now preserves raw linear RMS as evidence, keeps peak and clip as signal facts, and derives Orbital View display drive with a Wave Relay-compatible `-50...0 dBFS` meter window until a later shared schema supplies trusted VU intent. Stream, MIDI, object, channel, and flag fields remain reserved for future diagnostics.
+- The review UI now labels provider meter type, shows source-lane telemetry as `Source Lane VU`, and labels cells as lanes instead of DVS channels for source-lane snapshots. Existing `speakerMeters` providers retain the existing DVS-style `32ch VU` grid and `live telemetry` displayed-meter text.
+- Verification passed for the source-lane display-normalization update: `swift build`, `swift test --filter OrbitalViewTelemetryConsumerTests` (11 tests, 0 failures), `swift test --filter OrbitalViewSwiftUITests` (150 tests, 0 failures), full `swift test` (247 tests, 0 failures), and `git diff --check`.
+- Launcher verification passed after the source-lane display-normalization update: `/Users/jeremyguillory/Documents/vibecode-projects/Open-Orbital-View-Kit-Latest.command` rebuilt `OrbitalViewViewer`, refreshed and signed the review app bundle, and opened the app from this checkout. `pgrep -fl OrbitalViewViewer` confirmed PID `93991` running from `/Users/jeremyguillory/Documents/vibecode-projects/Orbital-View-Turbo/.../OrbitalViewViewer`.
+- Live registry evidence: Wave Relay Release is running as PID `30993`, and its provider JSON advertises `appID: com.sonicsphere.waverelay`, `slotName: sourceLaneMeters`, `slotTypeRawValue: 101`, `recordCapacity: 30`, `recordStride: 48`, and `humanSourceLabel: sourceLaneMeters CH001-CH030`.
+- Sandbox note: the first `swift test --filter OrbitalViewTelemetryConsumerTests` attempt failed before compilation because the sandbox blocked `~/.cache/clang/ModuleCache`; rerunning the same focused test with approved cache access passed.
+
+### Update: 2026-06-17 Wave Relay-Style Meter Response Hardening
+
+- Accepted `docs/decisions/0004-meter-response-semantics.md`: Wave Relay is the reference meter feel, RMS/display drive owns body activity/bloom/palette heat, raw peak remains evidence/accent input, and clip remains the full alert state.
+- Updated the SceneKit review speaker material path so diagnostics, material signatures, and material application no longer feed raw `peak` into `SpeakerCubeVUScalars.paletteValue`. Cube VU, Pixel Jets, and Cell Jets now let palette heat derive from calibrated RMS/display drive, so low input calibration reduces visible meter heat even when raw peak is high.
+- Preserved raw RMS, raw peak, clip, source-lane `-50...0 dBFS` display normalization, trusted `vuNormalized` precedence, speaker/source identity, shared telemetry ABI, and Wave Relay behavior.
+- Added `testCorrectViewerPeakDoesNotFloodCalibratedMeterHeat`, a Neon Vector-like low-calibration/high-peak regression that verifies display scalar, hot scalar, and palette heat stay low while raw peak remains visible diagnostic evidence.
+- Verification passed: `swift build`, `swift test --filter OrbitalViewSwiftUITests` (151 tests, 0 failures), full `swift test` (248 tests, 0 failures), focused `swift test --filter testCorrectViewerPeakDoesNotFloodCalibratedMeterHeat`, and `git diff --check`.
+- Launcher verification passed: `/Users/jeremyguillory/Documents/vibecode-projects/Open-Orbital-View-Kit-Latest.command` rebuilt `OrbitalViewViewer`, refreshed and signed the review app bundle, and opened the app from this checkout. `pgrep -fl OrbitalViewViewer` confirmed PID `19436` running from `/Users/jeremyguillory/Documents/vibecode-projects/Orbital-View-Turbo/.../OrbitalViewViewer`.
+
+### Update: 2026-06-17 Cube VU Peak-Accent Motion
+
+- Fixed the Cube VU motion regression introduced by the peak-flood hardening pass: raw peak stayed in the material visual signature but no longer had a visible fast-motion expression after broad peak heat was removed.
+- Added a constrained peak-driven Cube VU rim/edge accent and small emission lift in the SceneKit review material path. RMS/display drive still owns body activity, bloom, hot fill, and palette heat; peak does not bypass input calibration or flood the face/ramp; clip remains the only full alert state.
+- Added `testCorrectViewerCubeVUPeakAccentAddsFastRimMotionWithoutBodyHeat`, which compares the same low-RMS Cube VU face texture with peak accent off/on and verifies the rim band brightens while the center/body remains materially unchanged.
+- Documentation updated in `docs/bugs.md`, `docs/implementation-map.md`, `docs/test-strategy.md`, and `docs/decisions/0004-meter-response-semantics.md`.
+- Verification passed: focused `swift test --filter testCorrectViewerCubeVUPeakAccentAddsFastRimMotionWithoutBodyHeat` (1 test, 0 failures), `swift build`, `swift test --filter OrbitalViewSwiftUITests` (152 tests, 0 failures), full `swift test` (249 tests, 0 failures), and `git diff --check`.
+- Sandbox note: the first focused test attempt failed before compilation because the sandbox blocked `~/.cache/clang/ModuleCache`; rerunning the same command with approved Swift cache access passed.
+- Launcher verification passed: `/Users/jeremyguillory/Documents/vibecode-projects/Open-Orbital-View-Kit-Latest.command` rebuilt `OrbitalViewViewer`, refreshed and signed the review app bundle, and opened the app from this checkout. `pgrep -fl OrbitalViewViewer` confirmed PID `39416` running from `/Users/jeremyguillory/Documents/vibecode-projects/Orbital-View-Turbo/.../OrbitalViewViewer`.
+
 ## Current Work Package
 
 ```text
-jets_vu_work_package.md
+source-lane-telemetry-consumer-work-package.md
 ```
 
 ## Current Tree

@@ -59,7 +59,8 @@ public struct OrbitalViewportMockup: View {
         "Sample Rate",
         "Channels",
         "Frame Seq",
-        "32ch VU",
+        "Meter Type",
+        "Meter Grid",
         "Start",
         "Stop",
         "All Mono",
@@ -794,6 +795,9 @@ public struct OrbitalViewportMockup: View {
             tuningValueRow("Provider", value: advertiser?.provider ?? "No Provider")
             tuningValueRow("Status", value: advertiser?.status ?? "Waiting")
             tuningValueRow("Track", value: advertiser?.track ?? "No Metadata")
+            if let advertiser {
+                tuningValueRow("Meter Type", value: advertiser.meterSlotKind.title)
+            }
             if let routeLabel = advertiser?.routeLabel {
                 tuningValueRow("Route", value: routeLabel)
             }
@@ -1124,6 +1128,9 @@ public struct OrbitalViewportMockup: View {
                 tuningValueRow("Provider", value: advertiser?.provider ?? "No Provider")
                 tuningValueRow("Telemetry Status", value: telemetry.snapshot.status)
                 tuningValueRow("Displayed Meter", value: telemetry.snapshot.displayedMeter)
+                if let advertiser {
+                    tuningValueRow("Meter Type", value: advertiser.meterSlotKind.title)
+                }
                 if let snapshot = telemetry.snapshot.meterSnapshot {
                     tuningValueRow("Channels", value: "\(snapshot.levelsByChannel.count) / \(snapshot.recordCount)")
                     tuningValueRow("Sample Rate", value: snapshot.sampleRate > 0 ? "\(Int(snapshot.sampleRate)) Hz" : "unknown")
@@ -1149,10 +1156,14 @@ public struct OrbitalViewportMockup: View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
 
         return VStack(alignment: .leading, spacing: 6) {
-            sectionLabel("32ch VU")
+            sectionLabel(snapshot.slotKind == .sourceLaneMeters ? "Source Lane VU" : "32ch VU")
             LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
                 ForEach(cells, id: \.channelID) { cell in
-                    telemetryDVSChannelCell(channelID: cell.channelID, level: cell.level)
+                    telemetryDVSChannelCell(
+                        channelID: cell.channelID,
+                        level: cell.level,
+                        slotKind: snapshot.slotKind
+                    )
                 }
             }
         }
@@ -1160,16 +1171,21 @@ public struct OrbitalViewportMockup: View {
 
     private func telemetryDVSChannelCell(
         channelID: Int,
-        level: OrbitalViewTelemetryMeterLevel
+        level: OrbitalViewTelemetryMeterLevel,
+        slotKind: OrbitalViewTelemetryMeterSlotKind
     ) -> some View {
         let dvsChannel = level.dvsChannel ?? channelID
         let scalar = CGFloat(level.displayDrive)
 
         return VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 3) {
-                Text("D\(dvsChannel)")
-                Text("C\(channelID)")
-                    .foregroundStyle(theme.muted)
+                if slotKind == .sourceLaneMeters {
+                    Text("L\(channelID)")
+                } else {
+                    Text("D\(dvsChannel)")
+                    Text("C\(channelID)")
+                        .foregroundStyle(theme.muted)
+                }
             }
             .font(.system(size: 9, weight: .semibold, design: .monospaced))
             GeometryReader { proxy in
@@ -3680,7 +3696,7 @@ enum OrbitalViewportSourceMode: String, CaseIterable, Identifiable, Codable, Equ
     var trayControlTitles: [String] {
         switch self {
         case .telemetry:
-            return ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
+            return ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "Meter Type", "Meter Grid"]
         case .systemAudio:
             return ["Start", "Stop"] + OrbitalViewportAudioRenderMode.patternCases.map(\.patternTitle)
         case .impulseTest:
@@ -3707,6 +3723,7 @@ struct OrbitalViewportTelemetryAdvertiser: Identifiable, Equatable {
     let provider: String
     let status: String
     let track: String
+    let meterSlotKind: OrbitalViewTelemetryMeterSlotKind
     let routeLabel: String?
     let sourceLabel: String?
 
@@ -3715,6 +3732,7 @@ struct OrbitalViewportTelemetryAdvertiser: Identifiable, Equatable {
         provider: String,
         status: String,
         track: String,
+        meterSlotKind: OrbitalViewTelemetryMeterSlotKind = .speakerMeters,
         routeLabel: String? = nil,
         sourceLabel: String? = nil
     ) {
@@ -3722,6 +3740,7 @@ struct OrbitalViewportTelemetryAdvertiser: Identifiable, Equatable {
         self.provider = provider
         self.status = status
         self.track = track
+        self.meterSlotKind = meterSlotKind
         self.routeLabel = routeLabel
         self.sourceLabel = sourceLabel
     }
@@ -3732,6 +3751,7 @@ struct OrbitalViewportTelemetryAdvertiser: Identifiable, Equatable {
             provider: summary.provider,
             status: summary.status,
             track: summary.track,
+            meterSlotKind: summary.meterSlotKind,
             routeLabel: summary.routeLabel,
             sourceLabel: summary.sourceLabel
         )
@@ -4021,7 +4041,6 @@ struct OrbitalViewportMeterDiagnostics: Equatable {
         let scalars = SpeakerCubeVUScalars(
             rawRms: Float(sample.rms),
             settings: settings.coreSettings,
-            paletteValue: Float(sample.peak),
             displayDrive: Float(sample.displayDrive)
         )
         return OrbitalViewportMeterDiagnostics(
@@ -7068,6 +7087,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         var facePixels: Int
         var display: Int
         var hot: Int
+        var peakAccent: Int
         var clip: Bool
         var pixelFill: Int
         var surfaceCheckerOpacity: Int
@@ -7089,6 +7109,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         var transparency: CGFloat
         var displayVuScalar: Double
         var hotScalar: Double
+        var peakAccent: Double
         var clipState: Double
         var bloomMin: Double
         var bloomMax: Double
@@ -7105,20 +7126,24 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         init(
             settings: OrbitalViewportCubeVUSettings,
             scalars: SpeakerCubeVUScalars,
+            peakAccent: Double,
             clip: Bool,
             alpha: Double
         ) {
+            let peakAccent = OrbitalViewportMath.clamp01(peakAccent)
             self.emissionIntensity = CGFloat(
                 OrbitalViewportMath.clamp01(
                     0.24 +
                     Double(scalars.displayVuScalar) * 0.46 +
                     Double(scalars.hotScalar) * 0.24 +
+                    peakAccent * 0.10 +
                     (clip ? 0.36 : 0)
                 )
             )
             self.transparency = CGFloat(alpha)
             self.displayVuScalar = Double(scalars.displayVuScalar)
             self.hotScalar = Double(scalars.hotScalar)
+            self.peakAccent = peakAccent
             self.clipState = clip ? 1 : 0
             self.bloomMin = settings.bloomMin
             self.bloomMax = settings.bloomMax
@@ -7153,6 +7178,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     #pragma arguments
     float displayVuScalar;
     float hotScalar;
+    float peakAccent;
     float clipState;
     float bloomMin;
     float bloomMax;
@@ -7176,6 +7202,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     float centerFill = 1.0 - smoothstep(bloomRadius, bloomRadius + max(bloomEdge, 0.001), centerDistance);
     float rimDistance = abs(centerDistance - bloomRadius);
     float rimFill = rimHaloEdge * displayVuScalar * (1.0 - smoothstep(bloomEdge * 0.32, bloomEdge * 0.74, rimDistance));
+    float peakRing = peakAccent * 0.34 * (1.0 - smoothstep(bloomEdge * 0.22, bloomEdge * 0.92, rimDistance));
     float hotFill = hotFillStrength * smoothstep(hotThreshold, 1.0, hotScalar);
     float parity = mod(floor(cell.x * pixels) + floor(cell.y * pixels), 2.0);
     float checker = mix(1.0 - checkerContrast, 1.0 + checkerContrast, parity);
@@ -7186,6 +7213,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
     vec3 rgb = mix(idleColor, vuColor, body) * checker;
     rgb += vuColor * centerFill * displayVuScalar * 0.38;
     rgb = mix(rgb, mix(vuColor, hotColor, 0.18), clamp(rimFill, 0.0, 1.0));
+    rgb = mix(rgb, mix(vuColor, hotColor, 0.28), clamp(peakRing, 0.0, 1.0));
     rgb = mix(rgb, hotColor, clamp(hotFill, 0.0, 1.0));
     if (clipState > 0.5) {
         rgb = mix(rgb, vec3(1.0, 0.08, 0.02), 0.86);
@@ -7206,6 +7234,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         if usesSceneKitShaderModifier {
             material.setValue(NSNumber(value: 0), forKey: "displayVuScalar")
             material.setValue(NSNumber(value: 0), forKey: "hotScalar")
+            material.setValue(NSNumber(value: 0), forKey: "peakAccent")
             material.setValue(NSNumber(value: 0), forKey: "clipState")
             material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.bloomMin)), forKey: "bloomMin")
             material.setValue(NSNumber(value: Float(OrbitalViewportCubeVUSettings.default.bloomMax)), forKey: "bloomMax")
@@ -7229,7 +7258,8 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         clip: Bool,
         alpha: Double,
         vuColor: Color,
-        hotColor: Color
+        hotColor: Color,
+        peakAccent: Double = 0
     ) {
         update(
             material: material,
@@ -7238,7 +7268,8 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
             clip: clip,
             alpha: alpha,
             vuColor: resolvedColor(vuColor),
-            hotColor: resolvedColor(hotColor)
+            hotColor: resolvedColor(hotColor),
+            peakAccent: peakAccent
         )
     }
 
@@ -7249,7 +7280,8 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         clip: Bool,
         alpha: Double,
         vuColor: NSColor,
-        hotColor: NSColor
+        hotColor: NSColor,
+        peakAccent: Double = 0
     ) {
         guard let material else {
             return
@@ -7262,13 +7294,15 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
             scalars: scalars,
             clip: clip,
             vuColor: vuNSColor,
-            hotColor: hotNSColor
+            hotColor: hotNSColor,
+            peakAccent: peakAccent
         )
         assignTexture(texture, to: material.diffuse)
         assignTexture(texture, to: material.emission)
         let uniformState = MaterialUniformState(
             settings: settings,
             scalars: scalars,
+            peakAccent: peakAccent,
             clip: clip,
             alpha: alpha
         )
@@ -7294,6 +7328,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
                 on: material
             )
             setNumericValue(uniformState.hotScalar, previous: previousUniformState?.hotScalar, forKey: "hotScalar", on: material)
+            setNumericValue(uniformState.peakAccent, previous: previousUniformState?.peakAccent, forKey: "peakAccent", on: material)
             setNumericValue(uniformState.clipState, previous: previousUniformState?.clipState, forKey: "clipState", on: material)
             setNumericValue(uniformState.bloomMin, previous: previousUniformState?.bloomMin, forKey: "bloomMin", on: material)
             setNumericValue(uniformState.bloomMax, previous: previousUniformState?.bloomMax, forKey: "bloomMax", on: material)
@@ -7381,12 +7416,15 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         scalars: SpeakerCubeVUScalars,
         clip: Bool,
         vuColor: NSColor,
-        hotColor: NSColor
+        hotColor: NSColor,
+        peakAccent: Double = 0
     ) -> NSImage {
+        let peakAccent = OrbitalViewportMath.clamp01(peakAccent)
         let key = FaceTextureKey(
             facePixels: OrbitalViewportCubeVUSettings.clampedFacePixels(settings.facePixels),
             display: quantized(Double(scalars.displayVuScalar), scale: 96),
             hot: quantized(Double(scalars.hotScalar), scale: 96),
+            peakAccent: quantized(peakAccent, scale: 96),
             clip: clip,
             pixelFill: quantized(settings.pixelFill, scale: 128),
             surfaceCheckerOpacity: quantized(settings.surfaceCheckerOpacity, scale: 128),
@@ -7413,6 +7451,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
             key: key,
             settings: settings,
             scalars: scalars,
+            peakAccent: peakAccent,
             clip: clip,
             vuColor: vuColor,
             hotColor: hotColor
@@ -7450,6 +7489,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         key: FaceTextureKey,
         settings: OrbitalViewportCubeVUSettings,
         scalars: SpeakerCubeVUScalars,
+        peakAccent: Double,
         clip: Bool,
         vuColor: NSColor,
         hotColor: NSColor
@@ -7462,6 +7502,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
         let image = NSImage(size: imageSize)
         let display = OrbitalViewportMath.clamp01(Double(scalars.displayVuScalar))
         let hot = OrbitalViewportMath.clamp01(Double(scalars.hotScalar))
+        let peakAccent = OrbitalViewportMath.clamp01(peakAccent)
         let curvedDisplay = pow(display, max(0.001, settings.responseCurve))
         let radius = settings.bloomMin + (settings.bloomMax - settings.bloomMin) * curvedDisplay
         let edge = max(0.001, settings.bloomEdge)
@@ -7493,6 +7534,9 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
                 let rim = settings.rimHaloEdge *
                     display *
                     (1 - smoothstep(edge * 0.32, edge * 0.74, rimDistance))
+                let peakRing = peakAccent *
+                    0.34 *
+                    (1 - smoothstep(edge * 0.22, edge * 0.92, rimDistance))
                 let active = fill *
                     smoothstep(0.015, 0.18, display) *
                     (0.36 + (1 - 0.36) * display)
@@ -7500,6 +7544,7 @@ enum OrbitalViewportCubeVUSceneKitMaterial {
                 let hotBase = mix(base, hotColor, amount: hotMix)
                 var tileColor = mix(hotBase, vuColor, amount: smoothstep(0.02, 0.92, bloomMix))
                 tileColor = mix(tileColor, mix(vuColor, hotColor, amount: 0.18), amount: rim)
+                tileColor = mix(tileColor, mix(vuColor, hotColor, amount: 0.28), amount: peakRing)
                 if clip {
                     tileColor = mix(tileColor, resolvedColor(red: 1, green: 0.08, blue: 0.02), amount: 0.86)
                 }
@@ -9377,7 +9422,6 @@ struct OrbitalViewportSpeakerMaterialVisualSignature: Equatable {
         let scalars = SpeakerCubeVUScalars(
             rawRms: Float(speaker.rms),
             settings: configuration.cubeVUSettings.coreSettings,
-            paletteValue: Float(speaker.peak),
             displayDrive: Float(speaker.displayDrive)
         )
         let display = Double(scalars.displayVuScalar)
@@ -12168,7 +12212,6 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
             let scalars = SpeakerCubeVUScalars(
                 rawRms: Float(speaker.rms),
                 settings: configuration.cubeVUSettings.coreSettings,
-                paletteValue: Float(speaker.peak),
                 displayDrive: Float(speaker.displayDrive)
             )
             let display = Double(scalars.displayVuScalar)
@@ -12201,7 +12244,8 @@ struct OrbitalViewport3DSceneView: NSViewRepresentable {
                         clip: speaker.peak >= 0.995,
                         alpha: alpha,
                         vuColor: vuColor,
-                        hotColor: hotColor
+                        hotColor: hotColor,
+                        peakAccent: speaker.peak
                     )
                     didMutate = true
                 } else if configuration.speakerShape == .pixelJets {

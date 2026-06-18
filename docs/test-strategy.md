@@ -133,6 +133,7 @@ Current review-surface tests cover `OrbitalViewReview` through the existing Swif
 - SceneKit review-app local audio file metering reduces channel powers to equal mono speaker RMS/peak samples without requiring per-frame SwiftUI state
 - SceneKit review-app `Input` tray owns the selector, mode-specific source controls, and `Meter Source` status rows without nested source trays or a duplicate global source picker
 - SceneKit review-app telemetry advertiser handling covers zero, one, and multiple review advertisers, with multi-advertiser selection preserved by advertiser ID
+- SceneKit review-app telemetry advertiser handling carries the advertised meter slot kind so source-lane providers can be labeled separately from speaker/DVS output providers.
 - SceneKit review-app `Impulse Test` source exposes Ripple, Waves, and Orbiting Comets, with deterministic spatial patterns instead of random or uniform channel values; orbiting comets are exactly two broader hot trails
 - SceneKit review-app `Local Song` source exposes choose-file and transport controls only, and its speaker meters use the mono RMS/peak music sample without synthetic spatial-pattern excitation
 - SceneKit review-app `Bloom Style` exposes Soft Center Bloom, Hot Core Bloom, Halo Edge Bloom, and Block Center Bloom without reset/export controls or a four-up preview, and its dice randomizer chooses a different preset when possible
@@ -149,6 +150,7 @@ Current review-surface tests cover `OrbitalViewReview` through the existing Swif
 - SceneKit review-app `Hide Sphere` is absent from current controls; the live `Speaker Pattern` future tray is also absent from the current right panel
 - SceneKit review-app hidden diagnostics expose raw RMS, raw peak, display drive, calibrated RMS, display scalar, and hot scalar values without mutating the raw meter source
 - SceneKit review-app telemetry diagnostics expose VU/display drive separately from raw RMS and raw peak, and Cube VU / Pixel Jets / Cell Jets use explicitly valid VU display drive without rekeying physical channels while untrusted VU slots fall back to raw RMS
+- SceneKit review-app meter-response regressions verify Wave Relay-style semantics: low input calibration lowers display scalar, hot scalar, and palette heat even when raw peak is high; raw peak remains diagnostic evidence, does not flood Cube VU / Pixel Jets / Cell Jets full-surface heat, and can drive only a narrow Cube VU rim/edge accent for faster transient motion.
 - SceneKit review-app diagnostic log is capped and is not driven by meter-only frame ticks
 - SceneKit review-app FPS diagnostics classify review viewport render/update cadence against the configured target, currently `120`, use `60` as the under-target threshold for the 120 FPS target, throttle steady logs to five samples per second, emit status transitions immediately, and keep FPS entries inside the same capped diagnostics log
 - SceneKit review-app headless benchmark coverage verifies the offscreen benchmark uses the same Cube VU speaker shape, speaker size, render style, Cube VU settings, 120 FPS active target, and 30 FPS idle/meter schedule without changing the approved speaker look; ribbed benchmark coverage verifies explicit ribbed enablement, density flags, hidden-line/fog flags, segment counts, SceneKit node counts, FPS, and CPU reporting
@@ -161,6 +163,23 @@ Current review-surface tests cover `OrbitalViewReview` through the existing Swif
 - SceneKit review-app object/trail/glow/bounds trays are inactive while the review surface focuses on speakers
 
 The production wrapper and review surface intentionally share a test target for now, but they import separate package targets. Production wrapper assertions should exercise `OrbitalViewSwiftUI`; review/demo assertions should exercise `OrbitalViewReview`.
+
+## Orbisonic Telemetry Consumer Tests
+
+`Tests/OrbitalViewTelemetryTests/OrbitalViewTelemetryConsumerTests.swift` covers the local shared-memory telemetry consumer.
+
+Current consumer coverage includes:
+
+- no-provider waiting state
+- read-only attach and decode for existing `speakerMeters` providers
+- 32-byte speaker-meter extension fields, DVS disabled state, and explicit VU-normalized-valid display drive
+- selected-provider behavior with multiple compatible speaker-meter providers
+- source-lane-only Wave Relay-style providers publishing `TelemetrySlotType.sourceLaneMeters`
+- source-lane reader attachment and 48-byte `SourceLaneMeterPayloadRecord` decode
+- source lane IDs `1...30` mapped to meter keys `1...30`
+- absent source lanes `31/32` staying absent rather than treated as missing output channels
+- RMS/peak/clip decode for source-lane records, with raw RMS preserved and Wave Relay-compatible `-50...0 dBFS` local display-drive normalization
+- speaker-meter automatic priority when both speaker and source-lane providers are available, while explicit selection can choose the source-lane provider
 
 ## Orbisonic Design-Language Checks
 

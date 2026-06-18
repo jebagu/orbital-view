@@ -130,7 +130,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 "Sample Rate",
                 "Channels",
                 "Frame Seq",
-                "32ch VU",
+                "Meter Type",
+                "Meter Grid",
                 "Start",
                 "Stop",
                 "All Mono",
@@ -147,7 +148,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         )
         XCTAssertEqual(
             OrbitalViewportMockup.telemetryTrayControlTitles,
-            ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
+            ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "Meter Type", "Meter Grid"]
         )
         XCTAssertEqual(
             OrbitalViewportMockup.systemAudioTrayControlTitles,
@@ -550,7 +551,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(OrbitalViewportMockup.defaultSourceMode, .telemetry)
         XCTAssertEqual(
             OrbitalViewportSourceMode.telemetry.trayControlTitles,
-            ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "32ch VU"]
+            ["Provider", "Status", "Track", "Route", "Source", "Sample Rate", "Channels", "Frame Seq", "Meter Type", "Meter Grid"]
         )
         XCTAssertEqual(
             OrbitalViewportSourceMode.systemAudio.trayControlTitles,
@@ -666,7 +667,8 @@ final class OrbitalViewSwiftUITests: XCTestCase {
                 id: "wavefield-sidecar",
                 provider: "Wavefield Sidecar",
                 status: "Live",
-                track: "Cassini"
+                track: "Cassini",
+                meterSlotKind: .sourceLaneMeters
             )
         ]
         XCTAssertEqual(
@@ -681,6 +683,7 @@ final class OrbitalViewSwiftUITests: XCTestCase {
             OrbitalViewportTelemetryAdvertiserSelection.advertiserButtonTitles(for: many),
             ["Orbisonic Main", "Wavefield Sidecar"]
         )
+        XCTAssertEqual(many[1].meterSlotKind, .sourceLaneMeters)
     }
 
     func testCorrectViewerIsometricPresetUsesTrueCanonicalDirection() {
@@ -1116,6 +1119,77 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         let filledTile = try pixelBrightness(separatedTexture, x: tilePixels / 2, y: tilePixels / 2, scale: separatedScale)
         let tileGap = try pixelBrightness(separatedTexture, x: tilePixels, y: tilePixels / 2, scale: separatedScale)
         XCTAssertLessThan(tileGap, filledTile * 0.8)
+    }
+
+    func testCorrectViewerCubeVUPeakAccentAddsFastRimMotionWithoutBodyHeat() throws {
+        var settings = OrbitalViewportCubeVUSettings.default
+        settings.facePixels = 9
+        settings.pixelFill = 1
+        settings.surfaceCheckerOpacity = 0
+        settings.checkerContrast = 0
+        settings.rimHaloEdge = 0
+        settings.hotFillStrength = 0
+        settings.inputCalibration = 0.25
+        settings.bloomMin = 0.16
+        settings.bloomMax = 0.72
+        settings.bloomEdge = 0.09
+        settings.responseCurve = 0.82
+        let scalars = SpeakerCubeVUScalars(
+            rawRms: 0.08,
+            settings: settings.coreSettings,
+            displayDrive: 0.08
+        )
+
+        let baseTexture = OrbitalViewportCubeVUSceneKitMaterial.faceTexture(
+            settings: settings,
+            scalars: scalars,
+            clip: false,
+            vuColor: .systemPurple,
+            hotColor: .systemPink,
+            peakAccent: 0
+        )
+        let peakTexture = OrbitalViewportCubeVUSceneKitMaterial.faceTexture(
+            settings: settings,
+            scalars: scalars,
+            clip: false,
+            vuColor: .systemPurple,
+            hotColor: .systemPink,
+            peakAccent: 1
+        )
+        let tilePixels = OrbitalViewportCubeVUSceneKitMaterial.faceTexturePixelsPerFacePixel
+        let centerIndex = settings.facePixels / 2
+        let ringIndex = centerIndex + 1
+        let centerCoordinate = centerIndex * tilePixels + tilePixels / 2
+        let ringCoordinate = ringIndex * tilePixels + tilePixels / 2
+        let baseScale = try bitmapScale(baseTexture)
+        let peakScale = try bitmapScale(peakTexture)
+        let baseCenter = try pixelBrightness(
+            baseTexture,
+            x: centerCoordinate,
+            y: centerCoordinate,
+            scale: baseScale
+        )
+        let peakCenter = try pixelBrightness(
+            peakTexture,
+            x: centerCoordinate,
+            y: centerCoordinate,
+            scale: peakScale
+        )
+        let baseRing = try pixelBrightness(
+            baseTexture,
+            x: ringCoordinate,
+            y: centerCoordinate,
+            scale: baseScale
+        )
+        let peakRing = try pixelBrightness(
+            peakTexture,
+            x: ringCoordinate,
+            y: centerCoordinate,
+            scale: peakScale
+        )
+
+        XCTAssertGreaterThan(peakRing, baseRing + 0.03)
+        XCTAssertLessThan(abs(peakCenter - baseCenter), 0.02)
     }
 
     func testCorrectViewerDiagnosticLogIsCappedAndIndependentFromMeterTicks() {
@@ -1587,6 +1661,82 @@ final class OrbitalViewSwiftUITests: XCTestCase {
         XCTAssertEqual(projected?.peak ?? -1, 0.4, accuracy: 0.000_001)
         XCTAssertEqual(projected?.displayDrive ?? -1, 1, accuracy: 0.000_001)
         XCTAssertEqual(source.meter(channel: 2, timeMS: 0).displayDrive, 0.2, accuracy: 0.000_001)
+    }
+
+    func testCorrectViewerPeakDoesNotFloodCalibratedMeterHeat() throws {
+        var settings = OrbitalViewportCubeVUSettings.default
+        settings.inputCalibration = 0.25
+        settings.levelCompression = 1.04
+        settings.displayCeiling = 0.92
+        settings.hotResponse = 1.12
+        settings.hotThreshold = 0.48
+        settings.hotFillStrength = 0.62
+        settings.paletteDrive = 2.75
+        settings.bloomMin = 0.13
+        settings.bloomMax = 0.74
+        settings.bloomEdge = 0.07
+        settings.rimHaloEdge = 0.49
+        settings.idleTint = 0.15
+        settings.checkerContrast = 0.19
+        settings.surfaceCheckerOpacity = 0.41
+        settings.cubeOutlineStrength = 0.35
+        settings.facePixels = 7
+        settings.pixelFill = 0.97
+
+        let source = OrbitalViewportMeterSource.telemetry(
+            OrbitalViewTelemetryMeterSnapshot(
+                sequence: 30,
+                producerHostTime: 31,
+                levelsByChannel: [
+                    1: OrbitalViewTelemetryMeterLevel(rms: 0.1, peak: 1.0)
+                ]
+            )
+        )
+        let diagnostics = OrbitalViewportMeterDiagnostics.make(
+            channel: 1,
+            source: source,
+            settings: settings,
+            timeMS: 0
+        )
+        let expectedRMSDriven = SpeakerCubeVUScalars(
+            rawRms: 0.1,
+            settings: settings.coreSettings,
+            displayDrive: 0.1
+        )
+        let rejectedPeakDriven = SpeakerCubeVUScalars(
+            rawRms: 0.1,
+            settings: settings.coreSettings,
+            paletteValue: 1,
+            displayDrive: 0.1
+        )
+
+        XCTAssertEqual(diagnostics.rawRMS, 0.1, accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.rawPeak, 1.0, accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.calibratedRMS, Double(expectedRMSDriven.calibratedRms), accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.displayScalar, Double(expectedRMSDriven.displayVuScalar), accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.hotScalar, Double(expectedRMSDriven.hotScalar), accuracy: 0.000_001)
+        XCTAssertEqual(diagnostics.paletteHeat, Double(expectedRMSDriven.paletteHeat), accuracy: 0.000_001)
+        XCTAssertLessThan(diagnostics.displayScalar, 0.06)
+        XCTAssertLessThan(diagnostics.hotScalar, 0.06)
+        XCTAssertLessThan(diagnostics.paletteHeat, 0.12)
+        XCTAssertGreaterThan(Double(rejectedPeakDriven.paletteHeat), 0.99)
+
+        let configuration = makeViewportConfiguration(
+            speakerShape: .cubeVU,
+            cubeVUSettings: settings,
+            meterSource: source
+        )
+        let snapshot = OrbitalViewportSnapshot(configuration: configuration)
+        let projected = try XCTUnwrap(snapshot.speakers.first { $0.channel == 1 })
+        let signature = OrbitalViewportSpeakerMaterialVisualSignature(
+            speaker: projected,
+            configuration: configuration
+        )
+
+        XCTAssertEqual(signature.peak, 10_000)
+        XCTAssertLessThan(signature.display, 600)
+        XCTAssertLessThan(signature.hot, 600)
+        XCTAssertLessThan(signature.heat, 1_200)
     }
 
     func testCorrectViewerSettingsJSONExportPayloadContainsPresetDriveAndTheme() throws {
